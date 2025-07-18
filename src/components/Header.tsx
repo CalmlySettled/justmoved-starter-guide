@@ -1,0 +1,38 @@
+import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
+
+export function Header() {
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border/50 shadow-soft">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
+            <Home className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-2xl font-bold text-foreground">JustMoved</span>
+        </div>
+        
+        <nav className="hidden md:flex items-center space-x-8">
+          <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-smooth">
+            How It Works
+          </a>
+          <a href="#features" className="text-muted-foreground hover:text-foreground transition-smooth">
+            Features
+          </a>
+          <a href="#faq" className="text-muted-foreground hover:text-foreground transition-smooth">
+            FAQ
+          </a>
+        </nav>
+        
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" className="hidden sm:inline-flex">
+            Sign In
+          </Button>
+          <Button variant="default">
+            Get Started
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}
