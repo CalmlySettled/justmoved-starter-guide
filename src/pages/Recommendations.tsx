@@ -145,9 +145,21 @@ export default function Recommendations() {
   };
 
   const getBusinessImage = (business: Business, category: string) => {
-    // Use uploaded Geissler's image for Geissler's specifically
+    // Use uploaded business images for specific businesses
     if (business.name.toLowerCase().includes('geissler')) {
       return '/lovable-uploads/e9c9bd3b-56c9-4c4d-9908-acb6c4950b77.png';
+    }
+    if (business.name.toLowerCase().includes('stop') && business.name.toLowerCase().includes('shop')) {
+      return '/lovable-uploads/f379c4b6-3d2f-4893-860e-70853f3b634c.png';
+    }
+    if (business.name.toLowerCase().includes('fresh farm')) {
+      return '/lovable-uploads/63cb8a6f-dfac-4328-b8d3-b392fedc9993.png';
+    }
+    if (business.name.toLowerCase().includes('sav-mor')) {
+      return '/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png';
+    }
+    if (business.name.toLowerCase().includes('aldi')) {
+      return '/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png';
     }
     
     // Default placeholder images by category
