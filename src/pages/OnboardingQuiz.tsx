@@ -40,7 +40,7 @@ export default function OnboardingQuiz() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const totalQuestions = 7;
+  const totalQuestions = 6;
 
   const handleNext = () => {
     if (currentQuestion < totalQuestions) {
@@ -92,7 +92,6 @@ export default function OnboardingQuiz() {
       case 4: return quizData.transportation !== "";
       case 5: return quizData.lifestyle !== "";
       case 6: return quizData.lifeStage !== "";
-      case 7: return quizData.tasks.length > 0;
       default: return false;
     }
   };
@@ -217,13 +216,9 @@ export default function OnboardingQuiz() {
               {currentQuestion === 4 && "How do you typically get around?"}
               {currentQuestion === 5 && "Which best describes your vibe?"}
               {currentQuestion === 6 && "Which stage of life best fits you right now?"}
-              {currentQuestion === 7 && "Which of these tasks do you still need help with?"}
             </CardTitle>
             {currentQuestion === 3 && (
               <p className="text-muted-foreground">Choose up to 5 options</p>
-            )}
-            {currentQuestion === 7 && (
-              <p className="text-muted-foreground">Choose up to 3 options</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
@@ -336,33 +331,6 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 7: Top 3 Settling-In Tasks */}
-            {currentQuestion === 7 && (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4">
-                  Selected: {quizData.tasks.length}/3
-                </div>
-                {[
-                  "Changing address / DMV",
-                  "Finding a doctor or pediatrician",
-                  "Setting up internet/utilities", 
-                  "Registering to vote",
-                  "Finding schools or daycare",
-                  "Joining local events or meetups",
-                  "Finding a trusted handyman or cleaner"
-                ].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={option}
-                      checked={quizData.tasks.includes(option)}
-                      onCheckedChange={(checked) => handleTasksChange(option, checked as boolean)}
-                      disabled={!quizData.tasks.includes(option) && quizData.tasks.length >= 3}
-                    />
-                    <Label htmlFor={option} className="text-base">{option}</Label>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-8">
