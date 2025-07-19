@@ -508,13 +508,13 @@ export default function Recommendations() {
                     </div>
                   </div>
                   
-                  {/* Featured Business Card */}
-                  <div className="flex justify-center">
+                  {/* Business Cards Grid */}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {(() => {
                       const filteredBusinesses = filterBusinesses(businesses, category);
                       if (filteredBusinesses.length === 0) {
                         return (
-                          <div className="text-center py-12 w-full max-w-lg">
+                          <div className="col-span-full text-center py-12">
                             <div className="p-4 bg-muted/30 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                               <Filter className="h-8 w-8 text-muted-foreground" />
                             </div>
@@ -533,7 +533,7 @@ export default function Recommendations() {
                         );
                       }
                       
-                      return filteredBusinesses.slice(0, 1).map((business, index) => {
+                      return filteredBusinesses.map((business, index) => {
                         const badges = getBusinessBadges(business);
                         const saveKey = `${category}-${business.name}`;
                         const isSaving = savingRecommendations.has(saveKey);
@@ -541,9 +541,9 @@ export default function Recommendations() {
                         const hours = business.hours || "Open daily 7am–9pm";
                         
                         return (
-                          <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden w-full max-w-lg">
+                          <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden">
                             {/* Business Image */}
-                            <div className="relative h-64 bg-muted overflow-hidden">
+                            <div className="relative h-48 bg-muted overflow-hidden">
                               <img 
                                 src={businessImage} 
                                 alt={business.name}
@@ -552,26 +552,26 @@ export default function Recommendations() {
                                   e.currentTarget.src = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop';
                                 }}
                               />
-                              <div className="absolute top-4 right-4">
+                              <div className="absolute top-3 right-3">
                                 <Button
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => saveRecommendation(business, category)}
                                   disabled={isSaving}
-                                  className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-10 h-10 p-0"
+                                  className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-8 h-8 p-0"
                                 >
-                                  <Bookmark className="h-4 w-4" />
+                                  <Bookmark className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
 
-                            <div className="p-8 space-y-6">
+                            <div className="p-6 space-y-4">
                               {/* Business Name */}
                               <div className="text-center">
-                                <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
+                                <h3 className="text-xl font-bold text-slate-900 leading-tight mb-1">
                                   {business.name}
                                 </h3>
-                                <p className="text-lg text-muted-foreground">
+                                <p className="text-sm text-muted-foreground">
                                   {getBusinessTagline(business, category)}
                                 </p>
                               </div>
@@ -583,9 +583,9 @@ export default function Recommendations() {
                                     href={getGoogleMapsUrl(business.address, business.name)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
+                                    className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-sm font-medium"
                                   >
-                                    <Navigation className="h-4 w-4" />
+                                    <Navigation className="h-3 w-3" />
                                     {business.address}
                                   </a>
                                 </div>
@@ -593,18 +593,18 @@ export default function Recommendations() {
 
                               {/* Hours */}
                               <div className="text-center">
-                                <div className="inline-flex items-center gap-2 text-muted-foreground">
-                                  <Clock className="h-4 w-4" />
+                                <div className="inline-flex items-center gap-1.5 text-muted-foreground text-sm">
+                                  <Clock className="h-3 w-3" />
                                   <span>{hours}</span>
                                 </div>
                               </div>
 
                               {/* Tags/Badges */}
                               {badges.length > 0 && (
-                                <div className="flex justify-center gap-2 flex-wrap">
-                                  {badges.map((badge, badgeIndex) => (
-                                    <div key={badgeIndex} className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium ${badge.color}`}>
-                                      <badge.icon className="h-4 w-4" />
+                                <div className="flex justify-center gap-1.5 flex-wrap">
+                                  {badges.slice(0, 2).map((badge, badgeIndex) => (
+                                    <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                                      <badge.icon className="h-3 w-3" />
                                       {badge.label}
                                     </div>
                                   ))}
@@ -612,17 +612,17 @@ export default function Recommendations() {
                               )}
 
                               {/* Action Buttons */}
-                              <div className="flex gap-3 justify-center pt-4">
+                              <div className="flex gap-2 justify-center pt-2">
                                 {business.phone && (
                                   <Button 
                                     variant="outline" 
-                                    size="lg"
-                                    className="flex-1 max-w-40"
+                                    size="sm"
+                                    className="flex-1 text-xs"
                                     asChild
                                   >
                                     <a href={`tel:${business.phone}`}>
-                                      <Phone className="h-4 w-4 mr-2" />
-                                      Call Now
+                                      <Phone className="h-3 w-3 mr-1" />
+                                      Call
                                     </a>
                                   </Button>
                                 )}
@@ -630,13 +630,13 @@ export default function Recommendations() {
                                 {business.website && (
                                   <Button 
                                     variant="default" 
-                                    size="lg"
-                                    className="flex-1 max-w-40"
+                                    size="sm"
+                                    className="flex-1 text-xs"
                                     asChild
                                   >
                                     <a href={business.website} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="h-4 w-4 mr-2" />
-                                      Visit Website
+                                      <ExternalLink className="h-3 w-3 mr-1" />
+                                      Visit
                                     </a>
                                   </Button>
                                 )}
