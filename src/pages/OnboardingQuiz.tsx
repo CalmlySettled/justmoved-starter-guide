@@ -7,6 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Home, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuizData {
   zipCode: string;
@@ -32,7 +35,10 @@ export default function OnboardingQuiz() {
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [quizData, setQuizData] = useState<QuizData>(initialData);
   const [isComplete, setIsComplete] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const totalQuestions = 7;
 
@@ -91,11 +97,59 @@ export default function OnboardingQuiz() {
     }
   };
 
-  const handleComplete = () => {
-    // Here you would typically save the quiz data to a backend
-    console.log("Quiz completed with data:", quizData);
-    // Navigate to a results page or dashboard
-    navigate("/");
+  const handleComplete = async () => {
+    setLoading(true);
+    
+    try {
+      // Save quiz data to user's profile if logged in
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            zip_code: quizData.zipCode,
+            household_type: quizData.household.join(', '),
+            priorities: quizData.priorities,
+            transportation_style: quizData.transportation,
+            budget_preference: quizData.lifestyle,
+            life_stage: quizData.lifeStage,
+            settling_tasks: quizData.tasks
+          });
+
+        if (error) {
+          console.error('Error saving profile:', error);
+          toast({
+            title: "Warning",
+            description: "We couldn't save your preferences, but you can still see your recommendations.",
+            variant: "destructive"
+          });
+        }
+      }
+
+      // Prepare data for recommendations
+      const recommendationData = {
+        zipCode: quizData.zipCode,
+        householdType: quizData.household.join(', '),
+        priorities: quizData.priorities,
+        transportationStyle: quizData.transportation,
+        budgetPreference: quizData.lifestyle,
+        lifeStage: quizData.lifeStage,
+        settlingTasks: quizData.tasks
+      };
+
+      // Navigate to recommendations with data
+      navigate('/recommendations', { state: { quizResponse: recommendationData } });
+      
+    } catch (error) {
+      console.error('Error completing quiz:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isComplete) {
@@ -110,8 +164,13 @@ export default function OnboardingQuiz() {
             <p className="text-muted-foreground mb-8">
               Thanks for completing the quiz! We're building your personalized local guide based on your preferences.
             </p>
-            <Button onClick={handleComplete} variant="hero" size="lg">
-              View Your Personalized Guide
+            <Button 
+              onClick={handleComplete} 
+              variant="hero" 
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? "Generating Recommendations..." : "View Your Personalized Guide"}
             </Button>
           </CardContent>
         </Card>
