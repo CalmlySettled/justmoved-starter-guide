@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
-import { Home, MapPin, Phone, Star, ArrowLeft, Heart, Clock, Award, Users, Bookmark, ExternalLink, Navigation } from "lucide-react";
+import { Home, MapPin, Phone, Star, ArrowLeft, Heart, Clock, Award, Users, Bookmark, ExternalLink, Navigation, Filter, X } from "lucide-react";
 
 interface Business {
   name: string;
@@ -45,6 +45,7 @@ export default function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [quizResponse, setQuizResponse] = useState<QuizResponse | null>(null);
   const [savingRecommendations, setSavingRecommendations] = useState<Set<string>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<{ [category: string]: string[] }>({});
 
   useEffect(() => {
     const state = location.state as { quizResponse?: QuizResponse };
@@ -169,6 +170,136 @@ export default function Recommendations() {
   const getGoogleMapsUrl = (address: string, businessName: string) => {
     const query = encodeURIComponent(`${businessName} ${address}`);
     return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
+  const getCategoryFilters = (category: string) => {
+    const categoryLower = category.toLowerCase();
+    
+    if (categoryLower.includes('grocery')) {
+      return [
+        'Organic Options',
+        'Budget-Friendly', 
+        'Open Late',
+        'Locally Owned',
+        'International Foods',
+        'Prepared Meals / Deli',
+        'Delivery Available',
+        'Parking Available'
+      ];
+    }
+    
+    if (categoryLower.includes('fitness') || categoryLower.includes('gym')) {
+      return [
+        'Group Classes',
+        'Personal Training',
+        'Sauna',
+        'Pool',
+        '24-Hour Access',
+        'Cardio Machines',
+        'Strength Training',
+        'Childcare Onsite',
+        'Women-Only Spaces'
+      ];
+    }
+    
+    if (categoryLower.includes('faith') || categoryLower.includes('church')) {
+      return [
+        'Baptist',
+        'Catholic',
+        'Episcopal',
+        'Non-Denominational',
+        'Methodist',
+        'Presbyterian',
+        'Lutheran',
+        'Pentecostal'
+      ];
+    }
+    
+    if (categoryLower.includes('restaurant') || categoryLower.includes('dining')) {
+      return [
+        'Family-Friendly',
+        'Fine Dining',
+        'Casual Dining',
+        'Takeout Available',
+        'Outdoor Seating',
+        'Live Music',
+        'Happy Hour',
+        'Vegan Options'
+      ];
+    }
+    
+    // Default filters for other categories
+    return [
+      'Highly Rated',
+      'Budget-Friendly',
+      'Locally Owned',
+      'Parking Available',
+      'Wheelchair Accessible'
+    ];
+  };
+
+  const toggleFilter = (category: string, filter: string) => {
+    setActiveFilters(prev => {
+      const categoryFilters = prev[category] || [];
+      const isActive = categoryFilters.includes(filter);
+      
+      return {
+        ...prev,
+        [category]: isActive 
+          ? categoryFilters.filter(f => f !== filter)
+          : [...categoryFilters, filter]
+      };
+    });
+  };
+
+  const clearFilters = (category: string) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [category]: []
+    }));
+  };
+
+  const filterBusinesses = (businesses: Business[], category: string) => {
+    const categoryFilters = activeFilters[category] || [];
+    if (categoryFilters.length === 0) return businesses;
+    
+    return businesses.filter(business => {
+      return categoryFilters.every(filter => {
+        // Check if the business features match the filter
+        const filterLower = filter.toLowerCase();
+        const businessFeatures = business.features.map(f => f.toLowerCase()).join(' ');
+        const businessName = business.name.toLowerCase();
+        
+        // Match various ways a filter could be represented in business features
+        if (filterLower.includes('organic')) return businessFeatures.includes('organic');
+        if (filterLower.includes('budget') || filterLower.includes('affordable')) return businessFeatures.includes('budget') || businessFeatures.includes('affordable');
+        if (filterLower.includes('late') || filterLower.includes('24')) return businessFeatures.includes('24') || businessFeatures.includes('late');
+        if (filterLower.includes('local')) return businessFeatures.includes('local') || businessFeatures.includes('family');
+        if (filterLower.includes('international')) return businessFeatures.includes('international') || businessFeatures.includes('ethnic');
+        if (filterLower.includes('deli') || filterLower.includes('prepared')) return businessFeatures.includes('deli') || businessFeatures.includes('prepared');
+        if (filterLower.includes('delivery')) return businessFeatures.includes('delivery');
+        if (filterLower.includes('parking')) return businessFeatures.includes('parking');
+        if (filterLower.includes('group') || filterLower.includes('classes')) return businessFeatures.includes('classes') || businessFeatures.includes('group');
+        if (filterLower.includes('personal') || filterLower.includes('training')) return businessFeatures.includes('personal') || businessFeatures.includes('training');
+        if (filterLower.includes('sauna')) return businessFeatures.includes('sauna');
+        if (filterLower.includes('pool')) return businessFeatures.includes('pool');
+        if (filterLower.includes('cardio')) return businessFeatures.includes('cardio');
+        if (filterLower.includes('strength')) return businessFeatures.includes('strength') || businessFeatures.includes('weights');
+        if (filterLower.includes('childcare')) return businessFeatures.includes('childcare') || businessFeatures.includes('kids');
+        if (filterLower.includes('women')) return businessFeatures.includes('women') || businessFeatures.includes('female');
+        
+        // For faith communities, check denomination in name or features
+        if (['baptist', 'catholic', 'episcopal', 'methodist', 'presbyterian', 'lutheran', 'pentecostal'].includes(filterLower)) {
+          return businessName.includes(filterLower) || businessFeatures.includes(filterLower);
+        }
+        if (filterLower.includes('non-denominational')) {
+          return businessName.includes('community') || businessFeatures.includes('non-denominational') || businessFeatures.includes('community');
+        }
+        
+        // Default: check if filter appears anywhere in features or name
+        return businessFeatures.includes(filterLower) || businessName.includes(filterLower);
+      });
+    });
   };
 
   const getTopPicks = () => {
@@ -337,120 +468,184 @@ export default function Recommendations() {
                     </div>
                   </div>
                   
+                  {/* Category Filters */}
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Filter className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold text-foreground">Filter options</h3>
+                      {(activeFilters[category] || []).length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => clearFilters(category)}
+                          className="text-muted-foreground hover:text-foreground ml-auto"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Clear filters
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {getCategoryFilters(category).map((filter) => {
+                        const isActive = (activeFilters[category] || []).includes(filter);
+                        return (
+                          <button
+                            key={filter}
+                            onClick={() => toggleFilter(category, filter)}
+                            className={`
+                              px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200
+                              ${isActive 
+                                ? 'bg-primary text-primary-foreground border-primary shadow-md' 
+                                : 'bg-background text-muted-foreground border-border hover:border-primary hover:text-primary hover:bg-primary/5'
+                              }
+                            `}
+                          >
+                            {filter}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
                   {/* Featured Business Card */}
                   <div className="flex justify-center">
-                    {businesses.slice(0, 1).map((business, index) => {
-                      const badges = getBusinessBadges(business);
-                      const saveKey = `${category}-${business.name}`;
-                      const isSaving = savingRecommendations.has(saveKey);
-                      const businessImage = getBusinessImage(business, category);
-                      const hours = business.hours || "Open daily 7am–9pm";
+                    {(() => {
+                      const filteredBusinesses = filterBusinesses(businesses, category);
+                      if (filteredBusinesses.length === 0) {
+                        return (
+                          <div className="text-center py-12 w-full max-w-lg">
+                            <div className="p-4 bg-muted/30 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                              <Filter className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-foreground mb-2">No matches found</h3>
+                            <p className="text-muted-foreground mb-4">
+                              Try adjusting your filters to see more recommendations.
+                            </p>
+                            <Button
+                              variant="outline"
+                              onClick={() => clearFilters(category)}
+                              className="text-sm"
+                            >
+                              Clear all filters
+                            </Button>
+                          </div>
+                        );
+                      }
                       
-                      return (
-                        <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden w-full max-w-lg">
-                          {/* Business Image */}
-                          <div className="relative h-64 bg-muted overflow-hidden">
-                            <img 
-                              src={businessImage} 
-                              alt={business.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop';
-                              }}
-                            />
-                            <div className="absolute top-4 right-4">
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => saveRecommendation(business, category)}
-                                disabled={isSaving}
-                                className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-10 h-10 p-0"
-                              >
-                                <Bookmark className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="p-8 space-y-6">
-                            {/* Business Name */}
-                            <div className="text-center">
-                              <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
-                                {business.name}
-                              </h3>
-                              <p className="text-lg text-muted-foreground">
-                                {getBusinessTagline(business, category)}
-                              </p>
+                      return filteredBusinesses.slice(0, 1).map((business, index) => {
+                        const badges = getBusinessBadges(business);
+                        const saveKey = `${category}-${business.name}`;
+                        const isSaving = savingRecommendations.has(saveKey);
+                        const businessImage = getBusinessImage(business, category);
+                        const hours = business.hours || "Open daily 7am–9pm";
+                        
+                        return (
+                          <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden w-full max-w-lg">
+                            {/* Business Image */}
+                            <div className="relative h-64 bg-muted overflow-hidden">
+                              <img 
+                                src={businessImage} 
+                                alt={business.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop';
+                                }}
+                              />
+                              <div className="absolute top-4 right-4">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => saveRecommendation(business, category)}
+                                  disabled={isSaving}
+                                  className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-10 h-10 p-0"
+                                >
+                                  <Bookmark className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
 
-                            {/* Address */}
-                            {business.address && (
+                            <div className="p-8 space-y-6">
+                              {/* Business Name */}
                               <div className="text-center">
-                                <a 
-                                  href={getGoogleMapsUrl(business.address, business.name)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
-                                >
-                                  <Navigation className="h-4 w-4" />
-                                  {business.address}
-                                </a>
+                                <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
+                                  {business.name}
+                                </h3>
+                                <p className="text-lg text-muted-foreground">
+                                  {getBusinessTagline(business, category)}
+                                </p>
                               </div>
-                            )}
 
-                            {/* Hours */}
-                            <div className="text-center">
-                              <div className="inline-flex items-center gap-2 text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                <span>{hours}</span>
+                              {/* Address */}
+                              {business.address && (
+                                <div className="text-center">
+                                  <a 
+                                    href={getGoogleMapsUrl(business.address, business.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
+                                  >
+                                    <Navigation className="h-4 w-4" />
+                                    {business.address}
+                                  </a>
+                                </div>
+                              )}
+
+                              {/* Hours */}
+                              <div className="text-center">
+                                <div className="inline-flex items-center gap-2 text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{hours}</span>
+                                </div>
+                              </div>
+
+                              {/* Tags/Badges */}
+                              {badges.length > 0 && (
+                                <div className="flex justify-center gap-2 flex-wrap">
+                                  {badges.map((badge, badgeIndex) => (
+                                    <div key={badgeIndex} className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium ${badge.color}`}>
+                                      <badge.icon className="h-4 w-4" />
+                                      {badge.label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-3 justify-center pt-4">
+                                {business.phone && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="lg"
+                                    className="flex-1 max-w-40"
+                                    asChild
+                                  >
+                                    <a href={`tel:${business.phone}`}>
+                                      <Phone className="h-4 w-4 mr-2" />
+                                      Call Now
+                                    </a>
+                                  </Button>
+                                )}
+                                
+                                {business.website && (
+                                  <Button 
+                                    variant="default" 
+                                    size="lg"
+                                    className="flex-1 max-w-40"
+                                    asChild
+                                  >
+                                    <a href={business.website} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Visit Website
+                                    </a>
+                                  </Button>
+                                )}
                               </div>
                             </div>
-
-                            {/* Tags/Badges */}
-                            {badges.length > 0 && (
-                              <div className="flex justify-center gap-2 flex-wrap">
-                                {badges.map((badge, badgeIndex) => (
-                                  <div key={badgeIndex} className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium ${badge.color}`}>
-                                    <badge.icon className="h-4 w-4" />
-                                    {badge.label}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-3 justify-center pt-4">
-                              {business.phone && (
-                                <Button 
-                                  variant="outline" 
-                                  size="lg"
-                                  className="flex-1 max-w-40"
-                                  asChild
-                                >
-                                  <a href={`tel:${business.phone}`}>
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Call Now
-                                  </a>
-                                </Button>
-                              )}
-                              
-                              {business.website && (
-                                <Button 
-                                  variant="default" 
-                                  size="lg"
-                                  className="flex-1 max-w-40"
-                                  asChild
-                                >
-                                  <a href={business.website} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-2" />
-                                    Visit Website
-                                  </a>
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
+                          </Card>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )
