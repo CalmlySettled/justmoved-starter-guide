@@ -313,60 +313,6 @@ export default function Recommendations() {
           )}
         </div>
 
-        {/* Top Picks Section */}
-        {topPicks.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <Star className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">Your Top Picks</h2>
-            </div>
-            
-            <div className="grid gap-6 md:grid-cols-3">
-              {topPicks.map((business, index) => {
-                const badges = getBusinessBadges(business);
-                return (
-                  <Card key={index} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {business.name}
-                          </CardTitle>
-                          <p className="text-sm text-primary font-medium mt-1">
-                            {getBusinessTagline(business, business.category)}
-                          </p>
-                        </div>
-                        <div className="ml-3 p-2 bg-primary/10 rounded-full">
-                          <span className="text-lg">{getCategoryIcon(business.category)}</span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      {business.address && (
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <span>{business.address}</span>
-                        </div>
-                      )}
-                      
-                      {badges.length > 0 && (
-                        <div className="flex gap-2">
-                          {badges.map((badge, badgeIndex) => (
-                            <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                              <badge.icon className="h-3 w-3" />
-                              {badge.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Recommendations by Category */}
         {recommendations ? (
