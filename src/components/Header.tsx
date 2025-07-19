@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Header() {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border/50 shadow-soft">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -26,14 +29,40 @@ export function Header() {
         </nav>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" className="hidden sm:inline-flex">
-            Sign In
-          </Button>
-          <Link to="/onboarding">
-            <Button variant="default">
-              Get Started
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user.email}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={signOut}
+                className="hidden sm:inline-flex"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+              <Link to="/onboarding">
+                <Button variant="default">
+                  Take Quiz
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/auth">
+                <Button variant="ghost" className="hidden sm:inline-flex">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/onboarding">
+                <Button variant="default">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
