@@ -28,6 +28,9 @@ serve(async (req) => {
     console.log('Generating recommendations for:', quizResponse);
 
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    console.log('API key exists:', !!perplexityApiKey);
+    console.log('API key length:', perplexityApiKey?.length || 0);
+    
     if (!perplexityApiKey) {
       throw new Error('Perplexity API key not configured');
     }
@@ -43,6 +46,22 @@ serve(async (req) => {
 For each category they're looking for, provide 3-4 current business recommendations with name, address, and brief description. Focus only on businesses that are currently operating.`;
 
     console.log('Making Perplexity API request...');
+    console.log('Request payload:', {
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: 'Be precise and concise. Provide real, current business information with specific names and addresses.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.2,
+      top_p: 0.9,
+      max_tokens: 1000
+    });
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
