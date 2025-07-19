@@ -146,6 +146,8 @@ export default function Recommendations() {
 
   const getBusinessImage = (business: Business, category: string) => {
     // Use uploaded business images for specific businesses
+    
+    // Grocery Stores
     if (business.name.toLowerCase().includes('geissler')) {
       return '/lovable-uploads/e9c9bd3b-56c9-4c4d-9908-acb6c4950b77.png';
     }
@@ -160,6 +162,23 @@ export default function Recommendations() {
     }
     if (business.name.toLowerCase().includes('aldi')) {
       return '/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png';
+    }
+    
+    // Gyms/Fitness
+    if (business.name.toLowerCase().includes('total health')) {
+      return '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png';
+    }
+    if (business.name.toLowerCase().includes('planet fitness')) {
+      return '/lovable-uploads/b393c4b5-8487-47b0-a991-d59fbc4c421c.png';
+    }
+    if (business.name.toLowerCase().includes('club fitness')) {
+      return '/lovable-uploads/16cb62a7-bb30-432d-804b-9f20266bbce7.png';
+    }
+    if (business.name.toLowerCase().includes('gold\'s gym')) {
+      return '/lovable-uploads/8ae3c503-4c33-4e74-a098-c0bf7cf1e90f.png';
+    }
+    if (business.name.toLowerCase().includes('fit body boot camp')) {
+      return '/lovable-uploads/2beb6084-f2f4-4058-9014-43a42f522449.png';
     }
     
     // Default placeholder images by category
