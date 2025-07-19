@@ -397,18 +397,18 @@ export default function Recommendations() {
                       const saveKey = `${category}-${business.name}`;
                       const isSaving = savingRecommendations.has(saveKey);
                       const businessImage = getBusinessImage(business, category);
-                      const rating = business.rating || (4.2 + Math.random() * 0.6); // Generate rating between 4.2-4.8
-                      const reviewCount = Math.floor(Math.random() * 300) + 50; // Random review count
-                      const hours = business.hours || "Daily 7am–9pm";
+                      const rating = business.rating || (4.2 + Math.random() * 0.6);
+                      const reviewCount = Math.floor(Math.random() * 300) + 50;
+                      const hours = business.hours || "Open daily 7am–9pm";
                       
                       return (
-                        <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-card rounded-3xl overflow-hidden max-w-lg mx-auto">
+                        <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden max-w-md mx-auto">
                           {/* Business Image */}
-                          <div className="relative h-48 bg-muted overflow-hidden">
+                          <div className="relative h-48 bg-muted overflow-hidden rounded-t-3xl">
                             <img 
                               src={businessImage} 
                               alt={business.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.src = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop';
                               }}
@@ -419,120 +419,96 @@ export default function Recommendations() {
                                 size="sm"
                                 onClick={() => saveRecommendation(business, category)}
                                 disabled={isSaving}
-                                className="bg-white/90 hover:bg-white text-foreground shadow-lg"
+                                className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-10 h-10 p-0"
                               >
                                 <Bookmark className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
 
-                          <CardContent className="p-6 space-y-4">
-                            {/* Business Name & Tagline */}
-                            <div>
-                              <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
-                                {business.name}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">
-                                {getBusinessTagline(business, category)}
-                              </p>
+                          <div className="p-6 space-y-4">
+                            {/* Business Name */}
+                            <h3 className="text-2xl font-bold text-slate-900 leading-tight">
+                              {business.name}
+                            </h3>
+
+                            {/* Tagline */}
+                            <p className="text-slate-600 text-lg">
+                              {getBusinessTagline(business, category)}
+                            </p>
+
+                            {/* Address */}
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                <MapPin className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <span className="text-slate-700 text-lg font-medium">
+                                {business.address}
+                              </span>
                             </div>
 
-                            {/* Address with Maps Link */}
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            {/* Hours and Map Link */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                  <Clock className="h-4 w-4 text-blue-600" />
+                                </div>
+                                <span className="text-slate-700 text-lg font-medium">{hours}</span>
+                              </div>
                               <a 
                                 href={getGoogleMapsUrl(business.address, business.name)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm text-foreground hover:text-primary transition-colors hover:underline"
+                                className="text-blue-600 text-lg font-medium hover:text-blue-700 transition-colors"
                               >
-                                {business.address}
+                                View on map
                               </a>
                             </div>
 
-                            {/* Quick Facts */}
-                            <div className="space-y-3 py-3 border-t border-border/30">
-                              {/* Hours */}
-                              <div className="flex items-center gap-2 text-sm">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground">{hours}</span>
-                              </div>
-                              
-                              {/* Rating */}
-                              <div className="flex items-center gap-2 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                  <span className="font-medium">{rating.toFixed(1)}</span>
-                                  <span className="text-muted-foreground">({reviewCount} reviews)</span>
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-3 py-2">
+                              {badges.map((badge, badgeIndex) => (
+                                <div key={badgeIndex} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 border border-green-100">
+                                  <badge.icon className="h-4 w-4" />
+                                  <span className="font-medium">{badge.label}</span>
                                 </div>
-                              </div>
+                              ))}
                             </div>
 
-                            {/* Tags/Badges */}
-                            {badges.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {badges.map((badge, badgeIndex) => (
-                                  <div key={badgeIndex} className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                                    <badge.icon className="h-3 w-3" />
-                                    {badge.label}
+                            {/* Contact Info and Website Button */}
+                            <div className="flex items-center justify-between pt-4">
+                              {business.phone && business.phone !== "Contact information available" ? (
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <Phone className="h-4 w-4 text-blue-600" />
                                   </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Contact & Action Buttons */}
-                            <div className="flex flex-wrap gap-2 pt-3 border-t border-border/30">
+                                  <a 
+                                    href={`tel:${business.phone}`}
+                                    className="text-slate-900 text-lg font-medium hover:text-blue-600 transition-colors"
+                                  >
+                                    {business.phone}
+                                  </a>
+                                </div>
+                              ) : (
+                                <div></div>
+                              )}
+                              
                               <Button
                                 variant="outline"
-                                size="sm"
+                                size="lg"
                                 asChild
-                                className="flex-1"
+                                className="rounded-full border-2 border-slate-300 text-slate-700 hover:bg-slate-50 px-6 py-3 text-lg font-medium"
                               >
                                 <a 
-                                  href={getGoogleMapsUrl(business.address, business.name)}
+                                  href={business.website || getGoogleMapsUrl(business.address, business.name)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center justify-center gap-2"
                                 >
-                                  <Navigation className="h-4 w-4" />
-                                  Directions
+                                  {business.website ? 'Visit Website' : 'Get Directions'}
                                 </a>
                               </Button>
-                              
-                              {business.phone && business.phone !== "Contact information available" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  asChild
-                                  className="flex-1"
-                                >
-                                  <a href={`tel:${business.phone}`} className="flex items-center justify-center gap-2">
-                                    <Phone className="h-4 w-4" />
-                                    Call
-                                  </a>
-                                </Button>
-                              )}
-                              
-                              {business.website && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  asChild
-                                  className="flex-1"
-                                >
-                                  <a 
-                                    href={business.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                    Website
-                                  </a>
-                                </Button>
-                              )}
                             </div>
-                          </CardContent>
+                          </div>
                         </Card>
                       );
                     })}
