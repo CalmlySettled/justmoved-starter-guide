@@ -174,12 +174,12 @@ export default function Dashboard() {
   }, {} as { [key: string]: SavedRecommendation[] });
 
   const getUserSummary = () => {
-    if (!userProfile) return "Welcome to your personalized neighborhood guide!";
+    if (!userProfile) return "Welcome to Bloomfield! Here's what we recommend for you.";
     const { life_stage, zip_code, transportation_style, budget_preference } = userProfile;
-    if (life_stage && zip_code) {
-      return `You're ${life_stage.toLowerCase().startsWith('a') ? 'an' : 'a'} ${life_stage.toLowerCase()} in ${zip_code}${transportation_style ? ` with ${transportation_style.toLowerCase()}` : ''}${budget_preference ? ` and ${budget_preference.toLowerCase()}` : ''}. Here are your saved recommendations!`;
+    if (life_stage && zip_code && transportation_style && budget_preference) {
+      return `Welcome to Bloomfield! As ${life_stage.toLowerCase().startsWith('a') ? 'an' : 'a'} ${life_stage.toLowerCase()} who just moved here with ${transportation_style.toLowerCase()} and ${budget_preference.toLowerCase()}, here's what we recommend.`;
     }
-    return "Welcome to your personalized neighborhood guide!";
+    return "Welcome to Bloomfield! Here's what we recommend for you.";
   };
 
   if (loading) {
