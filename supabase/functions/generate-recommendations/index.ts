@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +15,138 @@ interface QuizResponse {
   settlingTasks: string[];
 }
 
+interface Business {
+  name: string;
+  address: string;
+  description: string;
+  phone: string;
+  features: string[];
+  hours?: string;
+  website?: string;
+}
+
+// Your specific business data
+const localBusinesses: { [key: string]: Business[] } = {
+  "grocery stores": [
+    {
+      name: "Geissler's Supermarket",
+      address: "40 Tunxis Ave, Bloomfield, CT 06002",
+      description: "Family-owned market with great produce",
+      phone: "(860) 242-7084",
+      hours: "Mon–Sat 8am–9pm, Sun 8am–7pm",
+      features: ["Local", "Organic Options", "Budget-Friendly", "Family-owned", "Fresh produce"]
+    },
+    {
+      name: "Stop & Shop",
+      address: "313 Cottage Grove Rd, Bloomfield, CT 06002",
+      description: "Large chain store with pharmacy and gas station",
+      phone: "(860) 242-2424",
+      hours: "Open daily 6am–10pm",
+      features: ["Chain", "High Ratings", "Accessible", "Pharmacy", "Gas station", "Parking Available"]
+    },
+    {
+      name: "Fresh Farm Market",
+      address: "1055 Blue Hills Ave, Bloomfield, CT 06002",
+      description: "Local market known for vibrant produce",
+      phone: "(860) 242-1183",
+      features: ["Local", "International Foods", "Walkable", "Fresh produce", "Vibrant selection"]
+    },
+    {
+      name: "Sav-Mor Supermarket",
+      address: "1055 Blue Hills Ave #1, Bloomfield, CT 06002",
+      description: "Community staple for everyday groceries",
+      phone: "(860) 242-7759",
+      features: ["Budget-Friendly", "Local", "Community favorite", "Everyday needs"]
+    },
+    {
+      name: "Aldi",
+      address: "44 Kane St, West Hartford, CT 06119",
+      description: "Low-cost grocery chain with curbside and delivery",
+      phone: "(855) 955-2534",
+      features: ["Chain", "Pickup Available", "Budget-Friendly", "Delivery Available", "Low prices"]
+    }
+  ],
+  "fitness options": [
+    {
+      name: "Total Health Club",
+      address: "22 Mountain Ave, Bloomfield, CT 06002",
+      description: "Full-service gym with group classes and personal training",
+      phone: "(860) 242-9400",
+      features: ["Local", "Group Classes", "Personal Training", "Full-service", "Comprehensive equipment"]
+    },
+    {
+      name: "Planet Fitness",
+      address: "841 Albany Ave, Hartford, CT 06112",
+      description: "Affordable 24/7 gym for all fitness levels",
+      phone: "(860) 522-4600",
+      features: ["Chain", "24-Hour Access", "Budget Membership", "All fitness levels", "Affordable"]
+    },
+    {
+      name: "Club Fitness",
+      address: "107 Old Windsor Rd, Bloomfield, CT 06002",
+      description: "3-level cardio/strength gym with classes",
+      phone: "(860) 242-1234",
+      features: ["Full Equipment", "Group Classes", "Personal Training", "Cardio Machines", "Strength Training"]
+    },
+    {
+      name: "Gold's Gym",
+      address: "39 W Main St, Avon, CT 06001",
+      description: "Classic gym experience with serious strength training",
+      phone: "(860) 677-4348",
+      features: ["Strength-Focused", "Franchise", "Serious training", "Classic experience"]
+    },
+    {
+      name: "Bloomfield Fit Body Boot Camp",
+      address: "10 Mountain Ave, Bloomfield, CT 06002",
+      description: "High-energy, group HIIT gym with coaching",
+      phone: "(860) 952-3324",
+      features: ["HIIT", "Trainer-Led", "Community-Based", "High-energy", "Group Classes"]
+    }
+  ],
+  "faith communities": [
+    {
+      name: "Wintonbury Church",
+      address: "54 Maple Ave, Bloomfield, CT 06002",
+      description: "Non-denominational church with contemporary worship",
+      phone: "(860) 243-8779",
+      hours: "Sunday Worship: 10am",
+      features: ["Contemporary", "Small Groups", "Childcare", "Non-denominational", "Modern worship"]
+    },
+    {
+      name: "Sacred Heart Church",
+      address: "26 Wintonbury Ave, Bloomfield, CT 06002",
+      description: "Catholic parish offering mass and confession",
+      phone: "(860) 242-4142",
+      hours: "Mass Times: Sat 4pm, Sun 9:30am",
+      features: ["Catholic", "Historic", "Traditional", "Mass", "Confession"]
+    },
+    {
+      name: "The First Cathedral",
+      address: "1151 Blue Hills Ave, Bloomfield, CT 06002",
+      description: "Large Baptist church with extensive community programs",
+      phone: "(860) 243-6520",
+      hours: "Sunday Worship: 10am",
+      features: ["Baptist", "Youth Programs", "Community Outreach", "Large congregation", "Active programs"]
+    },
+    {
+      name: "Old St. Andrew's Episcopal Church",
+      address: "59 Tariffville Rd, Bloomfield, CT 06002",
+      description: "Inclusive, historic Anglican church with modern services",
+      phone: "(860) 242-4660",
+      hours: "Sunday Services: 9am & 10:30am",
+      features: ["Episcopal", "LGBTQ+ Friendly", "Historic", "Inclusive", "Anglican tradition"]
+    },
+    {
+      name: "Bloomfield Congregational Church",
+      address: "10 Wintonbury Ave, Bloomfield, CT 06002",
+      description: "Open & affirming UCC congregation with family programs",
+      phone: "(860) 242-0776",
+      hours: "Sunday Worship: 10am",
+      features: ["UCC", "Family-Friendly", "Inclusive", "Open and affirming", "Family programs"]
+    }
+  ]
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -27,88 +158,10 @@ serve(async (req) => {
     
     console.log('Generating recommendations for:', quizResponse);
 
-    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
-    console.log('API key exists:', !!perplexityApiKey);
-    console.log('API key length:', perplexityApiKey?.length || 0);
-    
-    if (!perplexityApiKey) {
-      throw new Error('Perplexity API key not configured');
-    }
+    // Generate recommendations based on user priorities
+    const recommendations = generateRecommendations(quizResponse);
 
-    // Create a detailed prompt for Perplexity AI
-    const prompt = `Find specific local businesses in ZIP code ${quizResponse.zipCode} for someone who:
-- Lives with: ${quizResponse.householdType}
-- Transportation: ${quizResponse.transportationStyle}
-- Budget preference: ${quizResponse.budgetPreference}
-- Life stage: ${quizResponse.lifeStage}
-- Looking for: ${quizResponse.priorities.join(', ')}
-
-For each category they're looking for, provide 3-4 current business recommendations with name, address, and brief description. Focus only on businesses that are currently operating.`;
-
-    console.log('Making Perplexity API request...');
-    console.log('Request payload:', {
-      model: 'sonar',
-      messages: [
-        {
-          role: 'system',
-          content: 'Be precise and concise. Provide real, current business information with specific names and addresses.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.2,
-      top_p: 0.9,
-      max_tokens: 1000
-    });
-
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${perplexityApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          {
-            role: 'system',
-            content: 'Be precise and concise. Provide real, current business information with specific names and addresses.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.2,
-        top_p: 0.9,
-        max_tokens: 1000,
-        return_images: false,
-        return_related_questions: false,
-        search_recency_filter: 'month',
-        frequency_penalty: 1,
-        presence_penalty: 0
-      }),
-    });
-
-    console.log('Perplexity API response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Perplexity API error details:', errorText);
-      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    const recommendationsText = data.choices[0].message.content;
-    
-    console.log('Raw AI response received, length:', recommendationsText?.length);
-
-    // Create structured recommendations from the AI response
-    const recommendations = parseTextToRecommendations(recommendationsText, quizResponse.priorities);
-
-    console.log('Parsed recommendations keys:', Object.keys(recommendations));
+    console.log('Generated recommendations keys:', Object.keys(recommendations));
 
     return new Response(
       JSON.stringify({ recommendations }),
@@ -132,74 +185,48 @@ For each category they're looking for, provide 3-4 current business recommendati
   }
 });
 
-function parseTextToRecommendations(text: string, priorities: string[]) {
-  const recommendations: any = {};
+function generateRecommendations(quizResponse: QuizResponse) {
+  const recommendations: { [key: string]: Business[] } = {};
   
-  priorities.forEach(priority => {
-    // Extract relevant sections for each priority from the AI response
-    const sections = extractBusinessInfo(text, priority);
+  // Map user priorities to our business categories
+  const priorityMap: { [key: string]: string } = {
+    "grocery stores": "grocery stores",
+    "grocery": "grocery stores", 
+    "food": "grocery stores",
+    "shopping": "grocery stores",
+    "fitness options": "fitness options",
+    "fitness": "fitness options",
+    "gym": "fitness options",
+    "exercise": "fitness options",
+    "health": "fitness options",
+    "faith communities": "faith communities",
+    "church": "faith communities",
+    "religious": "faith communities",
+    "spiritual": "faith communities",
+    "worship": "faith communities"
+  };
+
+  // For each user priority, find matching businesses
+  quizResponse.priorities.forEach(priority => {
+    const priorityLower = priority.toLowerCase();
     
-    if (sections.length > 0) {
-      recommendations[priority] = sections;
-    } else {
-      // Fallback with generic recommendations
-      recommendations[priority] = [
-        {
-          name: `Recommended ${priority.toLowerCase()} location`,
-          address: "Location details from AI search",
-          description: `Based on your preferences, we found great ${priority.toLowerCase()} options in your area.`,
-          phone: "Contact info available",
-          features: ["Local favorite", "Highly rated", "Fits your budget"]
+    // Check for direct matches or partial matches
+    for (const [key, category] of Object.entries(priorityMap)) {
+      if (priorityLower.includes(key) || key.includes(priorityLower)) {
+        if (localBusinesses[category]) {
+          recommendations[priority] = [...localBusinesses[category]];
+          break;
         }
-      ];
+      }
     }
   });
-  
-  // Include the raw response for debugging
-  recommendations._rawResponse = text;
-  
-  return recommendations;
-}
 
-function extractBusinessInfo(text: string, category: string) {
-  // Simple text parsing to extract business information
-  const businesses = [];
-  const lines = text.split('\n');
-  
-  let currentBusiness: any = null;
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    
-    // Look for business names (lines that start with numbers, bullets, or are in quotes)
-    if (trimmed.match(/^[\d\-\*•]/) || trimmed.includes(category.toLowerCase())) {
-      if (currentBusiness) {
-        businesses.push(currentBusiness);
-      }
-      
-      currentBusiness = {
-        name: trimmed.replace(/^[\d\-\*•.\s]+/, '').replace(/[:"]/g, '').trim(),
-        address: "Address available in area",
-        description: `Great ${category.toLowerCase()} option in your neighborhood`,
-        phone: "Contact available",
-        features: ["Local", "Recommended", "Good ratings"]
-      };
-    }
-    
-    // Extract address information
-    if (currentBusiness && (trimmed.includes('Address:') || trimmed.includes('St') || trimmed.includes('Ave') || trimmed.includes('Rd'))) {
-      currentBusiness.address = trimmed.replace('Address:', '').trim();
-    }
-    
-    // Extract description
-    if (currentBusiness && trimmed.length > 50 && !trimmed.includes('Address:') && !trimmed.includes('Phone:')) {
-      currentBusiness.description = trimmed.substring(0, 120) + '...';
-    }
+  // If no specific matches found, add some default categories
+  if (Object.keys(recommendations).length === 0) {
+    recommendations["grocery stores"] = localBusinesses["grocery stores"];
+    recommendations["fitness options"] = localBusinesses["fitness options"];
+    recommendations["faith communities"] = localBusinesses["faith communities"];
   }
-  
-  if (currentBusiness) {
-    businesses.push(currentBusiness);
-  }
-  
-  return businesses.slice(0, 4); // Return max 4 businesses per category
+
+  return recommendations;
 }
