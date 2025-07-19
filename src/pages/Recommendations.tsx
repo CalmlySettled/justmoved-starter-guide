@@ -300,14 +300,14 @@ export default function Recommendations() {
             )}
           </div>
           
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Your New City, Simplified
+          <h1 className="text-5xl font-bold text-foreground mb-6">
+            Welcome to Bloomfield! Let's get you settled.
           </h1>
           
           {quizResponse && (
-            <div className="max-w-2xl mx-auto">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {getUserSummary()}
+            <div className="max-w-3xl mx-auto">
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                You're a couple with a car and a flexible budget — here's what we've found for your grocery, fitness, and lifestyle needs in 06002.
               </p>
             </div>
           )}
@@ -391,20 +391,19 @@ export default function Recommendations() {
                     </div>
                   </div>
                   
-                  <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
-                    {businesses.map((business, index) => {
+                  {/* Featured Business Card */}
+                  <div className="flex justify-center">
+                    {businesses.slice(0, 1).map((business, index) => {
                       const badges = getBusinessBadges(business);
                       const saveKey = `${category}-${business.name}`;
                       const isSaving = savingRecommendations.has(saveKey);
                       const businessImage = getBusinessImage(business, category);
-                      const rating = business.rating || (4.2 + Math.random() * 0.6);
-                      const reviewCount = Math.floor(Math.random() * 300) + 50;
                       const hours = business.hours || "Open daily 7am–9pm";
                       
                       return (
-                        <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden max-w-md mx-auto">
+                        <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden w-full max-w-lg">
                           {/* Business Image */}
-                          <div className="relative h-48 bg-muted overflow-hidden rounded-t-3xl">
+                          <div className="relative h-64 bg-muted overflow-hidden">
                             <img 
                               src={businessImage} 
                               alt={business.name}
@@ -426,87 +425,81 @@ export default function Recommendations() {
                             </div>
                           </div>
 
-                          <div className="p-6 space-y-4">
+                          <div className="p-8 space-y-6">
                             {/* Business Name */}
-                            <h3 className="text-2xl font-bold text-slate-900 leading-tight">
-                              {business.name}
-                            </h3>
-
-                            {/* Tagline */}
-                            <p className="text-slate-600 text-lg">
-                              {getBusinessTagline(business, category)}
-                            </p>
+                            <div className="text-center">
+                              <h3 className="text-3xl font-bold text-slate-900 leading-tight mb-2">
+                                {business.name}
+                              </h3>
+                              <p className="text-lg text-muted-foreground">
+                                {getBusinessTagline(business, category)}
+                              </p>
+                            </div>
 
                             {/* Address */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                <MapPin className="h-4 w-4 text-blue-600" />
-                              </div>
-                              <span className="text-slate-700 text-lg font-medium">
-                                {business.address}
-                              </span>
-                            </div>
-
-                            {/* Hours and Map Link */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                  <Clock className="h-4 w-4 text-blue-600" />
-                                </div>
-                                <span className="text-slate-700 text-lg font-medium">{hours}</span>
-                              </div>
-                              <a 
-                                href={getGoogleMapsUrl(business.address, business.name)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 text-lg font-medium hover:text-blue-700 transition-colors"
-                              >
-                                View on map
-                              </a>
-                            </div>
-
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-3 py-2">
-                              {badges.map((badge, badgeIndex) => (
-                                <div key={badgeIndex} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 border border-green-100">
-                                  <badge.icon className="h-4 w-4" />
-                                  <span className="font-medium">{badge.label}</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Contact Info and Website Button */}
-                            <div className="flex items-center justify-between pt-4">
-                              {business.phone && business.phone !== "Contact information available" ? (
-                                <div className="flex items-center gap-3">
-                                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Phone className="h-4 w-4 text-blue-600" />
-                                  </div>
-                                  <a 
-                                    href={`tel:${business.phone}`}
-                                    className="text-slate-900 text-lg font-medium hover:text-blue-600 transition-colors"
-                                  >
-                                    {business.phone}
-                                  </a>
-                                </div>
-                              ) : (
-                                <div></div>
-                              )}
-                              
-                              <Button
-                                variant="outline"
-                                size="lg"
-                                asChild
-                                className="rounded-full border-2 border-slate-300 text-slate-700 hover:bg-slate-50 px-6 py-3 text-lg font-medium"
-                              >
+                            {business.address && (
+                              <div className="text-center">
                                 <a 
-                                  href={business.website || getGoogleMapsUrl(business.address, business.name)}
+                                  href={getGoogleMapsUrl(business.address, business.name)}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
                                 >
-                                  {business.website ? 'Visit Website' : 'Get Directions'}
+                                  <Navigation className="h-4 w-4" />
+                                  {business.address}
                                 </a>
-                              </Button>
+                              </div>
+                            )}
+
+                            {/* Hours */}
+                            <div className="text-center">
+                              <div className="inline-flex items-center gap-2 text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span>{hours}</span>
+                              </div>
+                            </div>
+
+                            {/* Tags/Badges */}
+                            {badges.length > 0 && (
+                              <div className="flex justify-center gap-2 flex-wrap">
+                                {badges.map((badge, badgeIndex) => (
+                                  <div key={badgeIndex} className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium ${badge.color}`}>
+                                    <badge.icon className="h-4 w-4" />
+                                    {badge.label}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 justify-center pt-4">
+                              {business.phone && (
+                                <Button 
+                                  variant="outline" 
+                                  size="lg"
+                                  className="flex-1 max-w-40"
+                                  asChild
+                                >
+                                  <a href={`tel:${business.phone}`}>
+                                    <Phone className="h-4 w-4 mr-2" />
+                                    Call Now
+                                  </a>
+                                </Button>
+                              )}
+                              
+                              {business.website && (
+                                <Button 
+                                  variant="default" 
+                                  size="lg"
+                                  className="flex-1 max-w-40"
+                                  asChild
+                                >
+                                  <a href={business.website} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Visit Website
+                                  </a>
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </Card>
