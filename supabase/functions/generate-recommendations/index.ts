@@ -33,22 +33,16 @@ serve(async (req) => {
     }
 
     // Create a detailed prompt for Perplexity AI
-    const prompt = `I need specific local business recommendations in ${quizResponse.zipCode} for someone who:
+    const prompt = `Find specific local businesses in ZIP code ${quizResponse.zipCode} for someone who:
 - Lives with: ${quizResponse.householdType}
 - Transportation: ${quizResponse.transportationStyle}
 - Budget preference: ${quizResponse.budgetPreference}
 - Life stage: ${quizResponse.lifeStage}
-- Top priorities: ${quizResponse.priorities.join(', ')}
+- Looking for: ${quizResponse.priorities.join(', ')}
 
-For each priority category, please provide 3-5 specific business recommendations with:
-1. Business name and exact address
-2. Brief description of why it fits their needs
-3. Phone number if available
-4. Key features (hours, specialties, price range)
+For each category they're looking for, provide 3-4 current business recommendations with name, address, and brief description. Focus only on businesses that are currently operating.`;
 
-Focus only on businesses that are currently open and operating. Tailor recommendations to their transportation style and budget preference.
-
-Format the response as a JSON object where each priority category is a key, and the value is an array of business objects with properties: name, address, description, phone, features.`;
+    console.log('Making Perplexity API request...');
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -57,20 +51,20 @@ Format the response as a JSON object where each priority category is a key, and 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'llama-3.1-sonar-small-128k-online',
         messages: [
           {
             role: 'system',
-            content: 'You are a local business expert who provides accurate, current information about businesses in specific zip codes. Always format responses as valid JSON when requested.'
+            content: 'Be precise and concise. Provide real, current business information with specific names and addresses.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         top_p: 0.9,
-        max_tokens: 2000,
+        max_tokens: 1000,
         return_images: false,
         return_related_questions: false,
         search_recency_filter: 'month',
@@ -79,32 +73,23 @@ Format the response as a JSON object where each priority category is a key, and 
       }),
     });
 
+    console.log('Perplexity API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Perplexity API error details:', errorText);
+      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
     const recommendationsText = data.choices[0].message.content;
     
-    console.log('Raw AI response:', recommendationsText);
+    console.log('Raw AI response received, length:', recommendationsText?.length);
 
-    // Try to parse JSON from the response
-    let recommendations;
-    try {
-      // Extract JSON from the response if it's wrapped in text
-      const jsonMatch = recommendationsText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        recommendations = JSON.parse(jsonMatch[0]);
-      } else {
-        // Fallback: create structured data from text
-        recommendations = parseTextToRecommendations(recommendationsText, quizResponse.priorities);
-      }
-    } catch (parseError) {
-      console.log('JSON parse failed, using fallback parsing');
-      recommendations = parseTextToRecommendations(recommendationsText, quizResponse.priorities);
-    }
+    // Create structured recommendations from the AI response
+    const recommendations = parseTextToRecommendations(recommendationsText, quizResponse.priorities);
 
-    console.log('Parsed recommendations:', recommendations);
+    console.log('Parsed recommendations keys:', Object.keys(recommendations));
 
     return new Response(
       JSON.stringify({ recommendations }),
@@ -132,21 +117,70 @@ function parseTextToRecommendations(text: string, priorities: string[]) {
   const recommendations: any = {};
   
   priorities.forEach(priority => {
-    recommendations[priority] = [
-      {
-        name: `Local ${priority.charAt(0).toUpperCase() + priority.slice(1)} Business`,
-        address: "Address will be provided based on your location",
-        description: `We're finding the best ${priority} options in your area based on your preferences.`,
-        phone: "Contact information available",
-        features: ["Tailored to your needs", "Local favorite", "Highly recommended"]
-      }
-    ];
+    // Extract relevant sections for each priority from the AI response
+    const sections = extractBusinessInfo(text, priority);
+    
+    if (sections.length > 0) {
+      recommendations[priority] = sections;
+    } else {
+      // Fallback with generic recommendations
+      recommendations[priority] = [
+        {
+          name: `Recommended ${priority.toLowerCase()} location`,
+          address: "Location details from AI search",
+          description: `Based on your preferences, we found great ${priority.toLowerCase()} options in your area.`,
+          phone: "Contact info available",
+          features: ["Local favorite", "Highly rated", "Fits your budget"]
+        }
+      ];
+    }
   });
   
-  // If we have actual text content, try to extract meaningful information
-  if (text && text.length > 100) {
-    recommendations._rawResponse = text;
-  }
+  // Include the raw response for debugging
+  recommendations._rawResponse = text;
   
   return recommendations;
+}
+
+function extractBusinessInfo(text: string, category: string) {
+  // Simple text parsing to extract business information
+  const businesses = [];
+  const lines = text.split('\n');
+  
+  let currentBusiness: any = null;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Look for business names (lines that start with numbers, bullets, or are in quotes)
+    if (trimmed.match(/^[\d\-\*•]/) || trimmed.includes(category.toLowerCase())) {
+      if (currentBusiness) {
+        businesses.push(currentBusiness);
+      }
+      
+      currentBusiness = {
+        name: trimmed.replace(/^[\d\-\*•.\s]+/, '').replace(/[:"]/g, '').trim(),
+        address: "Address available in area",
+        description: `Great ${category.toLowerCase()} option in your neighborhood`,
+        phone: "Contact available",
+        features: ["Local", "Recommended", "Good ratings"]
+      };
+    }
+    
+    // Extract address information
+    if (currentBusiness && (trimmed.includes('Address:') || trimmed.includes('St') || trimmed.includes('Ave') || trimmed.includes('Rd'))) {
+      currentBusiness.address = trimmed.replace('Address:', '').trim();
+    }
+    
+    // Extract description
+    if (currentBusiness && trimmed.length > 50 && !trimmed.includes('Address:') && !trimmed.includes('Phone:')) {
+      currentBusiness.description = trimmed.substring(0, 120) + '...';
+    }
+  }
+  
+  if (currentBusiness) {
+    businesses.push(currentBusiness);
+  }
+  
+  return businesses.slice(0, 4); // Return max 4 businesses per category
 }
