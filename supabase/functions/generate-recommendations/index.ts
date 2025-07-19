@@ -47,7 +47,7 @@ For each category they're looking for, provide 3-4 current business recommendati
 
     console.log('Making Perplexity API request...');
     console.log('Request payload:', {
-      model: 'llama-3.1-sonar-small-128k-online',
+      model: 'sonar',
       messages: [
         {
           role: 'system',
@@ -70,7 +70,7 @@ For each category they're looking for, provide 3-4 current business recommendati
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: 'sonar',
         messages: [
           {
             role: 'system',
