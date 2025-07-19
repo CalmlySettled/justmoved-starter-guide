@@ -181,6 +181,23 @@ export default function Recommendations() {
       return '/lovable-uploads/2beb6084-f2f4-4058-9014-43a42f522449.png';
     }
     
+    // Churches/Faith Communities
+    if (business.name.toLowerCase().includes('wintonbury')) {
+      return '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png';
+    }
+    if (business.name.toLowerCase().includes('sacred heart')) {
+      return '/lovable-uploads/cc86ee7c-c45c-4416-b52f-c3f131ca741c.png';
+    }
+    if (business.name.toLowerCase().includes('first cathedral')) {
+      return '/lovable-uploads/f8f75b8b-1f7f-457f-a75e-b4ca2d363cf6.png';
+    }
+    if (business.name.toLowerCase().includes('old st') && business.name.toLowerCase().includes('andrew')) {
+      return '/lovable-uploads/62c94628-65d4-4af6-9058-5b2b566bd87b.png';
+    }
+    if (business.name.toLowerCase().includes('bloomfield congregational')) {
+      return '/lovable-uploads/09dfac75-fdf4-4cbe-8dbb-a8d1e95e149c.png';
+    }
+    
     // Default placeholder images by category
     const placeholders = {
       'grocery': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
