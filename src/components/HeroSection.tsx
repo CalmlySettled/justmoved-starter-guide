@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-moving.jpg";
 
 export function HeroSection() {
@@ -28,14 +29,16 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button 
-            variant="hero" 
-            size="lg"
-            className="text-lg px-8 py-6 min-w-[200px]"
-          >
-            Get Started
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <Link to="/onboarding">
+            <Button 
+              variant="hero" 
+              size="lg"
+              className="text-lg px-8 py-6 min-w-[200px]"
+            >
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
           
           <Button 
             variant="outline" 

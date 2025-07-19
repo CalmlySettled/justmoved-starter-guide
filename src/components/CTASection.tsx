@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function CTASection() {
   return (
@@ -13,14 +14,16 @@ export function CTASection() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-          <Button 
-            variant="hero" 
-            size="lg"
-            className="text-lg px-8 py-6 min-w-[220px]"
-          >
-            Start Your Journey
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <Link to="/onboarding">
+            <Button 
+              variant="hero" 
+              size="lg"
+              className="text-lg px-8 py-6 min-w-[220px]"
+            >
+              Start Your Journey
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
         </div>
         
         {/* Optional Upsell */}

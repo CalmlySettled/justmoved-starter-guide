@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Header() {
   return (
@@ -28,9 +29,11 @@ export function Header() {
           <Button variant="ghost" className="hidden sm:inline-flex">
             Sign In
           </Button>
-          <Button variant="default">
-            Get Started
-          </Button>
+          <Link to="/onboarding">
+            <Button variant="default">
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
