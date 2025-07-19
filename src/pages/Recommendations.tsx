@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
-import { Home, MapPin, Phone, Star, ArrowLeft, Heart, Clock, Award, Users } from "lucide-react";
+import { Home, MapPin, Phone, Star, ArrowLeft, Heart, Clock, Award, Users, Bookmark } from "lucide-react";
 
 interface Business {
   name: string;
@@ -35,9 +36,11 @@ export default function Recommendations() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);
   const [quizResponse, setQuizResponse] = useState<QuizResponse | null>(null);
+  const [savingRecommendations, setSavingRecommendations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const state = location.state as { quizResponse?: QuizResponse };
@@ -137,6 +140,57 @@ export default function Recommendations() {
     return topPicks.slice(0, 3); // Top 3 picks
   };
 
+  const saveRecommendation = async (business: Business, category: string) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to save recommendations.",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+
+    const key = `${category}-${business.name}`;
+    setSavingRecommendations(prev => new Set(prev).add(key));
+
+    try {
+      const { error } = await supabase
+        .from('user_recommendations')
+        .insert({
+          user_id: user.id,
+          category: category,
+          business_name: business.name,
+          business_address: business.address,
+          business_description: business.description,
+          business_phone: business.phone,
+          business_features: business.features || []
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Recommendation saved!",
+        description: `${business.name} has been saved to your dashboard.`,
+      });
+    } catch (error: any) {
+      console.error('Error saving recommendation:', error);
+      toast({
+        title: "Error saving recommendation",
+        description: "We couldn't save this recommendation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingRecommendations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
+    }
+  };
+
   const getUserSummary = () => {
     if (!quizResponse) return "";
     const { lifeStage, zipCode, transportationStyle, budgetPreference } = quizResponse;
@@ -183,16 +237,25 @@ export default function Recommendations() {
       <div className="pt-24 px-4 max-w-5xl mx-auto pb-16">
         {/* Welcome Section */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-6 gap-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/onboarding")}
-              className="absolute left-4 top-24 lg:relative lg:left-0 lg:top-0 mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retake Quiz
             </Button>
+            {user && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate("/dashboard")}
+              >
+                <Bookmark className="h-4 w-4 mr-2" />
+                View Dashboard
+              </Button>
+            )}
           </div>
           
           <h1 className="text-4xl font-bold text-foreground mb-4">
@@ -289,6 +352,8 @@ export default function Recommendations() {
                   <div className="grid gap-6 md:grid-cols-2">
                     {businesses.map((business, index) => {
                       const badges = getBusinessBadges(business);
+                      const saveKey = `${category}-${business.name}`;
+                      const isSaving = savingRecommendations.has(saveKey);
                       return (
                         <Card key={index} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
                           <CardHeader className="pb-4">
@@ -301,7 +366,18 @@ export default function Recommendations() {
                                   {getBusinessTagline(business, category)}
                                 </p>
                               </div>
-                              <Star className="h-5 w-5 text-yellow-500 flex-shrink-0 ml-3" />
+                              <div className="flex items-center gap-2 ml-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => saveRecommendation(business, category)}
+                                  disabled={isSaving}
+                                  className="text-muted-foreground hover:text-primary"
+                                >
+                                  <Bookmark className="h-4 w-4" />
+                                </Button>
+                                <Star className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+                              </div>
                             </div>
                           </CardHeader>
                           

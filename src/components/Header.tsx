@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -34,6 +34,12 @@ export function Header() {
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user.email}
               </span>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
               <Button 
                 variant="ghost" 
                 size="sm"

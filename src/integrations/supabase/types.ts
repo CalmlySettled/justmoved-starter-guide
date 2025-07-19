@@ -59,6 +59,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_recommendations: {
+        Row: {
+          business_address: string | null
+          business_description: string | null
+          business_features: string[] | null
+          business_name: string
+          business_phone: string | null
+          category: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name: string
+          business_phone?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name?: string
+          business_phone?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
