@@ -16,10 +16,15 @@ export function Header() {
   const getUserName = () => {
     if (!user) return '';
     
-    // Extract name from email (everything before @)
-    const emailName = user.email?.split('@')[0] || '';
+    // First check for display name in user metadata
+    const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name;
+    if (displayName) {
+      // Return just the first name (first word)
+      return displayName.split(' ')[0];
+    }
     
-    // Capitalize first letter and replace dots/underscores with spaces
+    // Fall back to extracting from email if no display name
+    const emailName = user.email?.split('@')[0] || '';
     return emailName
       .replace(/[._]/g, ' ')
       .split(' ')
