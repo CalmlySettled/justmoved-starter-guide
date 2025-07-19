@@ -383,10 +383,10 @@ export default function Recommendations() {
                     </div>
                     <div>
                       <h2 className="text-3xl font-bold text-foreground">
-                        {category.charAt(0).toUpperCase() + category.slice(1)} Near You
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
                       </h2>
                       <p className="text-muted-foreground mt-1">
-                        {businesses.length} recommendations in your area
+                        Local recommendations in your area
                       </p>
                     </div>
                   </div>
