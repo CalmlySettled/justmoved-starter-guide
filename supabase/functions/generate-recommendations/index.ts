@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface QuizResponse {
-  zipCode: string;
+  address: string;
   householdType: string;
   priorities: string[];
   transportationStyle: string;
@@ -23,27 +23,52 @@ interface Business {
   features: string[];
   hours?: string;
   website?: string;
+  latitude?: number;
+  longitude?: number;
+  distance_miles?: number;
 }
 
-// Helper function to get coordinates from zip code
-async function getCoordinatesFromZip(zipCode: string): Promise<{ lat: number; lng: number } | null> {
+// Helper function to get coordinates from address using OpenStreetMap Nominatim
+async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`, {
+      headers: {
+        'User-Agent': 'CalmlySettled/1.0'
+      }
+    });
+    
     if (response.ok) {
       const data = await response.json();
-      return {
-        lat: parseFloat(data.places[0].latitude),
-        lng: parseFloat(data.places[0].longitude)
-      };
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
     }
   } catch (error) {
-    console.error('Error getting coordinates from zip:', error);
+    console.error('Error getting coordinates from address:', error);
   }
   return null;
 }
 
-// Mock data generator function with real business data
-function generateMockBusinesses(category: string, coordinates: { lat: number; lng: number }): Business[] {
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  return Math.round(distance * 10) / 10; // Round to 1 decimal place
+}
+
+// Mock data generator function with real business data including coordinates
+function generateMockBusinesses(category: string, userCoordinates: { lat: number; lng: number }): Business[] {
   const mockBusinesses: { [key: string]: Business[] } = {
     "grocery stores": [
       {
@@ -52,7 +77,9 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Family-owned market with great produce",
         phone: "(860) 242‑7084",
         features: ["Local", "Organic Options", "Budget-Friendly"],
-        hours: "Mon–Sat 8am–9pm, Sun 8am–7pm"
+        hours: "Mon–Sat 8am–9pm, Sun 8am–7pm",
+        latitude: 41.8170,
+        longitude: -72.7251
       },
       {
         name: "Stop & Shop",
@@ -60,28 +87,36 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Large chain store with pharmacy and gas station",
         phone: "(860) 242‑2424",
         features: ["Chain", "High Ratings", "Accessible"],
-        hours: "Open daily 6am–10pm"
+        hours: "Open daily 6am–10pm",
+        latitude: 41.8188,
+        longitude: -72.7345
       },
       {
         name: "Fresh Farm Market",
         address: "1055 Blue Hills Ave, Bloomfield, CT 06002",
         description: "Local market known for vibrant produce",
         phone: "(860) 242‑1183",
-        features: ["Local", "International Foods", "Walkable"]
+        features: ["Local", "International Foods", "Walkable"],
+        latitude: 41.8156,
+        longitude: -72.7089
       },
       {
         name: "Sav-Mor Supermarket",
         address: "1055 Blue Hills Ave #1, Bloomfield, CT 06002",
         description: "Community staple for everyday groceries",
         phone: "(860) 242‑7759",
-        features: ["Budget-Friendly", "Local"]
+        features: ["Budget-Friendly", "Local"],
+        latitude: 41.8156,
+        longitude: -72.7089
       },
       {
         name: "Aldi",
         address: "44 Kane St, West Hartford, CT 06119",
         description: "Low-cost grocery chain with curbside and delivery",
         phone: "(855) 955‑2534",
-        features: ["Chain", "Pickup Available", "Budget-Friendly"]
+        features: ["Chain", "Pickup Available", "Budget-Friendly"],
+        latitude: 41.7658,
+        longitude: -72.7425
       }
     ],
     "fitness gyms": [
@@ -90,35 +125,45 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         address: "22 Mountain Ave, Bloomfield, CT 06002",
         description: "Full-service gym with group classes and personal training",
         phone: "(860) 242‑9400",
-        features: ["Local", "Group Classes", "Personal Training"]
+        features: ["Local", "Group Classes", "Personal Training"],
+        latitude: 41.8149,
+        longitude: -72.7267
       },
       {
         name: "Planet Fitness",
         address: "841 Albany Ave, Hartford, CT 06112",
         description: "Affordable 24/7 gym for all fitness levels",
         phone: "(860) 522‑4600",
-        features: ["Chain", "24-Hour Access", "Budget Membership"]
+        features: ["Chain", "24-Hour Access", "Budget Membership"],
+        latitude: 41.7658,
+        longitude: -72.6851
       },
       {
         name: "Club Fitness",
         address: "107 Old Windsor Rd, Bloomfield, CT 06002",
         description: "3-level cardio/strength gym with classes",
         phone: "(860) 242‑1234",
-        features: ["Full Equipment", "Group Classes", "Personal Training"]
+        features: ["Full Equipment", "Group Classes", "Personal Training"],
+        latitude: 41.8234,
+        longitude: -72.7156
       },
       {
         name: "Gold's Gym",
         address: "39 W Main St, Avon, CT 06001",
         description: "Classic gym experience with serious strength training",
         phone: "(860) 677‑4348",
-        features: ["Strength-Focused", "Franchise"]
+        features: ["Strength-Focused", "Franchise"],
+        latitude: 41.7976,
+        longitude: -72.8309
       },
       {
         name: "Bloomfield Fit Body Boot Camp",
         address: "10 Mountain Ave, Bloomfield, CT 06002",
         description: "High-energy, group HIIT gym with coaching",
         phone: "(860) 952‑3324",
-        features: ["HIIT", "Trainer-Led", "Community-Based"]
+        features: ["HIIT", "Trainer-Led", "Community-Based"],
+        latitude: 41.8149,
+        longitude: -72.7267
       }
     ],
     "churches religious": [
@@ -128,7 +173,9 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Non-denominational church with contemporary worship",
         phone: "(860) 243‑8779",
         features: ["Contemporary", "Small Groups", "Childcare"],
-        hours: "Sunday Worship: 10am"
+        hours: "Sunday Worship: 10am",
+        latitude: 41.8167,
+        longitude: -72.7234
       },
       {
         name: "Sacred Heart Church",
@@ -136,7 +183,9 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Catholic parish offering mass and confession",
         phone: "(860) 242‑4142",
         features: ["Catholic", "Historic", "Traditional"],
-        hours: "Mass Times: Sat 4pm, Sun 9:30am"
+        hours: "Mass Times: Sat 4pm, Sun 9:30am",
+        latitude: 41.8123,
+        longitude: -72.7198
       },
       {
         name: "The First Cathedral",
@@ -144,7 +193,9 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Large Baptist church with extensive community programs",
         phone: "(860) 243‑6520",
         features: ["Baptist", "Youth Programs", "Community Outreach"],
-        hours: "Sunday Worship: 10am"
+        hours: "Sunday Worship: 10am",
+        latitude: 41.8156,
+        longitude: -72.7089
       },
       {
         name: "Old St. Andrew's Episcopal Church",
@@ -152,7 +203,9 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Inclusive, historic Anglican church with modern services",
         phone: "(860) 242‑4660",
         features: ["Episcopal", "LGBTQ+ Friendly", "Historic"],
-        hours: "Sunday Services: 9am & 10:30am"
+        hours: "Sunday Services: 9am & 10:30am",
+        latitude: 41.8245,
+        longitude: -72.7023
       },
       {
         name: "Bloomfield Congregational Church",
@@ -160,12 +213,33 @@ function generateMockBusinesses(category: string, coordinates: { lat: number; ln
         description: "Open & affirming UCC congregation with family programs",
         phone: "(860) 242‑0776",
         features: ["UCC", "Family-Friendly", "Inclusive"],
-        hours: "Sunday Worship: 10am"
+        hours: "Sunday Worship: 10am",
+        latitude: 41.8123,
+        longitude: -72.7198
       }
     ]
   };
 
-  return mockBusinesses[category] || [];
+  const businesses = mockBusinesses[category] || [];
+  
+  // Calculate distances and add them to businesses
+  const businessesWithDistance = businesses.map(business => {
+    if (business.latitude && business.longitude) {
+      const distance = calculateDistance(
+        userCoordinates.lat, 
+        userCoordinates.lng, 
+        business.latitude, 
+        business.longitude
+      );
+      return { ...business, distance_miles: distance };
+    }
+    return business;
+  });
+
+  // Sort by distance (closest first)
+  businessesWithDistance.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
+
+  return businessesWithDistance;
 }
 
 serve(async (req) => {
@@ -179,10 +253,10 @@ serve(async (req) => {
     
     console.log('Generating recommendations for:', quizResponse);
 
-    // Get coordinates from zip code
-    const coordinates = await getCoordinatesFromZip(quizResponse.zipCode);
+    // Get coordinates from address
+    const coordinates = await getCoordinatesFromAddress(quizResponse.address);
     if (!coordinates) {
-      throw new Error('Could not get coordinates for the provided zip code');
+      throw new Error('Could not get coordinates for the provided address');
     }
 
     // Generate recommendations based on user priorities

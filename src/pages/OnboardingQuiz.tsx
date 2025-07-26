@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface QuizData {
-  zipCode: string;
+  address: string;
   household: string[];
   priorities: string[];
   transportation: string;
@@ -22,7 +22,7 @@ interface QuizData {
 }
 
 const initialData: QuizData = {
-  zipCode: "",
+  address: "",
   household: [],
   priorities: [],
   transportation: "",
@@ -56,8 +56,8 @@ export default function OnboardingQuiz() {
     }
   };
 
-  const handleZipCodeChange = (value: string) => {
-    setQuizData({ ...quizData, zipCode: value });
+  const handleAddressChange = (value: string) => {
+    setQuizData({ ...quizData, address: value });
   };
 
   const handleHouseholdChange = (value: string, checked: boolean) => {
@@ -86,7 +86,7 @@ export default function OnboardingQuiz() {
 
   const canProceed = () => {
     switch (currentQuestion) {
-      case 1: return quizData.zipCode.trim() !== "";
+      case 1: return quizData.address.trim() !== "";
       case 2: return quizData.household.length > 0;
       case 3: return quizData.priorities.length > 0;
       case 4: return quizData.transportation !== "";
@@ -106,7 +106,7 @@ export default function OnboardingQuiz() {
           .from('profiles')
           .upsert({
             user_id: user.id,
-            zip_code: quizData.zipCode,
+            address: quizData.address,
             household_type: quizData.household.join(', '),
             priorities: quizData.priorities,
             transportation_style: quizData.transportation,
@@ -131,7 +131,7 @@ export default function OnboardingQuiz() {
           const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
             body: {
               quizResponse: {
-                zipCode: quizData.zipCode,
+                address: quizData.address,
                 householdType: quizData.household.join(', '),
                 priorities: quizData.priorities,
                 transportationStyle: quizData.transportation,
@@ -167,7 +167,10 @@ export default function OnboardingQuiz() {
                   business_address: business.address,
                   business_description: business.description,
                   business_phone: business.phone,
-                  business_features: business.features || []
+                  business_features: business.features || [],
+                  distance_miles: business.distance_miles,
+                  business_latitude: business.latitude,
+                  business_longitude: business.longitude
                 });
               });
             });
@@ -264,7 +267,7 @@ export default function OnboardingQuiz() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
-              {currentQuestion === 1 && "What's your new ZIP code or neighborhood?"}
+              {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
               {currentQuestion === 4 && "How do you typically get around?"}
@@ -277,17 +280,20 @@ export default function OnboardingQuiz() {
           </CardHeader>
           <CardContent className="space-y-6">
             
-            {/* Question 1: ZIP Code */}
+            {/* Question 1: Address */}
             {currentQuestion === 1 && (
               <div className="space-y-4">
-                <Label htmlFor="zipcode">ZIP Code or Neighborhood Name</Label>
+                <Label htmlFor="address">Full Address or Neighborhood</Label>
                 <Input
-                  id="zipcode"
-                  placeholder="e.g., 90210 or Brooklyn Heights"
-                  value={quizData.zipCode}
-                  onChange={(e) => handleZipCodeChange(e.target.value)}
+                  id="address"
+                  placeholder="e.g., 123 Main St, Bloomfield, CT 06002"
+                  value={quizData.address}
+                  onChange={(e) => handleAddressChange(e.target.value)}
                   className="text-lg"
                 />
+                <p className="text-sm text-muted-foreground">
+                  We'll use this to calculate distances to local businesses and provide more accurate recommendations.
+                </p>
               </div>
             )}
 

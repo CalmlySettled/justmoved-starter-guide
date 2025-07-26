@@ -31,11 +31,12 @@ interface SavedRecommendation {
   business_description?: string;
   business_phone?: string;
   business_features: string[];
+  distance_miles?: number;
   created_at: string;
 }
 
 interface UserProfile {
-  zip_code?: string;
+  address?: string;
   household_type?: string;
   priorities: string[];
   transportation_style?: string;
@@ -243,12 +244,12 @@ export default function Dashboard() {
   }, {} as { [key: string]: SavedRecommendation[] });
 
   const getUserSummary = () => {
-    if (!userProfile) return "Welcome to Bloomfield! Here's what we recommend for you.";
-    const { life_stage, zip_code, transportation_style, budget_preference } = userProfile;
-    if (life_stage && zip_code && transportation_style && budget_preference) {
-      return `Welcome to Bloomfield! As ${life_stage.toLowerCase().startsWith('a') ? 'an' : 'a'} ${life_stage.toLowerCase()} who just moved here with ${transportation_style.toLowerCase()} and ${budget_preference.toLowerCase()}, here's what we recommend.`;
+    if (!userProfile) return "Welcome to your new neighborhood! Here's what we recommend for you.";
+    const { life_stage, address, transportation_style, budget_preference } = userProfile;
+    if (life_stage && address && transportation_style && budget_preference) {
+      return `Welcome to your new neighborhood! As ${life_stage.toLowerCase().startsWith('a') ? 'an' : 'a'} ${life_stage.toLowerCase()} who just moved here with ${transportation_style.toLowerCase()} and ${budget_preference.toLowerCase()}, here's what we recommend.`;
     }
-    return "Welcome to Bloomfield! Here's what we recommend for you.";
+    return "Welcome to your new neighborhood! Here's what we recommend for you.";
   };
 
   if (loading) {
@@ -356,10 +357,10 @@ export default function Dashboard() {
                       <p className="text-foreground">{userProfile.budget_preference}</p>
                     </div>
                   )}
-                  {userProfile.zip_code && (
+                  {userProfile.address && (
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Area</Label>
-                      <p className="text-foreground">{userProfile.zip_code}</p>
+                      <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+                      <p className="text-foreground">{userProfile.address}</p>
                     </div>
                   )}
                 </div>
@@ -453,6 +454,15 @@ export default function Dashboard() {
                                 {rec.business_name}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-1">
+                                {rec.distance_miles && (
+                                  <>
+                                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                      {rec.distance_miles} miles away
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">•</span>
+                                  </>
+                                )}
                                 <Calendar className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">
                                   Saved {new Date(rec.created_at).toLocaleDateString()}
