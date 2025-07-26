@@ -16,46 +16,52 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          address: string | null
           budget_preference: string | null
           created_at: string
           display_name: string | null
           household_type: string | null
           id: string
+          latitude: number | null
           life_stage: string | null
+          longitude: number | null
           priorities: string[] | null
           settling_tasks: string[] | null
           transportation_style: string | null
           updated_at: string
           user_id: string
-          zip_code: string | null
         }
         Insert: {
+          address?: string | null
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
           household_type?: string | null
           id?: string
+          latitude?: number | null
           life_stage?: string | null
+          longitude?: number | null
           priorities?: string[] | null
           settling_tasks?: string[] | null
           transportation_style?: string | null
           updated_at?: string
           user_id: string
-          zip_code?: string | null
         }
         Update: {
+          address?: string | null
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
           household_type?: string | null
           id?: string
+          latitude?: number | null
           life_stage?: string | null
+          longitude?: number | null
           priorities?: string[] | null
           settling_tasks?: string[] | null
           transportation_style?: string | null
           updated_at?: string
           user_id?: string
-          zip_code?: string | null
         }
         Relationships: []
       }
@@ -64,10 +70,13 @@ export type Database = {
           business_address: string | null
           business_description: string | null
           business_features: string[] | null
+          business_latitude: number | null
+          business_longitude: number | null
           business_name: string
           business_phone: string | null
           category: string
           created_at: string
+          distance_miles: number | null
           id: string
           updated_at: string
           user_id: string
@@ -76,10 +85,13 @@ export type Database = {
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
+          business_latitude?: number | null
+          business_longitude?: number | null
           business_name: string
           business_phone?: string | null
           category: string
           created_at?: string
+          distance_miles?: number | null
           id?: string
           updated_at?: string
           user_id: string
@@ -88,10 +100,13 @@ export type Database = {
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
+          business_latitude?: number | null
+          business_longitude?: number | null
           business_name?: string
           business_phone?: string | null
           category?: string
           created_at?: string
+          distance_miles?: number | null
           id?: string
           updated_at?: string
           user_id?: string
