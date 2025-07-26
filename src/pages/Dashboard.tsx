@@ -750,11 +750,6 @@ export default function Dashboard() {
                             </div>
                           )}
                           
-                          {rec.business_description && (
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {rec.business_description}
-                            </p>
-                          )}
                           
                           {badges.length > 0 && (
                             <div className="flex gap-2">
