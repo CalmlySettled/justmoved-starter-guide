@@ -29,6 +29,65 @@ interface Business {
   image_url?: string;
 }
 
+// Brand logo mapping for national chains
+const BRAND_LOGOS: { [key: string]: string } = {
+  // Grocery Stores
+  "safeway": "https://logos-world.net/wp-content/uploads/2020/11/Safeway-Logo.png",
+  "kroger": "https://logos-world.net/wp-content/uploads/2020/12/Kroger-Logo.png",
+  "walmart": "https://logos-world.net/wp-content/uploads/2020/05/Walmart-Logo.png",
+  "target": "https://logos-world.net/wp-content/uploads/2020/04/Target-Logo.png",
+  "whole foods": "https://logos-world.net/wp-content/uploads/2020/12/Whole-Foods-Market-Logo.png",
+  "trader joe": "https://logos-world.net/wp-content/uploads/2021/03/Trader-Joes-Logo.png",
+  "costco": "https://logos-world.net/wp-content/uploads/2020/05/Costco-Logo.png",
+  "sam's club": "https://logos-world.net/wp-content/uploads/2020/11/Sams-Club-Logo.png",
+  "stop & shop": "https://logos-world.net/wp-content/uploads/2022/01/Stop-Shop-Logo.png",
+  "big y": "https://companieslogo.com/img/orig/BIG.Y-b3c9d4c8.png",
+  "aldi": "https://logos-world.net/wp-content/uploads/2020/11/ALDI-Logo.png",
+  
+  // Fitness Centers
+  "planet fitness": "https://logos-world.net/wp-content/uploads/2021/03/Planet-Fitness-Logo.png",
+  "la fitness": "https://logos-world.net/wp-content/uploads/2021/03/LA-Fitness-Logo.png",
+  "24 hour fitness": "https://logos-world.net/wp-content/uploads/2021/03/24-Hour-Fitness-Logo.png",
+  "anytime fitness": "https://logos-world.net/wp-content/uploads/2021/03/Anytime-Fitness-Logo.png",
+  "gold's gym": "https://logos-world.net/wp-content/uploads/2021/03/Golds-Gym-Logo.png",
+  "equinox": "https://logos-world.net/wp-content/uploads/2021/03/Equinox-Logo.png",
+  "crunch fitness": "https://logos-world.net/wp-content/uploads/2021/03/Crunch-Fitness-Logo.png",
+  
+  // Restaurants/Coffee
+  "starbucks": "https://logos-world.net/wp-content/uploads/2020/04/Starbucks-Logo.png",
+  "dunkin": "https://logos-world.net/wp-content/uploads/2020/09/Dunkin-Logo.png",
+  "mcdonald": "https://logos-world.net/wp-content/uploads/2020/04/McDonalds-Logo.png",
+  "subway": "https://logos-world.net/wp-content/uploads/2020/09/Subway-Logo.png",
+  "chipotle": "https://logos-world.net/wp-content/uploads/2020/12/Chipotle-Logo.png",
+  "panera": "https://logos-world.net/wp-content/uploads/2020/12/Panera-Bread-Logo.png",
+  
+  // Pharmacies/Medical
+  "cvs": "https://logos-world.net/wp-content/uploads/2020/12/CVS-Health-Logo.png",
+  "walgreens": "https://logos-world.net/wp-content/uploads/2020/12/Walgreens-Logo.png",
+  "rite aid": "https://logos-world.net/wp-content/uploads/2020/12/Rite-Aid-Logo.png",
+  
+  // Gas Stations/Convenience
+  "shell": "https://logos-world.net/wp-content/uploads/2021/04/Shell-Logo.png",
+  "exxon": "https://logos-world.net/wp-content/uploads/2021/04/ExxonMobil-Logo.png",
+  "bp": "https://logos-world.net/wp-content/uploads/2021/04/BP-Logo.png",
+  "chevron": "https://logos-world.net/wp-content/uploads/2021/04/Chevron-Logo.png",
+  "7-eleven": "https://logos-world.net/wp-content/uploads/2020/11/7-Eleven-Logo.png",
+};
+
+// Function to get brand logo for a business
+function getBrandLogo(businessName: string): string | null {
+  const nameLower = businessName.toLowerCase();
+  
+  // Check for exact or partial matches with known brands
+  for (const [brand, logo] of Object.entries(BRAND_LOGOS)) {
+    if (nameLower.includes(brand) || brand.includes(nameLower.split(' ')[0])) {
+      return logo;
+    }
+  }
+  
+  return null;
+}
+
 // Helper function to get coordinates from address using OpenStreetMap Nominatim
 async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -123,8 +182,11 @@ async function searchYelpBusinesses(
     console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
     return (data.businesses || []).map((business: any) => {
-      const imageUrl = business.image_url || business.photos?.[0] || '';
-      console.log(`Business: ${business.name}, Image URL: ${imageUrl}, Raw image_url: ${business.image_url}, Photos: ${JSON.stringify(business.photos)}`);
+      // Check for brand logo first, then fall back to Yelp image
+      const brandLogo = getBrandLogo(business.name);
+      const imageUrl = brandLogo || business.image_url || business.photos?.[0] || '';
+      
+      console.log(`Business: ${business.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Image URL: ${imageUrl}`);
       
       return {
         name: business.name,
@@ -185,15 +247,17 @@ async function searchGooglePlaces(
 
     // Convert Google Places results to Business objects with photos
     const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
-      let imageUrl = '';
+      // Check for brand logo first
+      const brandLogo = getBrandLogo(place.name);
+      let imageUrl = brandLogo || '';
       
-      // Get photo from Google Places Photo API if available
-      if (place.photos && place.photos.length > 0) {
+      // If no brand logo, get photo from Google Places Photo API if available
+      if (!brandLogo && place.photos && place.photos.length > 0) {
         const photoReference = place.photos[0].photo_reference;
         imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
       }
 
-      console.log(`Google Business: ${place.name}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
+      console.log(`Google Business: ${place.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
 
       return {
         name: place.name,
