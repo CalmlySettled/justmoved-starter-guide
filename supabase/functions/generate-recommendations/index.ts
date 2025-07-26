@@ -139,16 +139,75 @@ async function searchYelpBusinesses(
   }
 }
 
-// Google Places API integration (fallback)
+// Google Places API integration (enhanced fallback with photo support)
 async function searchGooglePlaces(
   category: string,
   latitude: number,
   longitude: number,
-  radius: number = 10000
+  radius: number = 5000
 ): Promise<Business[]> {
-  // For now, we'll use Yelp as primary source
-  // Google Places can be added later if needed
-  return [];
+  const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+  if (!googleApiKey) {
+    console.log('Google Places API key not found, skipping Google search');
+    return [];
+  }
+
+  try {
+    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude}`);
+    
+    // First, do a nearby search to get places
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=establishment&keyword=${encodeURIComponent(category)}&key=${googleApiKey}`;
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'CalmlySettled/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Google Places API error:', response.status, response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log(`Google Places returned ${data.results?.length || 0} businesses`);
+
+    if (!data.results || data.results.length === 0) {
+      return [];
+    }
+
+    // Convert Google Places results to Business objects with photos
+    const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
+      let imageUrl = '';
+      
+      // Get photo from Google Places Photo API if available
+      if (place.photos && place.photos.length > 0) {
+        const photoReference = place.photos[0].photo_reference;
+        imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
+      }
+
+      console.log(`Google Business: ${place.name}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
+
+      return {
+        name: place.name,
+        address: place.vicinity || '',
+        description: place.types?.join(', ') || '',
+        phone: '', // Phone requires additional details call
+        features: generateFeaturesFromGoogleData(place),
+        latitude: place.geometry?.location?.lat,
+        longitude: place.geometry?.location?.lng,
+        distance_miles: undefined, // Will calculate later
+        website: '',
+        image_url: imageUrl
+      };
+    }));
+
+    return businesses.filter(b => b.name && b.address);
+
+  } catch (error) {
+    console.error('Error fetching from Google Places API:', error);
+    return [];
+  }
 }
 
 // Generate features based on Yelp business data
@@ -221,18 +280,65 @@ function generateFeaturesFromYelpData(business: any): string[] {
   return features.length > 0 ? features : ['Local Business'];
 }
 
-// Enhanced business search that tries multiple APIs
+// Helper function to generate features from Google Places data
+function generateFeaturesFromGoogleData(place: any): string[] {
+  const features: string[] = [];
+  
+  if (place.rating && place.rating >= 4.0) {
+    features.push('High Ratings');
+  }
+  
+  if (place.price_level !== undefined) {
+    if (place.price_level <= 2) {
+      features.push('Budget-Friendly');
+    } else if (place.price_level >= 3) {
+      features.push('Premium');
+    }
+  }
+  
+  if (place.opening_hours?.open_now) {
+    features.push('Open Now');
+  }
+  
+  if (place.types?.includes('meal_takeaway') || place.types?.includes('meal_delivery')) {
+    features.push('Takeout Available');
+  }
+  
+  // Always add Local for community feel
+  features.push('Local');
+  
+  return features;
+}
+
+// Enhanced business search that tries multiple APIs with Google Places fallback
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
   // Try Yelp first
   let businesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
   
-  // If we don't get enough results from Yelp, we could try other APIs here
-  if (businesses.length < 5) {
-    console.log(`Only found ${businesses.length} businesses from Yelp, could expand with other APIs`);
-    // Could add Google Places, Foursquare, etc. here
+  // If we don't get enough results from Yelp, try Google Places as fallback
+  if (businesses.length < 8) {
+    console.log(`Only found ${businesses.length} businesses from Yelp, trying Google Places as fallback`);
+    const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
+    
+    // Merge results, but avoid duplicates by name
+    const existingNames = new Set(businesses.map(b => b.name.toLowerCase()));
+    const newGoogleBusinesses = googleBusinesses.filter(b => !existingNames.has(b.name.toLowerCase()));
+    
+    businesses = [...businesses, ...newGoogleBusinesses];
+    console.log(`Combined total: ${businesses.length} businesses (${newGoogleBusinesses.length} from Google Places)`);
   }
+  
+  // Calculate distances for businesses that don't have them
+  businesses.forEach(business => {
+    if (business.latitude && business.longitude && !business.distance_miles) {
+      business.distance_miles = calculateDistance(
+        coordinates.lat, coordinates.lng,
+        business.latitude, business.longitude
+      );
+    }
+  });
   
   // Sort by distance if we have distance data
   businesses.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
