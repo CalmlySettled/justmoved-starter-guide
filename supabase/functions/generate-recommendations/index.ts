@@ -29,17 +29,17 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains - using reliable CDN sources
+// Brand logo mapping for national chains - using working local assets
 const BRAND_LOGOS: { [key: string]: string } = {
-  // Major grocery chains with reliable Wikipedia/CDN logos
-  "safeway": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Safeway_Logo.svg/320px-Safeway_Logo.svg.png",
-  "kroger": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Kroger_logo_%282019%29.svg/320px-Kroger_logo_%282019%29.svg.png", 
-  "walmart": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/320px-Walmart_logo.svg.png",
-  "target": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Target_logo.svg/320px-Target_logo.svg.png",
-  "whole foods": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Whole_Foods_Market_logo.svg/320px-Whole_Foods_Market_logo.svg.png",
-  "trader joe": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Trader_Joe%27s_logo.svg/320px-Trader_Joe%27s_logo.svg.png",
-  "costco": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Costco_Wholesale_logo_2010-10-26.svg/320px-Costco_Wholesale_logo_2010-10-26.svg.png",
-  "stop & shop": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Stop_%26_Shop_logo.svg/320px-Stop_%26_Shop_logo.svg.png",
+  // Major grocery chains with working local brand logos
+  "safeway": "/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png",
+  "kroger": "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png", 
+  "walmart": "/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png",
+  "target": "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png",
+  "whole foods": "/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png",
+  "trader joe": "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png",
+  "costco": "/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png",
+  "stop & shop": "/lovable-uploads/4d41876b-9d9e-4a4d-abb8-5b4b924e2e23.png",
   "big y": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Big_Y_logo.svg/320px-Big_Y_logo.svg.png",
   "aldi": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/ALDI_logo.svg/320px-ALDI_logo.svg.png",
   "harris teeter": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Harris_Teeter_logo.svg/320px-Harris_Teeter_logo.svg.png",
