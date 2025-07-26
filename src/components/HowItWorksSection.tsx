@@ -29,7 +29,7 @@ export function HowItWorksSection() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            How JustMoved Works
+            How CalmlySettled Works
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Four simple steps to transform your moving experience from stressful to seamless

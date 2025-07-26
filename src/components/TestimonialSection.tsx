@@ -8,8 +8,8 @@ export function TestimonialSection() {
           <Quote className="h-12 w-12 mx-auto text-white/80 mb-6" />
           
           <blockquote className="text-2xl md:text-3xl font-medium text-white leading-relaxed mb-8">
-            "Moving to Seattle felt overwhelming until I found JustMoved. Within a week, 
-            I had found my perfect gym, a great pediatrician for my daughter, and even 
+            "Moving to Seattle felt overwhelming until I found CalmlySettled. Within a week, 
+            I had found my perfect gym, a great pediatrician for my daughter, and even
             completed my car registration without any stress. It's like having a local 
             best friend guide you through everything!"
           </blockquote>

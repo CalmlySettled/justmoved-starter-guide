@@ -24,7 +24,7 @@ export function HeroSection() {
         </h1>
         
         <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
-          Moving to a new city? JustMoved helps you discover the perfect local spots, 
+          Moving to a new city? CalmlySettled helps you discover the perfect local spots, 
           complete essential tasks, and feel at home faster than ever.
         </p>
         

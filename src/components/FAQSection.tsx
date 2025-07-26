@@ -2,15 +2,15 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const faqs = [
   {
-    question: "How does JustMoved personalize recommendations?",
+    question: "How does CalmlySettled personalize recommendations?",
     answer: "Our onboarding quiz learns about your lifestyle, family size, budget preferences, and priorities. We then match you with local businesses and services that align with your specific needs and values."
   },
   {
-    question: "Is JustMoved free to use?",
-    answer: "Yes! JustMoved is completely free to use. You'll get personalized recommendations, task lists, and community resources at no cost. We also offer optional premium concierge services for those who want extra support."
+    question: "Is CalmlySettled free to use?",
+    answer: "Yes! CalmlySettled is completely free to use. You'll get personalized recommendations, task lists, and community resources at no cost. We also offer optional premium concierge services for those who want extra support."
   },
   {
-    question: "Which cities does JustMoved cover?",
+    question: "Which cities does CalmlySettled cover?",
     answer: "We currently cover 50+ major cities across the United States, with new cities being added regularly. If your city isn't listed, let us know and we'll prioritize adding it to our platform."
   },
   {
@@ -36,7 +36,7 @@ export function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-xl text-muted-foreground">
-            Everything you need to know about JustMoved
+            Everything you need to know about CalmlySettled
           </p>
         </div>
         

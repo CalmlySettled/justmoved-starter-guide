@@ -117,7 +117,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
               <Home className="h-7 w-7 text-white" />
             </div>
-            <span className="text-3xl font-bold text-foreground">JustMoved</span>
+            <span className="text-3xl font-bold text-foreground">CalmlySettled</span>
           </div>
           <p className="text-muted-foreground">Welcome to your neighborhood guide</p>
         </div>

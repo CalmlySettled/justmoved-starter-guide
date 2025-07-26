@@ -230,7 +230,7 @@ export default function OnboardingQuiz() {
             <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
               <Home className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-foreground">JustMoved</span>
+            <span className="text-2xl font-bold text-foreground">CalmlySettled</span>
           </Link>
           
           <div className="text-sm text-muted-foreground">
