@@ -85,7 +85,10 @@ async function searchYelpBusinesses(
     const yelpCategoryMap: { [key: string]: string } = {
       "grocery stores": "grocery",
       "fitness gyms": "fitness",
-      "churches religious": "religiousorgs"
+      "churches religious": "religiousorgs",
+      "medical health": "health",
+      "schools education": "education",
+      "parks recreation": "parks"
     };
 
     const yelpCategory = yelpCategoryMap[category] || category;
@@ -416,6 +419,22 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "gym": "fitness gyms", 
     "exercise": "fitness gyms",
     "health": "fitness gyms",
+    "medical care": "medical health",
+    "medical": "medical health",
+    "healthcare": "medical health",
+    "doctors": "medical health",
+    "clinics": "medical health",
+    "schools": "schools education",
+    "school": "schools education",
+    "education": "schools education",
+    "elementary": "schools education",
+    "high school": "schools education",
+    "parks": "parks recreation",
+    "park": "parks recreation",
+    "recreation": "parks recreation",
+    "outdoor": "parks recreation",
+    "green space": "parks recreation",
+    "trails": "parks recreation",
     "faith communities": "churches religious",
     "church": "churches religious",
     "religious": "churches religious",
@@ -460,7 +479,10 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     const defaultCategories = [
       { name: "Grocery stores", searchTerm: "grocery stores" },
       { name: "Fitness options", searchTerm: "fitness gyms" },
-      { name: "Faith communities", searchTerm: "churches religious" }
+      { name: "Faith communities", searchTerm: "churches religious" },
+      { name: "Medical care", searchTerm: "medical health" },
+      { name: "Schools", searchTerm: "schools education" },
+      { name: "Parks", searchTerm: "parks recreation" }
     ];
     
     for (const category of defaultCategories) {
