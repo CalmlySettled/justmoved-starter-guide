@@ -77,90 +77,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
-// Yelp API integration
-async function searchYelpBusinesses(
-  category: string, 
-  latitude: number, 
-  longitude: number, 
-  radius: number = 10000
-): Promise<Business[]> {
-  const yelpApiKey = Deno.env.get('YELP_API_KEY');
-  if (!yelpApiKey) {
-    console.error('Yelp API key not found');
-    return [];
-  }
-
-  try {
-    const yelpCategoryMap: { [key: string]: string } = {
-      "grocery stores": "grocery",
-      "fitness gyms": "fitness",
-      "churches religious": "religiousorgs",
-      "medical health": "health",
-      "schools education": "education",
-      "parks recreation": "parks",
-      "public transportation": "publictransport",
-      "parks trails": "hiking",
-      "restaurants cafes": "restaurants",
-      "community centers": "community_service"
-    };
-
-    const yelpCategory = yelpCategoryMap[category] || category;
-    
-    const url = new URL('https://api.yelp.com/v3/businesses/search');
-    url.searchParams.append('latitude', latitude.toString());
-    url.searchParams.append('longitude', longitude.toString());
-    url.searchParams.append('categories', yelpCategory);
-    url.searchParams.append('radius', radius.toString());
-    url.searchParams.append('limit', '20');
-    url.searchParams.append('sort_by', 'distance');
-
-    console.log(`Searching Yelp for category "${yelpCategory}" at coordinates ${latitude}, ${longitude}`);
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Authorization': `Bearer ${yelpApiKey}`,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`Yelp API error: ${response.status} ${response.statusText}`);
-      return [];
-    }
-
-    const data = await response.json();
-    console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
-
-    return (data.businesses || []).map((business: any) => {
-      // Use only Yelp's image URL if available - no hardcoded fallbacks
-      const imageUrl = business.image_url || '';
-      
-      if (business.image_url) {
-        console.log(`→ Using Yelp photo for: ${business.name}`);
-      } else {
-        console.log(`→ No image available for: ${business.name}`);
-      }
-      
-      
-      return {
-        name: business.name,
-        address: business.location?.display_address?.join(', ') || '',
-        description: business.categories?.map((cat: any) => cat.title).join(', ') || '',
-        phone: business.phone || '',
-        features: generateFeaturesFromYelpData(business),
-        latitude: business.coordinates?.latitude,
-        longitude: business.coordinates?.longitude,
-        distance_miles: business.distance ? Math.round((business.distance * 0.000621371) * 10) / 10 : undefined,
-        website: business.url,
-        image_url: imageUrl
-      };
-    });
-
-  } catch (error) {
-    console.error('Error fetching from Yelp API:', error);
-    return [];
-  }
-}
+// Google Places API integration
 
 // Google Places API integration (enhanced fallback with photo support)
 async function searchGooglePlaces(
@@ -334,42 +251,13 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Enhanced business search that tries Google Places first, Yelp as fallback
+// Simplified business search using only Google Places API
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
-  // Try Google Places FIRST (better coverage and image quality)
-  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
+  // Use only Google Places API
+  const businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
   console.log(`Google Places found ${businesses.length} businesses`);
-  
-  // If we don't get enough results from Google Places, use Yelp as fallback
-  if (businesses.length < 8) {
-    console.log(`Only found ${businesses.length} businesses from Google Places, trying Yelp as fallback`);
-    const yelpBusinesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
-    
-    // Merge results, but avoid duplicates using improved deduplication
-    const normalizeAddress = (address: string): string => {
-      return address.toLowerCase()
-        .replace(/\b(street|st|avenue|ave|boulevard|blvd|plaza|plz|drive|dr|road|rd)\b/g, '')
-        .replace(/[,\s]+/g, ' ')
-        .trim()
-        .substring(0, 30);
-    };
-    
-    const existingBusinesses = new Set(
-      businesses.map(b => `${b.name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${normalizeAddress(b.address)}`)
-    );
-    
-    const newYelpBusinesses = yelpBusinesses.filter(b => {
-      const identifier = `${b.name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${normalizeAddress(b.address)}`;
-      return !existingBusinesses.has(identifier);
-    });
-    
-    businesses = [...businesses, ...newYelpBusinesses];
-    console.log(`Combined total: ${businesses.length} businesses (${newYelpBusinesses.length} from Yelp fallback)`);
-  } else {
-    console.log(`Google Places provided sufficient results (${businesses.length}), skipping Yelp`);
-  }
   
   // Calculate distances for businesses that don't have them
   businesses.forEach(business => {
@@ -381,10 +269,10 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
-  // Sort by distance if we have distance data
+  // Sort by distance
   businesses.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
   
-  // Limit to top 10 results
+  // Return up to 10 results
   return businesses.slice(0, 10);
 }
 
