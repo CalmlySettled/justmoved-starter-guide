@@ -347,13 +347,21 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`Only found ${businesses.length} businesses from Google Places, trying Yelp as fallback`);
     const yelpBusinesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
     
-    // Merge results, but avoid duplicates by name and address similarity
+    // Merge results, but avoid duplicates using improved deduplication
+    const normalizeAddress = (address: string): string => {
+      return address.toLowerCase()
+        .replace(/\b(street|st|avenue|ave|boulevard|blvd|plaza|plz|drive|dr|road|rd)\b/g, '')
+        .replace(/[,\s]+/g, ' ')
+        .trim()
+        .substring(0, 30);
+    };
+    
     const existingBusinesses = new Set(
-      businesses.map(b => `${b.name.toLowerCase()}_${b.address.toLowerCase().substring(0, 20)}`)
+      businesses.map(b => `${b.name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${normalizeAddress(b.address)}`)
     );
     
     const newYelpBusinesses = yelpBusinesses.filter(b => {
-      const identifier = `${b.name.toLowerCase()}_${b.address.toLowerCase().substring(0, 20)}`;
+      const identifier = `${b.name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${normalizeAddress(b.address)}`;
       return !existingBusinesses.has(identifier);
     });
     
