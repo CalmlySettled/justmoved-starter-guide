@@ -20,6 +20,7 @@ interface Business {
   hours?: string;
   website?: string;
   image?: string;
+  image_url?: string;
 }
 
 interface Recommendations {
@@ -145,7 +146,12 @@ export default function Recommendations() {
   };
 
   const getBusinessImage = (business: Business, category: string) => {
-    // Use uploaded business images for specific businesses
+    // First, try to use the image URL from Yelp API
+    if (business.image_url && business.image_url.length > 0) {
+      return business.image_url;
+    }
+    
+    // Then fall back to uploaded business images for specific businesses
     
     // Grocery Stores
     if (business.name.toLowerCase().includes('geissler')) {
