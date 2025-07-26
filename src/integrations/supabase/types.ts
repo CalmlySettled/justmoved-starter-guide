@@ -70,6 +70,7 @@ export type Database = {
           business_address: string | null
           business_description: string | null
           business_features: string[] | null
+          business_image: string | null
           business_latitude: number | null
           business_longitude: number | null
           business_name: string
@@ -85,6 +86,7 @@ export type Database = {
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
+          business_image?: string | null
           business_latitude?: number | null
           business_longitude?: number | null
           business_name: string
@@ -100,6 +102,7 @@ export type Database = {
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
+          business_image?: string | null
           business_latitude?: number | null
           business_longitude?: number | null
           business_name?: string

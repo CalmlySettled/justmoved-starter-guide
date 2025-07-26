@@ -391,6 +391,7 @@ export default function Recommendations() {
           business_address: business.address,
           business_description: business.description,
           business_phone: business.phone,
+          business_image: business.image_url,
           business_features: business.features || []
         });
 
