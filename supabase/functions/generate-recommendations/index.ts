@@ -65,6 +65,20 @@ const BRAND_LOGOS: { [key: string]: string } = {
   "rite aid": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Rite_Aid_logo.svg/320px-Rite_Aid_logo.svg.png",
 };
 
+// Category stock photos for non-brand businesses
+const CATEGORY_STOCK_PHOTOS: { [key: string]: string } = {
+  "grocery stores": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
+  "fitness gyms": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop",
+  "churches religious": "https://images.unsplash.com/photo-1520637836862-4d197d17c87a?w=400&h=300&fit=crop",
+  "medical health": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop",
+  "schools education": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=300&fit=crop",
+  "parks recreation": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop",
+  "public transportation": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop",
+  "parks trails": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop",
+  "restaurants cafes": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop",
+  "community centers": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&h=300&fit=crop"
+};
+
 // Function to get brand logo for a business
 function getBrandLogo(businessName: string): string | null {
   const nameLower = businessName.toLowerCase();
@@ -176,11 +190,13 @@ async function searchYelpBusinesses(
     console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
     return (data.businesses || []).map((business: any) => {
-      // Check for brand logo first, then fall back to Yelp image
+      // First try brand logo, then Yelp image, then category stock photo
       const brandLogo = getBrandLogo(business.name);
-      const imageUrl = brandLogo || business.image_url || business.photos?.[0] || '';
+      const categoryStock = CATEGORY_STOCK_PHOTOS[category];
+      const imageUrl = brandLogo || business.image_url || business.photos?.[0] || categoryStock || '';
       
-      console.log(`Business: ${business.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Image URL: ${imageUrl}`);
+      console.log(`Business: ${business.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Using: ${brandLogo ? 'Brand Logo' : categoryStock ? 'Category Stock Photo' : 'Yelp Photo'}`);
+      
       
       return {
         name: business.name,
@@ -243,15 +259,18 @@ async function searchGooglePlaces(
     const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
       // Check for brand logo first
       const brandLogo = getBrandLogo(place.name);
+      const categoryStock = CATEGORY_STOCK_PHOTOS[category];
       let imageUrl = brandLogo || '';
       
-      // If no brand logo, get photo from Google Places Photo API if available
+      // If no brand logo, get photo from Google Places Photo API if available, then fallback to category stock
       if (!brandLogo && place.photos && place.photos.length > 0) {
         const photoReference = place.photos[0].photo_reference;
         imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
+      } else if (!brandLogo && !imageUrl && categoryStock) {
+        imageUrl = categoryStock;
       }
 
-      console.log(`Google Business: ${place.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
+      console.log(`Google Business: ${place.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Using: ${brandLogo ? 'Brand Logo' : categoryStock && !place.photos ? 'Category Stock Photo' : 'Google Photo'}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
 
       return {
         name: place.name,
