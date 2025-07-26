@@ -125,21 +125,56 @@ export default function OnboardingQuiz() {
             variant: "destructive"
           });
         }
+
+        // Generate and save recommendations automatically
+        try {
+          const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
+            body: {
+              userId: user.id,
+              zipCode: quizData.zipCode,
+              householdType: quizData.household.join(', '),
+              priorities: quizData.priorities,
+              transportationStyle: quizData.transportation,
+              budgetPreference: quizData.lifestyle,
+              lifeStage: quizData.lifeStage,
+              settlingTasks: quizData.tasks
+            }
+          });
+
+          if (recError) {
+            console.error('Error generating recommendations:', recError);
+          } else if (recommendations?.recommendations) {
+            // Save recommendations to user_recommendations table
+            const recommendationsToSave = recommendations.recommendations.map((rec: any) => ({
+              user_id: user.id,
+              category: rec.category,
+              business_name: rec.business_name,
+              business_address: rec.business_address,
+              business_description: rec.business_description,
+              business_phone: rec.business_phone,
+              business_features: rec.business_features || []
+            }));
+
+            const { error: saveError } = await supabase
+              .from('user_recommendations')
+              .insert(recommendationsToSave);
+
+            if (saveError) {
+              console.error('Error saving recommendations:', saveError);
+            } else {
+              toast({
+                title: "Success!",
+                description: "Your preferences and recommendations have been saved to your dashboard.",
+              });
+            }
+          }
+        } catch (recError) {
+          console.error('Error with recommendations:', recError);
+        }
       }
 
-      // Prepare data for recommendations
-      const recommendationData = {
-        zipCode: quizData.zipCode,
-        householdType: quizData.household.join(', '),
-        priorities: quizData.priorities,
-        transportationStyle: quizData.transportation,
-        budgetPreference: quizData.lifestyle,
-        lifeStage: quizData.lifeStage,
-        settlingTasks: quizData.tasks
-      };
-
-      // Navigate to recommendations with data
-      navigate('/recommendations', { state: { quizResponse: recommendationData } });
+      // Navigate to dashboard to show saved results
+      navigate('/dashboard');
       
     } catch (error) {
       console.error('Error completing quiz:', error);
