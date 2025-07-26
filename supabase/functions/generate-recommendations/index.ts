@@ -67,179 +67,171 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
-// Mock data generator function with real business data including coordinates
-function generateMockBusinesses(category: string, userCoordinates: { lat: number; lng: number }): Business[] {
-  const mockBusinesses: { [key: string]: Business[] } = {
-    "grocery stores": [
-      {
-        name: "Geissler's Supermarket",
-        address: "40 Tunxis Ave, Bloomfield, CT 06002",
-        description: "Family-owned market with great produce",
-        phone: "(860) 242‑7084",
-        features: ["Local", "Organic Options", "Budget-Friendly"],
-        hours: "Mon–Sat 8am–9pm, Sun 8am–7pm",
-        latitude: 41.8170,
-        longitude: -72.7251
-      },
-      {
-        name: "Stop & Shop",
-        address: "313 Cottage Grove Rd, Bloomfield, CT 06002",
-        description: "Large chain store with pharmacy and gas station",
-        phone: "(860) 242‑2424",
-        features: ["Chain", "High Ratings", "Accessible"],
-        hours: "Open daily 6am–10pm",
-        latitude: 41.8188,
-        longitude: -72.7345
-      },
-      {
-        name: "Fresh Farm Market",
-        address: "1055 Blue Hills Ave, Bloomfield, CT 06002",
-        description: "Local market known for vibrant produce",
-        phone: "(860) 242‑1183",
-        features: ["Local", "International Foods", "Walkable"],
-        latitude: 41.8156,
-        longitude: -72.7089
-      },
-      {
-        name: "Sav-Mor Supermarket",
-        address: "1055 Blue Hills Ave #1, Bloomfield, CT 06002",
-        description: "Community staple for everyday groceries",
-        phone: "(860) 242‑7759",
-        features: ["Budget-Friendly", "Local"],
-        latitude: 41.8156,
-        longitude: -72.7089
-      },
-      {
-        name: "Aldi",
-        address: "44 Kane St, West Hartford, CT 06119",
-        description: "Low-cost grocery chain with curbside and delivery",
-        phone: "(855) 955‑2534",
-        features: ["Chain", "Pickup Available", "Budget-Friendly"],
-        latitude: 41.7658,
-        longitude: -72.7425
-      }
-    ],
-    "fitness gyms": [
-      {
-        name: "Total Health Club",
-        address: "22 Mountain Ave, Bloomfield, CT 06002",
-        description: "Full-service gym with group classes and personal training",
-        phone: "(860) 242‑9400",
-        features: ["Local", "Group Classes", "Personal Training"],
-        latitude: 41.8149,
-        longitude: -72.7267
-      },
-      {
-        name: "Planet Fitness",
-        address: "841 Albany Ave, Hartford, CT 06112",
-        description: "Affordable 24/7 gym for all fitness levels",
-        phone: "(860) 522‑4600",
-        features: ["Chain", "24-Hour Access", "Budget Membership"],
-        latitude: 41.7658,
-        longitude: -72.6851
-      },
-      {
-        name: "Club Fitness",
-        address: "107 Old Windsor Rd, Bloomfield, CT 06002",
-        description: "3-level cardio/strength gym with classes",
-        phone: "(860) 242‑1234",
-        features: ["Full Equipment", "Group Classes", "Personal Training"],
-        latitude: 41.8234,
-        longitude: -72.7156
-      },
-      {
-        name: "Gold's Gym",
-        address: "39 W Main St, Avon, CT 06001",
-        description: "Classic gym experience with serious strength training",
-        phone: "(860) 677‑4348",
-        features: ["Strength-Focused", "Franchise"],
-        latitude: 41.7976,
-        longitude: -72.8309
-      },
-      {
-        name: "Bloomfield Fit Body Boot Camp",
-        address: "10 Mountain Ave, Bloomfield, CT 06002",
-        description: "High-energy, group HIIT gym with coaching",
-        phone: "(860) 952‑3324",
-        features: ["HIIT", "Trainer-Led", "Community-Based"],
-        latitude: 41.8149,
-        longitude: -72.7267
-      }
-    ],
-    "churches religious": [
-      {
-        name: "Wintonbury Church",
-        address: "54 Maple Ave, Bloomfield, CT 06002",
-        description: "Non-denominational church with contemporary worship",
-        phone: "(860) 243‑8779",
-        features: ["Contemporary", "Small Groups", "Childcare"],
-        hours: "Sunday Worship: 10am",
-        latitude: 41.8167,
-        longitude: -72.7234
-      },
-      {
-        name: "Sacred Heart Church",
-        address: "26 Wintonbury Ave, Bloomfield, CT 06002",
-        description: "Catholic parish offering mass and confession",
-        phone: "(860) 242‑4142",
-        features: ["Catholic", "Historic", "Traditional"],
-        hours: "Mass Times: Sat 4pm, Sun 9:30am",
-        latitude: 41.8123,
-        longitude: -72.7198
-      },
-      {
-        name: "The First Cathedral",
-        address: "1151 Blue Hills Ave, Bloomfield, CT 06002",
-        description: "Large Baptist church with extensive community programs",
-        phone: "(860) 243‑6520",
-        features: ["Baptist", "Youth Programs", "Community Outreach"],
-        hours: "Sunday Worship: 10am",
-        latitude: 41.8156,
-        longitude: -72.7089
-      },
-      {
-        name: "Old St. Andrew's Episcopal Church",
-        address: "59 Tariffville Rd, Bloomfield, CT 06002",
-        description: "Inclusive, historic Anglican church with modern services",
-        phone: "(860) 242‑4660",
-        features: ["Episcopal", "LGBTQ+ Friendly", "Historic"],
-        hours: "Sunday Services: 9am & 10:30am",
-        latitude: 41.8245,
-        longitude: -72.7023
-      },
-      {
-        name: "Bloomfield Congregational Church",
-        address: "10 Wintonbury Ave, Bloomfield, CT 06002",
-        description: "Open & affirming UCC congregation with family programs",
-        phone: "(860) 242‑0776",
-        features: ["UCC", "Family-Friendly", "Inclusive"],
-        hours: "Sunday Worship: 10am",
-        latitude: 41.8123,
-        longitude: -72.7198
-      }
-    ]
-  };
+// Yelp API integration
+async function searchYelpBusinesses(
+  category: string, 
+  latitude: number, 
+  longitude: number, 
+  radius: number = 10000
+): Promise<Business[]> {
+  const yelpApiKey = Deno.env.get('YELP_API_KEY');
+  if (!yelpApiKey) {
+    console.error('Yelp API key not found');
+    return [];
+  }
 
-  const businesses = mockBusinesses[category] || [];
-  
-  // Calculate distances and add them to businesses
-  const businessesWithDistance = businesses.map(business => {
-    if (business.latitude && business.longitude) {
-      const distance = calculateDistance(
-        userCoordinates.lat, 
-        userCoordinates.lng, 
-        business.latitude, 
-        business.longitude
-      );
-      return { ...business, distance_miles: distance };
+  try {
+    const yelpCategoryMap: { [key: string]: string } = {
+      "grocery stores": "grocery",
+      "fitness gyms": "fitness",
+      "churches religious": "religiousorgs"
+    };
+
+    const yelpCategory = yelpCategoryMap[category] || category;
+    
+    const url = new URL('https://api.yelp.com/v3/businesses/search');
+    url.searchParams.append('latitude', latitude.toString());
+    url.searchParams.append('longitude', longitude.toString());
+    url.searchParams.append('categories', yelpCategory);
+    url.searchParams.append('radius', radius.toString());
+    url.searchParams.append('limit', '20');
+    url.searchParams.append('sort_by', 'distance');
+
+    console.log(`Searching Yelp for category "${yelpCategory}" at coordinates ${latitude}, ${longitude}`);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${yelpApiKey}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Yelp API error: ${response.status} ${response.statusText}`);
+      return [];
     }
-    return business;
-  });
 
-  // Sort by distance (closest first)
-  businessesWithDistance.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
+    const data = await response.json();
+    console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
-  return businessesWithDistance;
+    return (data.businesses || []).map((business: any) => ({
+      name: business.name,
+      address: business.location?.display_address?.join(', ') || '',
+      description: business.categories?.map((cat: any) => cat.title).join(', ') || '',
+      phone: business.phone || '',
+      features: generateFeaturesFromYelpData(business),
+      latitude: business.coordinates?.latitude,
+      longitude: business.coordinates?.longitude,
+      distance_miles: business.distance ? Math.round((business.distance * 0.000621371) * 10) / 10 : undefined,
+      website: business.url
+    }));
+
+  } catch (error) {
+    console.error('Error fetching from Yelp API:', error);
+    return [];
+  }
+}
+
+// Google Places API integration (fallback)
+async function searchGooglePlaces(
+  category: string,
+  latitude: number,
+  longitude: number,
+  radius: number = 10000
+): Promise<Business[]> {
+  // For now, we'll use Yelp as primary source
+  // Google Places can be added later if needed
+  return [];
+}
+
+// Generate features based on Yelp business data
+function generateFeaturesFromYelpData(business: any): string[] {
+  const features: string[] = [];
+  
+  // Rating-based features
+  if (business.rating >= 4.0) {
+    features.push('High Ratings');
+  }
+  
+  // Price-based features
+  if (business.price) {
+    if (business.price === '$' || business.price === '$$') {
+      features.push('Budget-Friendly');
+    } else if (business.price === '$$$$') {
+      features.push('Premium');
+    }
+  }
+
+  // Chain vs Local
+  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
+  const isChain = chainKeywords.some(keyword => 
+    business.name.toLowerCase().includes(keyword)
+  );
+  
+  if (isChain) {
+    features.push('Chain');
+  } else {
+    features.push('Local');
+  }
+
+  // Category-specific features
+  if (business.categories) {
+    const categoryTitles = business.categories.map((cat: any) => cat.title.toLowerCase());
+    
+    // Grocery store features
+    if (categoryTitles.some((title: string) => title.includes('organic'))) {
+      features.push('Organic Options');
+    }
+    
+    // Fitness features
+    if (categoryTitles.some((title: string) => title.includes('yoga'))) {
+      features.push('Yoga Classes');
+    }
+    if (categoryTitles.some((title: string) => title.includes('personal training'))) {
+      features.push('Personal Training');
+    }
+    
+    // Religious features
+    if (categoryTitles.some((title: string) => title.includes('catholic'))) {
+      features.push('Catholic');
+    }
+    if (categoryTitles.some((title: string) => title.includes('baptist'))) {
+      features.push('Baptist');
+    }
+    if (categoryTitles.some((title: string) => title.includes('methodist'))) {
+      features.push('Methodist');
+    }
+  }
+
+  // Accessibility and convenience features
+  if (business.transactions?.includes('pickup')) {
+    features.push('Pickup Available');
+  }
+  if (business.transactions?.includes('delivery')) {
+    features.push('Delivery Available');
+  }
+
+  return features.length > 0 ? features : ['Local Business'];
+}
+
+// Enhanced business search that tries multiple APIs
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
+  console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
+  
+  // Try Yelp first
+  let businesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
+  
+  // If we don't get enough results from Yelp, we could try other APIs here
+  if (businesses.length < 5) {
+    console.log(`Only found ${businesses.length} businesses from Yelp, could expand with other APIs`);
+    // Could add Google Places, Foursquare, etc. here
+  }
+  
+  // Sort by distance if we have distance data
+  businesses.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
+  
+  // Limit to top 10 results
+  return businesses.slice(0, 10);
 }
 
 serve(async (req) => {
@@ -259,10 +251,12 @@ serve(async (req) => {
       throw new Error('Could not get coordinates for the provided address');
     }
 
+    console.log(`Found coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+
     // Generate recommendations based on user priorities
     const recommendations = await generateRecommendations(quizResponse, coordinates);
 
-    console.log('Generated recommendations keys:', Object.keys(recommendations));
+    console.log('Generated recommendations categories:', Object.keys(recommendations));
 
     return new Response(
       JSON.stringify({ recommendations }),
@@ -289,15 +283,15 @@ serve(async (req) => {
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
   
-  // Map user priorities to search terms
+  // Map user priorities to search terms that work with APIs
   const priorityMap: { [key: string]: string } = {
     "grocery stores": "grocery stores",
-    "grocery": "grocery stores",
+    "grocery": "grocery stores", 
     "food": "grocery stores",
     "shopping": "grocery stores",
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
-    "gym": "fitness gyms",
+    "gym": "fitness gyms", 
     "exercise": "fitness gyms",
     "health": "fitness gyms",
     "faith communities": "churches religious",
@@ -307,23 +301,22 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "worship": "churches religious"
   };
 
-  console.log('Priority map keys:', Object.keys(priorityMap));
   console.log('User priorities received:', quizResponse.priorities);
 
-  // For each user priority, search for businesses
+  // For each user priority, search for real businesses using APIs
   for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
-    console.log(`Processing priority: "${priority}" (lowercase: "${priorityLower}")`);
+    console.log(`Processing priority: "${priority}"`);
     
     // Check for direct matches or partial matches
     let foundMatch = false;
     for (const [key, searchTerm] of Object.entries(priorityMap)) {
       if (priorityLower.includes(key) || key.includes(priorityLower)) {
-        console.log(`Found match for "${priority}" with key "${key}", generating mock data for "${searchTerm}"`);
+        console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
         foundMatch = true;
         
-        const businesses = generateMockBusinesses(searchTerm, coordinates);
-        console.log(`Generated ${businesses.length} mock businesses for "${searchTerm}"`);
+        const businesses = await searchBusinesses(searchTerm, coordinates);
+        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
         
         if (businesses.length > 0) {
           recommendations[priority] = businesses;
@@ -340,9 +333,20 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   // If no specific matches found, add some default categories
   if (Object.keys(recommendations).length === 0) {
-    recommendations["Grocery stores"] = generateMockBusinesses("grocery stores", coordinates);
-    recommendations["Fitness options"] = generateMockBusinesses("fitness gyms", coordinates);
-    recommendations["Faith communities"] = generateMockBusinesses("churches religious", coordinates);
+    console.log('No priority matches found, adding default categories');
+    
+    const defaultCategories = [
+      { name: "Grocery stores", searchTerm: "grocery stores" },
+      { name: "Fitness options", searchTerm: "fitness gyms" },
+      { name: "Faith communities", searchTerm: "churches religious" }
+    ];
+    
+    for (const category of defaultCategories) {
+      const businesses = await searchBusinesses(category.searchTerm, coordinates);
+      if (businesses.length > 0) {
+        recommendations[category.name] = businesses;
+      }
+    }
   }
 
   return recommendations;
