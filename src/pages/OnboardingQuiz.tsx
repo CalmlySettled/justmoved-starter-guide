@@ -113,6 +113,8 @@ export default function OnboardingQuiz() {
             budget_preference: quizData.lifestyle,
             life_stage: quizData.lifeStage,
             settling_tasks: quizData.tasks
+          }, {
+            onConflict: 'user_id'
           });
 
         if (error) {
