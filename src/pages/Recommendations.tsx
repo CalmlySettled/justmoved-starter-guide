@@ -382,6 +382,9 @@ export default function Recommendations() {
     setSavingRecommendations(prev => new Set(prev).add(key));
 
     try {
+      const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
+      console.log(`Saving recommendation for ${business.name}, image_url: ${business.image_url}, processed: ${imageUrl}`);
+      
       const { error } = await supabase
         .from('user_recommendations')
         .insert({
@@ -391,7 +394,7 @@ export default function Recommendations() {
           business_address: business.address,
           business_description: business.description,
           business_phone: business.phone,
-          business_image: business.image_url,
+          business_image: imageUrl,
           business_features: business.features || []
         });
 

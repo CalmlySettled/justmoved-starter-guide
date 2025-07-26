@@ -115,18 +115,23 @@ async function searchYelpBusinesses(
     const data = await response.json();
     console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
-    return (data.businesses || []).map((business: any) => ({
-      name: business.name,
-      address: business.location?.display_address?.join(', ') || '',
-      description: business.categories?.map((cat: any) => cat.title).join(', ') || '',
-      phone: business.phone || '',
-      features: generateFeaturesFromYelpData(business),
-      latitude: business.coordinates?.latitude,
-      longitude: business.coordinates?.longitude,
-      distance_miles: business.distance ? Math.round((business.distance * 0.000621371) * 10) / 10 : undefined,
-      website: business.url,
-      image_url: business.image_url || business.photos?.[0] || ''
-    }));
+    return (data.businesses || []).map((business: any) => {
+      const imageUrl = business.image_url || business.photos?.[0] || '';
+      console.log(`Business: ${business.name}, Image URL: ${imageUrl}, Raw image_url: ${business.image_url}, Photos: ${JSON.stringify(business.photos)}`);
+      
+      return {
+        name: business.name,
+        address: business.location?.display_address?.join(', ') || '',
+        description: business.categories?.map((cat: any) => cat.title).join(', ') || '',
+        phone: business.phone || '',
+        features: generateFeaturesFromYelpData(business),
+        latitude: business.coordinates?.latitude,
+        longitude: business.coordinates?.longitude,
+        distance_miles: business.distance ? Math.round((business.distance * 0.000621371) * 10) / 10 : undefined,
+        website: business.url,
+        image_url: imageUrl
+      };
+    });
 
   } catch (error) {
     console.error('Error fetching from Yelp API:', error);

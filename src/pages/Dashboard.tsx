@@ -287,7 +287,7 @@ export default function Dashboard() {
   // Helper function to get business image
   const getBusinessImage = (rec: SavedRecommendation) => {
     // First check if we have a real image URL from the API
-    if (rec.business_image && rec.business_image !== 'placeholder') {
+    if (rec.business_image && rec.business_image !== 'placeholder' && rec.business_image.trim() !== '') {
       return rec.business_image;
     }
     
