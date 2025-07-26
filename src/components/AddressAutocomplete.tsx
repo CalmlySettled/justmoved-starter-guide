@@ -35,8 +35,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, label }: Add
 
     setIsLoading(true);
     try {
-      // Use Google Places Autocomplete API via a free alternative
-      // For production, you'd want to use Google Places API with proper authentication
+      // Use OpenStreetMap Nominatim API for address suggestions
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(input)}&countrycodes=us`,
         {
@@ -48,12 +47,41 @@ export function AddressAutocomplete({ value, onChange, placeholder, label }: Add
       
       if (response.ok) {
         const data = await response.json();
-        const formattedSuggestions: AddressSuggestion[] = data.map((item: any, index: number) => ({
-          place_id: item.place_id || index.toString(),
-          description: item.display_name,
-          main_text: item.display_name.split(',')[0],
-          secondary_text: item.display_name.split(',').slice(1).join(',').trim()
-        }));
+        const formattedSuggestions: AddressSuggestion[] = data.map((item: any, index: number) => {
+          // Parse address components to format properly
+          const address = item.address || {};
+          const components = [];
+          
+          // Street address (house number + street name)
+          const streetParts = [];
+          if (address.house_number) streetParts.push(address.house_number);
+          if (address.road) streetParts.push(address.road);
+          const streetAddress = streetParts.join(' ');
+          
+          // Build formatted address: Street, City, State ZIP, Country
+          if (streetAddress) components.push(streetAddress);
+          if (address.city || address.town || address.village) {
+            components.push(address.city || address.town || address.village);
+          }
+          if (address.state) {
+            const stateZip = address.postcode ? `${address.state} ${address.postcode}` : address.state;
+            components.push(stateZip);
+          }
+          if (address.country && address.country !== 'United States') {
+            components.push(address.country);
+          }
+          
+          const formattedAddress = components.join(', ');
+          const mainText = streetAddress || (address.city || address.town || address.village) || item.display_name.split(',')[0];
+          const secondaryText = components.slice(1).join(', ');
+          
+          return {
+            place_id: item.place_id || index.toString(),
+            description: formattedAddress || item.display_name,
+            main_text: mainText,
+            secondary_text: secondaryText
+          };
+        });
         
         setSuggestions(formattedSuggestions);
         setShowSuggestions(formattedSuggestions.length > 0);
