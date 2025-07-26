@@ -145,7 +145,17 @@ export default function OnboardingQuiz() {
           if (recError) {
             console.error('Error generating recommendations:', recError);
           } else if (recommendations?.recommendations) {
-            // Save recommendations to user_recommendations table
+            // First, delete existing recommendations for this user
+            const { error: deleteError } = await supabase
+              .from('user_recommendations')
+              .delete()
+              .eq('user_id', user.id);
+
+            if (deleteError) {
+              console.error('Error deleting previous recommendations:', deleteError);
+            }
+
+            // Save new recommendations to user_recommendations table
             const recommendationsToSave: any[] = [];
             
             Object.entries(recommendations.recommendations).forEach(([category, businesses]: [string, any[]]) => {
