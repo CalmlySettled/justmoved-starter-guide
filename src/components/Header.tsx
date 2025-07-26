@@ -43,15 +43,33 @@ export function Header() {
         </div>
         
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-smooth">
+          <button 
+            onClick={() => {
+              const element = document.getElementById('how-it-works');
+              element?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="text-muted-foreground hover:text-foreground transition-smooth"
+          >
             How It Works
-          </a>
-          <a href="#features" className="text-muted-foreground hover:text-foreground transition-smooth">
+          </button>
+          <button 
+            onClick={() => {
+              const element = document.getElementById('features');
+              element?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="text-muted-foreground hover:text-foreground transition-smooth"
+          >
             Features
-          </a>
-          <a href="#faq" className="text-muted-foreground hover:text-foreground transition-smooth">
+          </button>
+          <button 
+            onClick={() => {
+              const element = document.getElementById('faq');
+              element?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="text-muted-foreground hover:text-foreground transition-smooth"
+          >
             FAQ
-          </a>
+          </button>
         </nav>
         
         <div className="flex items-center space-x-4">
