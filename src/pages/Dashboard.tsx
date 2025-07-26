@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Trash2
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface SavedRecommendation {
   id: string;
@@ -249,35 +250,96 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        {recommendations.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {recommendations.length}
+        {/* User Profile & Quick Stats */}
+        {userProfile && (
+          <div className="mb-12">
+            {/* Quiz Results/Preferences */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Your Preferences
+                </CardTitle>
+                <CardDescription>Based on your quiz responses</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {userProfile.life_stage && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Life Stage</Label>
+                      <p className="text-foreground">{userProfile.life_stage}</p>
+                    </div>
+                  )}
+                  {userProfile.household_type && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Household</Label>
+                      <p className="text-foreground">{userProfile.household_type}</p>
+                    </div>
+                  )}
+                  {userProfile.transportation_style && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Transportation</Label>
+                      <p className="text-foreground">{userProfile.transportation_style}</p>
+                    </div>
+                  )}
+                  {userProfile.budget_preference && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Budget Style</Label>
+                      <p className="text-foreground">{userProfile.budget_preference}</p>
+                    </div>
+                  )}
+                  {userProfile.zip_code && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Area</Label>
+                      <p className="text-foreground">{userProfile.zip_code}</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-muted-foreground">Saved Places</p>
+                
+                {userProfile.priorities && userProfile.priorities.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">Your Priorities</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {userProfile.priorities.map((priority, index) => (
+                        <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                          {priority}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-            
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {Object.keys(groupedRecommendations).length}
-                </div>
-                <p className="text-muted-foreground">Categories</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="text-center">
-              <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {userProfile?.zip_code || "—"}
-                </div>
-                <p className="text-muted-foreground">Your Area</p>
-              </CardContent>
-            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="text-center">
+                <CardContent className="pt-6">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {recommendations.length}
+                  </div>
+                  <p className="text-muted-foreground">Saved Places</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="text-center">
+                <CardContent className="pt-6">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {Object.keys(groupedRecommendations).length}
+                  </div>
+                  <p className="text-muted-foreground">Categories</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="text-center">
+                <CardContent className="pt-6">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {userProfile?.priorities?.length || 0}
+                  </div>
+                  <p className="text-muted-foreground">Priorities Set</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
