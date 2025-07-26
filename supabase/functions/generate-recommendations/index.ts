@@ -42,64 +42,125 @@ async function getCoordinatesFromZip(zipCode: string): Promise<{ lat: number; ln
   return null;
 }
 
-// Mock data generator function
+// Mock data generator function with real business data
 function generateMockBusinesses(category: string, coordinates: { lat: number; lng: number }): Business[] {
   const mockBusinesses: { [key: string]: Business[] } = {
     "grocery stores": [
       {
-        name: "Fresh Market",
-        address: "123 Main St, Your City, State 12345",
-        description: "Full-service grocery store with organic options",
-        phone: "(555) 123-4567",
-        features: ["4.5 stars", "Organic produce", "Deli counter", "Pharmacy"],
-        hours: "6:00 AM - 11:00 PM daily",
-        website: "https://freshmarket.com"
+        name: "Geissler's Supermarket",
+        address: "40 Tunxis Ave, Bloomfield, CT 06002",
+        description: "Family-owned market with great produce",
+        phone: "(860) 242‑7084",
+        features: ["Local", "Organic Options", "Budget-Friendly"],
+        hours: "Mon–Sat 8am–9pm, Sun 8am–7pm"
       },
       {
-        name: "Corner Grocery",
-        address: "456 Oak Ave, Your City, State 12345",
-        description: "Neighborhood grocery with local products",
-        phone: "(555) 234-5678",
-        features: ["4.2 stars", "Local products", "Fresh bread", "Wine selection"],
-        hours: "7:00 AM - 10:00 PM daily"
+        name: "Stop & Shop",
+        address: "313 Cottage Grove Rd, Bloomfield, CT 06002",
+        description: "Large chain store with pharmacy and gas station",
+        phone: "(860) 242‑2424",
+        features: ["Chain", "High Ratings", "Accessible"],
+        hours: "Open daily 6am–10pm"
+      },
+      {
+        name: "Fresh Farm Market",
+        address: "1055 Blue Hills Ave, Bloomfield, CT 06002",
+        description: "Local market known for vibrant produce",
+        phone: "(860) 242‑1183",
+        features: ["Local", "International Foods", "Walkable"]
+      },
+      {
+        name: "Sav-Mor Supermarket",
+        address: "1055 Blue Hills Ave #1, Bloomfield, CT 06002",
+        description: "Community staple for everyday groceries",
+        phone: "(860) 242‑7759",
+        features: ["Budget-Friendly", "Local"]
+      },
+      {
+        name: "Aldi",
+        address: "44 Kane St, West Hartford, CT 06119",
+        description: "Low-cost grocery chain with curbside and delivery",
+        phone: "(855) 955‑2534",
+        features: ["Chain", "Pickup Available", "Budget-Friendly"]
       }
     ],
     "fitness gyms": [
       {
-        name: "FitLife Gym",
-        address: "789 Fitness Blvd, Your City, State 12345",
-        description: "Full-service gym with modern equipment",
-        phone: "(555) 345-6789",
-        features: ["4.8 stars", "24/7 access", "Personal training", "Group classes"],
-        hours: "24 hours",
-        website: "https://fitlifegym.com"
+        name: "Total Health Club",
+        address: "22 Mountain Ave, Bloomfield, CT 06002",
+        description: "Full-service gym with group classes and personal training",
+        phone: "(860) 242‑9400",
+        features: ["Local", "Group Classes", "Personal Training"]
       },
       {
-        name: "Community Recreation Center",
-        address: "321 Sports Dr, Your City, State 12345",
-        description: "Public recreation facility with pool and courts",
-        phone: "(555) 456-7890",
-        features: ["4.3 stars", "Swimming pool", "Basketball courts", "Affordable rates"],
-        hours: "5:00 AM - 10:00 PM"
+        name: "Planet Fitness",
+        address: "841 Albany Ave, Hartford, CT 06112",
+        description: "Affordable 24/7 gym for all fitness levels",
+        phone: "(860) 522‑4600",
+        features: ["Chain", "24-Hour Access", "Budget Membership"]
+      },
+      {
+        name: "Club Fitness",
+        address: "107 Old Windsor Rd, Bloomfield, CT 06002",
+        description: "3-level cardio/strength gym with classes",
+        phone: "(860) 242‑1234",
+        features: ["Full Equipment", "Group Classes", "Personal Training"]
+      },
+      {
+        name: "Gold's Gym",
+        address: "39 W Main St, Avon, CT 06001",
+        description: "Classic gym experience with serious strength training",
+        phone: "(860) 677‑4348",
+        features: ["Strength-Focused", "Franchise"]
+      },
+      {
+        name: "Bloomfield Fit Body Boot Camp",
+        address: "10 Mountain Ave, Bloomfield, CT 06002",
+        description: "High-energy, group HIIT gym with coaching",
+        phone: "(860) 952‑3324",
+        features: ["HIIT", "Trainer-Led", "Community-Based"]
       }
     ],
     "churches religious": [
       {
-        name: "Community Fellowship Church",
-        address: "654 Faith St, Your City, State 12345",
-        description: "Welcoming community church with diverse congregation",
-        phone: "(555) 567-8901",
-        features: ["Active community", "Youth programs", "Food pantry", "Music ministry"],
-        hours: "Sunday 9:00 AM & 11:00 AM services",
-        website: "https://communityfellowship.org"
+        name: "Wintonbury Church",
+        address: "54 Maple Ave, Bloomfield, CT 06002",
+        description: "Non-denominational church with contemporary worship",
+        phone: "(860) 243‑8779",
+        features: ["Contemporary", "Small Groups", "Childcare"],
+        hours: "Sunday Worship: 10am"
       },
       {
-        name: "Sacred Heart Catholic Church",
-        address: "987 Chapel Rd, Your City, State 12345",
-        description: "Traditional Catholic parish serving the community",
-        phone: "(555) 678-9012",
-        features: ["Historic building", "Daily mass", "Religious education", "Community outreach"],
-        hours: "Daily mass 8:00 AM, Sunday 8:00 AM & 10:30 AM"
+        name: "Sacred Heart Church",
+        address: "26 Wintonbury Ave, Bloomfield, CT 06002",
+        description: "Catholic parish offering mass and confession",
+        phone: "(860) 242‑4142",
+        features: ["Catholic", "Historic", "Traditional"],
+        hours: "Mass Times: Sat 4pm, Sun 9:30am"
+      },
+      {
+        name: "The First Cathedral",
+        address: "1151 Blue Hills Ave, Bloomfield, CT 06002",
+        description: "Large Baptist church with extensive community programs",
+        phone: "(860) 243‑6520",
+        features: ["Baptist", "Youth Programs", "Community Outreach"],
+        hours: "Sunday Worship: 10am"
+      },
+      {
+        name: "Old St. Andrew's Episcopal Church",
+        address: "59 Tariffville Rd, Bloomfield, CT 06002",
+        description: "Inclusive, historic Anglican church with modern services",
+        phone: "(860) 242‑4660",
+        features: ["Episcopal", "LGBTQ+ Friendly", "Historic"],
+        hours: "Sunday Services: 9am & 10:30am"
+      },
+      {
+        name: "Bloomfield Congregational Church",
+        address: "10 Wintonbury Ave, Bloomfield, CT 06002",
+        description: "Open & affirming UCC congregation with family programs",
+        phone: "(860) 242‑0776",
+        features: ["UCC", "Family-Friendly", "Inclusive"],
+        hours: "Sunday Worship: 10am"
       }
     ]
   };
