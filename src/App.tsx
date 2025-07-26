@@ -10,6 +10,9 @@ import Recommendations from "./pages/Recommendations";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Features from "./pages/Features";
+import HowItWorks from "./pages/HowItWorks";
+import FAQ from "./pages/FAQ";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +25,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/onboarding" element={<OnboardingQuiz />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/dashboard" element={<Dashboard />} />
