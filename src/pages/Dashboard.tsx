@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -234,7 +235,34 @@ export default function Dashboard() {
     }
   };
 
-  const groupedRecommendations = recommendations.reduce((groups, rec) => {
+  // Helper function to check if priority matches category
+  const priorityMatchesCategory = (priority: string, category: string) => {
+    const priorityLower = priority.toLowerCase();
+    const categoryLower = category.toLowerCase();
+    
+    // Direct matches
+    if (priorityLower === categoryLower) return true;
+    
+    // Partial matches for common variations
+    if (priorityLower.includes('grocery') && categoryLower.includes('grocery')) return true;
+    if (priorityLower.includes('fitness') && categoryLower.includes('fitness')) return true;
+    if (priorityLower.includes('faith') && categoryLower.includes('faith')) return true;
+    if (priorityLower.includes('medical') && categoryLower.includes('medical')) return true;
+    if (priorityLower.includes('childcare') && categoryLower.includes('childcare')) return true;
+    if (priorityLower.includes('transit') && categoryLower.includes('transit')) return true;
+    if (priorityLower.includes('green') && categoryLower.includes('green')) return true;
+    if (priorityLower.includes('safety') && categoryLower.includes('safety')) return true;
+    if (priorityLower.includes('restaurant') && categoryLower.includes('restaurant')) return true;
+    if (priorityLower.includes('social') && categoryLower.includes('social')) return true;
+    
+    return false;
+  };
+
+  const filteredRecommendations = activeFilter 
+    ? recommendations.filter(rec => priorityMatchesCategory(activeFilter, rec.category))
+    : recommendations;
+
+  const groupedRecommendations = filteredRecommendations.reduce((groups, rec) => {
     const category = rec.category;
     if (!groups[category]) {
       groups[category] = [];
@@ -242,6 +270,14 @@ export default function Dashboard() {
     groups[category].push(rec);
     return groups;
   }, {} as { [key: string]: SavedRecommendation[] });
+
+  const handlePriorityFilter = (priority: string) => {
+    if (activeFilter === priority) {
+      setActiveFilter(null); // Clear filter if clicking same priority
+    } else {
+      setActiveFilter(priority);
+    }
+  };
 
   const getUserSummary = () => {
     if (!userProfile) return "Welcome to your new neighborhood! Here's what we recommend for you.";
@@ -367,13 +403,33 @@ export default function Dashboard() {
                 
                 {userProfile.priorities && userProfile.priorities.length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">Your Priorities</Label>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Your Priorities {activeFilter && <span className="text-primary">- Filtered by: {activeFilter}</span>}
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       {userProfile.priorities.map((priority, index) => (
-                        <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className={`cursor-pointer transition-all hover:scale-105 ${
+                            activeFilter === priority 
+                              ? "bg-primary text-primary-foreground border-primary shadow-md" 
+                              : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                          }`}
+                          onClick={() => handlePriorityFilter(priority)}
+                        >
                           {priority}
                         </Badge>
                       ))}
+                      {activeFilter && (
+                        <Badge 
+                          variant="outline" 
+                          className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
+                          onClick={() => setActiveFilter(null)}
+                        >
+                          Clear Filter
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 )}
