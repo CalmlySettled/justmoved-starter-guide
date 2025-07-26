@@ -68,14 +68,17 @@ const BRAND_LOGOS: { [key: string]: string } = {
 // Function to get brand logo for a business
 function getBrandLogo(businessName: string): string | null {
   const nameLower = businessName.toLowerCase();
+  console.log(`Checking brand logo for: "${businessName}"`);
   
   // Check for exact or partial matches with known brands
   for (const [brand, logo] of Object.entries(BRAND_LOGOS)) {
-    if (nameLower.includes(brand) || brand.includes(nameLower.split(' ')[0])) {
+    if (nameLower.includes(brand)) {
+      console.log(`✓ Found brand match: "${brand}" for business "${businessName}"`);
       return logo;
     }
   }
   
+  console.log(`✗ No brand match found for: "${businessName}"`);
   return null;
 }
 
