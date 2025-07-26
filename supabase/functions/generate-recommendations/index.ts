@@ -5,9 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const YELP_API_KEY = Deno.env.get('YELP_API_KEY');
-const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY');
-
 interface QuizResponse {
   zipCode: string;
   householdType: string;
@@ -45,88 +42,69 @@ async function getCoordinatesFromZip(zipCode: string): Promise<{ lat: number; ln
   return null;
 }
 
-// Yelp API search function
-async function searchYelp(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
-  if (!YELP_API_KEY) {
-    console.error('Yelp API key not found');
-    return [];
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(category)}&latitude=${coordinates.lat}&longitude=${coordinates.lng}&limit=10&sort_by=rating`,
+// Mock data generator function
+function generateMockBusinesses(category: string, coordinates: { lat: number; lng: number }): Business[] {
+  const mockBusinesses: { [key: string]: Business[] } = {
+    "grocery stores": [
       {
-        headers: {
-          'Authorization': `Bearer ${YELP_API_KEY}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Yelp API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    return data.businesses.map((business: any) => ({
-      name: business.name,
-      address: `${business.location.address1}, ${business.location.city}, ${business.location.state} ${business.location.zip_code}`,
-      description: business.categories.map((cat: any) => cat.title).join(', '),
-      phone: business.phone || '',
-      features: [
-        business.rating ? `${business.rating} stars` : '',
-        business.price || '',
-        business.is_closed ? 'Closed' : 'Open',
-        ...(business.categories.map((cat: any) => cat.title))
-      ].filter(Boolean),
-      hours: business.hours?.[0]?.open ? 'See website for hours' : undefined,
-      website: business.url
-    }));
-  } catch (error) {
-    console.error('Error fetching from Yelp:', error);
-    return [];
-  }
-}
-
-// Foursquare API search function
-async function searchFoursquare(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
-  if (!FOURSQUARE_API_KEY) {
-    console.error('Foursquare API key not found');
-    return [];
-  }
-
-  try {
-    const response = await fetch(
-      `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(category)}&ll=${coordinates.lat},${coordinates.lng}&limit=10&sort=RATING`,
+        name: "Fresh Market",
+        address: "123 Main St, Your City, State 12345",
+        description: "Full-service grocery store with organic options",
+        phone: "(555) 123-4567",
+        features: ["4.5 stars", "Organic produce", "Deli counter", "Pharmacy"],
+        hours: "6:00 AM - 11:00 PM daily",
+        website: "https://freshmarket.com"
+      },
       {
-        headers: {
-          'Authorization': FOURSQUARE_API_KEY,
-        },
+        name: "Corner Grocery",
+        address: "456 Oak Ave, Your City, State 12345",
+        description: "Neighborhood grocery with local products",
+        phone: "(555) 234-5678",
+        features: ["4.2 stars", "Local products", "Fresh bread", "Wine selection"],
+        hours: "7:00 AM - 10:00 PM daily"
       }
-    );
+    ],
+    "fitness gyms": [
+      {
+        name: "FitLife Gym",
+        address: "789 Fitness Blvd, Your City, State 12345",
+        description: "Full-service gym with modern equipment",
+        phone: "(555) 345-6789",
+        features: ["4.8 stars", "24/7 access", "Personal training", "Group classes"],
+        hours: "24 hours",
+        website: "https://fitlifegym.com"
+      },
+      {
+        name: "Community Recreation Center",
+        address: "321 Sports Dr, Your City, State 12345",
+        description: "Public recreation facility with pool and courts",
+        phone: "(555) 456-7890",
+        features: ["4.3 stars", "Swimming pool", "Basketball courts", "Affordable rates"],
+        hours: "5:00 AM - 10:00 PM"
+      }
+    ],
+    "churches religious": [
+      {
+        name: "Community Fellowship Church",
+        address: "654 Faith St, Your City, State 12345",
+        description: "Welcoming community church with diverse congregation",
+        phone: "(555) 567-8901",
+        features: ["Active community", "Youth programs", "Food pantry", "Music ministry"],
+        hours: "Sunday 9:00 AM & 11:00 AM services",
+        website: "https://communityfellowship.org"
+      },
+      {
+        name: "Sacred Heart Catholic Church",
+        address: "987 Chapel Rd, Your City, State 12345",
+        description: "Traditional Catholic parish serving the community",
+        phone: "(555) 678-9012",
+        features: ["Historic building", "Daily mass", "Religious education", "Community outreach"],
+        hours: "Daily mass 8:00 AM, Sunday 8:00 AM & 10:30 AM"
+      }
+    ]
+  };
 
-    if (!response.ok) {
-      throw new Error(`Foursquare API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    return data.results.map((place: any) => ({
-      name: place.name,
-      address: `${place.location.formatted_address}`,
-      description: place.categories.map((cat: any) => cat.name).join(', '),
-      phone: place.tel || '',
-      features: [
-        place.rating ? `${place.rating}/10 rating` : '',
-        ...(place.categories.map((cat: any) => cat.name)),
-        place.chains?.[0]?.name ? 'Chain' : 'Local'
-      ].filter(Boolean),
-      website: place.website
-    }));
-  } catch (error) {
-    console.error('Error fetching from Foursquare:', error);
-    return [];
-  }
+  return mockBusinesses[category] || [];
 }
 
 serve(async (req) => {
@@ -176,22 +154,22 @@ serve(async (req) => {
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
   
-  // Map user priorities to search terms and API choices
-  const priorityMap: { [key: string]: { term: string; api: 'yelp' | 'foursquare' } } = {
-    "grocery stores": { term: "grocery stores", api: "yelp" },
-    "grocery": { term: "grocery stores", api: "yelp" },
-    "food": { term: "grocery stores", api: "yelp" },
-    "shopping": { term: "grocery stores", api: "yelp" },
-    "fitness options": { term: "fitness gyms", api: "foursquare" },
-    "fitness": { term: "fitness gyms", api: "foursquare" },
-    "gym": { term: "fitness gyms", api: "foursquare" },
-    "exercise": { term: "fitness gyms", api: "foursquare" },
-    "health": { term: "fitness gyms", api: "foursquare" },
-    "faith communities": { term: "churches religious", api: "foursquare" },
-    "church": { term: "churches religious", api: "foursquare" },
-    "religious": { term: "churches religious", api: "foursquare" },
-    "spiritual": { term: "churches religious", api: "foursquare" },
-    "worship": { term: "churches religious", api: "foursquare" }
+  // Map user priorities to search terms
+  const priorityMap: { [key: string]: string } = {
+    "grocery stores": "grocery stores",
+    "grocery": "grocery stores",
+    "food": "grocery stores",
+    "shopping": "grocery stores",
+    "fitness options": "fitness gyms",
+    "fitness": "fitness gyms",
+    "gym": "fitness gyms",
+    "exercise": "fitness gyms",
+    "health": "fitness gyms",
+    "faith communities": "churches religious",
+    "church": "churches religious",
+    "religious": "churches religious",
+    "spiritual": "churches religious",
+    "worship": "churches religious"
   };
 
   console.log('Priority map keys:', Object.keys(priorityMap));
@@ -204,19 +182,13 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     
     // Check for direct matches or partial matches
     let foundMatch = false;
-    for (const [key, config] of Object.entries(priorityMap)) {
+    for (const [key, searchTerm] of Object.entries(priorityMap)) {
       if (priorityLower.includes(key) || key.includes(priorityLower)) {
-        console.log(`Found match for "${priority}" with key "${key}", using ${config.api} API for term "${config.term}"`);
+        console.log(`Found match for "${priority}" with key "${key}", generating mock data for "${searchTerm}"`);
         foundMatch = true;
-        let businesses: Business[] = [];
         
-        if (config.api === 'yelp') {
-          businesses = await searchYelp(config.term, coordinates);
-        } else {
-          businesses = await searchFoursquare(config.term, coordinates);
-        }
-        
-        console.log(`${config.api} returned ${businesses.length} businesses for "${config.term}"`);
+        const businesses = generateMockBusinesses(searchTerm, coordinates);
+        console.log(`Generated ${businesses.length} mock businesses for "${searchTerm}"`);
         
         if (businesses.length > 0) {
           recommendations[priority] = businesses;
@@ -233,15 +205,9 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   // If no specific matches found, add some default categories
   if (Object.keys(recommendations).length === 0) {
-    const [groceryStores, fitnessOptions, faithCommunities] = await Promise.all([
-      searchYelp("grocery stores", coordinates),
-      searchFoursquare("fitness gyms", coordinates),
-      searchFoursquare("churches religious", coordinates)
-    ]);
-
-    if (groceryStores.length > 0) recommendations["grocery stores"] = groceryStores;
-    if (fitnessOptions.length > 0) recommendations["fitness options"] = fitnessOptions;
-    if (faithCommunities.length > 0) recommendations["faith communities"] = faithCommunities;
+    recommendations["Grocery stores"] = generateMockBusinesses("grocery stores", coordinates);
+    recommendations["Fitness options"] = generateMockBusinesses("fitness gyms", coordinates);
+    recommendations["Faith communities"] = generateMockBusinesses("churches religious", coordinates);
   }
 
   return recommendations;
