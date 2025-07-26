@@ -36,24 +36,57 @@ export default function OnboardingQuiz() {
   const [quizData, setQuizData] = useState<QuizData>(initialData);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
 
   const totalQuestions = 6;
 
-  const handleNext = () => {
-    if (currentQuestion < totalQuestions) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      setIsComplete(true);
+  // Get background image for current question
+  const getBackgroundImage = (questionNum: number) => {
+    switch (questionNum) {
+      case 1: // Address - neighborhood/cityscape
+        return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
+      case 2: // Household - cozy home
+        return "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=1200&h=800&fit=crop";
+      case 3: // Priorities - vibrant community
+        return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
+      case 4: // Transportation - urban movement
+        return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
+      case 5: // Lifestyle - relaxed scene
+        return "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1200&h=800&fit=crop";
+      case 6: // Life stage - starry aspirational
+        return "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=1200&h=800&fit=crop";
+      default:
+        return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
     }
   };
 
+  const handleNext = () => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      if (currentQuestion < totalQuestions) {
+        setCurrentQuestion(currentQuestion + 1);
+      } else {
+        setIsComplete(true);
+      }
+      setIsTransitioning(false);
+    }, 150);
+  };
+
   const handlePrevious = () => {
-    if (currentQuestion > 1) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      if (currentQuestion > 1) {
+        setCurrentQuestion(currentQuestion - 1);
+      }
+      setIsTransitioning(false);
+    }, 150);
   };
 
   const handleAddressChange = (value: string) => {
@@ -235,38 +268,51 @@ export default function OnboardingQuiz() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen relative transition-all duration-500"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${getBackgroundImage(currentQuestion)})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Animated overlay for smoother transitions */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background/20 to-background/10 backdrop-blur-[1px]" />
+      
       {/* Header */}
-      <header className="border-b border-border/50 shadow-soft">
+      <header className="relative z-10 border-b border-white/20 backdrop-blur-md bg-white/10 shadow-lg">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
+            <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-lg">
               <Home className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-foreground">CalmlySettled</span>
+            <span className="text-2xl font-bold text-white">CalmlySettled</span>
           </Link>
           
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-white/80 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
             Question {currentQuestion} of {totalQuestions}
           </div>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="max-w-4xl mx-auto px-6 py-4">
-        <div className="w-full bg-muted rounded-full h-2">
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-4">
+        <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
           <div 
-            className="bg-gradient-hero h-2 rounded-full transition-all duration-300"
+            className="bg-gradient-hero h-3 rounded-full transition-all duration-500 shadow-glow animate-pulse"
             style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <Card>
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-8">
+        <Card className={`backdrop-blur-md bg-white/95 shadow-2xl border-0 transition-all duration-300 ${
+          isTransitioning ? 'animate-fade-out scale-95' : 'animate-fade-in scale-100'
+        }`}>
           <CardHeader>
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-2xl text-foreground">
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
