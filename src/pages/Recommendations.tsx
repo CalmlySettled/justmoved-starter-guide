@@ -146,90 +146,42 @@ export default function Recommendations() {
   };
 
   const getBusinessImage = (business: Business, category: string) => {
-    // First, try to use the image URL from Yelp API
+    // First priority: Use image URL from API (Google Places or Yelp)
     if (business.image_url && business.image_url.length > 0) {
       return business.image_url;
     }
     
-    // Then fall back to uploaded business images for specific businesses
-    
-    // Grocery Stores - Major Chains
-    if (business.name.toLowerCase().includes('safeway')) {
-      return '/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png';
-    }
-    if (business.name.toLowerCase().includes('whole foods')) {
-      return '/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png';
-    }
-    if (business.name.toLowerCase().includes('trader joe')) {
-      return '/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png';
-    }
-    
-    // Other Grocery Stores
-    if (business.name.toLowerCase().includes('geissler')) {
-      return '/lovable-uploads/e9c9bd3b-56c9-4c4d-9908-acb6c4950b77.png';
-    }
-    if (business.name.toLowerCase().includes('stop') && business.name.toLowerCase().includes('shop')) {
-      return '/lovable-uploads/f379c4b6-3d2f-4893-860e-70853f3b634c.png';
-    }
-    if (business.name.toLowerCase().includes('fresh farm')) {
-      return '/lovable-uploads/63cb8a6f-dfac-4328-b8d3-b392fedc9993.png';
-    }
-    if (business.name.toLowerCase().includes('sav-mor')) {
-      return '/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png';
-    }
-    if (business.name.toLowerCase().includes('aldi')) {
-      return '/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png';
-    }
-    
-    // Gyms/Fitness
-    if (business.name.toLowerCase().includes('total health')) {
-      return '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png';
-    }
-    if (business.name.toLowerCase().includes('planet fitness')) {
-      return '/lovable-uploads/b393c4b5-8487-47b0-a991-d59fbc4c421c.png';
-    }
-    if (business.name.toLowerCase().includes('club fitness')) {
-      return '/lovable-uploads/16cb62a7-bb30-432d-804b-9f20266bbce7.png';
-    }
-    if (business.name.toLowerCase().includes('gold\'s gym')) {
-      return '/lovable-uploads/8ae3c503-4c33-4e74-a098-c0bf7cf1e90f.png';
-    }
-    if (business.name.toLowerCase().includes('fit body boot camp')) {
-      return '/lovable-uploads/2beb6084-f2f4-4058-9014-43a42f522449.png';
-    }
-    
-    // Churches/Faith Communities
-    if (business.name.toLowerCase().includes('wintonbury')) {
-      return '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png';
-    }
-    if (business.name.toLowerCase().includes('sacred heart')) {
-      return '/lovable-uploads/cc86ee7c-c45c-4416-b52f-c3f131ca741c.png';
-    }
-    if (business.name.toLowerCase().includes('first cathedral')) {
-      return '/lovable-uploads/f8f75b8b-1f7f-457f-a75e-b4ca2d363cf6.png';
-    }
-    if (business.name.toLowerCase().includes('old st') && business.name.toLowerCase().includes('andrew')) {
-      return '/lovable-uploads/62c94628-65d4-4af6-9058-5b2b566bd87b.png';
-    }
-    if (business.name.toLowerCase().includes('bloomfield congregational')) {
-      return '/lovable-uploads/09dfac75-fdf4-4cbe-8dbb-a8d1e95e149c.png';
-    }
-    
-    // Default placeholder images by category
-    const placeholders = {
-      'grocery': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-      'fitness': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-      'restaurant': 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop',
-      'faith': 'https://images.unsplash.com/photo-1466442929976-97f336a657be?w=400&h=300&fit=crop',
-      'green space': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop',
-      'medical': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop'
+    // Second priority: Category-based fallback images
+    const categoryFallbacks = {
+      'grocery': '/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png', // Clean grocery store image
+      'fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png', // Fitness/gym image
+      'church': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png', // Church image
+      'faith': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png', // Faith communities
+      'restaurant': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png', // Restaurant image
+      'medical': '/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png', // Medical/healthcare
+      'green space': '/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png', // Parks/green spaces
+      'default': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png' // Generic business fallback
     };
     
-    const categoryKey = Object.keys(placeholders).find(key => 
-      category.toLowerCase().includes(key)
-    ) || 'grocery';
+    // Determine category key based on the category string
+    let categoryKey = 'default';
+    const categoryLower = category.toLowerCase();
     
-    return placeholders[categoryKey as keyof typeof placeholders];
+    if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
+      categoryKey = 'grocery';
+    } else if (categoryLower.includes('fitness') || categoryLower.includes('gym') || categoryLower.includes('exercise')) {
+      categoryKey = 'fitness';
+    } else if (categoryLower.includes('church') || categoryLower.includes('faith') || categoryLower.includes('religious')) {
+      categoryKey = 'faith';
+    } else if (categoryLower.includes('restaurant') || categoryLower.includes('food') || categoryLower.includes('dining')) {
+      categoryKey = 'restaurant';
+    } else if (categoryLower.includes('medical') || categoryLower.includes('health') || categoryLower.includes('doctor')) {
+      categoryKey = 'medical';
+    } else if (categoryLower.includes('park') || categoryLower.includes('green') || categoryLower.includes('recreation')) {
+      categoryKey = 'green space';
+    }
+    
+    return categoryFallbacks[categoryKey as keyof typeof categoryFallbacks];
   };
 
   const getGoogleMapsUrl = (address: string, businessName: string) => {

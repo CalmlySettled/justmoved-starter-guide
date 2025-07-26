@@ -29,70 +29,12 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains - using working local assets
-const BRAND_LOGOS: { [key: string]: string } = {
-  // Major grocery chains with working local brand logos
-  "safeway": "/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png",
-  "kroger": "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png", 
-  "walmart": "/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png",
-  "target": "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png",
-  "whole foods": "/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png",
-  "trader joe": "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png",
-  "costco": "/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png",
-  "stop & shop": "/lovable-uploads/4d41876b-9d9e-4a4d-abb8-5b4b924e2e23.png",
-  "big y": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Big_Y_logo.svg/320px-Big_Y_logo.svg.png",
-  "aldi": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/ALDI_logo.svg/320px-ALDI_logo.svg.png",
-  "harris teeter": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Harris_Teeter_logo.svg/320px-Harris_Teeter_logo.svg.png",
-  
-  // Fitness Centers
-  "planet fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Planet_Fitness_logo.svg/320px-Planet_Fitness_logo.svg.png",
-  "la fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/LA_Fitness_logo.svg/320px-LA_Fitness_logo.svg.png",
-  "24 hour fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/24_Hour_Fitness_logo.svg/320px-24_Hour_Fitness_logo.svg.png",
-  "anytime fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Anytime_Fitness_logo.svg/320px-Anytime_Fitness_logo.svg.png",
-  "gold's gym": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Gold%27s_Gym_logo.svg/320px-Gold%27s_Gym_logo.svg.png",
-  
-  // Restaurants/Coffee
-  "starbucks": "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Starbucks_Corporation_Logo_2011.svg/320px-Starbucks_Corporation_Logo_2011.svg.png",
-  "dunkin": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Dunkin%27_logo.svg/320px-Dunkin%27_logo.svg.png",
-  "mcdonald": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/McDonald%27s_Golden_Arches.svg/320px-McDonald%27s_Golden_Arches.svg.png",
-  "subway": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Subway_2016_logo.svg/320px-Subway_2016_logo.svg.png",
-  "chipotle": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Chipotle_Mexican_Grill_logo.svg/320px-Chipotle_Mexican_Grill_logo.svg.png",
-  "panera": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Panera_Bread_logo.svg/320px-Panera_Bread_logo.svg.png",
-  
-  // Pharmacies/Medical
-  "cvs": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/CVS_Pharmacy_logo.svg/320px-CVS_Pharmacy_logo.svg.png",
-  "walgreens": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Walgreens_logo.svg/320px-Walgreens_logo.svg.png",
-  "rite aid": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Rite_Aid_logo.svg/320px-Rite_Aid_logo.svg.png",
-};
+// Removed hardcoded brand logos - using pure API + category fallback system
+// All image logic now handled by frontend for better consistency and scaling
 
-// Category stock photos for non-brand businesses
-const CATEGORY_STOCK_PHOTOS: { [key: string]: string } = {
-  "grocery stores": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "fitness gyms": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop",
-  "churches religious": "https://images.unsplash.com/photo-1520637836862-4d197d17c87a?w=400&h=300&fit=crop",
-  "medical health": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop",
-  "schools education": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=300&fit=crop",
-  "parks recreation": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop",
-  "public transportation": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop",
-  "parks trails": "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop",
-  "restaurants cafes": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop",
-  "community centers": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&h=300&fit=crop"
-};
-
-// Function to get brand logo for a business
+// Simplified function - no brand logo logic, pure API approach
 function getBrandLogo(businessName: string): string | null {
-  const nameLower = businessName.toLowerCase();
-  console.log(`Checking brand logo for: "${businessName}"`);
-  
-  // Check for exact or partial matches with known brands
-  for (const [brand, logo] of Object.entries(BRAND_LOGOS)) {
-    if (nameLower.includes(brand)) {
-      console.log(`✓ Found brand match: "${brand}" for business "${businessName}"`);
-      return logo;
-    }
-  }
-  
-  console.log(`✗ No brand match found for: "${businessName}"`);
+  // Brand logos removed - frontend handles all image logic now
   return null;
 }
 
@@ -190,20 +132,13 @@ async function searchYelpBusinesses(
     console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
     return (data.businesses || []).map((business: any) => {
-      // First try brand logo, then Yelp image, then category stock photo as fallback
-      const brandLogo = getBrandLogo(business.name);
-      const categoryStock = CATEGORY_STOCK_PHOTOS[category] || CATEGORY_STOCK_PHOTOS["grocery stores"]; // Default fallback
-      let imageUrl = '';
+      // Use only Yelp's image URL if available - no hardcoded fallbacks
+      const imageUrl = business.image_url || '';
       
-      if (brandLogo) {
-        imageUrl = brandLogo;
-        console.log(`✓ Using brand logo for: ${business.name}`);
-      } else if (business.image_url) {
-        imageUrl = business.image_url;
+      if (business.image_url) {
         console.log(`→ Using Yelp photo for: ${business.name}`);
       } else {
-        imageUrl = categoryStock;
-        console.log(`→ Using category stock photo for: ${business.name} (category: ${category})`);
+        console.log(`→ No image available for: ${business.name}`);
       }
       
       
@@ -266,21 +201,15 @@ async function searchGooglePlaces(
 
     // Convert Google Places results to Business objects with photos
     const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
-      // First try brand logo, then Google photo, then category stock photo as fallback
-      const brandLogo = getBrandLogo(place.name);
-      const categoryStock = CATEGORY_STOCK_PHOTOS[category] || CATEGORY_STOCK_PHOTOS["grocery stores"]; // Default fallback
+      // Use Google's photo API if available, otherwise no image
       let imageUrl = '';
       
-      if (brandLogo) {
-        imageUrl = brandLogo;
-        console.log(`✓ Using brand logo for: ${place.name}`);
-      } else if (place.photos && place.photos.length > 0) {
+      if (place.photos && place.photos.length > 0) {
         const photoReference = place.photos[0].photo_reference;
         imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
         console.log(`→ Using Google photo for: ${place.name}`);
       } else {
-        imageUrl = categoryStock;
-        console.log(`→ Using category stock photo for: ${place.name} (category: ${category})`);
+        console.log(`→ No image available for: ${place.name}`);
       }
 
       return {
