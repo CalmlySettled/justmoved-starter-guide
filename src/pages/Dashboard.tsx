@@ -165,6 +165,28 @@ export default function Dashboard() {
     return badges.slice(0, 2);
   };
 
+  // Helper function to get business image
+  const getBusinessImage = (businessName: string, category: string) => {
+    const name = businessName.toLowerCase();
+    
+    // Specific business images
+    if (name.includes("geissler")) {
+      return "/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png";
+    }
+    
+    // Category-based placeholder images
+    switch (category.toLowerCase()) {
+      case 'grocery stores':
+        return "https://images.unsplash.com/photo-1527576539890-dfa815648363?w=400&h=200&fit=crop";
+      case 'fitness options':
+        return "https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?w=400&h=200&fit=crop";
+      case 'faith communities':
+        return "https://images.unsplash.com/photo-1473177104440-ffee2f376098?w=400&h=200&fit=crop";
+      default:
+        return "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=200&fit=crop";
+    }
+  };
+
   const groupedRecommendations = recommendations.reduce((groups, rec) => {
     const category = rec.category;
     if (!groups[category]) {
@@ -369,6 +391,15 @@ export default function Dashboard() {
                     const badges = getBusinessBadges(rec.business_features || []);
                     return (
                       <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
+                        {/* Business Image */}
+                        <div className="aspect-video overflow-hidden">
+                          <img 
+                            src={getBusinessImage(rec.business_name, rec.category)}
+                            alt={rec.business_name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        
                         <CardHeader className="pb-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
