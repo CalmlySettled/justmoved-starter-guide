@@ -153,7 +153,18 @@ export default function Recommendations() {
     
     // Then fall back to uploaded business images for specific businesses
     
-    // Grocery Stores
+    // Grocery Stores - Major Chains
+    if (business.name.toLowerCase().includes('safeway')) {
+      return '/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png';
+    }
+    if (business.name.toLowerCase().includes('whole foods')) {
+      return '/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png';
+    }
+    if (business.name.toLowerCase().includes('trader joe')) {
+      return '/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png';
+    }
+    
+    // Other Grocery Stores
     if (business.name.toLowerCase().includes('geissler')) {
       return '/lovable-uploads/e9c9bd3b-56c9-4c4d-9908-acb6c4950b77.png';
     }
