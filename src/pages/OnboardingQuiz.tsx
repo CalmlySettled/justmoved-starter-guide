@@ -201,6 +201,7 @@ export default function OnboardingQuiz() {
                   business_address: business.address,
                   business_description: business.description,
                   business_phone: business.phone,
+                  business_image: business.image_url && business.image_url.trim() !== '' ? business.image_url : null,
                   business_features: business.features || [],
                   distance_miles: business.distance_miles,
                   business_latitude: business.latitude,
