@@ -32,6 +32,7 @@ interface SavedRecommendation {
   business_address?: string;
   business_description?: string;
   business_phone?: string;
+  business_image?: string;
   business_features: string[];
   distance_miles?: number;
   created_at: string;
@@ -284,8 +285,14 @@ export default function Dashboard() {
   };
 
   // Helper function to get business image
-  const getBusinessImage = (businessName: string, category: string) => {
-    const name = businessName.toLowerCase();
+  const getBusinessImage = (rec: SavedRecommendation) => {
+    // First check if we have a real image URL from the API
+    if (rec.business_image && rec.business_image !== 'placeholder') {
+      return rec.business_image;
+    }
+    
+    const name = rec.business_name.toLowerCase();
+    const category = rec.category;
     
     // Specific business images - grocery stores
     if (name.includes("geissler")) {
@@ -694,8 +701,8 @@ export default function Dashboard() {
                       <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
                         {/* Business Image */}
                         <div className="aspect-video overflow-hidden">
-                          <img 
-                            src={getBusinessImage(rec.business_name, rec.category)}
+                           <img 
+                            src={getBusinessImage(rec)}
                             alt={rec.business_name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
