@@ -53,6 +53,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<{[category: string]: string | null}>({});
 
   useEffect(() => {
     if (!user) {
@@ -151,6 +152,119 @@ export default function Dashboard() {
       "social events": "🎉"
     };
     return icons[category.toLowerCase()] || "📍";
+  };
+
+  const getCategoryFilters = (category: string) => {
+    const categoryLower = category.toLowerCase();
+    
+    if (categoryLower.includes('grocery')) {
+      return ['Organic', 'Budget-Friendly', '24/7', 'Local', 'International', 'Specialty'];
+    }
+    if (categoryLower.includes('fitness')) {
+      return ['Classes', 'Budget-Friendly', '24/7', 'Personal Training', 'Women-Only', 'Pool'];
+    }
+    if (categoryLower.includes('faith')) {
+      return ['Christian', 'Catholic', 'Protestant', 'Baptist', 'Methodist', 'Non-Denominational'];
+    }
+    if (categoryLower.includes('medical')) {
+      return ['Walk-In', 'Specialists', 'Emergency', 'Family Practice', 'Pediatrics', 'Urgent Care'];
+    }
+    if (categoryLower.includes('childcare')) {
+      return ['Daycare', 'Preschool', 'After School', 'Summer Programs', 'Infant Care', 'Budget-Friendly'];
+    }
+    if (categoryLower.includes('restaurant')) {
+      return ['Fast Food', 'Fine Dining', 'Family-Friendly', 'Takeout', 'Healthy Options', 'Budget-Friendly'];
+    }
+    
+    return ['Budget-Friendly', 'Highly Rated', 'Local Favorite', 'Accessible', 'Family-Friendly'];
+  };
+
+  const filterByFeatures = (rec: SavedRecommendation, filter: string) => {
+    const features = rec.business_features?.join(' ').toLowerCase() || '';
+    const description = rec.business_description?.toLowerCase() || '';
+    const name = rec.business_name.toLowerCase();
+    const searchText = `${features} ${description} ${name}`;
+    
+    switch (filter.toLowerCase()) {
+      case 'organic':
+        return searchText.includes('organic') || searchText.includes('natural') || searchText.includes('fresh');
+      case 'budget-friendly':
+        return searchText.includes('budget') || searchText.includes('affordable') || searchText.includes('discount') || 
+               searchText.includes('cheap') || searchText.includes('value') || name.includes('aldi') || name.includes('walmart');
+      case '24/7':
+      case '24 hours':
+        return searchText.includes('24') || searchText.includes('24/7') || searchText.includes('24 hours');
+      case 'local':
+        return searchText.includes('local') || searchText.includes('family') || searchText.includes('community');
+      case 'international':
+        return searchText.includes('international') || searchText.includes('ethnic') || searchText.includes('world');
+      case 'specialty':
+        return searchText.includes('specialty') || searchText.includes('gourmet') || searchText.includes('artisan');
+      case 'classes':
+        return searchText.includes('classes') || searchText.includes('group') || searchText.includes('yoga') || 
+               searchText.includes('zumba') || searchText.includes('aerobics');
+      case 'personal training':
+        return searchText.includes('personal') || searchText.includes('trainer') || searchText.includes('coaching');
+      case 'women-only':
+        return searchText.includes('women') || searchText.includes('ladies') || searchText.includes('female');
+      case 'pool':
+        return searchText.includes('pool') || searchText.includes('swimming') || searchText.includes('aqua');
+      case 'christian':
+        return searchText.includes('christian') || searchText.includes('christ') || searchText.includes('evangelical');
+      case 'catholic':
+        return searchText.includes('catholic') || name.includes('st.') || name.includes('saint') || 
+               name.includes('sacred heart') || name.includes('our lady');
+      case 'protestant':
+        return searchText.includes('protestant') || searchText.includes('lutheran') || searchText.includes('episcopal');
+      case 'baptist':
+        return searchText.includes('baptist');
+      case 'methodist':
+        return searchText.includes('methodist') || searchText.includes('united methodist');
+      case 'non-denominational':
+        return searchText.includes('non-denominational') || searchText.includes('community church') || 
+               searchText.includes('fellowship');
+      case 'walk-in':
+        return searchText.includes('walk-in') || searchText.includes('walk in') || searchText.includes('no appointment');
+      case 'specialists':
+        return searchText.includes('specialist') || searchText.includes('cardiology') || searchText.includes('orthopedic');
+      case 'emergency':
+        return searchText.includes('emergency') || searchText.includes('er ') || searchText.includes('24 hour');
+      case 'family practice':
+        return searchText.includes('family') || searchText.includes('primary care') || searchText.includes('general');
+      case 'pediatrics':
+        return searchText.includes('pediatric') || searchText.includes('children') || searchText.includes('kids');
+      case 'urgent care':
+        return searchText.includes('urgent') || searchText.includes('immediate');
+      case 'daycare':
+        return searchText.includes('daycare') || searchText.includes('day care');
+      case 'preschool':
+        return searchText.includes('preschool') || searchText.includes('pre-school');
+      case 'after school':
+        return searchText.includes('after school') || searchText.includes('afterschool');
+      case 'summer programs':
+        return searchText.includes('summer') || searchText.includes('camp');
+      case 'infant care':
+        return searchText.includes('infant') || searchText.includes('baby') || searchText.includes('toddler');
+      case 'fast food':
+        return searchText.includes('fast') || searchText.includes('quick') || name.includes('mcdonalds') || 
+               name.includes('burger king') || name.includes('kfc');
+      case 'fine dining':
+        return searchText.includes('fine') || searchText.includes('upscale') || searchText.includes('gourmet');
+      case 'family-friendly':
+        return searchText.includes('family') || searchText.includes('kids') || searchText.includes('children');
+      case 'takeout':
+        return searchText.includes('takeout') || searchText.includes('delivery') || searchText.includes('take out');
+      case 'healthy options':
+        return searchText.includes('healthy') || searchText.includes('salad') || searchText.includes('organic');
+      case 'highly rated':
+        return searchText.includes('rating') || searchText.includes('review') || searchText.includes('star');
+      case 'local favorite':
+        return searchText.includes('local') || searchText.includes('favorite') || searchText.includes('popular');
+      case 'accessible':
+        return searchText.includes('accessible') || searchText.includes('ada') || searchText.includes('wheelchair');
+      default:
+        return true;
+    }
   };
 
   const getBusinessBadges = (features: string[]) => {
@@ -267,9 +381,24 @@ export default function Dashboard() {
     if (!groups[category]) {
       groups[category] = [];
     }
-    groups[category].push(rec);
+    
+    // Apply category-specific filter if one is active for this category
+    const categoryFilter = activeCategoryFilter[category];
+    if (categoryFilter && filterByFeatures(rec, categoryFilter)) {
+      groups[category].push(rec);
+    } else if (!categoryFilter) {
+      groups[category].push(rec);
+    }
+    
     return groups;
   }, {} as { [key: string]: SavedRecommendation[] });
+
+  const handleCategoryFilter = (category: string, filter: string) => {
+    setActiveCategoryFilter(prev => ({
+      ...prev,
+      [category]: prev[category] === filter ? null : filter
+    }));
+  };
 
   const handlePriorityFilter = (priority: string) => {
     if (activeFilter === priority) {
@@ -475,7 +604,7 @@ export default function Dashboard() {
               <div key={category} className="space-y-8">
                 {categoryIndex > 0 && <div className="border-t border-border/30 pt-16" />}
                 
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-6">
                   <div className="p-3 bg-primary/10 rounded-2xl">
                     <span className="text-2xl">{getCategoryIcon(category)}</span>
                   </div>
@@ -486,6 +615,35 @@ export default function Dashboard() {
                     <p className="text-muted-foreground mt-1">
                       {categoryRecs.length} saved recommendation{categoryRecs.length !== 1 ? 's' : ''}
                     </p>
+                  </div>
+                </div>
+
+                {/* Category-specific filters */}
+                <div className="mb-8">
+                  <div className="flex flex-wrap gap-2">
+                    {getCategoryFilters(category).map((filter) => (
+                      <Badge 
+                        key={filter}
+                        variant="outline"
+                        className={`cursor-pointer transition-all hover:scale-105 ${
+                          activeCategoryFilter[category] === filter
+                            ? "bg-primary text-primary-foreground border-primary shadow-md" 
+                            : "bg-background text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/50"
+                        }`}
+                        onClick={() => handleCategoryFilter(category, filter)}
+                      >
+                        {filter}
+                      </Badge>
+                    ))}
+                    {activeCategoryFilter[category] && (
+                      <Badge 
+                        variant="outline" 
+                        className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
+                        onClick={() => handleCategoryFilter(category, activeCategoryFilter[category]!)}
+                      >
+                        Clear
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
