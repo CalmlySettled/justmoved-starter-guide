@@ -197,10 +197,14 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
   // For each user priority, search for businesses
   for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
+    console.log(`Processing priority: "${priority}" (lowercase: "${priorityLower}")`);
     
     // Check for direct matches or partial matches
+    let foundMatch = false;
     for (const [key, config] of Object.entries(priorityMap)) {
       if (priorityLower.includes(key) || key.includes(priorityLower)) {
+        console.log(`Found match for "${priority}" with key "${key}", using ${config.api} API for term "${config.term}"`);
+        foundMatch = true;
         let businesses: Business[] = [];
         
         if (config.api === 'yelp') {
@@ -209,11 +213,18 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
           businesses = await searchFoursquare(config.term, coordinates);
         }
         
+        console.log(`${config.api} returned ${businesses.length} businesses for "${config.term}"`);
+        
         if (businesses.length > 0) {
           recommendations[priority] = businesses;
+          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
         }
         break;
       }
+    }
+    
+    if (!foundMatch) {
+      console.log(`No match found for priority: "${priority}"`);
     }
   }
 
