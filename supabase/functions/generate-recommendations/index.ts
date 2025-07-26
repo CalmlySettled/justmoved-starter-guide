@@ -310,24 +310,33 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Enhanced business search that tries multiple APIs with Google Places fallback
+// Enhanced business search that tries Google Places first, Yelp as fallback
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
-  // Try Yelp first
-  let businesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
+  // Try Google Places FIRST (better coverage and image quality)
+  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
+  console.log(`Google Places found ${businesses.length} businesses`);
   
-  // If we don't get enough results from Yelp, try Google Places as fallback
+  // If we don't get enough results from Google Places, use Yelp as fallback
   if (businesses.length < 8) {
-    console.log(`Only found ${businesses.length} businesses from Yelp, trying Google Places as fallback`);
-    const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
+    console.log(`Only found ${businesses.length} businesses from Google Places, trying Yelp as fallback`);
+    const yelpBusinesses = await searchYelpBusinesses(category, coordinates.lat, coordinates.lng);
     
-    // Merge results, but avoid duplicates by name
-    const existingNames = new Set(businesses.map(b => b.name.toLowerCase()));
-    const newGoogleBusinesses = googleBusinesses.filter(b => !existingNames.has(b.name.toLowerCase()));
+    // Merge results, but avoid duplicates by name and address similarity
+    const existingBusinesses = new Set(
+      businesses.map(b => `${b.name.toLowerCase()}_${b.address.toLowerCase().substring(0, 20)}`)
+    );
     
-    businesses = [...businesses, ...newGoogleBusinesses];
-    console.log(`Combined total: ${businesses.length} businesses (${newGoogleBusinesses.length} from Google Places)`);
+    const newYelpBusinesses = yelpBusinesses.filter(b => {
+      const identifier = `${b.name.toLowerCase()}_${b.address.toLowerCase().substring(0, 20)}`;
+      return !existingBusinesses.has(identifier);
+    });
+    
+    businesses = [...businesses, ...newYelpBusinesses];
+    console.log(`Combined total: ${businesses.length} businesses (${newYelpBusinesses.length} from Yelp fallback)`);
+  } else {
+    console.log(`Google Places provided sufficient results (${businesses.length}), skipping Yelp`);
   }
   
   // Calculate distances for businesses that don't have them
