@@ -194,6 +194,9 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "worship": { term: "churches religious", api: "foursquare" }
   };
 
+  console.log('Priority map keys:', Object.keys(priorityMap));
+  console.log('User priorities received:', quizResponse.priorities);
+
   // For each user priority, search for businesses
   for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
