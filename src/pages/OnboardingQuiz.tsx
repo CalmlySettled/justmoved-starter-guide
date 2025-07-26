@@ -347,15 +347,8 @@ export default function OnboardingQuiz() {
 
             {/* Question 2: Household Type */}
             {currentQuestion === 2 && (
-              <div className="fixed inset-0 bg-background flex flex-col">
-                {/* Header for full screen view */}
-                <div className="p-6 text-center">
-                  <h2 className="text-3xl font-bold text-foreground mb-2">Who did you move with?</h2>
-                  <p className="text-muted-foreground">Select all that apply</p>
-                </div>
-                
-                {/* Full screen grid */}
-                <div className="flex-1 p-6 grid grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                   {[
                     { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
                     { option: "Partner/spouse", image: "/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png" },
@@ -365,7 +358,7 @@ export default function OnboardingQuiz() {
                   ].map(({ option, image }) => (
                     <div 
                       key={option} 
-                      className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 ${
+                      className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 min-h-[180px] ${
                         quizData.household.includes(option) 
                           ? 'ring-4 ring-primary shadow-glow' 
                           : 'hover:ring-2 hover:ring-primary/50'
@@ -377,13 +370,13 @@ export default function OnboardingQuiz() {
                         style={{ backgroundImage: `url(${image})` }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-                      <div className="absolute bottom-0 left-0 right-0 p-6">
-                        <p className="text-white font-bold text-lg leading-tight">
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="text-white font-bold text-base leading-tight">
                           {option}
                         </p>
                       </div>
                       {quizData.household.includes(option) && (
-                        <div className="absolute top-4 right-4 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <div className="absolute top-3 right-3 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                           <CheckCircle className="h-5 w-5 text-white" />
                         </div>
                       )}
