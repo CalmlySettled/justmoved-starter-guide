@@ -146,15 +146,21 @@ export default function OnboardingQuiz() {
             console.error('Error generating recommendations:', recError);
           } else if (recommendations?.recommendations) {
             // Save recommendations to user_recommendations table
-            const recommendationsToSave = recommendations.recommendations.map((rec: any) => ({
-              user_id: user.id,
-              category: rec.category,
-              business_name: rec.business_name,
-              business_address: rec.business_address,
-              business_description: rec.business_description,
-              business_phone: rec.business_phone,
-              business_features: rec.business_features || []
-            }));
+            const recommendationsToSave: any[] = [];
+            
+            Object.entries(recommendations.recommendations).forEach(([category, businesses]: [string, any[]]) => {
+              businesses.forEach((business: any) => {
+                recommendationsToSave.push({
+                  user_id: user.id,
+                  category: category,
+                  business_name: business.name,
+                  business_address: business.address,
+                  business_description: business.description,
+                  business_phone: business.phone,
+                  business_features: business.features || []
+                });
+              });
+            });
 
             const { error: saveError } = await supabase
               .from('user_recommendations')
