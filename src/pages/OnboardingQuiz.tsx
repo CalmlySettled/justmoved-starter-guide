@@ -392,13 +392,13 @@ export default function OnboardingQuiz() {
                 </div>
                 {[
                   "Grocery stores",
-                  "Medical care / pediatricians", 
+                  "Medical care", 
                   "Fitness options",
-                  "Childcare / schools",
+                  "Schools",
+                  "Parks",
                   "Faith communities",
                   "Public transit / commute info",
                   "Green space / trails",
-                  "Safety",
                   "Restaurants / coffee shops",
                   "Social events or community groups"
                 ].map((option) => (
