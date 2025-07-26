@@ -47,7 +47,7 @@ export default function OnboardingQuiz() {
   const getBackgroundImage = (questionNum: number) => {
     switch (questionNum) {
       case 1: // Address - neighborhood/cityscape
-        return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
+        return "/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png";
       case 2: // Household - cozy home
         return "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=1200&h=800&fit=crop";
       case 3: // Priorities - vibrant community
