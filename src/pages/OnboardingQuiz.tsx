@@ -269,8 +269,10 @@ export default function OnboardingQuiz() {
 
   return (
     <div 
-      className="min-h-screen relative transition-all duration-500"
-      style={{
+      className={`min-h-screen relative transition-all duration-500 ${
+        currentQuestion === 2 ? 'bg-background' : ''
+      }`}
+      style={currentQuestion === 2 ? {} : {
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${getBackgroundImage(currentQuestion)})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -278,7 +280,7 @@ export default function OnboardingQuiz() {
       }}
     >
       {/* Animated overlay for smoother transitions */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background/20 to-background/10 backdrop-blur-[1px]" />
+      {currentQuestion !== 2 && <div className="absolute inset-0 bg-gradient-to-br from-background/20 to-background/10 backdrop-blur-[1px]" />}
       
       {/* Header */}
       <header className="relative z-10 border-b border-white/20 backdrop-blur-md bg-white/10 shadow-lg">
@@ -345,40 +347,49 @@ export default function OnboardingQuiz() {
 
             {/* Question 2: Household Type */}
             {currentQuestion === 2 && (
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
-                  { option: "Partner/spouse", image: "/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png" },
-                  { option: "Kids", image: "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png" },
-                  { option: "Pets", image: "/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png" },
-                  { option: "Other (multi-gen family, roommates, etc.)", image: "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png" }
-                ].map(({ option, image }) => (
-                  <div 
-                    key={option} 
-                    className={`relative h-32 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 ${
-                      quizData.household.includes(option) 
-                        ? 'ring-4 ring-primary shadow-glow' 
-                        : 'hover:ring-2 hover:ring-primary/50'
-                    }`}
-                    onClick={() => handleHouseholdChange(option, !quizData.household.includes(option))}
-                  >
+              <div className="fixed inset-0 bg-background flex flex-col">
+                {/* Header for full screen view */}
+                <div className="p-6 text-center">
+                  <h2 className="text-3xl font-bold text-foreground mb-2">Who did you move with?</h2>
+                  <p className="text-muted-foreground">Select all that apply</p>
+                </div>
+                
+                {/* Full screen grid */}
+                <div className="flex-1 p-6 grid grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
+                    { option: "Partner/spouse", image: "/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png" },
+                    { option: "Kids", image: "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png" },
+                    { option: "Pets", image: "/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png" },
+                    { option: "Other (multi-gen family, roommates, etc.)", image: "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png" }
+                  ].map(({ option, image }) => (
                     <div 
-                      className="absolute inset-0 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${image})` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white font-semibold text-sm leading-tight">
-                        {option}
-                      </p>
-                    </div>
-                    {quizData.household.includes(option) && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 text-white" />
+                      key={option} 
+                      className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 ${
+                        quizData.household.includes(option) 
+                          ? 'ring-4 ring-primary shadow-glow' 
+                          : 'hover:ring-2 hover:ring-primary/50'
+                      }`}
+                      onClick={() => handleHouseholdChange(option, !quizData.household.includes(option))}
+                    >
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${image})` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <p className="text-white font-bold text-lg leading-tight">
+                          {option}
+                        </p>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {quizData.household.includes(option) && (
+                        <div className="absolute top-4 right-4 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
