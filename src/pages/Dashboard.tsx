@@ -19,7 +19,9 @@ import {
   Award,
   Users,
   RefreshCw,
-  Trash2
+  Trash2,
+  Car,
+  DollarSign
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
@@ -487,83 +489,121 @@ export default function Dashboard() {
         {/* User Profile & Quick Stats */}
         {userProfile && (
           <div className="mb-12">
-            {/* Quiz Results/Preferences */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Your Preferences
-                </CardTitle>
-                <CardDescription>Based on your quiz responses</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {userProfile.life_stage && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Life Stage</Label>
-                      <p className="text-foreground">{userProfile.life_stage}</p>
+            {/* Welcome Message */}
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-foreground mb-2">
+                Welcome, there! 
+              </h2>
+              <p className="text-muted-foreground">
+                Here's what we know about your move...
+              </p>
+            </div>
+
+            {/* Preference Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+              {userProfile.life_stage && (
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50 hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-blue-200/60 flex items-center justify-center mb-2">
+                        <Heart className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h3 className="font-medium text-foreground">Life Stage</h3>
+                      <p className="text-sm text-muted-foreground">{userProfile.life_stage}</p>
                     </div>
-                  )}
-                  {userProfile.household_type && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Household</Label>
-                      <p className="text-foreground">{userProfile.household_type}</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {userProfile.household_type && (
+                <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200/50 hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-green-200/60 flex items-center justify-center mb-2">
+                        <Users className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h3 className="font-medium text-foreground">Household</h3>
+                      <p className="text-sm text-muted-foreground">{userProfile.household_type}</p>
                     </div>
-                  )}
-                  {userProfile.transportation_style && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Transportation</Label>
-                      <p className="text-foreground">{userProfile.transportation_style}</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {userProfile.transportation_style && (
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-purple-200/60 flex items-center justify-center mb-2">
+                        <Car className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h3 className="font-medium text-foreground">Transportation</h3>
+                      <p className="text-sm text-muted-foreground">{userProfile.transportation_style}</p>
                     </div>
-                  )}
-                  {userProfile.budget_preference && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Budget Style</Label>
-                      <p className="text-foreground">{userProfile.budget_preference}</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {userProfile.budget_preference && (
+                <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-orange-200/60 flex items-center justify-center mb-2">
+                        <DollarSign className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <h3 className="font-medium text-foreground">Budget Style</h3>
+                      <p className="text-sm text-muted-foreground">{userProfile.budget_preference}</p>
                     </div>
-                  )}
-                  {userProfile.address && (
-                    <div>
-                      <Label className="text-sm font-medium text-muted-foreground">Address</Label>
-                      <p className="text-foreground">{userProfile.address}</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {userProfile.address && (
+                <Card className="bg-gradient-to-br from-teal-50 to-teal-100/50 border-teal-200/50 hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-teal-200/60 flex items-center justify-center mb-2">
+                        <MapPin className="h-6 w-6 text-teal-600" />
+                      </div>
+                      <h3 className="font-medium text-foreground">Location</h3>
+                      <p className="text-sm text-muted-foreground">{userProfile.address}</p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+                
+            {userProfile.priorities && userProfile.priorities.length > 0 && (
+              <div className="mb-8">
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Your Priorities {activeFilter && <span className="text-primary">- Filtered by: {activeFilter}</span>}
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {userProfile.priorities.map((priority, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className={`cursor-pointer transition-all hover:scale-105 ${
+                        activeFilter === priority 
+                          ? "bg-primary text-primary-foreground border-primary shadow-md" 
+                          : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                      }`}
+                      onClick={() => handlePriorityFilter(priority)}
+                    >
+                      {priority}
+                    </Badge>
+                  ))}
+                  {activeFilter && (
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
+                      onClick={() => setActiveFilter(null)}
+                    >
+                      Clear Filter
+                    </Badge>
                   )}
                 </div>
-                
-                {userProfile.priorities && userProfile.priorities.length > 0 && (
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      Your Priorities {activeFilter && <span className="text-primary">- Filtered by: {activeFilter}</span>}
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {userProfile.priorities.map((priority, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="secondary" 
-                          className={`cursor-pointer transition-all hover:scale-105 ${
-                            activeFilter === priority 
-                              ? "bg-primary text-primary-foreground border-primary shadow-md" 
-                              : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                          }`}
-                          onClick={() => handlePriorityFilter(priority)}
-                        >
-                          {priority}
-                        </Badge>
-                      ))}
-                      {activeFilter && (
-                        <Badge 
-                          variant="outline" 
-                          className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
-                          onClick={() => setActiveFilter(null)}
-                        >
-                          Clear Filter
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              </div>
+            )}
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
