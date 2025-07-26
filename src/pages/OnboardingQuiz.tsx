@@ -314,7 +314,7 @@ export default function OnboardingQuiz() {
           isTransitioning ? 'animate-fade-out scale-95' : 'animate-fade-in scale-100'
         }`}>
           <CardHeader>
-            <CardTitle className="text-2xl text-foreground">
+            <CardTitle className="text-2xl font-bold text-center">
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
@@ -322,6 +322,9 @@ export default function OnboardingQuiz() {
               {currentQuestion === 5 && "Which best describes your vibe?"}
               {currentQuestion === 6 && "Which stage of life best fits you right now?"}
             </CardTitle>
+            {currentQuestion === 2 && (
+              <p className="text-muted-foreground text-center">Choose all that apply</p>
+            )}
             {currentQuestion === 3 && (
               <p className="text-muted-foreground">Choose up to 5 options</p>
             )}
@@ -351,7 +354,7 @@ export default function OnboardingQuiz() {
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                   {[
                     { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
-                    { option: "Partner/spouse", image: "/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png" },
+                    { option: "Partner/spouse", image: "/lovable-uploads/4d41876b-9d9e-4a4d-abb8-5b4b924e2e23.png" },
                     { option: "Kids", image: "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png" },
                     { option: "Pets", image: "/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png" },
                     { option: "Other (multi-gen family, roommates, etc.)", image: "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png" }
