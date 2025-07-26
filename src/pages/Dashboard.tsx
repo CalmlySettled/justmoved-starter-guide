@@ -211,7 +211,7 @@ export default function Dashboard() {
       return "/lovable-uploads/cc86ee7c-c45c-4416-b52f-c3f131ca741c.png";
     }
     if (name.includes("first cathedral")) {
-      return "/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png";
+      return "/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png";
     }
     if (name.includes("st. andrew") || name.includes("saint andrew")) {
       return "/lovable-uploads/62c94628-65d4-4af6-9058-5b2b566bd87b.png";
