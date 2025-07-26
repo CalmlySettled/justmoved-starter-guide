@@ -29,49 +29,40 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains
+// Brand logo mapping for national chains - using reliable CDN sources
 const BRAND_LOGOS: { [key: string]: string } = {
   // Grocery Stores
-  "safeway": "https://logos-world.net/wp-content/uploads/2020/11/Safeway-Logo.png",
-  "kroger": "https://logos-world.net/wp-content/uploads/2020/12/Kroger-Logo.png",
-  "walmart": "https://logos-world.net/wp-content/uploads/2020/05/Walmart-Logo.png",
-  "target": "https://logos-world.net/wp-content/uploads/2020/04/Target-Logo.png",
-  "whole foods": "https://logos-world.net/wp-content/uploads/2020/12/Whole-Foods-Market-Logo.png",
-  "trader joe": "https://logos-world.net/wp-content/uploads/2021/03/Trader-Joes-Logo.png",
-  "costco": "https://logos-world.net/wp-content/uploads/2020/05/Costco-Logo.png",
-  "sam's club": "https://logos-world.net/wp-content/uploads/2020/11/Sams-Club-Logo.png",
-  "stop & shop": "https://logos-world.net/wp-content/uploads/2022/01/Stop-Shop-Logo.png",
-  "big y": "https://companieslogo.com/img/orig/BIG.Y-b3c9d4c8.png",
-  "aldi": "https://logos-world.net/wp-content/uploads/2020/11/ALDI-Logo.png",
+  "safeway": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Safeway_logo.svg/320px-Safeway_logo.svg.png",
+  "kroger": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Kroger_logo_%282019%29.svg/320px-Kroger_logo_%282019%29.svg.png",
+  "walmart": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/320px-Walmart_logo.svg.png",
+  "target": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Target_logo.svg/320px-Target_logo.svg.png",
+  "whole foods": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Whole_Foods_Market_logo.svg/320px-Whole_Foods_Market_logo.svg.png",
+  "trader joe": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Trader_Joe%27s_logo.svg/320px-Trader_Joe%27s_logo.svg.png",
+  "costco": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Costco_Wholesale_logo_2010-10-26.svg/320px-Costco_Wholesale_logo_2010-10-26.svg.png",
+  "stop & shop": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Stop_%26_Shop_logo.svg/320px-Stop_%26_Shop_logo.svg.png",
+  "big y": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Big_Y_logo.svg/320px-Big_Y_logo.svg.png",
+  "aldi": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/ALDI_logo.svg/320px-ALDI_logo.svg.png",
+  "harris teeter": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Harris_Teeter_logo.svg/320px-Harris_Teeter_logo.svg.png",
   
   // Fitness Centers
-  "planet fitness": "https://logos-world.net/wp-content/uploads/2021/03/Planet-Fitness-Logo.png",
-  "la fitness": "https://logos-world.net/wp-content/uploads/2021/03/LA-Fitness-Logo.png",
-  "24 hour fitness": "https://logos-world.net/wp-content/uploads/2021/03/24-Hour-Fitness-Logo.png",
-  "anytime fitness": "https://logos-world.net/wp-content/uploads/2021/03/Anytime-Fitness-Logo.png",
-  "gold's gym": "https://logos-world.net/wp-content/uploads/2021/03/Golds-Gym-Logo.png",
-  "equinox": "https://logos-world.net/wp-content/uploads/2021/03/Equinox-Logo.png",
-  "crunch fitness": "https://logos-world.net/wp-content/uploads/2021/03/Crunch-Fitness-Logo.png",
+  "planet fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Planet_Fitness_logo.svg/320px-Planet_Fitness_logo.svg.png",
+  "la fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/LA_Fitness_logo.svg/320px-LA_Fitness_logo.svg.png",
+  "24 hour fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/24_Hour_Fitness_logo.svg/320px-24_Hour_Fitness_logo.svg.png",
+  "anytime fitness": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Anytime_Fitness_logo.svg/320px-Anytime_Fitness_logo.svg.png",
+  "gold's gym": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Gold%27s_Gym_logo.svg/320px-Gold%27s_Gym_logo.svg.png",
   
   // Restaurants/Coffee
-  "starbucks": "https://logos-world.net/wp-content/uploads/2020/04/Starbucks-Logo.png",
-  "dunkin": "https://logos-world.net/wp-content/uploads/2020/09/Dunkin-Logo.png",
-  "mcdonald": "https://logos-world.net/wp-content/uploads/2020/04/McDonalds-Logo.png",
-  "subway": "https://logos-world.net/wp-content/uploads/2020/09/Subway-Logo.png",
-  "chipotle": "https://logos-world.net/wp-content/uploads/2020/12/Chipotle-Logo.png",
-  "panera": "https://logos-world.net/wp-content/uploads/2020/12/Panera-Bread-Logo.png",
+  "starbucks": "https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/Starbucks_Corporation_Logo_2011.svg/320px-Starbucks_Corporation_Logo_2011.svg.png",
+  "dunkin": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Dunkin%27_logo.svg/320px-Dunkin%27_logo.svg.png",
+  "mcdonald": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/McDonald%27s_Golden_Arches.svg/320px-McDonald%27s_Golden_Arches.svg.png",
+  "subway": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Subway_2016_logo.svg/320px-Subway_2016_logo.svg.png",
+  "chipotle": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Chipotle_Mexican_Grill_logo.svg/320px-Chipotle_Mexican_Grill_logo.svg.png",
+  "panera": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Panera_Bread_logo.svg/320px-Panera_Bread_logo.svg.png",
   
   // Pharmacies/Medical
-  "cvs": "https://logos-world.net/wp-content/uploads/2020/12/CVS-Health-Logo.png",
-  "walgreens": "https://logos-world.net/wp-content/uploads/2020/12/Walgreens-Logo.png",
-  "rite aid": "https://logos-world.net/wp-content/uploads/2020/12/Rite-Aid-Logo.png",
-  
-  // Gas Stations/Convenience
-  "shell": "https://logos-world.net/wp-content/uploads/2021/04/Shell-Logo.png",
-  "exxon": "https://logos-world.net/wp-content/uploads/2021/04/ExxonMobil-Logo.png",
-  "bp": "https://logos-world.net/wp-content/uploads/2021/04/BP-Logo.png",
-  "chevron": "https://logos-world.net/wp-content/uploads/2021/04/Chevron-Logo.png",
-  "7-eleven": "https://logos-world.net/wp-content/uploads/2020/11/7-Eleven-Logo.png",
+  "cvs": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/CVS_Pharmacy_logo.svg/320px-CVS_Pharmacy_logo.svg.png",
+  "walgreens": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Walgreens_logo.svg/320px-Walgreens_logo.svg.png",
+  "rite aid": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Rite_Aid_logo.svg/320px-Rite_Aid_logo.svg.png",
 };
 
 // Function to get brand logo for a business
