@@ -130,7 +130,6 @@ export default function OnboardingQuiz() {
         try {
           const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
             body: {
-              userId: user.id,
               zipCode: quizData.zipCode,
               householdType: quizData.household.join(', '),
               priorities: quizData.priorities,
