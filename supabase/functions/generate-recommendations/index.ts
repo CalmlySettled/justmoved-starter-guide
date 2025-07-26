@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const YELP_API_KEY = Deno.env.get('YELP_API_KEY');
+const FOURSQUARE_API_KEY = Deno.env.get('FOURSQUARE_API_KEY');
+
 interface QuizResponse {
   zipCode: string;
   householdType: string;
@@ -25,127 +28,106 @@ interface Business {
   website?: string;
 }
 
-// Your specific business data
-const localBusinesses: { [key: string]: Business[] } = {
-  "grocery stores": [
-    {
-      name: "Geissler's Supermarket",
-      address: "40 Tunxis Ave, Bloomfield, CT 06002",
-      description: "Family-owned market with great produce",
-      phone: "(860) 242-7084",
-      hours: "Mon–Sat 8am–9pm, Sun 8am–7pm",
-      features: ["Local", "Organic Options", "Budget-Friendly", "Family-owned", "Fresh produce"]
-    },
-    {
-      name: "Stop & Shop",
-      address: "313 Cottage Grove Rd, Bloomfield, CT 06002",
-      description: "Large chain store with pharmacy and gas station",
-      phone: "(860) 242-2424",
-      hours: "Open daily 6am–10pm",
-      features: ["Chain", "High Ratings", "Accessible", "Pharmacy", "Gas station", "Parking Available"]
-    },
-    {
-      name: "Fresh Farm Market",
-      address: "1055 Blue Hills Ave, Bloomfield, CT 06002",
-      description: "Local market known for vibrant produce",
-      phone: "(860) 242-1183",
-      features: ["Local", "International Foods", "Walkable", "Fresh produce", "Vibrant selection"]
-    },
-    {
-      name: "Sav-Mor Supermarket",
-      address: "1055 Blue Hills Ave #1, Bloomfield, CT 06002",
-      description: "Community staple for everyday groceries",
-      phone: "(860) 242-7759",
-      features: ["Budget-Friendly", "Local", "Community favorite", "Everyday needs"]
-    },
-    {
-      name: "Aldi",
-      address: "44 Kane St, West Hartford, CT 06119",
-      description: "Low-cost grocery chain with curbside and delivery",
-      phone: "(855) 955-2534",
-      features: ["Chain", "Pickup Available", "Budget-Friendly", "Delivery Available", "Low prices"]
+// Helper function to get coordinates from zip code
+async function getCoordinatesFromZip(zipCode: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        lat: parseFloat(data.places[0].latitude),
+        lng: parseFloat(data.places[0].longitude)
+      };
     }
-  ],
-  "fitness options": [
-    {
-      name: "Total Health Club",
-      address: "22 Mountain Ave, Bloomfield, CT 06002",
-      description: "Full-service gym with group classes and personal training",
-      phone: "(860) 242-9400",
-      features: ["Local", "Group Classes", "Personal Training", "Full-service", "Comprehensive equipment"]
-    },
-    {
-      name: "Planet Fitness",
-      address: "841 Albany Ave, Hartford, CT 06112",
-      description: "Affordable 24/7 gym for all fitness levels",
-      phone: "(860) 522-4600",
-      features: ["Chain", "24-Hour Access", "Budget Membership", "All fitness levels", "Affordable"]
-    },
-    {
-      name: "Club Fitness",
-      address: "107 Old Windsor Rd, Bloomfield, CT 06002",
-      description: "3-level cardio/strength gym with classes",
-      phone: "(860) 242-1234",
-      features: ["Full Equipment", "Group Classes", "Personal Training", "Cardio Machines", "Strength Training"]
-    },
-    {
-      name: "Gold's Gym",
-      address: "39 W Main St, Avon, CT 06001",
-      description: "Classic gym experience with serious strength training",
-      phone: "(860) 677-4348",
-      features: ["Strength-Focused", "Franchise", "Serious training", "Classic experience"]
-    },
-    {
-      name: "Bloomfield Fit Body Boot Camp",
-      address: "10 Mountain Ave, Bloomfield, CT 06002",
-      description: "High-energy, group HIIT gym with coaching",
-      phone: "(860) 952-3324",
-      features: ["HIIT", "Trainer-Led", "Community-Based", "High-energy", "Group Classes"]
+  } catch (error) {
+    console.error('Error getting coordinates from zip:', error);
+  }
+  return null;
+}
+
+// Yelp API search function
+async function searchYelp(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
+  if (!YELP_API_KEY) {
+    console.error('Yelp API key not found');
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(category)}&latitude=${coordinates.lat}&longitude=${coordinates.lng}&limit=10&sort_by=rating`,
+      {
+        headers: {
+          'Authorization': `Bearer ${YELP_API_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Yelp API error: ${response.status}`);
     }
-  ],
-  "faith communities": [
-    {
-      name: "Wintonbury Church",
-      address: "54 Maple Ave, Bloomfield, CT 06002",
-      description: "Non-denominational church with contemporary worship",
-      phone: "(860) 243-8779",
-      hours: "Sunday Worship: 10am",
-      features: ["Contemporary", "Small Groups", "Childcare", "Non-denominational", "Modern worship"]
-    },
-    {
-      name: "Sacred Heart Church",
-      address: "26 Wintonbury Ave, Bloomfield, CT 06002",
-      description: "Catholic parish offering mass and confession",
-      phone: "(860) 242-4142",
-      hours: "Mass Times: Sat 4pm, Sun 9:30am",
-      features: ["Catholic", "Historic", "Traditional", "Mass", "Confession"]
-    },
-    {
-      name: "The First Cathedral",
-      address: "1151 Blue Hills Ave, Bloomfield, CT 06002",
-      description: "Large Baptist church with extensive community programs",
-      phone: "(860) 243-6520",
-      hours: "Sunday Worship: 10am",
-      features: ["Baptist", "Youth Programs", "Community Outreach", "Large congregation", "Active programs"]
-    },
-    {
-      name: "Old St. Andrew's Episcopal Church",
-      address: "59 Tariffville Rd, Bloomfield, CT 06002",
-      description: "Inclusive, historic Anglican church with modern services",
-      phone: "(860) 242-4660",
-      hours: "Sunday Services: 9am & 10:30am",
-      features: ["Episcopal", "LGBTQ+ Friendly", "Historic", "Inclusive", "Anglican tradition"]
-    },
-    {
-      name: "Bloomfield Congregational Church",
-      address: "10 Wintonbury Ave, Bloomfield, CT 06002",
-      description: "Open & affirming UCC congregation with family programs",
-      phone: "(860) 242-0776",
-      hours: "Sunday Worship: 10am",
-      features: ["UCC", "Family-Friendly", "Inclusive", "Open and affirming", "Family programs"]
+
+    const data = await response.json();
+    
+    return data.businesses.map((business: any) => ({
+      name: business.name,
+      address: `${business.location.address1}, ${business.location.city}, ${business.location.state} ${business.location.zip_code}`,
+      description: business.categories.map((cat: any) => cat.title).join(', '),
+      phone: business.phone || '',
+      features: [
+        business.rating ? `${business.rating} stars` : '',
+        business.price || '',
+        business.is_closed ? 'Closed' : 'Open',
+        ...(business.categories.map((cat: any) => cat.title))
+      ].filter(Boolean),
+      hours: business.hours?.[0]?.open ? 'See website for hours' : undefined,
+      website: business.url
+    }));
+  } catch (error) {
+    console.error('Error fetching from Yelp:', error);
+    return [];
+  }
+}
+
+// Foursquare API search function
+async function searchFoursquare(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
+  if (!FOURSQUARE_API_KEY) {
+    console.error('Foursquare API key not found');
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(category)}&ll=${coordinates.lat},${coordinates.lng}&limit=10&sort=RATING`,
+      {
+        headers: {
+          'Authorization': FOURSQUARE_API_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Foursquare API error: ${response.status}`);
     }
-  ]
-};
+
+    const data = await response.json();
+    
+    return data.results.map((place: any) => ({
+      name: place.name,
+      address: `${place.location.formatted_address}`,
+      description: place.categories.map((cat: any) => cat.name).join(', '),
+      phone: place.tel || '',
+      features: [
+        place.rating ? `${place.rating}/10 rating` : '',
+        ...(place.categories.map((cat: any) => cat.name)),
+        place.chains?.[0]?.name ? 'Chain' : 'Local'
+      ].filter(Boolean),
+      website: place.website
+    }));
+  } catch (error) {
+    console.error('Error fetching from Foursquare:', error);
+    return [];
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -158,8 +140,14 @@ serve(async (req) => {
     
     console.log('Generating recommendations for:', quizResponse);
 
+    // Get coordinates from zip code
+    const coordinates = await getCoordinatesFromZip(quizResponse.zipCode);
+    if (!coordinates) {
+      throw new Error('Could not get coordinates for the provided zip code');
+    }
+
     // Generate recommendations based on user priorities
-    const recommendations = generateRecommendations(quizResponse);
+    const recommendations = await generateRecommendations(quizResponse, coordinates);
 
     console.log('Generated recommendations keys:', Object.keys(recommendations));
 
@@ -185,47 +173,61 @@ serve(async (req) => {
   }
 });
 
-function generateRecommendations(quizResponse: QuizResponse) {
+async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
   
-  // Map user priorities to our business categories
-  const priorityMap: { [key: string]: string } = {
-    "grocery stores": "grocery stores",
-    "grocery": "grocery stores", 
-    "food": "grocery stores",
-    "shopping": "grocery stores",
-    "fitness options": "fitness options",
-    "fitness": "fitness options",
-    "gym": "fitness options",
-    "exercise": "fitness options",
-    "health": "fitness options",
-    "faith communities": "faith communities",
-    "church": "faith communities",
-    "religious": "faith communities",
-    "spiritual": "faith communities",
-    "worship": "faith communities"
+  // Map user priorities to search terms and API choices
+  const priorityMap: { [key: string]: { term: string; api: 'yelp' | 'foursquare' } } = {
+    "grocery stores": { term: "grocery stores", api: "yelp" },
+    "grocery": { term: "grocery stores", api: "yelp" },
+    "food": { term: "grocery stores", api: "yelp" },
+    "shopping": { term: "grocery stores", api: "yelp" },
+    "fitness options": { term: "fitness gyms", api: "foursquare" },
+    "fitness": { term: "fitness gyms", api: "foursquare" },
+    "gym": { term: "fitness gyms", api: "foursquare" },
+    "exercise": { term: "fitness gyms", api: "foursquare" },
+    "health": { term: "fitness gyms", api: "foursquare" },
+    "faith communities": { term: "churches religious", api: "foursquare" },
+    "church": { term: "churches religious", api: "foursquare" },
+    "religious": { term: "churches religious", api: "foursquare" },
+    "spiritual": { term: "churches religious", api: "foursquare" },
+    "worship": { term: "churches religious", api: "foursquare" }
   };
 
-  // For each user priority, find matching businesses
-  quizResponse.priorities.forEach(priority => {
+  // For each user priority, search for businesses
+  for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
     
     // Check for direct matches or partial matches
-    for (const [key, category] of Object.entries(priorityMap)) {
+    for (const [key, config] of Object.entries(priorityMap)) {
       if (priorityLower.includes(key) || key.includes(priorityLower)) {
-        if (localBusinesses[category]) {
-          recommendations[priority] = [...localBusinesses[category]];
-          break;
+        let businesses: Business[] = [];
+        
+        if (config.api === 'yelp') {
+          businesses = await searchYelp(config.term, coordinates);
+        } else {
+          businesses = await searchFoursquare(config.term, coordinates);
         }
+        
+        if (businesses.length > 0) {
+          recommendations[priority] = businesses;
+        }
+        break;
       }
     }
-  });
+  }
 
   // If no specific matches found, add some default categories
   if (Object.keys(recommendations).length === 0) {
-    recommendations["grocery stores"] = localBusinesses["grocery stores"];
-    recommendations["fitness options"] = localBusinesses["fitness options"];
-    recommendations["faith communities"] = localBusinesses["faith communities"];
+    const [groceryStores, fitnessOptions, faithCommunities] = await Promise.all([
+      searchYelp("grocery stores", coordinates),
+      searchFoursquare("fitness gyms", coordinates),
+      searchFoursquare("churches religious", coordinates)
+    ]);
+
+    if (groceryStores.length > 0) recommendations["grocery stores"] = groceryStores;
+    if (fitnessOptions.length > 0) recommendations["fitness options"] = fitnessOptions;
+    if (faithCommunities.length > 0) recommendations["faith communities"] = faithCommunities;
   }
 
   return recommendations;
