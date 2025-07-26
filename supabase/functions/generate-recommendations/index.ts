@@ -29,15 +29,15 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains - using category stock photos for consistent display
+// Brand logo mapping for national chains - using reliable CDN sources
 const BRAND_LOGOS: { [key: string]: string } = {
-  // Using category stock photo for all brands to ensure consistent display
-  "safeway": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "kroger": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png", 
-  "walmart": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "target": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "whole foods": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "trader joe": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
+  // Major grocery chains with reliable Wikipedia/CDN logos
+  "safeway": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Safeway_Logo.svg/320px-Safeway_Logo.svg.png",
+  "kroger": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Kroger_logo_%282019%29.svg/320px-Kroger_logo_%282019%29.svg.png", 
+  "walmart": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/320px-Walmart_logo.svg.png",
+  "target": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Target_logo.svg/320px-Target_logo.svg.png",
+  "whole foods": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Whole_Foods_Market_logo.svg/320px-Whole_Foods_Market_logo.svg.png",
+  "trader joe": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Trader_Joe%27s_logo.svg/320px-Trader_Joe%27s_logo.svg.png",
   "costco": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Costco_Wholesale_logo_2010-10-26.svg/320px-Costco_Wholesale_logo_2010-10-26.svg.png",
   "stop & shop": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Stop_%26_Shop_logo.svg/320px-Stop_%26_Shop_logo.svg.png",
   "big y": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Big_Y_logo.svg/320px-Big_Y_logo.svg.png",
