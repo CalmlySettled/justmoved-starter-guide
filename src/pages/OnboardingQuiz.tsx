@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 interface QuizData {
   address: string;
@@ -333,19 +334,12 @@ export default function OnboardingQuiz() {
             
             {/* Question 1: Address */}
             {currentQuestion === 1 && (
-              <div className="space-y-4">
-                <Label htmlFor="address">Full Address or Neighborhood</Label>
-                <Input
-                  id="address"
-                  placeholder="e.g., 123 Main St, Bloomfield, CT 06002"
-                  value={quizData.address}
-                  onChange={(e) => handleAddressChange(e.target.value)}
-                  className="text-lg"
-                />
-                <p className="text-sm text-muted-foreground">
-                  We'll use this to calculate distances to local businesses and provide more accurate recommendations.
-                </p>
-              </div>
+              <AddressAutocomplete
+                value={quizData.address}
+                onChange={handleAddressChange}
+                placeholder="e.g., 123 Main St, Bloomfield, CT 06002"
+                label="Full Address or Neighborhood"
+              />
             )}
 
             {/* Question 2: Household Type */}
