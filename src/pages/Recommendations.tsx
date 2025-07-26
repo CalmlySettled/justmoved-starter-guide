@@ -146,24 +146,50 @@ export default function Recommendations() {
   };
 
   const getBusinessImage = (business: Business, category: string) => {
-    // First priority: Use image URL from API (Google Places or Yelp)
+    // First priority: Brand logos for recognizable chains
+    const brandLogos = {
+      'safeway': '/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png',
+      'whole foods': '/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png',
+      'trader joe': '/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png',
+      'walmart': '/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png',
+      'target': '/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png',
+      'costco': '/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png',
+      'kroger': '/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png',
+      'stop & shop': '/lovable-uploads/4d41876b-9d9e-4a4d-abb8-5b4b924e2e23.png',
+      'aldi': '/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png',
+      'planet fitness': '/lovable-uploads/b393c4b5-8487-47b0-a991-d59fbc4c421c.png',
+      'la fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png',
+      'gold\'s gym': '/lovable-uploads/8ae3c503-4c33-4e74-a098-c0bf7cf1e90f.png',
+      '24 hour fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png',
+      'anytime fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png'
+    };
+    
+    // Check for brand logo match
+    const businessNameLower = business.name.toLowerCase();
+    for (const [brand, logoUrl] of Object.entries(brandLogos)) {
+      if (businessNameLower.includes(brand)) {
+        return logoUrl;
+      }
+    }
+    
+    // Second priority: Use image URL from API (Google Places or Yelp)
     if (business.image_url && business.image_url.length > 0) {
       return business.image_url;
     }
     
-    // Second priority: Category-based fallback images
+    // Third priority: Category-based fallback images
     const categoryFallbacks = {
-      'grocery': '/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png', // Clean grocery store image
-      'fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png', // Fitness/gym image
-      'church': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png', // Church image
-      'faith': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png', // Faith communities
-      'restaurant': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png', // Restaurant image
-      'medical': '/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png', // Medical/healthcare
-      'green space': '/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png', // Parks/green spaces
-      'default': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png' // Generic business fallback
+      'grocery': '/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png',
+      'fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png',
+      'church': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png',
+      'faith': '/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png',
+      'restaurant': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png',
+      'medical': '/lovable-uploads/e271092c-0635-42eb-894e-482c1c580fee.png',
+      'green space': '/lovable-uploads/86e7b131-4de7-4288-9579-ec892f903f5b.png',
+      'default': '/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png'
     };
     
-    // Determine category key based on the category string
+    // Determine category key
     let categoryKey = 'default';
     const categoryLower = category.toLowerCase();
     
