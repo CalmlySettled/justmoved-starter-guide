@@ -29,14 +29,14 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains - using local assets to avoid CORS issues
+// Brand logo mapping for national chains - using category stock photos for consistent display
 const BRAND_LOGOS: { [key: string]: string } = {
-  // Major national brands - using local brand assets that actually work
-  "safeway": "/lovable-uploads/b393c4b5-8487-47b0-a991-d59fbc4c421c.png",
+  // Using category stock photo for all brands to ensure consistent display
+  "safeway": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
   "kroger": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png", 
   "walmart": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
   "target": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "whole foods": "/lovable-uploads/62c94628-65d4-4af6-9058-5b2b566bd87b.png",
+  "whole foods": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
   "trader joe": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
   "costco": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Costco_Wholesale_logo_2010-10-26.svg/320px-Costco_Wholesale_logo_2010-10-26.svg.png",
   "stop & shop": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Stop_%26_Shop_logo.svg/320px-Stop_%26_Shop_logo.svg.png",
