@@ -26,6 +26,7 @@ interface Business {
   latitude?: number;
   longitude?: number;
   distance_miles?: number;
+  image_url?: string;
 }
 
 // Helper function to get coordinates from address using OpenStreetMap Nominatim
@@ -123,7 +124,8 @@ async function searchYelpBusinesses(
       latitude: business.coordinates?.latitude,
       longitude: business.coordinates?.longitude,
       distance_miles: business.distance ? Math.round((business.distance * 0.000621371) * 10) / 10 : undefined,
-      website: business.url
+      website: business.url,
+      image_url: business.image_url || business.photos?.[0] || ''
     }));
 
   } catch (error) {
