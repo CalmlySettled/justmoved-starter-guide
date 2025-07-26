@@ -190,12 +190,21 @@ async function searchYelpBusinesses(
     console.log(`Yelp returned ${data.businesses?.length || 0} businesses`);
 
     return (data.businesses || []).map((business: any) => {
-      // First try brand logo, then Yelp image, then category stock photo
+      // First try brand logo, then Yelp image, then category stock photo as fallback
       const brandLogo = getBrandLogo(business.name);
-      const categoryStock = CATEGORY_STOCK_PHOTOS[category];
-      const imageUrl = brandLogo || business.image_url || business.photos?.[0] || categoryStock || '';
+      const categoryStock = CATEGORY_STOCK_PHOTOS[category] || CATEGORY_STOCK_PHOTOS["grocery stores"]; // Default fallback
+      let imageUrl = '';
       
-      console.log(`Business: ${business.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Using: ${brandLogo ? 'Brand Logo' : categoryStock ? 'Category Stock Photo' : 'Yelp Photo'}`);
+      if (brandLogo) {
+        imageUrl = brandLogo;
+        console.log(`✓ Using brand logo for: ${business.name}`);
+      } else if (business.image_url) {
+        imageUrl = business.image_url;
+        console.log(`→ Using Yelp photo for: ${business.name}`);
+      } else {
+        imageUrl = categoryStock;
+        console.log(`→ Using category stock photo for: ${business.name} (category: ${category})`);
+      }
       
       
       return {
@@ -257,20 +266,22 @@ async function searchGooglePlaces(
 
     // Convert Google Places results to Business objects with photos
     const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
-      // Check for brand logo first
+      // First try brand logo, then Google photo, then category stock photo as fallback
       const brandLogo = getBrandLogo(place.name);
-      const categoryStock = CATEGORY_STOCK_PHOTOS[category];
-      let imageUrl = brandLogo || '';
+      const categoryStock = CATEGORY_STOCK_PHOTOS[category] || CATEGORY_STOCK_PHOTOS["grocery stores"]; // Default fallback
+      let imageUrl = '';
       
-      // If no brand logo, get photo from Google Places Photo API if available, then fallback to category stock
-      if (!brandLogo && place.photos && place.photos.length > 0) {
+      if (brandLogo) {
+        imageUrl = brandLogo;
+        console.log(`✓ Using brand logo for: ${place.name}`);
+      } else if (place.photos && place.photos.length > 0) {
         const photoReference = place.photos[0].photo_reference;
         imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
-      } else if (!brandLogo && !imageUrl && categoryStock) {
+        console.log(`→ Using Google photo for: ${place.name}`);
+      } else {
         imageUrl = categoryStock;
+        console.log(`→ Using category stock photo for: ${place.name} (category: ${category})`);
       }
-
-      console.log(`Google Business: ${place.name}, Brand Logo: ${brandLogo ? 'Yes' : 'No'}, Using: ${brandLogo ? 'Brand Logo' : categoryStock && !place.photos ? 'Category Stock Photo' : 'Google Photo'}, Image URL: ${imageUrl}, Rating: ${place.rating || 'N/A'}`);
 
       return {
         name: place.name,
