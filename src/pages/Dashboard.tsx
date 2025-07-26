@@ -169,15 +169,61 @@ export default function Dashboard() {
   const getBusinessImage = (businessName: string, category: string) => {
     const name = businessName.toLowerCase();
     
-    // Specific business images
+    // Specific business images - grocery stores
     if (name.includes("geissler")) {
       return "/lovable-uploads/cec2b417-1f35-49f4-978b-2f52c1219d84.png";
     }
+    if (name.includes("stop & shop") || name.includes("stop and shop")) {
+      return "/lovable-uploads/09dfac75-fdf4-4cbe-8dbb-a8d1e95e149c.png";
+    }
+    if (name.includes("fresh farm")) {
+      return "/lovable-uploads/16cb62a7-bb30-432d-804b-9f20266bbce7.png";
+    }
+    if (name.includes("sav-mor")) {
+      return "/lovable-uploads/2beb6084-f2f4-4058-9014-43a42f522449.png";
+    }
+    if (name.includes("aldi")) {
+      return "/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png";
+    }
     
-    // Category-based placeholder images
+    // Specific business images - fitness
+    if (name.includes("total health")) {
+      return "/lovable-uploads/62c94628-65d4-4af6-9058-5b2b566bd87b.png";
+    }
+    if (name.includes("planet fitness")) {
+      return "/lovable-uploads/63cb8a6f-dfac-4328-b8d3-b392fedc9993.png";
+    }
+    if (name.includes("club fitness")) {
+      return "/lovable-uploads/8ae3c503-4c33-4e74-a098-c0bf7cf1e90f.png";
+    }
+    if (name.includes("gold's gym")) {
+      return "/lovable-uploads/b393c4b5-8487-47b0-a991-d59fbc4c421c.png";
+    }
+    if (name.includes("fit body boot camp")) {
+      return "/lovable-uploads/c12c56bb-6db1-41e0-81c2-8c078a7a9f4f.png";
+    }
+    
+    // Specific business images - churches
+    if (name.includes("wintonbury")) {
+      return "/lovable-uploads/c4857259-5956-4aa3-8861-a261d3185571.png";
+    }
+    if (name.includes("sacred heart")) {
+      return "/lovable-uploads/cc86ee7c-c45c-4416-b52f-c3f131ca741c.png";
+    }
+    if (name.includes("first cathedral")) {
+      return "/lovable-uploads/e9c9bd3b-56c9-4c4d-9908-acb6c4950b77.png";
+    }
+    if (name.includes("st. andrew") || name.includes("saint andrew")) {
+      return "/lovable-uploads/eb8b8540-f130-414b-84da-27c82f2c8431.png";
+    }
+    if (name.includes("congregational")) {
+      return "/lovable-uploads/f379c4b6-3d2f-4893-860e-70853f3b634c.png";
+    }
+    
+    // Fallback to category-based placeholder images
     switch (category.toLowerCase()) {
       case 'grocery stores':
-        return "https://images.unsplash.com/photo-1527576539890-dfa815648363?w=400&h=200&fit=crop";
+        return "/lovable-uploads/f8f75b8b-1f7f-457f-a75e-b4ca2d363cf6.png";
       case 'fitness options':
         return "https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?w=400&h=200&fit=crop";
       case 'faith communities':
