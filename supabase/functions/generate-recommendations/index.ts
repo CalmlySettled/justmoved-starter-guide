@@ -29,16 +29,15 @@ interface Business {
   image_url?: string;
 }
 
-// Brand logo mapping for national chains - using local assets to avoid CORS issues
+// Brand logo mapping for national chains - using working CDN URLs and local assets
 const BRAND_LOGOS: { [key: string]: string } = {
-  // For now, let's use the category stock photo for all businesses until we have proper brand assets
-  // This will ensure all images load properly
-  "safeway": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "kroger": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png", 
-  "walmart": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "target": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "whole foods": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
-  "trader joe": "/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png",
+  // Major national brands - using direct logo URLs that work
+  "safeway": "https://logos-world.net/wp-content/uploads/2020/09/Safeway-Logo.png",
+  "kroger": "https://logos-world.net/wp-content/uploads/2020/09/Kroger-Logo.png", 
+  "walmart": "https://logos-world.net/wp-content/uploads/2020/09/Walmart-Logo.png",
+  "target": "https://logos-world.net/wp-content/uploads/2020/09/Target-Logo.png",
+  "whole foods": "https://logos-world.net/wp-content/uploads/2020/09/Whole-Foods-Market-Logo.png",
+  "trader joe": "https://logos-world.net/wp-content/uploads/2020/09/Trader-Joes-Logo.png",
   "costco": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Costco_Wholesale_logo_2010-10-26.svg/320px-Costco_Wholesale_logo_2010-10-26.svg.png",
   "stop & shop": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Stop_%26_Shop_logo.svg/320px-Stop_%26_Shop_logo.svg.png",
   "big y": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Big_Y_logo.svg/320px-Big_Y_logo.svg.png",
