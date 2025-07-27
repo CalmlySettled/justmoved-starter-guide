@@ -650,15 +650,6 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
             <AddMoreCategoriesModal userProfile={userProfile} onNewRecommendations={fetchUserData} />
-            <Button 
-              onClick={clearAllRecommendations}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={loading || recommendations.length === 0}
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear All Recommendations
-            </Button>
           </div>
         </div>
 
