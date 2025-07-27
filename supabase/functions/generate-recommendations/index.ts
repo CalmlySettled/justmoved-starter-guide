@@ -171,7 +171,7 @@ async function searchGooglePlaces(
       return [];
     }
 
-    // Filter and convert Google Places results to Business objects with photos
+    // Filter and convert Google Places results to Business objects with photos and details
     const businesses = await Promise.all(
       data.results
         .filter((place: any) => isRetailConsumerBusiness(place, category))
@@ -179,6 +179,8 @@ async function searchGooglePlaces(
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
           let imageUrl = '';
+          let website = '';
+          let phone = '';
           
           if (place.photos && place.photos.length > 0) {
             const photoReference = place.photos[0].photo_reference;
@@ -188,16 +190,37 @@ async function searchGooglePlaces(
             console.log(`→ No image available for: ${place.name}`);
           }
 
+          // Fetch place details for website and phone
+          if (place.place_id) {
+            try {
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
+              const detailsResponse = await fetch(detailsUrl);
+              
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                if (detailsData.result) {
+                  website = detailsData.result.website || '';
+                  phone = detailsData.result.formatted_phone_number || '';
+                  if (website) {
+                    console.log(`→ Found website for ${place.name}: ${website}`);
+                  }
+                }
+              }
+            } catch (error) {
+              console.log(`→ Could not fetch details for: ${place.name}`);
+            }
+          }
+
           return {
             name: place.name,
             address: place.vicinity || '',
             description: place.types?.join(', ') || '',
-            phone: '', // Phone requires additional details call
+            phone: phone,
             features: generateFeaturesFromGoogleData(place),
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
             distance_miles: undefined, // Will calculate later
-            website: place.website || place.url || '',
+            website: website,
             image_url: imageUrl
           };
         })
