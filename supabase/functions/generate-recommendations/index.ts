@@ -395,6 +395,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "healthcare": "medical health",
     "doctors": "medical health",
     "clinics": "medical health",
+    "pharmacy": "medical health",
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
     "gym": "fitness gyms", 
@@ -435,7 +436,16 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "social events": "community centers",
     "community groups": "community centers",
     "community": "community centers",
-    "events": "community centers"
+    "events": "community centers",
+    "home improvement / hardware stores": "hardware stores",
+    "home improvement": "hardware stores",
+    "hardware stores": "hardware stores",
+    "hardware": "hardware stores",
+    "tools": "hardware stores",
+    "building supplies": "hardware stores",
+    "home depot": "hardware stores",
+    "lowes": "hardware stores",
+    "improvement": "hardware stores"
   };
 
   console.log('User priorities received:', quizResponse.priorities);
@@ -468,9 +478,10 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     }
   }
 
-  // If no specific matches found, add some default categories
-  if (Object.keys(recommendations).length === 0) {
-    console.log('No priority matches found, adding default categories');
+  // Only add default categories if user has no priorities at all
+  // If they specified priorities but we couldn't match them, we should not add defaults
+  if (Object.keys(recommendations).length === 0 && quizResponse.priorities.length === 0) {
+    console.log('No priorities specified, adding default categories');
     
     const defaultCategories = [
       { name: "Grocery stores", searchTerm: "grocery stores" },
