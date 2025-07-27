@@ -330,6 +330,19 @@ export default function Recommendations() {
       ];
     }
     
+    if (categoryLower.includes('medical') || categoryLower.includes('health')) {
+      return [
+        'Urgent Care',
+        'Walk-In',
+        'Specialists', 
+        'Emergency',
+        'Family Practice',
+        'Pediatrics',
+        'Primary Care',
+        'Same-Day Appointments'
+      ];
+    }
+    
     // Default filters for other categories
     return [
       'Highly Rated',
@@ -340,18 +353,91 @@ export default function Recommendations() {
     ];
   };
 
-  const toggleFilter = (category: string, filter: string) => {
+  const toggleFilter = async (category: string, filter: string) => {
     setActiveFilters(prev => {
       const categoryFilters = prev[category] || [];
       const isActive = categoryFilters.includes(filter);
       
-      return {
+      const newFilters = {
         ...prev,
         [category]: isActive 
           ? categoryFilters.filter(f => f !== filter)
           : [...categoryFilters, filter]
       };
+      
+      // If adding a dynamic filter, fetch additional results
+      if (!isActive && shouldUseDynamicFilter(category, filter)) {
+        fetchDynamicFilterResults(category, filter);
+      }
+      
+      return newFilters;
     });
+  };
+
+  const shouldUseDynamicFilter = (category: string, filter: string) => {
+    const dynamicFilters = [
+      'urgent care', 'walk-in', 'specialists', 'emergency', 'family practice', 'pediatrics',
+      'organic options', 'budget-friendly', 'group classes', 'personal training', 
+      '24-hour access', 'cardio machines', 'strength training'
+    ];
+    return dynamicFilters.includes(filter.toLowerCase());
+  };
+
+  const fetchDynamicFilterResults = async (category: string, filter: string) => {
+    if (!quizResponse) return;
+    
+    try {
+      setLoading(true);
+      
+      // Get coordinates from the address
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(quizResponse.zipCode)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'demo'}`);
+      const data = await response.json();
+      const coordinates = data.results?.[0]?.geometry?.location || { lat: 41.8394397, lng: -72.7516033 };
+      
+      const { data: filterData, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: { 
+          quizResponse,
+          dynamicFilter: {
+            category,
+            filter,
+            coordinates
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Merge the filtered results with existing recommendations
+      setRecommendations(prev => {
+        if (!prev) return filterData.recommendations;
+        
+        const currentBusiness = prev[category] || [];
+        const newBusinesses = filterData.recommendations[category] || [];
+        
+        // Combine and deduplicate by business name
+        const combined = [...currentBusiness];
+        newBusinesses.forEach(newBiz => {
+          if (!combined.some(existing => existing.name === newBiz.name)) {
+            combined.push(newBiz);
+          }
+        });
+        
+        return {
+          ...prev,
+          [category]: combined
+        };
+      });
+      
+    } catch (error) {
+      console.error('Error fetching dynamic filter results:', error);
+      toast({
+        title: "Filter update failed",
+        description: "Could not fetch additional options for this filter.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearFilters = (category: string) => {

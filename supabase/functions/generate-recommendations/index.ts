@@ -336,6 +336,67 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   return businesses.slice(0, 6);
 }
 
+// Handle dynamic filtering for specific business types
+async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
+  const { category, filter, coordinates } = dynamicFilter;
+  
+  console.log(`Fetching additional ${filter} results for ${category}`);
+  
+  // Define specific search terms for dynamic filters
+  const filterSearchTerms: { [key: string]: string } = {
+    'urgent care': 'urgent care',
+    'walk-in': 'walk in clinic',
+    'specialists': 'medical specialists',
+    'emergency': 'emergency room hospital',
+    'family practice': 'family medicine primary care',
+    'pediatrics': 'pediatrician children doctor',
+    'organic options': 'organic grocery natural foods',
+    'budget-friendly': 'discount grocery affordable',
+    'group classes': 'group fitness classes',
+    'personal training': 'personal trainer fitness',
+    '24-hour access': '24 hour gym fitness',
+    'cardio machines': 'cardio gym fitness center',
+    'strength training': 'weight lifting gym strength'
+  };
+  
+  const searchTerm = filterSearchTerms[filter.toLowerCase()] || filter;
+  console.log(`Using search term: "${searchTerm}" for filter: "${filter}"`);
+  
+  try {
+    // Fetch specific businesses for this filter
+    const businesses = await searchGooglePlaces(searchTerm, coordinates.lat, coordinates.lng);
+    console.log(`Found ${businesses.length} businesses for filter "${filter}"`);
+    
+    // Return the specific filtered results
+    const recommendations = {
+      [category]: businesses
+    };
+    
+    return new Response(
+      JSON.stringify({ recommendations }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+    
+  } catch (error) {
+    console.error('Error in dynamic filter:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch filtered results' }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -343,9 +404,14 @@ serve(async (req) => {
   }
 
   try {
-    const { quizResponse }: { quizResponse: QuizResponse } = await req.json();
+    const { quizResponse, dynamicFilter } = await req.json();
+    console.log('Generating recommendations for:', JSON.stringify(quizResponse, null, 2));
     
-    console.log('Generating recommendations for:', quizResponse);
+    // If dynamic filter is provided, fetch additional specific results
+    if (dynamicFilter) {
+      console.log('Dynamic filter requested:', JSON.stringify(dynamicFilter, null, 2));
+      return await handleDynamicFilter(quizResponse, dynamicFilter);
+    }
 
     // Get coordinates from address
     const coordinates = await getCoordinatesFromAddress(quizResponse.address);
