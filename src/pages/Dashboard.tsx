@@ -466,6 +466,15 @@ export default function Dashboard() {
     return groups;
   }, {} as { [key: string]: SavedRecommendation[] });
 
+  // Sort each category's recommendations by distance (closest first)
+  Object.keys(groupedRecommendations).forEach(category => {
+    groupedRecommendations[category].sort((a, b) => {
+      const distanceA = a.distance_miles || 999;
+      const distanceB = b.distance_miles || 999;
+      return distanceA - distanceB;
+    });
+  });
+
   const handleCategoryFilter = (category: string, filter: string) => {
     setActiveCategoryFilter(prev => ({
       ...prev,
