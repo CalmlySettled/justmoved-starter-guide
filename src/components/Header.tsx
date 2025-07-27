@@ -44,22 +44,22 @@ export function Header() {
         
         <nav className="hidden md:flex items-center space-x-8">
           <Link 
-            to="/how-it-works"
+            to="/explore"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            How It Works
+            Explore
           </Link>
           <Link 
-            to="/features"
+            to="/favorites"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            Features
+            Favorites
           </Link>
           <Link 
-            to="/faq"
+            to="/dashboard"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            FAQ
+            Dashboard
           </Link>
         </nav>
         

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-moving.jpg";
+import heroImage from "@/assets/hero-lifestyle.jpg";
 
 export function HeroSection() {
   return (
@@ -16,37 +16,32 @@ export function HeroSection() {
       
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 text-center text-white">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-          Welcome to your 
+        <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+          Your new city 
           <span className="bg-gradient-accent bg-clip-text text-transparent block">
-            new home
+            awaits
           </span>
         </h1>
         
-        <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
-          Moving to a new city? CalmlySettled helps you discover the perfect local spots, 
-          complete essential tasks, and feel at home faster than ever.
+        <p className="text-lg md:text-xl mb-8 text-white/90 max-w-xl mx-auto leading-relaxed">
+          Discover local favorites and feel at home in your new neighborhood.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="flex flex-col gap-6 justify-center items-center">
           <Link to="/onboarding">
             <Button 
               variant="hero" 
               size="lg"
-              className="text-lg px-8 py-6 min-w-[200px]"
+              className="text-xl px-12 py-8 min-w-[250px] transform hover:scale-110 shadow-2xl"
             >
               Settle Me In
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-3 h-6 w-6" />
             </Button>
           </Link>
           
-          <Button 
-            variant="outline" 
-            size="lg"
-            className="text-lg px-8 py-6 bg-white/10 border-white/30 text-white hover:bg-white hover:text-primary backdrop-blur-sm"
-          >
-            Learn More
-          </Button>
+          <p className="text-white/80 text-sm font-medium">
+            We'll personalize your new city in under 60 seconds
+          </p>
         </div>
         
         <div className="mt-12 text-white/80">
