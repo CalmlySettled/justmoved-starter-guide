@@ -649,7 +649,6 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
-            <AddMoreCategoriesModal userProfile={userProfile} onNewRecommendations={fetchUserData} />
           </div>
         </div>
 
