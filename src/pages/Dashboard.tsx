@@ -36,6 +36,7 @@ interface SavedRecommendation {
   business_features: string[];
   distance_miles?: number;
   created_at: string;
+  is_favorite?: boolean;
 }
 
 interface UserProfile {
@@ -57,6 +58,7 @@ export default function Dashboard() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<{[category: string]: string | null}>({});
+  const [favoritingRecommendations, setFavoritingRecommendations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
@@ -138,6 +140,53 @@ export default function Dashboard() {
       });
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const toggleFavorite = async (rec: SavedRecommendation) => {
+    if (!user) return;
+
+    const key = rec.id;
+    setFavoritingRecommendations(prev => new Set(prev).add(key));
+
+    try {
+      const newFavoriteStatus = !rec.is_favorite;
+      const { error } = await supabase
+        .from('user_recommendations')
+        .update({ is_favorite: newFavoriteStatus })
+        .eq('id', rec.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state
+      setRecommendations(prev => 
+        prev.map(r => 
+          r.id === rec.id 
+            ? { ...r, is_favorite: newFavoriteStatus }
+            : r
+        )
+      );
+
+      toast({
+        title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
+        description: `${rec.business_name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error updating favorite",
+        description: "We couldn't update your favorite. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFavoritingRecommendations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
     }
   };
 
@@ -697,6 +746,7 @@ export default function Dashboard() {
                 <div className="grid gap-6 md:grid-cols-2">
                   {categoryRecs.map((rec) => {
                     const badges = getBusinessBadges(rec.business_features || []);
+                    const isFavoriting = favoritingRecommendations.has(rec.id);
                     return (
                       <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
                         {/* Business Image */}
@@ -730,15 +780,30 @@ export default function Dashboard() {
                                 </span>
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteRecommendation(rec.id)}
-                              disabled={deleting === rec.id}
-                              className="ml-3 text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleFavorite(rec)}
+                                disabled={isFavoriting}
+                                className={`ml-1 transition-colors ${
+                                  rec.is_favorite 
+                                    ? 'text-yellow-500 hover:text-yellow-600' 
+                                    : 'text-muted-foreground hover:text-yellow-500'
+                                }`}
+                              >
+                                <Star className={`h-4 w-4 ${rec.is_favorite ? 'fill-current' : ''}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteRecommendation(rec.id)}
+                                disabled={deleting === rec.id}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardHeader>
                         
