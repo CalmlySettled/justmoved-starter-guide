@@ -207,13 +207,8 @@ export default function Dashboard() {
       setRecommendations([]);
       toast({
         title: "All recommendations cleared",
-        description: "Redirecting to generate fresh recommendations with working website links...",
+        description: "You can now generate fresh recommendations.",
       });
-      
-      // Redirect to onboarding to generate fresh recommendations
-      setTimeout(() => {
-        navigate("/onboarding");
-      }, 1000);
     } catch (error) {
       console.error('Error clearing recommendations:', error);
       toast({
@@ -662,7 +657,7 @@ export default function Dashboard() {
               disabled={loading || recommendations.length === 0}
             >
               <Trash2 className="h-4 w-4" />
-              Regenerate With Website Links
+              Clear All Recommendations
             </Button>
           </div>
         </div>
