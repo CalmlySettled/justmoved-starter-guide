@@ -1009,19 +1009,19 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                                {rec.business_website ? (
-                                 <a 
-                                   href={rec.business_website.startsWith('http') ? rec.business_website : `https://${rec.business_website}`}
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors hover:underline"
-                                 >
-                                   {rec.business_name}
-                                 </a>
-                               ) : (
-                                 <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                                   {rec.business_name}
-                                 </CardTitle>
-                               )}
+                                  <a 
+                                    href={rec.business_website.startsWith('http') ? rec.business_website : `https://${rec.business_website}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
+                                  >
+                                    {rec.business_name}
+                                  </a>
+                                ) : (
+                                  <CardTitle className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all cursor-pointer">
+                                    {rec.business_name}
+                                  </CardTitle>
+                                )}
                               <div className="flex items-center gap-2 mt-1">
                                 {rec.distance_miles && (
                                   <>
@@ -1074,7 +1074,7 @@ export default function Dashboard() {
                               className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
                             >
                               <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                              <span className="underline-offset-2 group-hover:underline">
+                              <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
                                 {rec.business_address}
                               </span>
                             </a>
