@@ -332,8 +332,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   // Sort by distance
   businesses.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
   
-  // Return up to 10 results
-  return businesses.slice(0, 10);
+  // Return exactly 6 results for consistency
+  return businesses.slice(0, 6);
 }
 
 serve(async (req) => {
