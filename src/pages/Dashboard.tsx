@@ -723,12 +723,12 @@ export default function Dashboard() {
                   {/* Favorites Controls */}
                   <div className="flex items-center gap-3">
                     {/* Category Filter */}
-                    <Select value={favoritesFilter || ''} onValueChange={(value) => setFavoritesFilter(value || null)}>
+                    <Select value={favoritesFilter || 'all'} onValueChange={(value) => setFavoritesFilter(value === 'all' ? null : value)}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {getFavoriteCategories().map(category => (
                           <SelectItem key={category} value={category}>{category}</SelectItem>
                         ))}
