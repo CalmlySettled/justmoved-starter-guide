@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,11 +36,30 @@ export default function OnboardingQuiz() {
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [quizData, setQuizData] = useState<QuizData>(initialData);
   const [isComplete, setIsComplete] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Check if user just signed up by seeing if they have no existing profile data
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('address, priorities')
+          .eq('user_id', user.id)
+          .single();
+        
+        // If user has no address or priorities, they're likely new
+        setIsNewUser(!profile?.address && (!profile?.priorities || profile.priorities.length === 0));
+      }
+    };
+    
+    checkUserStatus();
+  }, [user]);
 
   const totalQuestions = 6;
 
@@ -228,8 +247,13 @@ export default function OnboardingQuiz() {
         }
       }
 
-      // Navigate to dashboard to show saved results
-      navigate('/dashboard');
+      // If user just completed onboarding, go to recommendations
+      // If they're updating their profile, go to dashboard
+      if (isNewUser) {
+        navigate("/recommendations", { state: quizData });
+      } else {
+        navigate("/dashboard");
+      }
       
     } catch (error) {
       console.error('Error completing quiz:', error);

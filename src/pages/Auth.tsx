@@ -22,7 +22,7 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        navigate("/dashboard");
       }
     };
     checkUser();
@@ -31,7 +31,7 @@ export default function Auth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session) {
-          navigate("/");
+          navigate("/dashboard");
         }
       }
     );
@@ -49,7 +49,7 @@ export default function Auth() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
               display_name: displayName
             }
@@ -72,9 +72,11 @@ export default function Auth() {
           }
         } else {
           toast({
-            title: "Check your email",
-            description: "We sent you a confirmation link to complete your signup."
+            title: "Account created!",
+            description: "Welcome! Let's start by taking a quick quiz to personalize your experience."
           });
+          // Navigate new users to onboarding
+          navigate("/onboarding");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({

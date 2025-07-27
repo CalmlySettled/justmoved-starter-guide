@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -691,16 +691,43 @@ export default function Recommendations() {
       <div className="pt-24 px-4 max-w-5xl mx-auto pb-16">
         {/* Welcome Section */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6 gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate("/onboarding")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retake Quiz
-            </Button>
-            {user && (
+          {!user ? (
+            // Show save prompt for non-authenticated users
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-8 mb-8">
+              <h2 className="text-2xl font-bold text-foreground mb-4">
+                Save Your Personalized Recommendations
+              </h2>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Create an account to save these recommendations, get updates on new places, 
+                and access your personalized dashboard anytime.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/auth">
+                  <Button variant="hero" size="lg" className="px-8">
+                    Save My Recommendations
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => navigate("/onboarding")}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Retake Quiz
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Show dashboard link for authenticated users
+            <div className="flex items-center justify-center mb-6 gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/onboarding")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retake Quiz
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -709,8 +736,8 @@ export default function Recommendations() {
                 <Bookmark className="h-4 w-4 mr-2" />
                 View Dashboard
               </Button>
-            )}
-          </div>
+            </div>
+          )}
           
           <h1 className="text-5xl font-bold text-foreground mb-6">
             Welcome to Bloomfield! Let's get you settled.
