@@ -65,6 +65,50 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
     }
   };
 
+  const handleRemoveCurrentCategory = async (categoryToRemove: string) => {
+    if (!user || !userProfile) return;
+
+    try {
+      // Remove category from user's priorities
+      const updatedPriorities = currentPriorities.filter(cat => cat !== categoryToRemove);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ priorities: updatedPriorities })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Remove associated recommendations from user_recommendations table
+      const { error: deleteError } = await supabase
+        .from('user_recommendations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('category', categoryToRemove);
+
+      if (deleteError) {
+        console.error('Error removing recommendations:', deleteError);
+        // Don't throw here - profile update was successful
+      }
+
+      toast({
+        title: "Category Removed",
+        description: `${categoryToRemove} has been removed from your preferences.`,
+      });
+
+      onNewRecommendations(); // Refresh the dashboard
+    } catch (error) {
+      console.error('Error removing category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove category. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAddCategories = async () => {
     if (!user || !userProfile || selectedCategories.length === 0) return;
 
@@ -180,12 +224,19 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {currentPriorities.map((priority) => (
-                    <span 
+                    <div 
                       key={priority} 
-                      className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                      className="group flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-xs rounded-full hover:bg-primary/20 transition-colors"
                     >
-                      {priority}
-                    </span>
+                      <span>{priority}</span>
+                      <button
+                        onClick={() => handleRemoveCurrentCategory(priority)}
+                        className="opacity-60 hover:opacity-100 transition-opacity"
+                        title={`Remove ${priority}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </CardContent>
