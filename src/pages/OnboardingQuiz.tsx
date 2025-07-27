@@ -392,9 +392,9 @@ export default function OnboardingQuiz() {
                 </div>
                 {[
                   "Grocery stores",
-                  "Medical care", 
+                  "Medical care / Pharmacy", 
                   "Fitness options",
-                  "Schools",
+                  "DMV / Government services",
                   "Parks",
                   "Faith communities",
                   "Public transit / commute info",
