@@ -151,6 +151,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
               business_address: business.address,
               business_description: business.description,
               business_phone: business.phone,
+              business_website: business.website,
               business_image: business.image_url && business.image_url.trim() !== '' ? business.image_url : null,
               business_features: business.features || [],
               distance_miles: business.distance_miles,
