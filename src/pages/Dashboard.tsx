@@ -231,6 +231,12 @@ export default function Dashboard() {
     return ['Budget-Friendly', 'Highly Rated', 'Local Favorite', 'Accessible', 'Family-Friendly'];
   };
 
+  // Helper function to create Google Maps search URL (same as Recommendations page)
+  const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
+    const query = encodeURIComponent(`${businessName} ${address}`);
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
   const filterByFeatures = (rec: SavedRecommendation, filter: string) => {
     const features = rec.business_features?.join(' ').toLowerCase() || '';
     const description = rec.business_description?.toLowerCase() || '';
@@ -809,10 +815,17 @@ export default function Dashboard() {
                         
                         <CardContent className="space-y-4">
                           {rec.business_address && (
-                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                              <span>{rec.business_address}</span>
-                            </div>
+                            <a 
+                              href={getGoogleMapsDirectionsUrl(rec.business_address, rec.business_name)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
+                            >
+                              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                              <span className="underline-offset-2 group-hover:underline">
+                                {rec.business_address}
+                              </span>
+                            </a>
                           )}
                           
                           
