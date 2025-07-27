@@ -197,7 +197,7 @@ async function searchGooglePlaces(
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
             distance_miles: undefined, // Will calculate later
-            website: '',
+            website: place.website || place.url || '',
             image_url: imageUrl
           };
         })

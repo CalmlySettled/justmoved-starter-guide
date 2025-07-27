@@ -855,15 +855,26 @@ export default function Recommendations() {
                             </div>
 
                             <div className="p-6 space-y-4">
-                              {/* Business Name */}
-                              <div className="text-center">
-                                <h3 className="text-xl font-bold text-slate-900 leading-tight mb-1">
-                                  {business.name}
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {getBusinessTagline(business, category)}
-                                </p>
-                              </div>
+                               {/* Business Name */}
+                               <div className="text-center">
+                                 {business.website ? (
+                                   <a 
+                                     href={business.website.startsWith('http') ? business.website : `https://${business.website}`}
+                                     target="_blank"
+                                     rel="noopener noreferrer"
+                                     className="text-xl font-bold text-slate-900 hover:text-primary transition-colors leading-tight mb-1 inline-block"
+                                   >
+                                     {business.name}
+                                   </a>
+                                 ) : (
+                                   <h3 className="text-xl font-bold text-slate-900 leading-tight mb-1">
+                                     {business.name}
+                                   </h3>
+                                 )}
+                                 <p className="text-sm text-muted-foreground">
+                                   {getBusinessTagline(business, category)}
+                                 </p>
+                               </div>
 
                               {/* Address */}
                               {business.address && (
