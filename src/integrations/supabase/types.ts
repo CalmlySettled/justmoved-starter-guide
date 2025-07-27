@@ -75,6 +75,7 @@ export type Database = {
           business_longitude: number | null
           business_name: string
           business_phone: string | null
+          business_website: string | null
           category: string
           created_at: string
           distance_miles: number | null
@@ -92,6 +93,7 @@ export type Database = {
           business_longitude?: number | null
           business_name: string
           business_phone?: string | null
+          business_website?: string | null
           category: string
           created_at?: string
           distance_miles?: number | null
@@ -109,6 +111,7 @@ export type Database = {
           business_longitude?: number | null
           business_name?: string
           business_phone?: string | null
+          business_website?: string | null
           category?: string
           created_at?: string
           distance_miles?: number | null

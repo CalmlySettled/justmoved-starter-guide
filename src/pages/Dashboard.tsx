@@ -39,6 +39,7 @@ interface SavedRecommendation {
   business_description?: string;
   business_phone?: string;
   business_image?: string;
+  business_website?: string;
   business_features: string[];
   distance_miles?: number;
   created_at: string;
@@ -967,9 +968,20 @@ export default function Dashboard() {
                         <CardHeader className="pb-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                                {rec.business_name}
-                              </CardTitle>
+                               {rec.business_website ? (
+                                 <a 
+                                   href={rec.business_website.startsWith('http') ? rec.business_website : `https://${rec.business_website}`}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors hover:underline"
+                                 >
+                                   {rec.business_name}
+                                 </a>
+                               ) : (
+                                 <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                                   {rec.business_name}
+                                 </CardTitle>
+                               )}
                               <div className="flex items-center gap-2 mt-1">
                                 {rec.distance_miles && (
                                   <>
