@@ -68,7 +68,7 @@ export function Header() {
             <>
               <Link to="/onboarding">
                 <Button variant="default">
-                  Take Quiz
+                  Settle Me In
                 </Button>
               </Link>
               
@@ -104,7 +104,7 @@ export function Header() {
               </Link>
               <Link to="/onboarding">
                 <Button variant="default">
-                  Get Started
+                  Settle Me In
                 </Button>
               </Link>
             </>
