@@ -47,6 +47,7 @@ export default function Recommendations() {
   const [quizResponse, setQuizResponse] = useState<QuizResponse | null>(null);
   const [savingRecommendations, setSavingRecommendations] = useState<Set<string>>(new Set());
   const [activeFilters, setActiveFilters] = useState<{ [category: string]: string[] }>({});
+  const [favoritingRecommendations, setFavoritingRecommendations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const state = location.state as { quizResponse?: QuizResponse };
@@ -442,7 +443,8 @@ export default function Recommendations() {
           business_description: business.description,
           business_phone: business.phone,
           business_image: imageUrl,
-          business_features: business.features || []
+          business_features: business.features || [],
+          is_favorite: false
         });
 
       if (error) {
@@ -462,6 +464,92 @@ export default function Recommendations() {
       });
     } finally {
       setSavingRecommendations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(key);
+        return newSet;
+      });
+    }
+  };
+
+  const toggleFavorite = async (business: Business, category: string) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to favorite recommendations.",
+        variant: "destructive"
+      });
+      navigate("/auth");
+      return;
+    }
+
+    const key = `${category}-${business.name}`;
+    setFavoritingRecommendations(prev => new Set(prev).add(key));
+
+    try {
+      // First check if the business is already saved
+      const { data: existingRecommendation, error: fetchError } = await supabase
+        .from('user_recommendations')
+        .select('id, is_favorite')
+        .eq('user_id', user.id)
+        .eq('business_name', business.name)
+        .eq('category', category)
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingRecommendation) {
+        // Update existing recommendation's favorite status
+        const { error: updateError } = await supabase
+          .from('user_recommendations')
+          .update({ is_favorite: !existingRecommendation.is_favorite })
+          .eq('id', existingRecommendation.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: existingRecommendation.is_favorite ? "Removed from favorites" : "Added to favorites",
+          description: `${business.name} has been ${existingRecommendation.is_favorite ? 'removed from' : 'added to'} your favorites.`,
+        });
+      } else {
+        // Save as new recommendation with favorite status
+        const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
+        
+        const { error: insertError } = await supabase
+          .from('user_recommendations')
+          .insert({
+            user_id: user.id,
+            category: category,
+            business_name: business.name,
+            business_address: business.address,
+            business_description: business.description,
+            business_phone: business.phone,
+            business_image: imageUrl,
+            business_features: business.features || [],
+            is_favorite: true
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        toast({
+          title: "Added to favorites",
+          description: `${business.name} has been saved and added to your favorites.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error favoriting recommendation:', error);
+      toast({
+        title: "Error updating favorite",
+        description: "We couldn't update your favorite. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFavoritingRecommendations(prev => {
         const newSet = new Set(prev);
         newSet.delete(key);
         return newSet;
@@ -640,10 +728,11 @@ export default function Recommendations() {
                       
                       return filteredBusinesses.map((business, index) => {
                         const badges = getBusinessBadges(business);
-                        const saveKey = `${category}-${business.name}`;
-                        const isSaving = savingRecommendations.has(saveKey);
-                        const businessImage = getBusinessImage(business, category);
-                        const hours = business.hours || "Open daily 7am–9pm";
+                         const saveKey = `${category}-${business.name}`;
+                         const isSaving = savingRecommendations.has(saveKey);
+                         const isFavoriting = favoritingRecommendations.has(saveKey);
+                         const businessImage = getBusinessImage(business, category);
+                         const hours = business.hours || "Open daily 7am–9pm";
                         
                         return (
                           <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white rounded-3xl overflow-hidden">
@@ -657,17 +746,26 @@ export default function Recommendations() {
                                   e.currentTarget.src = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop';
                                 }}
                               />
-                              <div className="absolute top-3 right-3">
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => saveRecommendation(business, category)}
-                                  disabled={isSaving}
-                                  className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-8 h-8 p-0"
-                                >
-                                  <Bookmark className="h-3 w-3" />
-                                </Button>
-                              </div>
+                               <div className="absolute top-3 right-3 flex gap-2">
+                                 <Button
+                                   variant="secondary"
+                                   size="sm"
+                                   onClick={() => toggleFavorite(business, category)}
+                                   disabled={isFavoriting}
+                                   className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-8 h-8 p-0"
+                                 >
+                                   <Star className="h-3 w-3" />
+                                 </Button>
+                                 <Button
+                                   variant="secondary"
+                                   size="sm"
+                                   onClick={() => saveRecommendation(business, category)}
+                                   disabled={isSaving}
+                                   className="bg-white/90 hover:bg-white text-foreground shadow-lg rounded-full w-8 h-8 p-0"
+                                 >
+                                   <Bookmark className="h-3 w-3" />
+                                 </Button>
+                               </div>
                             </div>
 
                             <div className="p-6 space-y-4">
