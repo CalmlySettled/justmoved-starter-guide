@@ -79,6 +79,60 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // Google Places API integration
 
+// Helper function to check if a business is actually consumer-facing retail
+function isRetailConsumerBusiness(place: any, category: string): boolean {
+  const name = place.name.toLowerCase();
+  const types = place.types || [];
+  const typesString = types.join(' ').toLowerCase();
+  
+  // Exclude obvious B2B/wholesale businesses for grocery category
+  if (category.includes('grocery')) {
+    // Exclude wholesale distributors, suppliers, and B2B operations
+    const excludeKeywords = [
+      'wholesale', 'distributor', 'distribution', 'supplier', 'supply',
+      'foods llc', 'foods inc', 'food service', 'food services', 
+      'foodservice', 'catering', 'restaurant supply', 'commercial',
+      'industrial', 'manufacturing', 'processor', 'processing'
+    ];
+    
+    if (excludeKeywords.some(keyword => name.includes(keyword))) {
+      console.log(`→ Excluding B2B business: ${place.name}`);
+      return false;
+    }
+    
+    // Must have retail-oriented types for grocery
+    const retailTypes = [
+      'grocery_or_supermarket', 'supermarket', 'convenience_store',
+      'store', 'establishment'
+    ];
+    
+    const hasRetailType = retailTypes.some(type => types.includes(type));
+    if (!hasRetailType) {
+      console.log(`→ Excluding non-retail business: ${place.name} (types: ${types.join(', ')})`);
+      return false;
+    }
+  }
+  
+  // Exclude businesses that are clearly not consumer retail
+  const generalExcludeKeywords = [
+    'wholesale', 'distributor', 'b2b', 'commercial only',
+    'trade only', 'professional only', 'licensed professionals'
+  ];
+  
+  if (generalExcludeKeywords.some(keyword => name.includes(keyword) || typesString.includes(keyword))) {
+    console.log(`→ Excluding non-consumer business: ${place.name}`);
+    return false;
+  }
+  
+  // Must have a reasonable rating count (indicates consumer traffic)
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < 5) {
+    console.log(`→ Excluding business with low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+    return false;
+  }
+  
+  return true;
+}
+
 // Google Places API integration (enhanced fallback with photo support)
 async function searchGooglePlaces(
   category: string,
@@ -116,32 +170,37 @@ async function searchGooglePlaces(
       return [];
     }
 
-    // Convert Google Places results to Business objects with photos
-    const businesses = await Promise.all(data.results.slice(0, 10).map(async (place: any) => {
-      // Use Google's photo API if available, otherwise no image
-      let imageUrl = '';
-      
-      if (place.photos && place.photos.length > 0) {
-        const photoReference = place.photos[0].photo_reference;
-        imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
-        console.log(`→ Using Google photo for: ${place.name}`);
-      } else {
-        console.log(`→ No image available for: ${place.name}`);
-      }
+    // Filter and convert Google Places results to Business objects with photos
+    const businesses = await Promise.all(
+      data.results
+        .filter((place: any) => isRetailConsumerBusiness(place, category))
+        .slice(0, 10)
+        .map(async (place: any) => {
+          // Use Google's photo API if available, otherwise no image
+          let imageUrl = '';
+          
+          if (place.photos && place.photos.length > 0) {
+            const photoReference = place.photos[0].photo_reference;
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
+            console.log(`→ Using Google photo for: ${place.name}`);
+          } else {
+            console.log(`→ No image available for: ${place.name}`);
+          }
 
-      return {
-        name: place.name,
-        address: place.vicinity || '',
-        description: place.types?.join(', ') || '',
-        phone: '', // Phone requires additional details call
-        features: generateFeaturesFromGoogleData(place),
-        latitude: place.geometry?.location?.lat,
-        longitude: place.geometry?.location?.lng,
-        distance_miles: undefined, // Will calculate later
-        website: '',
-        image_url: imageUrl
-      };
-    }));
+          return {
+            name: place.name,
+            address: place.vicinity || '',
+            description: place.types?.join(', ') || '',
+            phone: '', // Phone requires additional details call
+            features: generateFeaturesFromGoogleData(place),
+            latitude: place.geometry?.location?.lat,
+            longitude: place.geometry?.location?.lng,
+            distance_miles: undefined, // Will calculate later
+            website: '',
+            image_url: imageUrl
+          };
+        })
+    );
 
     return businesses.filter(b => b.name && b.address);
 
