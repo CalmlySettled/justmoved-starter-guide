@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
+import { EditPreferencesModal } from "@/components/EditPreferencesModal";
+import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 import { 
   Home, 
   MapPin, 
@@ -50,6 +52,7 @@ interface UserProfile {
   transportation_style?: string;
   budget_preference?: string;
   life_stage?: string;
+  settling_tasks?: string[];
 }
 
 export default function Dashboard() {
@@ -567,21 +570,8 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button 
-              onClick={() => navigate("/onboarding")}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Update Preferences
-            </Button>
-            <Button 
-              onClick={() => navigate("/recommendations")}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Get New Recommendations
-            </Button>
+            <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
+            <AddMoreCategoriesModal userProfile={userProfile} onNewRecommendations={fetchUserData} />
           </div>
         </div>
 
@@ -1053,21 +1043,8 @@ export default function Dashboard() {
                 Get fresh recommendations based on your preferences or update your profile to find new places in your area.
               </p>
               <div className="space-y-3">
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/recommendations")}
-                  className="px-8 mr-4"
-                >
-                  Get New Recommendations
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  onClick={() => navigate("/onboarding")}
-                  className="px-8"
-                >
-                  Update Preferences
-                </Button>
+                <AddMoreCategoriesModal userProfile={userProfile} onNewRecommendations={fetchUserData} />
+                <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
               </div>
             </div>
           </div>
