@@ -528,6 +528,7 @@ export default function Recommendations() {
           business_address: business.address,
           business_description: business.description,
           business_phone: business.phone,
+          business_website: business.website,
           business_image: imageUrl,
           business_features: business.features || [],
           is_favorite: false
@@ -613,6 +614,7 @@ export default function Recommendations() {
             business_address: business.address,
             business_description: business.description,
             business_phone: business.phone,
+            business_website: business.website,
             business_image: imageUrl,
             business_features: business.features || [],
             is_favorite: true
