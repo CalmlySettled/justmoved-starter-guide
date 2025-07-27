@@ -427,13 +427,47 @@ serve(async (req) => {
   }
 
   try {
-    const { quizResponse, dynamicFilter } = await req.json();
-    console.log('Generating recommendations for:', JSON.stringify(quizResponse, null, 2));
+    const requestBody = await req.json();
+    console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
+    
+    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories } = requestBody;
+    
+    // Handle explore mode requests
+    if (exploreMode) {
+      if (!latitude || !longitude || !categories) {
+        return new Response(JSON.stringify({ error: 'Explore mode requires latitude, longitude, and categories' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const coordinates = { lat: latitude, lng: longitude };
+      const recommendations: { [key: string]: Business[] } = {};
+      
+      for (const category of categories) {
+        console.log(`Exploring category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates);
+        recommendations[category] = businesses;
+        console.log(`Found ${businesses.length} businesses for "${category}"`);
+      }
+      
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // If dynamic filter is provided, fetch additional specific results
     if (dynamicFilter) {
       console.log('Dynamic filter requested:', JSON.stringify(dynamicFilter, null, 2));
       return await handleDynamicFilter(quizResponse, dynamicFilter);
+    }
+
+    // Handle regular quiz-based requests
+    if (!quizResponse || !quizResponse.address) {
+      return new Response(JSON.stringify({ error: 'Quiz response with address is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Get coordinates from address
