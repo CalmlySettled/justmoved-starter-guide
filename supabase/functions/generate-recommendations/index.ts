@@ -13,6 +13,7 @@ interface QuizResponse {
   budgetPreference: string;
   lifeStage: string;
   settlingTasks: string[];
+  existingPriorities?: string[]; // Add this to track existing priorities
 }
 
 interface Business {
@@ -478,10 +479,12 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     }
   }
 
-  // Only add default categories if user has no priorities at all
-  // If they specified priorities but we couldn't match them, we should not add defaults
-  if (Object.keys(recommendations).length === 0 && quizResponse.priorities.length === 0) {
-    console.log('No priorities specified, adding default categories');
+  // Only add default categories if user has no priorities at all AND no existing priorities
+  // If they specified priorities or have existing ones, don't add defaults
+  const hasAnyPriorities = quizResponse.priorities.length > 0 || (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0);
+  
+  if (Object.keys(recommendations).length === 0 && !hasAnyPriorities) {
+    console.log('No priorities specified and no existing priorities, adding default categories');
     
     const defaultCategories = [
       { name: "Grocery stores", searchTerm: "grocery stores" },
@@ -498,6 +501,8 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         recommendations[category.name] = businesses;
       }
     }
+  } else if (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0) {
+    console.log(`User has existing priorities: ${quizResponse.existingPriorities.join(', ')}, not adding defaults`);
   }
 
   return recommendations;

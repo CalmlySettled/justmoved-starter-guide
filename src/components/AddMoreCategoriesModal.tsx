@@ -114,17 +114,19 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
 
     setLoading(true);
     try {
-      // Generate recommendations for new categories only
+      // Generate recommendations for new categories only, but include all priorities in the request
+      // so the edge function knows the user has existing priorities and doesn't add defaults
       const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           quizResponse: {
             address: userProfile.address,
             householdType: userProfile.household_type,
-            priorities: selectedCategories, // Only generate for new categories
+            priorities: selectedCategories, // Only the new categories we want recommendations for
             transportationStyle: userProfile.transportation_style,
             budgetPreference: userProfile.budget_preference,
             lifeStage: userProfile.life_stage,
-            settlingTasks: userProfile.settling_tasks
+            settlingTasks: userProfile.settling_tasks,
+            existingPriorities: currentPriorities // Add this so edge function knows user has existing priorities
           }
         }
       });
