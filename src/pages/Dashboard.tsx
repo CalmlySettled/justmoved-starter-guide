@@ -190,6 +190,37 @@ export default function Dashboard() {
     }
   };
 
+  const clearAllRecommendations = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('user_recommendations')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setRecommendations([]);
+      toast({
+        title: "All recommendations cleared",
+        description: "You can now generate fresh recommendations with website links.",
+      });
+    } catch (error) {
+      console.error('Error clearing recommendations:', error);
+      toast({
+        title: "Error",
+        description: "We couldn't clear your recommendations. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleFavorite = async (rec: SavedRecommendation) => {
     if (!user) return;
 
@@ -619,6 +650,15 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
             <AddMoreCategoriesModal userProfile={userProfile} onNewRecommendations={fetchUserData} />
+            <Button 
+              onClick={clearAllRecommendations}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={loading || recommendations.length === 0}
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear All Recommendations
+            </Button>
           </div>
         </div>
 
