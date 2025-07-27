@@ -81,40 +81,77 @@ export default function Dashboard() {
     if (!user) return;
 
     try {
-      setLoading(true);
-      
       // Fetch user profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-      } else {
-        setUserProfile(profile);
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
       }
 
-      // Fetch saved recommendations
-      const { data: savedRecs, error: recsError } = await supabase
+      setUserProfile(profileData);
+
+      // Fetch recommendations
+      const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (recsError) {
-        console.error('Error fetching recommendations:', recsError);
-        toast({
-          title: "Error loading recommendations",
-          description: "We couldn't load your saved recommendations.",
-          variant: "destructive"
-        });
-      } else {
-        setRecommendations(savedRecs || []);
+      if (recError) {
+        throw recError;
       }
+
+      // Clean up unwanted recommendations - only keep categories in user's priorities
+      if (profileData?.priorities && recData) {
+        const userPriorities = profileData.priorities;
+        const unwantedRecommendations = recData.filter(rec => 
+          !userPriorities.includes(rec.category)
+        );
+
+        if (unwantedRecommendations.length > 0) {
+          console.log(`Cleaning up ${unwantedRecommendations.length} unwanted recommendations for categories not in user priorities`);
+          
+          // Delete unwanted recommendations
+          const { error: deleteError } = await supabase
+            .from('user_recommendations')
+            .delete()
+            .eq('user_id', user.id)
+            .not('category', 'in', `(${userPriorities.map(p => `"${p}"`).join(',')})`);
+
+          if (deleteError) {
+            console.error('Error cleaning up recommendations:', deleteError);
+          } else {
+            // Refetch recommendations after cleanup
+            const { data: cleanRecData, error: cleanRecError } = await supabase
+              .from('user_recommendations')
+              .select('*')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false });
+
+            if (!cleanRecError) {
+              setRecommendations(cleanRecData || []);
+              toast({
+                title: "Cleaned up recommendations",
+                description: "Removed categories that weren't in your preferences.",
+              });
+              return;
+            }
+          }
+        }
+      }
+
+      setRecommendations(recData || []);
     } catch (error) {
       console.error('Error fetching user data:', error);
+      toast({
+        title: "Error loading data",
+        description: "We couldn't load your recommendations. Please refresh the page.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
