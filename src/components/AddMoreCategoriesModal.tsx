@@ -29,6 +29,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [previewCategories, setPreviewCategories] = useState<string[]>([]);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -60,8 +61,10 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
   const handleCategoryChange = (category: string, checked: boolean) => {
     if (checked) {
       setSelectedCategories([...selectedCategories, category]);
+      setPreviewCategories([...previewCategories, category]);
     } else {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
+      setPreviewCategories(previewCategories.filter(c => c !== category));
     }
   };
 
@@ -184,6 +187,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
 
         setOpen(false);
         setSelectedCategories([]);
+        setPreviewCategories([]);
         onNewRecommendations();
       }
     } catch (error) {
@@ -218,7 +222,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
         </DialogHeader>
         
         <div className="space-y-4">
-          {currentPriorities.length > 0 && (
+          {(currentPriorities.length > 0 || previewCategories.length > 0) && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm text-muted-foreground">Current Categories</CardTitle>
@@ -238,6 +242,15 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
                       >
                         <X className="h-3 w-3" />
                       </button>
+                    </div>
+                  ))}
+                  {previewCategories.map((category) => (
+                    <div 
+                      key={`preview-${category}`} 
+                      className="group flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-600 text-xs rounded-full border border-green-200 animate-in slide-in-from-bottom-2 duration-300"
+                    >
+                      <span>{category}</span>
+                      <span className="text-green-500 text-xs">NEW</span>
                     </div>
                   ))}
                 </div>
@@ -286,8 +299,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
             onClick={handleAddCategories} 
             disabled={loading || selectedCategories.length === 0}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            {loading ? "Generating..." : `Add ${selectedCategories.length} ${selectedCategories.length === 1 ? 'Category' : 'Categories'}`}
+            {loading ? "Generating..." : "Save"}
           </Button>
         </div>
       </DialogContent>
