@@ -569,7 +569,16 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "building supplies": "hardware stores",
     "home depot": "hardware stores",
     "lowes": "hardware stores",
-    "improvement": "hardware stores"
+    "improvement": "hardware stores",
+    "dmv / government services": "government offices",
+    "dmv": "government offices",
+    "government services": "government offices",
+    "government": "government offices",
+    "city hall": "government offices",
+    "town hall": "government offices",
+    "motor vehicle": "government offices",
+    "registry": "government offices",
+    "municipal": "government offices"
   };
 
   console.log('User priorities received:', quizResponse.priorities);
