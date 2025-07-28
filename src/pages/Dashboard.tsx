@@ -63,6 +63,7 @@ export default function Dashboard() {
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingRecommendations, setGeneratingRecommendations] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<{[category: string]: string | null}>({});
@@ -144,6 +145,7 @@ export default function Dashboard() {
         // Generate recommendations for missing categories
         if (missingCategories.length > 0 && profileData) {
           console.log(`Generating recommendations for ${missingCategories.length} missing categories:`, missingCategories);
+          setGeneratingRecommendations(true);
           
           try {
             // Construct proper quizResponse object with user profile data
@@ -165,11 +167,25 @@ export default function Dashboard() {
 
             if (generateError) {
               console.error('Error generating new recommendations:', generateError);
+              toast({
+                title: "Error",
+                description: "Failed to generate new recommendations. Please try again.",
+                variant: "destructive"
+              });
             } else {
               console.log('Successfully generated new recommendations');
+              // Add a delay to allow the edge function to save recommendations
+              await new Promise(resolve => setTimeout(resolve, 2000));
             }
           } catch (error) {
             console.error('Error calling generate-recommendations function:', error);
+            toast({
+              title: "Error",
+              description: "Failed to generate new recommendations. Please try again.",
+              variant: "destructive"
+            });
+          } finally {
+            setGeneratingRecommendations(false);
           }
         }
 
@@ -698,6 +714,11 @@ export default function Dashboard() {
           <div className="max-w-2xl mx-auto mb-8">
             <p className="text-lg text-muted-foreground leading-relaxed">
               {getUserSummary()}
+              {generatingRecommendations && (
+                <span className="block mt-2 text-primary animate-pulse">
+                  Generating new recommendations...
+                </span>
+              )}
             </p>
           </div>
 
