@@ -177,6 +177,8 @@ export default function Dashboard() {
               console.log('Successfully generated new recommendations');
               // Add a delay to allow the edge function to save recommendations
               await new Promise(resolve => setTimeout(resolve, 2000));
+              // Refetch the data to show the new recommendations
+              await fetchUserData();
             }
           } catch (error) {
             console.error('Error calling generate-recommendations function:', error);
