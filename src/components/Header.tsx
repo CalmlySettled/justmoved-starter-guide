@@ -103,14 +103,14 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link to="/auth">
-                <Button variant="ghost" className="hidden sm:inline-flex">
-                  Sign In
+              <Link to="/onboarding">
+                <Button variant="ghost">
+                  Settle Me In
                 </Button>
               </Link>
-              <Link to="/onboarding">
+              <Link to="/auth">
                 <Button variant="default">
-                  Settle Me In
+                  Sign In
                 </Button>
               </Link>
             </>
