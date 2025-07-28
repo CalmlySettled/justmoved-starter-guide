@@ -7,6 +7,7 @@ import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Heart, Camera, Search
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Header } from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LocationData {
   latitude: number;
@@ -69,7 +70,68 @@ export default function Explore() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Load user's profile address on mount
+  useEffect(() => {
+    const loadUserLocation = async () => {
+      if (!user) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !profile?.address) {
+          console.log('No profile address found, user will need to enter location manually');
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        // Geocode the stored address to get coordinates
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+          {
+            headers: {
+              'User-Agent': 'CalmlySettled/1.0'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.length > 0) {
+            const locationData: LocationData = {
+              latitude: parseFloat(data[0].lat),
+              longitude: parseFloat(data[0].lon),
+              city: data[0].display_name.split(',')[0] || profile.address.split(',')[0],
+            };
+
+            setLocation(locationData);
+            await loadPopularPlaces(locationData);
+            
+            toast({
+              title: "Welcome back!",
+              description: `Showing recommendations for ${locationData.city}`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user location:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserLocation();
+  }, [user]);
 
   // Get user's current location
   const getCurrentLocation = async () => {
@@ -305,7 +367,12 @@ export default function Explore() {
             </p>
 
             {/* Location Section */}
-            {!location ? (
+            {isLoadingProfile ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading your location...</p>
+              </div>
+            ) : !location ? (
               <div className="max-w-md mx-auto space-y-4">
                 <Button 
                   onClick={getCurrentLocation}
@@ -331,12 +398,31 @@ export default function Explore() {
                     <Search className="h-4 w-4" />
                   </Button>
                 </div>
+                
+                {user && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    We couldn't find your saved address. Please enter your location to explore nearby places.
+                  </p>
+                )}
               </div>
             ) : (
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                <MapPin className="mr-2 h-4 w-4" />
-                {location.city}
-              </Badge>
+              <div className="space-y-4">
+                <Badge variant="secondary" className="text-lg px-4 py-2">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {location.city}
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setLocation(null);
+                    setPopularPlaces({});
+                    setSelectedCategory(null);
+                  }}
+                >
+                  Change Location
+                </Button>
+              </div>
             )}
           </div>
 
