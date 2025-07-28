@@ -29,9 +29,21 @@ export default function Auth() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session) {
-          navigate("/dashboard");
+          // Check if user has completed onboarding
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('address, priorities')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          // If they have profile data, go to dashboard, otherwise onboarding
+          if (profile?.address && profile?.priorities?.length > 0) {
+            navigate("/dashboard");
+          } else {
+            navigate("/onboarding");
+          }
         }
       }
     );
@@ -75,8 +87,8 @@ export default function Auth() {
             title: "Account created!",
             description: "Welcome! Let's start by taking a quick quiz to personalize your experience."
           });
-          // Navigate new users to onboarding
-          navigate("/onboarding");
+          // Check if user has already completed onboarding by checking for existing session
+          // The auth state change will handle navigation automatically
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
