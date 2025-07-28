@@ -50,10 +50,16 @@ export function Header() {
             Explore
           </Link>
           <Link 
-            to="/my-recommendations"
+            to="/favorites"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            My Guide
+            Favorites
+          </Link>
+          <Link 
+            to="/dashboard"
+            className="text-muted-foreground hover:text-foreground transition-smooth"
+          >
+            Dashboard
           </Link>
         </nav>
         
@@ -75,6 +81,13 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
