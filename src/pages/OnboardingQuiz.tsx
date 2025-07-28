@@ -39,6 +39,7 @@ export default function OnboardingQuiz() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [validAddressSelected, setValidAddressSelected] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -139,7 +140,7 @@ export default function OnboardingQuiz() {
 
   const canProceed = () => {
     switch (currentQuestion) {
-      case 1: return quizData.address.trim() !== "";
+      case 1: return quizData.address.trim() !== "" && validAddressSelected;
       case 2: return quizData.household.length > 0;
       case 3: return quizData.priorities.length > 0;
       case 4: return quizData.transportation !== "";
@@ -363,6 +364,7 @@ export default function OnboardingQuiz() {
               <AddressAutocomplete
                 value={quizData.address}
                 onChange={handleAddressChange}
+                onValidAddressSelected={setValidAddressSelected}
                 placeholder="e.g., 123 Main St, Bloomfield, CT 06002"
                 label="Full Address or Neighborhood"
               />

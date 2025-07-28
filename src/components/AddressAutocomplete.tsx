@@ -6,6 +6,7 @@ import { MapPin, Loader2 } from "lucide-react";
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onValidAddressSelected?: (isValid: boolean) => void;
   placeholder?: string;
   label?: string;
 }
@@ -17,11 +18,12 @@ interface AddressSuggestion {
   secondary_text: string;
 }
 
-export function AddressAutocomplete({ value, onChange, placeholder, label }: AddressAutocompleteProps) {
+export function AddressAutocomplete({ value, onChange, onValidAddressSelected, placeholder, label }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [validAddressSelected, setValidAddressSelected] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -98,6 +100,10 @@ export function AddressAutocomplete({ value, onChange, placeholder, label }: Add
     const inputValue = e.target.value;
     onChange(inputValue);
     setSelectedIndex(-1);
+    
+    // Reset valid address selection when user manually types
+    setValidAddressSelected(false);
+    onValidAddressSelected?.(false);
 
     // Debounce the API call
     if (debounceTimer.current) {
@@ -114,6 +120,8 @@ export function AddressAutocomplete({ value, onChange, placeholder, label }: Add
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
+    setValidAddressSelected(true);
+    onValidAddressSelected?.(true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -227,6 +235,12 @@ export function AddressAutocomplete({ value, onChange, placeholder, label }: Add
       <p className="text-sm text-muted-foreground">
         We'll use this to calculate distances to local businesses and provide more accurate recommendations.
       </p>
+      
+      {value && !validAddressSelected && (
+        <p className="text-sm text-orange-600 dark:text-orange-400">
+          Please select an address from the suggestions above to continue.
+        </p>
+      )}
     </div>
   );
 }
