@@ -360,7 +360,7 @@ export default function Explore() {
           {/* Header Section */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Explore{location?.city ? ` ${location.city}` : " Your Area"}
+              Explore Nearby Trends
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Discover popular spots and hidden gems near you
