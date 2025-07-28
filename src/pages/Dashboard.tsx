@@ -102,11 +102,13 @@ export default function Dashboard() {
 
       setUserProfile(profileData);
 
-      // Fetch displayed recommendations only by default
+      // Fetch only displayed recommendations by default (max 6 per category)
       const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
         .eq('user_id', user.id)
+        .eq('is_displayed', true)
+        .order('relevance_score', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (recError) {
@@ -596,15 +598,13 @@ export default function Dashboard() {
       groups[category] = [];
     }
     
-    // Use filtered recommendations if available, otherwise use original
+    // Use filtered recommendations if available, otherwise use original displayed recommendations
     if (filteredRecommendations[category]) {
       // Don't add to groups here, we'll use filteredRecommendations directly
       return groups;
     } else if (!activeCategoryFilter[category]) {
-      // Only show is_displayed recommendations when no filter is active
-      if (rec.is_displayed !== false) {
-        groups[category].push(rec);
-      }
+      // Only add recommendations that are marked as displayed (original 6)
+      groups[category].push(rec);
     }
     
     return groups;
