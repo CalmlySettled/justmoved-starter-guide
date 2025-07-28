@@ -154,7 +154,7 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      // Save quiz data to user's profile if logged in
+      // If user is logged in, save to Supabase directly
       if (user) {
         const { error } = await supabase
           .from('profiles')
@@ -247,14 +247,29 @@ export default function OnboardingQuiz() {
         } catch (recError) {
           console.error('Error with recommendations:', recError);
         }
-      }
 
-      // If user just completed onboarding, go to recommendations
-      // If they're updating their profile, go to dashboard
-      if (isNewUser) {
-        navigate("/recommendations", { state: quizData });
-      } else {
+        // Navigate to dashboard for logged in users
         navigate("/dashboard");
+      } else {
+        // If user is NOT logged in, store quiz data in localStorage and redirect to signup
+        const quizDataForStorage = {
+          address: quizData.address,
+          priorities: quizData.priorities,
+          household: quizData.household.join(', '),
+          transportation: quizData.transportation,
+          budgetRange: quizData.lifestyle,
+          movingTimeline: quizData.lifeStage,
+          settlingTasks: quizData.tasks
+        };
+        
+        localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+        
+        toast({
+          title: "Quiz Complete!",
+          description: "Please sign up to save your preferences and get personalized recommendations.",
+        });
+        
+        navigate("/auth");
       }
       
     } catch (error) {
