@@ -161,7 +161,8 @@ export default function Dashboard() {
 
             const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
               body: { 
-                quizResponse 
+                quizResponse,
+                userId: user?.id // Pass the user ID so the edge function can save to database
               }
             });
 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -430,7 +431,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
-    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories } = requestBody;
+    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
     
     // Handle explore mode requests
     if (exploreMode) {
@@ -483,6 +484,12 @@ serve(async (req) => {
 
     console.log('Generated recommendations categories:', Object.keys(recommendations));
 
+    // Save recommendations to database if userId is provided
+    if (userId && Object.keys(recommendations).length > 0) {
+      console.log(`Saving recommendations to database for user: ${userId}`);
+      await saveRecommendationsToDatabase(userId, recommendations);
+    }
+
     return new Response(
       JSON.stringify({ recommendations }),
       {
@@ -504,6 +511,57 @@ serve(async (req) => {
     );
   }
 });
+
+// Function to save recommendations to the database
+async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  try {
+    const recommendationsToInsert = [];
+    
+    // Convert recommendations to database format
+    for (const [category, businesses] of Object.entries(recommendations)) {
+      for (const business of businesses) {
+        recommendationsToInsert.push({
+          user_id: userId,
+          category: category,
+          business_name: business.name,
+          business_address: business.address,
+          business_description: business.description,
+          business_phone: business.phone,
+          business_website: business.website,
+          business_latitude: business.latitude,
+          business_longitude: business.longitude,
+          distance_miles: business.distance_miles,
+          business_features: business.features,
+          business_image: business.image_url,
+          is_favorite: false
+        });
+      }
+    }
+    
+    if (recommendationsToInsert.length > 0) {
+      console.log(`Inserting ${recommendationsToInsert.length} recommendations for user ${userId}`);
+      
+      const { data, error } = await supabase
+        .from('user_recommendations')
+        .insert(recommendationsToInsert);
+      
+      if (error) {
+        console.error('Error saving recommendations to database:', error);
+        throw error;
+      }
+      
+      console.log(`Successfully saved ${recommendationsToInsert.length} recommendations to database`);
+    }
+  } catch (error) {
+    console.error('Error in saveRecommendationsToDatabase:', error);
+    throw error;
+  }
+}
 
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
