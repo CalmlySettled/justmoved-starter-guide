@@ -652,281 +652,160 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* User Profile & Quick Stats */}
-        {userProfile && (
+        {/* Favorites Section - Interactive Visual Display */}
+        {recommendations.filter(rec => rec.is_favorite).length > 0 && (
           <div className="mb-12">
-            {/* Welcome Message */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-2">
-                Welcome, there! 
-              </h2>
-              <p className="text-muted-foreground">
-                Here's what we know about your move...
-              </p>
-            </div>
-
-            {/* Preference Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-              {userProfile.life_stage && (
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50 hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-blue-200/60 flex items-center justify-center mb-2">
-                        <Heart className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <h3 className="font-medium text-foreground">Life Stage</h3>
-                      <p className="text-sm text-muted-foreground">{userProfile.life_stage}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl">
+                  <Star className="h-6 w-6 text-yellow-600 fill-current" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">My Favorites</h2>
+                  <p className="text-muted-foreground">
+                    {getFavoritesData().length} favorite place{getFavoritesData().length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
               
-              {userProfile.household_type && (
-                <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200/50 hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-green-200/60 flex items-center justify-center mb-2">
-                        <Users className="h-6 w-6 text-green-600" />
-                      </div>
-                      <h3 className="font-medium text-foreground">Household</h3>
-                      <p className="text-sm text-muted-foreground">{userProfile.household_type}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {userProfile.transportation_style && (
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-purple-200/60 flex items-center justify-center mb-2">
-                        <Car className="h-6 w-6 text-purple-600" />
-                      </div>
-                      <h3 className="font-medium text-foreground">Transportation</h3>
-                      <p className="text-sm text-muted-foreground">{userProfile.transportation_style}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {userProfile.budget_preference && (
-                <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-orange-200/60 flex items-center justify-center mb-2">
-                        <DollarSign className="h-6 w-6 text-orange-600" />
-                      </div>
-                      <h3 className="font-medium text-foreground">Budget Style</h3>
-                      <p className="text-sm text-muted-foreground">{userProfile.budget_preference}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {userProfile.address && (
-                <Card className="bg-gradient-to-br from-teal-50 to-teal-100/50 border-teal-200/50 hover:shadow-md transition-all duration-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-teal-200/60 flex items-center justify-center mb-2">
-                        <MapPin className="h-6 w-6 text-teal-600" />
-                      </div>
-                      <h3 className="font-medium text-foreground">Location</h3>
-                      <p className="text-sm text-muted-foreground">{userProfile.address}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+              {/* Favorites Controls */}
+              <div className="flex items-center gap-3">
+                {/* Category Filter */}
+                <Select value={favoritesFilter || 'all'} onValueChange={(value) => setFavoritesFilter(value === 'all' ? null : value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {getFavoriteCategories().map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 
-            {userProfile.priorities && userProfile.priorities.length > 0 && (
-              <div className="mb-8">
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Your Priorities {activeFilter && <span className="text-primary">- Filtered by: {activeFilter}</span>}
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {userProfile.priorities.map((priority, index) => (
-                    <Badge 
-                      key={index} 
-                      variant="secondary" 
-                      className={`cursor-pointer transition-all hover:scale-105 ${
-                        activeFilter === priority 
-                          ? "bg-primary text-primary-foreground border-primary shadow-md" 
-                          : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                      }`}
-                      onClick={() => handlePriorityFilter(priority)}
-                    >
-                      {priority}
-                    </Badge>
-                  ))}
-                  {activeFilter && (
-                    <Badge 
-                      variant="outline" 
-                      className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
-                      onClick={() => setActiveFilter(null)}
-                    >
-                      Clear Filter
-                    </Badge>
-                  )}
-                </div>
+                {/* Sort Controls */}
+                <Select value={favoritesSort} onValueChange={(value: 'date' | 'distance' | 'category') => setFavoritesSort(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Recent</SelectItem>
+                    <SelectItem value="distance">Nearest</SelectItem>
+                    <SelectItem value="category">Category</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* Clear Filters */}
+                {favoritesFilter && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setFavoritesFilter(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Favorites Section - Interactive Visual Display */}
-            {recommendations.filter(rec => rec.is_favorite).length > 0 && (
-              <div className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl">
-                      <Star className="h-6 w-6 text-yellow-600 fill-current" />
+            {/* Favorites Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getFavoritesData().map((rec) => {
+                const badges = getBusinessBadges(rec.business_features || []);
+                const isFavoriting = favoritingRecommendations.has(rec.id);
+                
+                return (
+                  <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden hover:scale-[1.02]">
+                    {/* Business Image */}
+                    <div className="aspect-[4/3] overflow-hidden relative">
+                      <img 
+                        src={getBusinessImage(rec)}
+                        alt={rec.business_name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => toggleFavorite(rec)}
+                          disabled={isFavoriting}
+                          className="bg-white/90 hover:bg-white text-yellow-500 shadow-lg rounded-full w-8 h-8 p-0"
+                        >
+                          <Star className="h-3 w-3 fill-current" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => deleteRecommendation(rec.id)}
+                          disabled={deleting === rec.id}
+                          className="bg-white/90 hover:bg-white text-destructive shadow-lg rounded-full w-8 h-8 p-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      {/* Category Tag */}
+                      <div className="absolute bottom-3 left-3">
+                        <Badge className="bg-white/90 text-foreground hover:bg-white text-xs font-medium">
+                          {getCategoryIcon(rec.category)} {rec.category}
+                        </Badge>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">My Favorites</h2>
-                      <p className="text-muted-foreground">
-                        {getFavoritesData().length} favorite place{getFavoritesData().length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Favorites Controls */}
-                  <div className="flex items-center gap-3">
-                    {/* Category Filter */}
-                    <Select value={favoritesFilter || 'all'} onValueChange={(value) => setFavoritesFilter(value === 'all' ? null : value)}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="All Categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {getFavoriteCategories().map(category => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Sort Controls */}
-                    <Select value={favoritesSort} onValueChange={(value: 'date' | 'distance' | 'category') => setFavoritesSort(value)}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date">Recent</SelectItem>
-                        <SelectItem value="distance">Nearest</SelectItem>
-                        <SelectItem value="category">Category</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Clear Filters */}
-                    {favoritesFilter && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setFavoritesFilter(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
 
-                {/* Favorites Grid */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {getFavoritesData().map((rec) => {
-                    const badges = getBusinessBadges(rec.business_features || []);
-                    const isFavoriting = favoritingRecommendations.has(rec.id);
-                    
-                    return (
-                      <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden hover:scale-[1.02]">
-                        {/* Business Image */}
-                        <div className="aspect-[4/3] overflow-hidden relative">
-                          <img 
-                            src={getBusinessImage(rec)}
-                            alt={rec.business_name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute top-3 right-3 flex gap-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => toggleFavorite(rec)}
-                              disabled={isFavoriting}
-                              className="bg-white/90 hover:bg-white text-yellow-500 shadow-lg rounded-full w-8 h-8 p-0"
-                            >
-                              <Star className="h-3 w-3 fill-current" />
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => deleteRecommendation(rec.id)}
-                              disabled={deleting === rec.id}
-                              className="bg-white/90 hover:bg-white text-destructive shadow-lg rounded-full w-8 h-8 p-0"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          
-                          {/* Category Tag */}
-                          <div className="absolute bottom-3 left-3">
-                            <Badge className="bg-white/90 text-foreground hover:bg-white text-xs font-medium">
-                              {getCategoryIcon(rec.category)} {rec.category}
-                            </Badge>
-                          </div>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Business Name */}
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {rec.business_name}
+                        </h3>
+                        
+                        {/* Address */}
+                        {rec.business_address && (
+                          <a 
+                            href={getGoogleMapsDirectionsUrl(rec.business_address, rec.business_name)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
+                          >
+                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                            <span className="underline-offset-2 group-hover:underline line-clamp-1 text-xs">
+                              {rec.business_address}
+                            </span>
+                          </a>
+                        )}
+                        
+                        {/* Distance & Date */}
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          {rec.distance_miles && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {rec.distance_miles} mi
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(rec.created_at).toLocaleDateString()}
+                          </span>
                         </div>
-
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            {/* Business Name */}
-                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                              {rec.business_name}
-                            </h3>
-                            
-                            {/* Address */}
-                            {rec.business_address && (
-                              <a 
-                                href={getGoogleMapsDirectionsUrl(rec.business_address, rec.business_name)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
-                              >
-                                <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                <span className="underline-offset-2 group-hover:underline line-clamp-1 text-xs">
-                                  {rec.business_address}
-                                </span>
-                              </a>
-                            )}
-                            
-                            {/* Distance & Date */}
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              {rec.distance_miles && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {rec.distance_miles} mi
-                                </span>
-                              )}
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(rec.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            
-                            {/* Badges */}
-                            {badges.length > 0 && (
-                              <div className="flex gap-1">
-                                {badges.slice(0, 1).map((badge, badgeIndex) => (
-                                  <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                                    <badge.icon className="h-3 w-3" />
-                                    {badge.label}
-                                  </div>
-                                ))}
+                        
+                        {/* Badges */}
+                        {badges.length > 0 && (
+                          <div className="flex gap-1">
+                            {badges.slice(0, 1).map((badge, badgeIndex) => (
+                              <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                                <badge.icon className="h-3 w-3" />
+                                {badge.label}
                               </div>
-                            )}
+                            ))}
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 
