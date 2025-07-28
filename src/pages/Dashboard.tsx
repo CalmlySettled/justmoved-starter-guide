@@ -888,7 +888,30 @@ export default function Dashboard() {
         {/* Saved Recommendations */}
         {recommendations.length > 0 ? (
           <div className="space-y-16">
-            {Object.entries(groupedRecommendations).map(([category, categoryRecs], categoryIndex) => (
+            {(() => {
+              // Sort categories to show user's original priorities first, then new ones
+              const userPriorities = userProfile?.priorities || [];
+              const categoryEntries = Object.entries(groupedRecommendations);
+              
+              // Separate categories into original priorities and new ones
+              const originalCategories = categoryEntries.filter(([category]) => 
+                userPriorities.includes(category)
+              );
+              const newCategories = categoryEntries.filter(([category]) => 
+                !userPriorities.includes(category)
+              );
+              
+              // Sort original categories by their order in user priorities
+              originalCategories.sort(([a], [b]) => {
+                const indexA = userPriorities.indexOf(a);
+                const indexB = userPriorities.indexOf(b);
+                return indexA - indexB;
+              });
+              
+              // Combine: original priorities first, then new categories
+              const sortedCategories = [...originalCategories, ...newCategories];
+              
+              return sortedCategories.map(([category, categoryRecs], categoryIndex) => (
               <div key={category} className="space-y-8">
                 {categoryIndex > 0 && <div className="border-t border-border/30 pt-16" />}
                 
@@ -1042,7 +1065,8 @@ export default function Dashboard() {
                   })}
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         ) : (
           <div className="text-center py-16">
