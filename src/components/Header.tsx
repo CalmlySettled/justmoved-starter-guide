@@ -54,14 +54,11 @@ export function Header() {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <div className="text-center">
-                <Link to="/onboarding">
-                  <Button variant="default">
-                    Settle Me In
-                  </Button>
-                </Link>
-                <p className="text-xs text-muted-foreground mt-1">your custom city guide in 2 minutes</p>
-              </div>
+              <Link to="/onboarding">
+                <Button variant="default">
+                  Settle Me In
+                </Button>
+              </Link>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -93,14 +90,11 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-              <div className="text-center">
-                <Link to="/onboarding">
-                  <Button variant="default">
-                    Settle Me In
-                  </Button>
-                </Link>
-                <p className="text-xs text-muted-foreground mt-1">your custom city guide in 2 minutes</p>
-              </div>
+              <Link to="/onboarding">
+                <Button variant="default">
+                  Settle Me In
+                </Button>
+              </Link>
             </>
           )}
         </div>
