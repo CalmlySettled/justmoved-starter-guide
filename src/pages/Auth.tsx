@@ -31,7 +31,35 @@ export default function Auth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
-          // Check if user has completed onboarding
+          // Check if there's completed quiz data in localStorage (user took quiz before signup)
+          const storedQuizData = localStorage.getItem('onboardingQuizData');
+          if (storedQuizData) {
+            try {
+              const quizData = JSON.parse(storedQuizData);
+              if (quizData.address && quizData.priorities && quizData.priorities.length > 0) {
+                // Save quiz data to Supabase and clear localStorage
+                await supabase
+                  .from('profiles')
+                  .update({
+                    address: quizData.address,
+                    priorities: quizData.priorities,
+                    household: quizData.household,
+                    transportation: quizData.transportation,
+                    budget_range: quizData.budgetRange,
+                    moving_timeline: quizData.movingTimeline
+                  })
+                  .eq('user_id', session.user.id);
+                
+                localStorage.removeItem('onboardingQuizData');
+                navigate("/dashboard");
+                return;
+              }
+            } catch (error) {
+              console.error('Error parsing stored quiz data:', error);
+            }
+          }
+          
+          // Check if user has completed onboarding in Supabase
           const { data: profile } = await supabase
             .from('profiles')
             .select('address, priorities')
