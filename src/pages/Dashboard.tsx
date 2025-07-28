@@ -142,19 +142,19 @@ export default function Dashboard() {
         }
 
         // Generate recommendations for missing categories
-        if (missingCategories.length > 0) {
+        if (missingCategories.length > 0 && profileData) {
           console.log(`Generating recommendations for ${missingCategories.length} missing categories:`, missingCategories);
           
           try {
             // Construct proper quizResponse object with user profile data
             const quizResponse = {
-              address: userProfile.address || '',
-              household_type: userProfile.household_type || 'individual',
+              address: profileData.address || '',
+              household_type: profileData.household_type || 'individual',
               priorities: missingCategories,
-              transportation_style: userProfile.transportation_style || 'car',
-              budget_preference: userProfile.budget_preference || 'mid_range',
-              life_stage: userProfile.life_stage || 'working_professional',
-              settling_tasks: userProfile.settling_tasks || []
+              transportation_style: profileData.transportation_style || 'car',
+              budget_preference: profileData.budget_preference || 'mid_range',
+              life_stage: profileData.life_stage || 'working_professional',
+              settling_tasks: profileData.settling_tasks || []
             };
 
             const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
