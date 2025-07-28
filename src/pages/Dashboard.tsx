@@ -1004,7 +1004,7 @@ export default function Dashboard() {
                       {category.charAt(0).toUpperCase() + category.slice(1)}
                     </h2>
                     <p className="text-muted-foreground mt-1">
-                      {categoryRecs.length} saved recommendation{categoryRecs.length !== 1 ? 's' : ''}
+                      {categoryRecs.length} recommendation{categoryRecs.length !== 1 ? 's' : ''}
                       {additionalResults[category] > 0 && (
                         <span className="text-primary font-medium">
                           {" "}(+{additionalResults[category]} from expanded search)
