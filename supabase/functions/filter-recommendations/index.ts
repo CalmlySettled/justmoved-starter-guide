@@ -46,57 +46,79 @@ serve(async (req) => {
     // Apply metadata filters
     if (filters && filters.length > 0) {
       for (const filter of filters) {
-        switch (filter.toLowerCase()) {
-          case 'organic':
-          case 'organic options':
-            query = query.eq('filter_metadata->>isOrganic', 'true');
-            break;
-          case '24/7':
-          case '24 hours':
-            query = query.eq('filter_metadata->>is24Hours', 'true');
-            break;
-          case 'pickup available':
-          case 'pickup':
-            query = query.eq('filter_metadata->>hasPickup', 'true');
-            break;
-          case 'budget-friendly':
-          case 'budget':
-            query = query.or('filter_metadata->>rating.gte.4,business_features.cs.{"Budget-Friendly"}');
-            break;
-          case 'high rated':
-          case 'highly rated':
-          case 'top rated':
-            query = query.gte('filter_metadata->>rating', 4.0);
-            break;
-          case 'outdoor seating':
-            query = query.eq('filter_metadata->>hasOutdoorSeating', 'true');
-            break;
-          case 'delivery':
-            query = query.eq('filter_metadata->>hasDelivery', 'true');
-            break;
-          case 'vegetarian':
-            query = query.eq('filter_metadata->>isVegetarian', 'true');
-            break;
-          case 'classes':
-            query = query.eq('filter_metadata->>hasClasses', 'true');
-            break;
-          case 'pool':
-            query = query.eq('filter_metadata->>hasPool', 'true');
-            break;
-          case 'personal training':
-            query = query.eq('filter_metadata->>hasPersonalTraining', 'true');
-            break;
-          case 'nearby':
-          case 'close':
-            query = query.lte('distance_miles', 2);
-            break;
-          case 'local':
-            query = query.contains('business_features', ['Local']);
-            break;
-          default:
-            // Generic filter - search in business features
-            query = query.or(`business_features.cs.{${filter}},business_name.ilike.%${filter}%`);
-            break;
+        const filterLower = filter.toLowerCase();
+        
+        // High rated filter - works for all categories
+        if (filterLower.includes('high') && filterLower.includes('rated') || 
+            filterLower.includes('top') && filterLower.includes('rated')) {
+          query = query.gte('filter_metadata->>rating', 4.0);
+        }
+        // Distance-based filters
+        else if (filterLower === 'nearby' || filterLower === 'close') {
+          query = query.lte('distance_miles', 2);
+        }
+        // Local business filter
+        else if (filterLower === 'local') {
+          query = query.contains('business_features', ['Local']);
+        }
+        // Budget-friendly filter
+        else if (filterLower.includes('budget')) {
+          query = query.or('filter_metadata->>rating.gte.4,business_features.cs.{"Budget-Friendly"}');
+        }
+        // Grocery-specific filters
+        else if (filterLower === 'organic' || filterLower === 'organic options') {
+          query = query.eq('filter_metadata->>isOrganic', 'true');
+        }
+        else if (filterLower === '24/7' || filterLower === '24 hours') {
+          query = query.eq('filter_metadata->>is24Hours', 'true');
+        }
+        else if (filterLower.includes('pickup')) {
+          query = query.eq('filter_metadata->>hasPickup', 'true');
+        }
+        // Restaurant-specific filters
+        else if (filterLower.includes('outdoor') && filterLower.includes('seating')) {
+          query = query.eq('filter_metadata->>hasOutdoorSeating', 'true');
+        }
+        else if (filterLower === 'delivery') {
+          query = query.eq('filter_metadata->>hasDelivery', 'true');
+        }
+        else if (filterLower === 'vegetarian') {
+          query = query.eq('filter_metadata->>isVegetarian', 'true');
+        }
+        // Fitness-specific filters
+        else if (filterLower === 'classes') {
+          query = query.eq('filter_metadata->>hasClasses', 'true');
+        }
+        else if (filterLower === 'pool') {
+          query = query.eq('filter_metadata->>hasPool', 'true');
+        }
+        else if (filterLower.includes('personal') && filterLower.includes('training')) {
+          query = query.eq('filter_metadata->>hasPersonalTraining', 'true');
+        }
+        // Education filters
+        else if (filterLower === 'public') {
+          query = query.contains('business_features', ['Public']);
+        }
+        else if (filterLower === 'private') {
+          query = query.contains('business_features', ['Private']);
+        }
+        // Recreation filters
+        else if (filterLower === 'free') {
+          query = query.contains('business_features', ['Free']);
+        }
+        else if (filterLower.includes('family') && filterLower.includes('friendly')) {
+          query = query.contains('business_features', ['Family-Friendly']);
+        }
+        else if (filterLower.includes('dog') && filterLower.includes('friendly')) {
+          query = query.contains('business_features', ['Dog-Friendly']);
+        }
+        // Medical filters
+        else if (filterLower === 'specialist') {
+          query = query.contains('business_features', ['Specialist']);
+        }
+        // Generic filter - search in business features and name/description
+        else {
+          query = query.or(`business_features.cs.{"${filter}"},business_name.ilike.%${filter}%,business_description.ilike.%${filter}%`);
         }
       }
     }
