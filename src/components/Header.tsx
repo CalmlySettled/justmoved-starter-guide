@@ -50,16 +50,10 @@ export function Header() {
             Explore
           </Link>
           <Link 
-            to="/favorites"
+            to="/my-recommendations"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            Favorites
-          </Link>
-          <Link 
-            to="/dashboard"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            Dashboard
+            My Guide
           </Link>
         </nav>
         
