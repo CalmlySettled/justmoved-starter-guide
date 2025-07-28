@@ -33,26 +33,40 @@ export default function Auth() {
         if (session) {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
+          console.log('Auth state change - checking for stored quiz data:', storedQuizData);
+          
           if (storedQuizData) {
             try {
               const quizData = JSON.parse(storedQuizData);
+              console.log('Parsed quiz data:', quizData);
+              
               if (quizData.address && quizData.priorities && quizData.priorities.length > 0) {
-                // Save quiz data to Supabase and clear localStorage
-                await supabase
+                console.log('Valid quiz data found, saving to profile...');
+                
+                // Save quiz data to Supabase using upsert and correct column names
+                const { error } = await supabase
                   .from('profiles')
-                  .update({
+                  .upsert({
+                    user_id: session.user.id,
                     address: quizData.address,
                     priorities: quizData.priorities,
-                    household: quizData.household,
-                    transportation: quizData.transportation,
-                    budget_range: quizData.budgetRange,
-                    moving_timeline: quizData.movingTimeline
-                  })
-                  .eq('user_id', session.user.id);
+                    household_type: quizData.household,
+                    transportation_style: quizData.transportation,
+                    budget_preference: quizData.budgetRange,
+                    life_stage: quizData.movingTimeline,
+                    settling_tasks: quizData.settlingTasks || []
+                  }, {
+                    onConflict: 'user_id'
+                  });
                 
-                localStorage.removeItem('onboardingQuizData');
-                navigate("/dashboard");
-                return;
+                if (error) {
+                  console.error('Error saving quiz data to profile:', error);
+                } else {
+                  console.log('Quiz data saved successfully, clearing localStorage and navigating to dashboard');
+                  localStorage.removeItem('onboardingQuizData');
+                  navigate("/dashboard");
+                  return;
+                }
               }
             } catch (error) {
               console.error('Error parsing stored quiz data:', error);
