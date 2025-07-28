@@ -42,15 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    // Clear all auth data and sign out
-    await supabase.auth.signOut({ scope: 'global' });
-    
-    // Force clear localStorage auth data
-    localStorage.removeItem('sb-ghbnvodnnxgxkiufcael-auth-token');
-    
-    // Reset state immediately
-    setUser(null);
-    setSession(null);
+    await supabase.auth.signOut();
   };
 
   return (
