@@ -6,7 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Home, LogOut, LayoutDashboard, ChevronDown, User } from "lucide-react";
+import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -89,7 +89,7 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/account-settings" className="flex items-center">
-                      <User className="h-4 w-4 mr-2" />
+                      <Settings className="h-4 w-4 mr-2" />
                       Account Settings
                     </Link>
                   </DropdownMenuItem>
