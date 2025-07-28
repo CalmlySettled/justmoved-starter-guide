@@ -32,21 +32,6 @@ export function TestimonialSection() {
             </div>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 text-white/90">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">50K+</div>
-            <div className="text-sm">Successful moves</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">4.9★</div>
-            <div className="text-sm">Average rating</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">85%</div>
-            <div className="text-sm">Feel settled within 2 weeks</div>
-          </div>
-        </div>
       </div>
     </section>
   );
