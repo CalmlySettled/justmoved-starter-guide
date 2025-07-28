@@ -49,12 +49,6 @@ export function Header() {
           >
             Explore
           </Link>
-          <Link 
-            to="/dashboard"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            Dashboard
-          </Link>
         </nav>
         
         <div className="flex items-center space-x-4">
