@@ -146,10 +146,20 @@ export default function Dashboard() {
           console.log(`Generating recommendations for ${missingCategories.length} missing categories:`, missingCategories);
           
           try {
+            // Construct proper quizResponse object with user profile data
+            const quizResponse = {
+              address: userProfile.address || '',
+              household_type: userProfile.household_type || 'individual',
+              priorities: missingCategories,
+              transportation_style: userProfile.transportation_style || 'car',
+              budget_preference: userProfile.budget_preference || 'mid_range',
+              life_stage: userProfile.life_stage || 'working_professional',
+              settling_tasks: userProfile.settling_tasks || []
+            };
+
             const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
               body: { 
-                userId: user.id,
-                categories: missingCategories 
+                quizResponse 
               }
             });
 
