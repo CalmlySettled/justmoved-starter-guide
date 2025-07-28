@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Loader2, Navigation } from "lucide-react";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -21,6 +22,7 @@ interface AddressSuggestion {
 export function AddressAutocomplete({ value, onChange, onValidAddressSelected, placeholder, label }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [validAddressSelected, setValidAddressSelected] = useState(false);
@@ -167,6 +169,88 @@ export function AddressAutocomplete({ value, onChange, onValidAddressSelected, p
     }
   };
 
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setIsGettingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use reverse geocoding to get address from coordinates
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'CalmlySettled/1.0'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.address) {
+              const address = data.address;
+              const components = [];
+              
+              // Build formatted address
+              const streetParts = [];
+              if (address.house_number) streetParts.push(address.house_number);
+              if (address.road) streetParts.push(address.road);
+              const streetAddress = streetParts.join(' ');
+              
+              if (streetAddress) components.push(streetAddress);
+              if (address.city || address.town || address.village) {
+                components.push(address.city || address.town || address.village);
+              }
+              if (address.state) {
+                const stateZip = address.postcode ? `${address.state} ${address.postcode}` : address.state;
+                components.push(stateZip);
+              }
+              
+              const formattedAddress = components.join(', ');
+              onChange(formattedAddress);
+              setValidAddressSelected(true);
+              onValidAddressSelected?.(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error getting address from coordinates:', error);
+          alert("Unable to get your address. Please try typing it manually.");
+        } finally {
+          setIsGettingLocation(false);
+        }
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert("Location access denied. Please enable location permissions and try again.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable.");
+            break;
+          case error.TIMEOUT:
+            alert("Location request timed out. Please try again.");
+            break;
+          default:
+            alert("An unknown error occurred while getting your location.");
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   useEffect(() => {
     return () => {
       if (debounceTimer.current) {
@@ -178,6 +262,25 @@ export function AddressAutocomplete({ value, onChange, onValidAddressSelected, p
   return (
     <div className="space-y-4">
       {label && <Label htmlFor="address-input">{label}</Label>}
+      
+      {/* Current Location Button */}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={getCurrentLocation}
+          disabled={isGettingLocation}
+          className="flex items-center gap-2"
+        >
+          {isGettingLocation ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Navigation className="h-4 w-4" />
+          )}
+          {isGettingLocation ? "Getting location..." : "Use Current Location"}
+        </Button>
+      </div>
       <div className="relative">
         <div className="relative">
           <Input
