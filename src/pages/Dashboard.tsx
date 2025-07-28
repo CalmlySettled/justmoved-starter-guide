@@ -113,6 +113,17 @@ export default function Dashboard() {
           !userPriorities.includes(rec.category)
         );
 
+        // Check for missing categories that need new recommendations
+        const existingCategories = [...new Set(recData.map(rec => rec.category))];
+        const missingCategories = userPriorities.filter(priority => 
+          !existingCategories.includes(priority)
+        );
+
+        console.log('User priorities:', userPriorities);
+        console.log('Existing categories:', existingCategories);
+        console.log('Missing categories:', missingCategories);
+        console.log('Unwanted recommendations:', unwantedRecommendations.length);
+
         if (unwantedRecommendations.length > 0) {
           console.log(`Cleaning up ${unwantedRecommendations.length} unwanted recommendations for categories not in user priorities`);
           
@@ -126,22 +137,48 @@ export default function Dashboard() {
           if (deleteError) {
             console.error('Error cleaning up recommendations:', deleteError);
           } else {
-            // Refetch recommendations after cleanup
-            const { data: cleanRecData, error: cleanRecError } = await supabase
-              .from('user_recommendations')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false });
-
-            if (!cleanRecError) {
-              setRecommendations(cleanRecData || []);
-              toast({
-                title: "Cleaned up recommendations",
-                description: "Removed categories that weren't in your preferences.",
-              });
-              return;
-            }
+            console.log('Successfully cleaned up unwanted recommendations');
           }
+        }
+
+        // Generate recommendations for missing categories
+        if (missingCategories.length > 0) {
+          console.log(`Generating recommendations for ${missingCategories.length} missing categories:`, missingCategories);
+          
+          try {
+            const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+              body: { 
+                userId: user.id,
+                categories: missingCategories 
+              }
+            });
+
+            if (generateError) {
+              console.error('Error generating new recommendations:', generateError);
+            } else {
+              console.log('Successfully generated new recommendations');
+            }
+          } catch (error) {
+            console.error('Error calling generate-recommendations function:', error);
+          }
+        }
+
+        // Refetch all recommendations after cleanup and generation
+        const { data: updatedRecData, error: updatedRecError } = await supabase
+          .from('user_recommendations')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!updatedRecError) {
+          setRecommendations(updatedRecData || []);
+          if (unwantedRecommendations.length > 0 || missingCategories.length > 0) {
+            toast({
+              title: "Preferences Updated",
+              description: `Updated recommendations for your ${userPriorities.length} selected categories.`,
+            });
+          }
+          return;
         }
       }
 
