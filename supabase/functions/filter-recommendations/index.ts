@@ -64,8 +64,9 @@ serve(async (req) => {
             query = query.or('filter_metadata->>rating.gte.4,business_features.cs.{"Budget-Friendly"}');
             break;
           case 'high rated':
+          case 'highly rated':
           case 'top rated':
-            query = query.gte('filter_metadata->>rating', '4.0');
+            query = query.gte('filter_metadata->>rating', 4.0);
             break;
           case 'outdoor seating':
             query = query.eq('filter_metadata->>hasOutdoorSeating', 'true');
