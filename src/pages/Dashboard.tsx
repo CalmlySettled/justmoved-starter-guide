@@ -592,10 +592,17 @@ export default function Dashboard() {
 
   const getUserSummary = () => {
     if (!userProfile) return "Welcome to your new neighborhood! Here's what we recommend for you.";
-    const { life_stage, address, transportation_style, budget_preference } = userProfile;
-    if (life_stage && address && transportation_style && budget_preference) {
-      return `Welcome to your new neighborhood! As ${life_stage.toLowerCase().startsWith('a') ? 'an' : 'a'} ${life_stage.toLowerCase()} who just moved here with ${transportation_style.toLowerCase()} and ${budget_preference.toLowerCase()}, here's what we recommend.`;
+    
+    const { address } = userProfile;
+    if (address) {
+      // Extract city from address (assuming format like "Street, City, State Zip")
+      const addressParts = address.split(',');
+      if (addressParts.length >= 2) {
+        const city = addressParts[1].trim();
+        return `Welcome to ${city}! Here's what we recommend for you.`;
+      }
     }
+    
     return "Welcome to your new neighborhood! Here's what we recommend for you.";
   };
 
