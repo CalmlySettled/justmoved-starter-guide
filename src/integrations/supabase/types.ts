@@ -79,8 +79,11 @@ export type Database = {
           category: string
           created_at: string
           distance_miles: number | null
+          filter_metadata: Json | null
           id: string
+          is_displayed: boolean | null
           is_favorite: boolean
+          relevance_score: number | null
           updated_at: string
           user_id: string
         }
@@ -97,8 +100,11 @@ export type Database = {
           category: string
           created_at?: string
           distance_miles?: number | null
+          filter_metadata?: Json | null
           id?: string
+          is_displayed?: boolean | null
           is_favorite?: boolean
+          relevance_score?: number | null
           updated_at?: string
           user_id: string
         }
@@ -115,8 +121,11 @@ export type Database = {
           category?: string
           created_at?: string
           distance_miles?: number | null
+          filter_metadata?: Json | null
           id?: string
+          is_displayed?: boolean | null
           is_favorite?: boolean
+          relevance_score?: number | null
           updated_at?: string
           user_id?: string
         }

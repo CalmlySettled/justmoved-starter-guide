@@ -29,6 +29,8 @@ interface Business {
   longitude?: number;
   distance_miles?: number;
   image_url?: string;
+  rating?: number;
+  review_count?: number;
 }
 
 // Removed hardcoded brand logos - using pure API + category fallback system
@@ -222,7 +224,9 @@ async function searchGooglePlaces(
             longitude: place.geometry?.location?.lng,
             distance_miles: undefined, // Will calculate later
             website: website,
-            image_url: imageUrl
+            image_url: imageUrl,
+            rating: place.rating || 0,
+            review_count: place.user_ratings_total || 0
           };
         })
     );
@@ -335,8 +339,8 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Simplified business search using only Google Places API
-async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }): Promise<Business[]> {
+// Enhanced business search for two-tier system
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
   // Use only Google Places API
@@ -353,11 +357,110 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
-  // Sort by distance
-  businesses.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
+  // Return more results for the two-tier system (up to 20)
+  return businesses.slice(0, 20);
+}
+
+// Calculate relevance score based on quiz responses and business data
+function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
+  let score = 0;
   
-  // Return exactly 6 results for consistency
-  return businesses.slice(0, 6);
+  // Base score from rating (0-5 scale, normalized to 0-40 points)
+  if (business.rating) {
+    score += (business.rating / 5) * 40;
+  }
+  
+  // Distance penalty (closer = higher score, max 25 points)
+  if (business.distance_miles) {
+    const distanceScore = Math.max(0, 25 - (business.distance_miles * 2));
+    score += distanceScore;
+  }
+  
+  // Review count bonus (more reviews = more reliable, max 15 points)
+  if (business.review_count) {
+    const reviewScore = Math.min(15, Math.log10(business.review_count + 1) * 5);
+    score += reviewScore;
+  }
+  
+  // Feature matching bonus (max 20 points)
+  if (userPreferences && business.features) {
+    let featureBonus = 0;
+    const relevantFeatures = getRelevantFeatures(category, userPreferences);
+    
+    business.features.forEach(feature => {
+      if (relevantFeatures.includes(feature.toLowerCase())) {
+        featureBonus += 2;
+      }
+    });
+    
+    score += Math.min(20, featureBonus);
+  }
+  
+  return Math.round(score * 10) / 10; // Round to 1 decimal place
+}
+
+// Get relevant features for scoring based on category and user preferences
+function getRelevantFeatures(category: string, userPreferences: QuizResponse): string[] {
+  const features: string[] = [];
+  
+  // Budget preference features
+  if (userPreferences.budget_preference === 'budget-friendly') {
+    features.push('affordable', 'budget', 'cheap', 'low prices', 'discount');
+  } else if (userPreferences.budget_preference === 'premium') {
+    features.push('premium', 'luxury', 'high-end', 'upscale', 'gourmet');
+  }
+  
+  // Transportation features
+  if (userPreferences.transportation_style === 'walking') {
+    features.push('walkable', 'pedestrian friendly');
+  } else if (userPreferences.transportation_style === 'public transit') {
+    features.push('transit accessible', 'near bus stop', 'metro accessible');
+  } else if (userPreferences.transportation_style === 'driving') {
+    features.push('parking', 'drive-through', 'ample parking');
+  }
+  
+  // Category-specific features
+  if (category.includes('grocery')) {
+    features.push('organic', '24/7', 'fresh produce', 'local', 'pickup available');
+  } else if (category.includes('fitness')) {
+    features.push('classes', 'personal training', 'pool', 'equipment');
+  } else if (category.includes('restaurants')) {
+    features.push('outdoor seating', 'takeout', 'delivery', 'vegetarian');
+  }
+  
+  return features;
+}
+
+// Generate filter metadata for enhanced searching
+function generateFilterMetadata(business: Business, category: string): any {
+  const metadata: any = {
+    hasWebsite: !!business.website,
+    hasPhone: !!business.phone,
+    distance: business.distance_miles || 0,
+    rating: business.rating || 0,
+    reviewCount: business.review_count || 0
+  };
+  
+  // Category-specific metadata
+  if (category.includes('grocery')) {
+    metadata.isOrganic = business.features?.some(f => f.toLowerCase().includes('organic')) || false;
+    metadata.is24Hours = business.features?.some(f => f.toLowerCase().includes('24')) || false;
+    metadata.hasPickup = business.features?.some(f => f.toLowerCase().includes('pickup')) || false;
+  }
+  
+  if (category.includes('restaurants')) {
+    metadata.hasOutdoorSeating = business.features?.some(f => f.toLowerCase().includes('outdoor')) || false;
+    metadata.hasDelivery = business.features?.some(f => f.toLowerCase().includes('delivery')) || false;
+    metadata.isVegetarian = business.features?.some(f => f.toLowerCase().includes('vegetarian')) || false;
+  }
+  
+  if (category.includes('fitness')) {
+    metadata.hasClasses = business.features?.some(f => f.toLowerCase().includes('classes')) || false;
+    metadata.hasPool = business.features?.some(f => f.toLowerCase().includes('pool')) || false;
+    metadata.hasPersonalTraining = business.features?.some(f => f.toLowerCase().includes('personal')) || false;
+  }
+  
+  return metadata;
 }
 
 // Handle dynamic filtering for specific business types
@@ -487,7 +590,7 @@ serve(async (req) => {
     // Save recommendations to database if userId is provided
     if (userId && Object.keys(recommendations).length > 0) {
       console.log(`Saving recommendations to database for user: ${userId}`);
-      await saveRecommendationsToDatabase(userId, recommendations);
+      await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
     }
 
     return new Response(
@@ -512,8 +615,8 @@ serve(async (req) => {
   }
 });
 
-// Function to save recommendations to the database
-async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }) {
+// Enhanced function to save recommendations with relevance scores
+async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   
@@ -522,9 +625,12 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
   try {
     const recommendationsToInsert = [];
     
-    // Convert recommendations to database format
+    // Convert recommendations to database format with relevance scores
     for (const [category, businesses] of Object.entries(recommendations)) {
-      for (const business of businesses) {
+      businesses.forEach((business, index) => {
+        const relevanceScore = calculateRelevanceScore(business, category, userPreferences);
+        const filterMetadata = generateFilterMetadata(business, category);
+        
         recommendationsToInsert.push({
           user_id: userId,
           category: category,
@@ -538,9 +644,12 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           distance_miles: business.distance_miles,
           business_features: business.features,
           business_image: business.image_url,
-          is_favorite: false
+          is_favorite: false,
+          relevance_score: relevanceScore,
+          is_displayed: index < 6, // Only first 6 are displayed by default
+          filter_metadata: filterMetadata
         });
-      }
+      });
     }
     
     if (recommendationsToInsert.length > 0) {
@@ -653,7 +762,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
         foundMatch = true;
         
-        const businesses = await searchBusinesses(searchTerm, coordinates);
+        const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
         console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
         
         if (businesses.length > 0) {
@@ -686,7 +795,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     ];
     
     for (const category of defaultCategories) {
-      const businesses = await searchBusinesses(category.searchTerm, coordinates);
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse);
       if (businesses.length > 0) {
         recommendations[category.name] = businesses;
       }

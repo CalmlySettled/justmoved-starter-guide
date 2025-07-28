@@ -44,6 +44,9 @@ interface SavedRecommendation {
   distance_miles?: number;
   created_at: string;
   is_favorite?: boolean;
+  relevance_score?: number;
+  is_displayed?: boolean;
+  filter_metadata?: any;
 }
 
 interface UserProfile {
@@ -70,6 +73,9 @@ export default function Dashboard() {
   const [favoritingRecommendations, setFavoritingRecommendations] = useState<Set<string>>(new Set());
   const [favoritesSort, setFavoritesSort] = useState<'date' | 'distance' | 'category'>('date');
   const [favoritesFilter, setFavoritesFilter] = useState<string | null>(null);
+  const [filteredRecommendations, setFilteredRecommendations] = useState<{[category: string]: SavedRecommendation[]}>({});
+  const [filterLoading, setFilterLoading] = useState<{[category: string]: boolean}>({});
+  const [additionalResults, setAdditionalResults] = useState<{[category: string]: number}>({});
 
   useEffect(() => {
     if (!user) {
@@ -96,7 +102,7 @@ export default function Dashboard() {
 
       setUserProfile(profileData);
 
-      // Fetch recommendations
+      // Fetch displayed recommendations only by default
       const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
@@ -580,26 +586,34 @@ export default function Dashboard() {
     return false;
   };
 
-  const filteredRecommendations = activeFilter 
+  const priorityFilteredRecommendations = activeFilter 
     ? recommendations.filter(rec => priorityMatchesCategory(activeFilter, rec.category))
     : recommendations;
 
-  const groupedRecommendations = filteredRecommendations.reduce((groups, rec) => {
+  const groupedRecommendations = priorityFilteredRecommendations.reduce((groups, rec) => {
     const category = rec.category;
     if (!groups[category]) {
       groups[category] = [];
     }
     
-    // Apply category-specific filter if one is active for this category
-    const categoryFilter = activeCategoryFilter[category];
-    if (categoryFilter && filterByFeatures(rec, categoryFilter)) {
-      groups[category].push(rec);
-    } else if (!categoryFilter) {
-      groups[category].push(rec);
+    // Use filtered recommendations if available, otherwise use original
+    if (filteredRecommendations[category]) {
+      // Don't add to groups here, we'll use filteredRecommendations directly
+      return groups;
+    } else if (!activeCategoryFilter[category]) {
+      // Only show is_displayed recommendations when no filter is active
+      if (rec.is_displayed !== false) {
+        groups[category].push(rec);
+      }
     }
     
     return groups;
   }, {} as { [key: string]: SavedRecommendation[] });
+
+  // Merge filtered recommendations into grouped recommendations
+  Object.keys(filteredRecommendations).forEach(category => {
+    groupedRecommendations[category] = filteredRecommendations[category];
+  });
 
   // Sort each category's recommendations by distance (closest first)
   Object.keys(groupedRecommendations).forEach(category => {
@@ -610,11 +624,75 @@ export default function Dashboard() {
     });
   });
 
-  const handleCategoryFilter = (category: string, filter: string) => {
+  const handleCategoryFilter = async (category: string, filter: string) => {
+    const isClearing = activeCategoryFilter[category] === filter;
+    
     setActiveCategoryFilter(prev => ({
       ...prev,
-      [category]: prev[category] === filter ? null : filter
+      [category]: isClearing ? null : filter
     }));
+    
+    if (isClearing) {
+      // Clear filter - show original recommendations
+      setFilteredRecommendations(prev => {
+        const updated = { ...prev };
+        delete updated[category];
+        return updated;
+      });
+      setAdditionalResults(prev => {
+        const updated = { ...prev };
+        delete updated[category];
+        return updated;
+      });
+      return;
+    }
+    
+    // Apply filter using the edge function
+    if (!user) return;
+    
+    setFilterLoading(prev => ({ ...prev, [category]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('filter-recommendations', {
+        body: {
+          userId: user.id,
+          category,
+          filters: [filter],
+          sortBy: 'relevance'
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setFilteredRecommendations(prev => ({
+        ...prev,
+        [category]: data.recommendations || []
+      }));
+      
+      setAdditionalResults(prev => ({
+        ...prev,
+        [category]: data.additionalResults || 0
+      }));
+      
+      if (data.additionalResults > 0) {
+        toast({
+          title: "Filter Applied",
+          description: `Found ${data.totalCount} ${filter.toLowerCase()} options, showing ${data.additionalResults} additional results.`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error filtering recommendations:', error);
+      toast({
+        title: "Filter Error",
+        description: "Could not apply filter. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setFilterLoading(prev => ({ ...prev, [category]: false }));
+    }
   };
 
   const handlePriorityFilter = (priority: string) => {
@@ -927,6 +1005,11 @@ export default function Dashboard() {
                     </h2>
                     <p className="text-muted-foreground mt-1">
                       {categoryRecs.length} saved recommendation{categoryRecs.length !== 1 ? 's' : ''}
+                      {additionalResults[category] > 0 && (
+                        <span className="text-primary font-medium">
+                          {" "}(+{additionalResults[category]} from expanded search)
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -942,10 +1025,13 @@ export default function Dashboard() {
                           activeCategoryFilter[category] === filter
                             ? "bg-primary text-primary-foreground border-primary shadow-md" 
                             : "bg-background text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-                        }`}
-                        onClick={() => handleCategoryFilter(category, filter)}
+                        } ${filterLoading[category] ? 'opacity-50 cursor-wait' : ''}`}
+                        onClick={() => !filterLoading[category] && handleCategoryFilter(category, filter)}
                       >
                         {filter}
+                        {filterLoading[category] && activeCategoryFilter[category] === filter && (
+                          <RefreshCw className="h-3 w-3 ml-1 animate-spin" />
+                        )}
                       </Badge>
                     ))}
                     {activeCategoryFilter[category] && (
@@ -954,6 +1040,7 @@ export default function Dashboard() {
                         className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
                         onClick={() => handleCategoryFilter(category, activeCategoryFilter[category]!)}
                       >
+                        <X className="h-3 w-3 mr-1" />
                         Clear
                       </Badge>
                     )}
