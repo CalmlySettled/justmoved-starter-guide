@@ -492,26 +492,6 @@ export default function Explore() {
                 </div>
               </section>
 
-              {/* Trending Categories */}
-              <section className="mb-16">
-                <h2 className="text-3xl font-bold mb-6 text-center">Popular Categories Near You</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {trendingCategories.map((category) => (
-                    <Card 
-                      key={category.name}
-                      className="cursor-pointer shadow-card hover:shadow-card-hover transition-all duration-300 hover:scale-110 border-0 bg-gradient-card"
-                      onClick={() => handleCategoryClick(category)}
-                    >
-                      <CardContent className="p-6 text-center">
-                        <div className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center mx-auto mb-3`}>
-                          <category.icon className="h-6 w-6 text-white" />
-                        </div>
-                        <h3 className="font-medium text-sm">{category.name}</h3>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </section>
 
               {/* Category Results */}
               {selectedCategory && (
