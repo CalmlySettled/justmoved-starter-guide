@@ -163,7 +163,60 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
   return true;
 }
 
-// Google Places API integration (enhanced with dynamic radius)
+// Define multiple search strategies for different categories to improve coverage
+function getSearchStrategies(category: string): Array<{ keyword?: string; type?: string }> {
+  const strategies = [];
+  
+  if (category.includes('grocery')) {
+    strategies.push(
+      { keyword: 'grocery stores' },
+      { keyword: 'supermarkets' },
+      { keyword: 'food markets' },
+      { type: 'grocery_or_supermarket' },
+      { type: 'supermarket' }
+    );
+  } else if (category.includes('medical')) {
+    strategies.push(
+      { keyword: 'medical clinics' },
+      { keyword: 'doctors offices' },
+      { keyword: 'urgent care' },
+      { keyword: 'family practice' },
+      { type: 'doctor' },
+      { type: 'hospital' }
+    );
+  } else if (category.includes('fitness')) {
+    strategies.push(
+      { keyword: 'fitness gyms' },
+      { keyword: 'health clubs' },
+      { keyword: 'yoga studios' },
+      { keyword: 'pilates studios' },
+      { type: 'gym' }
+    );
+  } else if (category.includes('restaurants') || category.includes('cafes')) {
+    strategies.push(
+      { keyword: 'restaurants' },
+      { keyword: 'coffee shops' },
+      { keyword: 'cafes' },
+      { type: 'restaurant' },
+      { type: 'cafe' }
+    );
+  } else if (category.includes('hardware')) {
+    strategies.push(
+      { keyword: 'hardware stores' },
+      { keyword: 'home improvement stores' },
+      { keyword: 'building supplies' },
+      { type: 'hardware_store' },
+      { type: 'home_goods_store' }
+    );
+  } else {
+    // Default single strategy for other categories
+    strategies.push({ keyword: category });
+  }
+  
+  return strategies;
+}
+
+// Google Places API integration (enhanced with dynamic radius and multiple search strategies)
 async function searchGooglePlaces(
   category: string,
   latitude: number,
@@ -179,35 +232,64 @@ async function searchGooglePlaces(
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
   
+  // Define multiple search strategies for different categories
+  const searchStrategies = getSearchStrategies(category);
+  const allResults = new Set();
+  
   try {
     console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
     
-    // First, do a nearby search to get places
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=establishment&keyword=${encodeURIComponent(category)}&key=${googleApiKey}`;
-    
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'CalmlySettled/1.0'
+    // Execute multiple search strategies
+    for (const strategy of searchStrategies) {
+      let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}`;
+      
+      if (strategy.type) {
+        searchUrl += `&type=${strategy.type}`;
       }
-    });
+      if (strategy.keyword) {
+        searchUrl += `&keyword=${encodeURIComponent(strategy.keyword)}`;
+      }
+      searchUrl += `&key=${googleApiKey}`;
+      
+      console.log(`→ Strategy: ${strategy.keyword || strategy.type}`);
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'CalmlySettled/1.0'
+        }
+      });
 
-    if (!response.ok) {
-      console.error('Google Places API error:', response.status, response.statusText);
-      return [];
+      if (!response.ok) {
+        console.error('Google Places API error:', response.status, response.statusText);
+        continue;
+      }
+
+      const data = await response.json();
+      console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
+
+      // Add unique results to our set
+      if (data.results) {
+        data.results.forEach(place => {
+          if (place.place_id) {
+            allResults.add(JSON.stringify(place));
+          }
+        });
+      }
     }
 
-    const data = await response.json();
-    console.log(`Google Places returned ${data.results?.length || 0} businesses`);
+    // Convert back to array and parse
+    const uniqueResults = Array.from(allResults).map(result => JSON.parse(result));
+    console.log(`Combined ${uniqueResults.length} unique businesses from all strategies`);
 
-    if (!data.results || data.results.length === 0) {
+    if (uniqueResults.length === 0) {
       return [];
     }
 
     // Filter and convert Google Places results to Business objects with photos and details
     const businesses = await Promise.all(
-      data.results
+      uniqueResults
         .filter((place: any) => isRetailConsumerBusiness(place, category))
-        .slice(0, 10)
+        .slice(0, 15) // More results from multiple strategies
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
           let imageUrl = '';
