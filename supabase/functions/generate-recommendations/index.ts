@@ -884,7 +884,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "healthcare": "medical health",
     "doctors": "medical health",
     "clinics": "medical health",
-    "pharmacy": "medical health",
+    "pharmacy": "pharmacy",
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
     "gym": "fitness gyms", 

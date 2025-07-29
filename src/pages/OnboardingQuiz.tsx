@@ -170,7 +170,8 @@ export default function OnboardingQuiz() {
   // Define sub-preferences for each main category
   const subPreferenceOptions: Record<string, string[]> = {
     "Grocery stores": ["Organic options", "Budget-friendly", "International foods", "24/7 availability", "Local produce"],
-    "Medical care / Pharmacy": ["Pediatrician", "OBGYN", "Family physician", "Urgent care", "Dental care", "Mental health"],
+    "Medical care": ["Pediatrician", "OBGYN", "Family physician", "Urgent care", "Dental care", "Mental health"],
+    "Pharmacy": ["24/7 availability", "Insurance accepted", "Drive-thru", "Compounding", "Vaccinations", "Health screenings"],
     "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
     "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
     "Parks": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas"],
@@ -482,7 +483,8 @@ export default function OnboardingQuiz() {
                 </div>
                 {[
                   "Grocery stores",
-                  "Medical care / Pharmacy", 
+                  "Medical care",
+                  "Pharmacy", 
                   "Fitness options",
                   "DMV / Government services",
                   "Parks",
