@@ -262,13 +262,13 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     "Grocery stores",
                     "Medical care",
                     "Pharmacy", 
-                    "Fitness options",
                     "DMV / Government services",
+                    "Public transit / commute info",
+                    "Restaurants / coffee shops",
+                    "Fitness options",
                     "Parks",
                     "Faith communities",
-                    "Public transit / commute info",
                     "Green space / trails",
-                    "Restaurants / coffee shops",
                     "Social events or community groups"
                   ].map((option) => (
                     <div key={option} className="flex items-center space-x-2">
