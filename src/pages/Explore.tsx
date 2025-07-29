@@ -77,6 +77,7 @@ export default function Explore() {
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -381,6 +382,20 @@ export default function Explore() {
       return;
     }
 
+    const businessKey = business.name;
+    const isCurrentlyFavorited = favoriteBusinesses.has(businessKey);
+    
+    // Optimistic update - immediately change the UI
+    if (isCurrentlyFavorited) {
+      setFavoriteBusinesses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessKey);
+        return newSet;
+      });
+    } else {
+      setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+    }
+
     try {
       const { data: existing, error: selectError } = await supabase
         .from('user_recommendations')
@@ -398,6 +413,8 @@ export default function Explore() {
           .update({ is_favorite: !existing.is_favorite })
           .eq('id', existing.id);
         console.log('Explore - Update result:', updateError);
+        
+        if (updateError) throw updateError;
       } else {
         console.log('Explore - Creating new favorite record');
         const insertData = {
@@ -419,6 +436,8 @@ export default function Explore() {
           .from('user_recommendations')
           .insert(insertData);
         console.log('Explore - Insert result:', insertError);
+        
+        if (insertError) throw insertError;
       }
 
       toast({
@@ -432,6 +451,17 @@ export default function Explore() {
         description: "Failed to update favorite",
         variant: "destructive"
       });
+      
+      // Revert optimistic update on error
+      if (isCurrentlyFavorited) {
+        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+      } else {
+        setFavoriteBusinesses(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(businessKey);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -622,7 +652,10 @@ export default function Explore() {
                                 onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
                                 className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
-                                <Star className="h-4 w-4" />
+                                <Star 
+                                  className="h-4 w-4" 
+                                  fill={favoriteBusinesses.has(business.name) ? "currentColor" : "none"}
+                                />
                               </Button>
                             </div>
                           </CardHeader>

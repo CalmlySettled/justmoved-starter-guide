@@ -30,7 +30,9 @@ interface Business {
   longitude: number;
   distance_miles: number;
   rating?: number;
+  is_favorite?: boolean;
 }
+
 
 interface PopularRecommendations {
   [category: string]: Business[];
@@ -109,6 +111,7 @@ const Popular = () => {
   const [recommendations, setRecommendations] = useState<PopularRecommendations>({});
   const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
 
   // Load saved location on component mount
   useEffect(() => {
@@ -268,6 +271,20 @@ const Popular = () => {
       return;
     }
 
+    const businessKey = business.name;
+    const isCurrentlyFavorited = favoriteBusinesses.has(businessKey);
+    
+    // Optimistic update - immediately change the UI
+    if (isCurrentlyFavorited) {
+      setFavoriteBusinesses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessKey);
+        return newSet;
+      });
+    } else {
+      setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+    }
+
     try {
       const { data: existing, error: selectError } = await supabase
         .from('user_recommendations')
@@ -285,6 +302,8 @@ const Popular = () => {
           .update({ is_favorite: !existing.is_favorite })
           .eq('id', existing.id);
         console.log('Popular - Update result:', updateError);
+        
+        if (updateError) throw updateError;
       } else {
         console.log('Popular - Creating new favorite record');
         const insertData = {
@@ -306,12 +325,25 @@ const Popular = () => {
           .from('user_recommendations')
           .insert(insertData);
         console.log('Popular - Insert result:', insertError);
+        
+        if (insertError) throw insertError;
       }
 
       toast.success(existing?.is_favorite ? 'Removed from favorites' : 'Added to favorites');
     } catch (error) {
       console.error('Error toggling favorite:', error);
       toast.error('Failed to update favorite');
+      
+      // Revert optimistic update on error
+      if (isCurrentlyFavorited) {
+        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+      } else {
+        setFavoriteBusinesses(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(businessKey);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -447,7 +479,10 @@ const Popular = () => {
                                 onClick={() => toggleFavorite(business, category)}
                                 className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
-                                <Star className="h-4 w-4" />
+                                <Star 
+                                  className="h-4 w-4" 
+                                  fill={favoriteBusinesses.has(business.name) ? "currentColor" : "none"}
+                                />
                               </Button>
                             </div>
                             
