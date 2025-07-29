@@ -165,6 +165,15 @@ const Profile = () => {
         return;
       }
 
+      // Check if address has changed to trigger recommendation regeneration
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('address')
+        .eq('user_id', user.id)
+        .single();
+
+      const addressChanged = currentProfile?.address !== profileData.address;
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -175,9 +184,52 @@ const Profile = () => {
         });
 
       if (error) throw error;
+
+      // If address changed, clear old recommendations and generate new ones
+      if (addressChanged && profileData.address) {
+        console.log('Address changed, clearing old recommendations and generating new ones');
+        
+        // Clear old recommendations
+        const { error: deleteError } = await supabase
+          .from('user_recommendations')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (deleteError) {
+          console.error('Error clearing old recommendations:', deleteError);
+        }
+
+        // Generate new recommendations for the new address
+        try {
+          const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
+            body: {
+              quizResponse: {
+                address: profileData.address,
+                priorities: profileData.priorities,
+                household: profileData.household_type,
+                transportation: profileData.transportation_style,
+                budgetRange: profileData.budget_preference,
+                movingTimeline: profileData.life_stage
+              },
+              userId: user.id
+            }
+          });
+
+          if (recError) {
+            console.error('Error generating new recommendations:', recError);
+            toast.error('Profile saved but failed to update recommendations. Please visit the dashboard to regenerate.');
+          } else {
+            toast.success('Profile updated and new recommendations generated for your new location!');
+          }
+        } catch (recError) {
+          console.error('Error calling recommendation service:', recError);
+          toast.error('Profile saved but failed to update recommendations. Please visit the dashboard to regenerate.');
+        }
+      } else {
+        toast.success('Profile updated successfully');
+      }
       
       await logSecurityEvent('Profile updated', { userId: user.id });
-      toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error saving profile:', error);
       await logSecurityEvent('Profile save failed', { 
