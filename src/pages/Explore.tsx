@@ -341,14 +341,16 @@ export default function Explore() {
       
       // If searching for a specific category, show only those results
       if (specificCategory) {
-        setCategoryResults(data.recommendations?.[specificCategory] || []);
+        const categoryResults = data.recommendations?.[specificCategory] || [];
+        setCategoryResults(categoryResults.sort((a, b) => a.distance_miles - b.distance_miles));
       } else {
         // Flatten results from all categories in the pack
         const allResults: Business[] = [];
         Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
           allResults.push(...businesses);
         });
-        setCategoryResults(allResults);
+        // Sort by distance
+        setCategoryResults(allResults.sort((a, b) => a.distance_miles - b.distance_miles));
       }
     } catch (error) {
       console.error("Error loading themed pack results:", error);
