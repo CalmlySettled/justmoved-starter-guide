@@ -244,7 +244,7 @@ async function searchGooglePlaces(
   
   // Define multiple search strategies for different categories
   const searchStrategies = getSearchStrategies(category);
-  const allResults = new Set();
+  const uniquePlaces = new Map(); // Use Map for better deduplication
   
   try {
     console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
@@ -277,22 +277,18 @@ async function searchGooglePlaces(
       const data = await response.json();
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
 
-      // Add unique results to our set using place_id for true uniqueness
+      // Add unique results using place_id as key to avoid duplicates
       if (data.results) {
         data.results.forEach(place => {
-          if (place.place_id) {
-            // Use place_id as the unique identifier instead of JSON.stringify
-            allResults.add(place.place_id + '|' + JSON.stringify(place));
+          if (place.place_id && !uniquePlaces.has(place.place_id)) {
+            uniquePlaces.set(place.place_id, place);
           }
         });
       }
     }
 
-    // Convert back to array and parse, extracting the JSON part
-    const uniqueResults = Array.from(allResults).map(result => {
-      const [placeId, jsonData] = result.split('|', 2);
-      return JSON.parse(jsonData);
-    });
+    // Convert Map values to array
+    const uniqueResults = Array.from(uniquePlaces.values());
     console.log(`Combined ${uniqueResults.length} unique businesses from all strategies`);
 
     if (uniqueResults.length === 0) {
