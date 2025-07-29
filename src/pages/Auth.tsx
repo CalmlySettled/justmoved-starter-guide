@@ -132,9 +132,13 @@ export default function Auth() {
             });
           }
         } else {
+          // Check if user has quiz data to customize the message
+          const hasQuizData = localStorage.getItem('onboardingQuizData');
           toast({
             title: "Account created!",
-            description: "Welcome! Let's start by taking a quick quiz to personalize your experience."
+            description: hasQuizData 
+              ? "Please check your email and click the verification link to complete your registration."
+              : "Please check your email and click the verification link to continue. We'll help you get started with a quick personalization quiz."
           });
           // Check if user has already completed onboarding by checking for existing session
           // The auth state change will handle navigation automatically
