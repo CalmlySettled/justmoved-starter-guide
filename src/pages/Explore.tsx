@@ -426,7 +426,7 @@ export default function Explore() {
               </div>
             ) : (
               <div className="space-y-4">
-                <Badge variant="secondary" className="text-lg px-4 py-2">
+                <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-hero text-white border-0 shadow-glow">
                   <MapPin className="mr-2 h-4 w-4" />
                   {location.city}
                 </Badge>
