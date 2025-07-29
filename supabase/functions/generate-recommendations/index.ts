@@ -1056,19 +1056,45 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   
   // Define specific search terms for dynamic filters
   const filterSearchTerms: { [key: string]: string } = {
+    // Medical filters
     'urgent care': 'urgent care',
     'walk-in': 'walk in clinic',
     'specialists': 'medical specialists',
     'emergency': 'emergency room hospital',
     'family practice': 'family medicine primary care',
     'pediatrics': 'pediatrician children doctor',
+    
+    // Restaurant filters - THIS WAS MISSING!
+    'coffee shops': 'coffee cafe espresso',
+    'family-friendly': 'family restaurant casual dining',
+    'date night spots': 'fine dining romantic restaurant',
+    'quick casual': 'fast casual restaurants',
+    'food trucks': 'food truck mobile food',
+    
+    // Grocery filters
     'organic options': 'organic grocery natural foods',
     'budget-friendly': 'discount grocery affordable',
+    'national chain': 'walmart target kroger safeway whole foods',
+    'local/independent': 'local grocery independent market',
+    
+    // Fitness filters
     'group classes': 'group fitness classes',
     'personal training': 'personal trainer fitness',
     '24-hour access': '24 hour gym fitness',
     'cardio machines': 'cardio gym fitness center',
-    'strength training': 'weight lifting gym strength'
+    'strength training': 'weight lifting gym strength',
+    
+    // Parks filters
+    'playgrounds': 'playground children play area',
+    'dog parks': 'dog park pet off leash',
+    'sports fields': 'sports field baseball soccer',
+    'walking trails': 'walking trail hiking path',
+    
+    // Faith filters
+    'christian': 'christian church baptist methodist',
+    'jewish': 'synagogue temple jewish',
+    'muslim': 'mosque islamic center',
+    'non-denominational': 'community church non denominational'
   };
   
   const searchTerm = filterSearchTerms[filter.toLowerCase()] || filter;
