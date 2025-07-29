@@ -664,7 +664,8 @@ export default function Explore() {
                                   alert('Explore button clicked!');
                                   toggleFavorite(business, selectedCategory || 'essentials');
                                 }}
-                                className="h-8 w-8 p-0 hover:bg-primary/10"
+                                className="h-8 w-8 p-0 hover:bg-primary/10 relative z-50 pointer-events-auto bg-red-500"
+                                style={{ pointerEvents: 'auto' }}
                               >
                                 <Star 
                                   className="h-4 w-4" 
