@@ -1,10 +1,11 @@
 project_id = "ghbnvodnnxgxkiufcael"
 
 # Configure webhook for custom email
-[auth.hook.send_email]
-enabled = true
-uri = "https://ghbnvodnnxgxkiufcael.supabase.co/functions/v1/send-custom-auth-email"
-secrets = []
+# Disable custom webhook for now to restore default emails
+# [auth.hook.send_email]
+# enabled = true
+# uri = "https://ghbnvodnnxgxkiufcael.supabase.co/functions/v1/send-custom-auth-email"
+# secrets = []
 
 [functions.generate-recommendations]
 verify_jwt = false
