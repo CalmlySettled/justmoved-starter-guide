@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Home } from "lucide-react";
+import { Home, Mail } from "lucide-react";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,6 +14,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showResendButton, setShowResendButton] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -142,10 +144,9 @@ export default function Auth() {
           const hasQuizData = localStorage.getItem('onboardingQuizData');
           toast({
             title: "Account created!",
-            description: hasQuizData 
-              ? "Please check your email (including spam folder) for a verification link from Supabase to complete your registration."
-              : "Please check your email (including spam folder) for a verification link from Supabase to continue. We'll help you get started with a quick personalization quiz."
+            description: "Please check your email (including spam folder) for a verification link to complete your registration."
           });
+          setShowResendButton(true);
           // Check if user has already completed onboarding by checking for existing session
           // The auth state change will handle navigation automatically
         }
@@ -179,6 +180,50 @@ export default function Auth() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      // Generate a new verification link using Supabase
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Failed to resend",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Verification email sent!",
+          description: "Please check your email (including spam folder) for the verification link."
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resend verification email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -257,10 +302,27 @@ export default function Auth() {
               </Button>
             </form>
             
+            {showResendButton && isSignUp && (
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="w-full"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {resendLoading ? "Sending..." : "Resend Verification Email"}
+                </Button>
+              </div>
+            )}
+            
             <div className="mt-6 text-center">
               <button
                 type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setShowResendButton(false);
+                }}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
               >
                 {isSignUp 
