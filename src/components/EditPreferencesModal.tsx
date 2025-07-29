@@ -145,9 +145,36 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
 
       if (error) throw error;
 
+      // Trigger recommendation regeneration with updated preferences
+      try {
+        const { error: recommendationError } = await supabase.functions.invoke('generate-recommendations', {
+          body: {
+            quizResponse: {
+              address: formData.address,
+              household_type: formData.household_type,
+              priorities: formData.priorities,
+              transportation_style: formData.transportation_style,
+              budget_preference: formData.budget_preference,
+              life_stage: formData.life_stage,
+              settling_tasks: formData.settling_tasks,
+              priority_preferences: formData.priority_preferences || {}
+            },
+            userId: user.id
+          }
+        });
+        
+        if (recommendationError) {
+          console.error('Error generating recommendations:', recommendationError);
+          // Don't throw here - preferences were saved successfully
+        }
+      } catch (recommendationError) {
+        console.error('Failed to regenerate recommendations:', recommendationError);
+        // Don't throw here - preferences were saved successfully
+      }
+
       toast({
         title: "Preferences Updated",
-        description: "Your preferences have been successfully updated.",
+        description: "Your preferences have been updated and new recommendations are being generated.",
       });
 
       setOpen(false);
