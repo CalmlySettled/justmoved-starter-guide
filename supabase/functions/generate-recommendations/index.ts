@@ -114,11 +114,21 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 
 // Google Places API integration
 
-// Helper function to check if a business is actually consumer-facing retail
+  // Helper function to check if a business is actually consumer-facing retail
 function isRetailConsumerBusiness(place: any, category: string): boolean {
   const name = place.name.toLowerCase();
   const types = place.types || [];
   const typesString = types.join(' ').toLowerCase();
+  
+  // 🔍 DEBUGGING: Log every business that enters filtering
+  console.log(`🔍 FILTERING: Checking business "${place.name}" with types: [${types.join(', ')}], rating: ${place.rating}, reviews: ${place.user_ratings_total}`);
+  
+  // Special case for known grocery chains - they should always pass
+  const knownGroceryChains = ['sprouts', 'whole foods', 'safeway', 'kroger', 'vons', 'ralphs', 'albertsons', 'trader joe', 'costco', 'target', 'walmart'];
+  if (category.includes('grocery') && knownGroceryChains.some(chain => name.includes(chain))) {
+    console.log(`🔍 ALLOWING known grocery chain: ${place.name}`);
+    return true;
+  }
   
   // Exclude obvious B2B/wholesale businesses for grocery category
   if (category.includes('grocery')) {
@@ -131,7 +141,7 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     ];
     
     if (excludeKeywords.some(keyword => name.includes(keyword))) {
-      console.log(`→ Excluding B2B business: ${place.name}`);
+      console.log(`🔍 EXCLUDING B2B business: ${place.name} (contains: ${excludeKeywords.find(k => name.includes(k))})`);
       return false;
     }
     
@@ -143,7 +153,7 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     
     const hasRetailType = retailTypes.some(type => types.includes(type));
     if (!hasRetailType) {
-      console.log(`→ Excluding non-retail business: ${place.name} (types: ${types.join(', ')})`);
+      console.log(`🔍 EXCLUDING non-retail business: ${place.name} (types: ${types.join(', ')}) - no retail type found`);
       return false;
     }
   }
@@ -155,16 +165,17 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
   ];
   
   if (generalExcludeKeywords.some(keyword => name.includes(keyword) || typesString.includes(keyword))) {
-    console.log(`→ Excluding non-consumer business: ${place.name}`);
+    console.log(`🔍 EXCLUDING non-consumer business: ${place.name} (contains: ${generalExcludeKeywords.find(k => name.includes(k) || typesString.includes(k))})`);
     return false;
   }
   
-  // Must have a reasonable rating count (indicates consumer traffic)
-  if (place.user_ratings_total !== undefined && place.user_ratings_total < 5) {
-    console.log(`→ Excluding business with low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+  // RELAXED: Reduce review count requirement to 3 (was 5)
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
+    console.log(`🔍 EXCLUDING business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
     return false;
   }
   
+  console.log(`🔍 ALLOWING business: ${place.name}`);
   return true;
 }
 
@@ -245,9 +256,10 @@ async function searchGooglePlaces(
   // Define multiple search strategies for different categories
   const searchStrategies = getSearchStrategies(category);
   const allResults = new Set();
+  const rawApiResponses: any[] = [];
   
   try {
-    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
+    console.log(`🔍 DEBUGGING: Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
     
     // Execute multiple search strategies
     for (const strategy of searchStrategies) {
@@ -262,6 +274,7 @@ async function searchGooglePlaces(
       searchUrl += `&key=${googleApiKey}`;
       
       console.log(`→ Strategy: ${strategy.keyword || strategy.type}`);
+      console.log(`🔍 RAW API URL: ${searchUrl.replace(googleApiKey, 'HIDDEN_KEY')}`);
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -276,6 +289,27 @@ async function searchGooglePlaces(
 
       const data = await response.json();
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
+      
+      // 🔍 LOG RAW API RESPONSE
+      console.log(`🔍 RAW API RESPONSE for strategy "${strategy.keyword || strategy.type}":`, JSON.stringify({
+        status: data.status,
+        results_count: data.results?.length || 0,
+        results: data.results?.map(place => ({
+          name: place.name,
+          place_id: place.place_id,
+          types: place.types,
+          rating: place.rating,
+          user_ratings_total: place.user_ratings_total,
+          geometry: place.geometry?.location,
+          vicinity: place.vicinity
+        })) || []
+      }, null, 2));
+      
+      // Store raw response for debugging
+      rawApiResponses.push({
+        strategy: strategy.keyword || strategy.type,
+        response: data
+      });
 
       // Add unique results to our set
       if (data.results) {
@@ -429,31 +463,37 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
-  // Filter businesses based on transportation style and realistic distances
+  // 🔍 DISTANCE-BASED FILTERING: Transportation should not be a hard filter
+  // Instead, use a generous radius (15 miles) and let scoring handle preference
   let filteredBusinesses = businesses;
   if (userPreferences?.transportationStyle) {
+    // Use generous maximum distances that don't exclude nearby options
     const getMaxDistanceForTransportation = (transportationStyle: string): number => {
       switch (transportationStyle) {
         case 'Bike / walk':
-          return 3; // 3 miles max for biking/walking
+          return 15; // Generous for safety - scoring will prefer closer
         case 'Public transit':
-          return 8; // 8 miles max for public transit
+          return 15; // Generous for safety - scoring will prefer closer  
         case 'Rideshare only':
-          return 12; // 12 miles max for rideshare
+          return 15; // Generous for safety - scoring will prefer closer
         case 'Car':
         default:
-          return 15; // 15 miles max for car
+          return 15; // Standard max distance
       }
     };
 
     const maxDistance = getMaxDistanceForTransportation(userPreferences.transportationStyle);
-    console.log(`Filtering businesses by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles`);
+    console.log(`🔍 GENEROUS FILTERING by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles (scoring will handle preference)`);
+    
+    // Log businesses before filtering
+    console.log(`🔍 BUSINESSES BEFORE DISTANCE FILTER (${businesses.length}):`, businesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
     
     filteredBusinesses = businesses.filter(business => 
       business.distance_miles && business.distance_miles <= maxDistance
     );
     
-    console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
+    console.log(`🔍 BUSINESSES AFTER DISTANCE FILTER (${filteredBusinesses.length}):`, filteredBusinesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
+    console.log(`🔍 Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
   // Return more results for the two-tier system (up to 25 for better variety)
