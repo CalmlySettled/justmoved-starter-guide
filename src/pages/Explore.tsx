@@ -80,6 +80,12 @@ export default function Explore() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Helper function to create Google Maps search URL
+  const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
+    const query = encodeURIComponent(`${businessName} ${address}`);
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
   // Load user's profile address on mount
   useEffect(() => {
     const loadUserLocation = async () => {
@@ -525,21 +531,65 @@ export default function Explore() {
                   ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {categoryResults.map((business, index) => (
-                        <Card key={index} className="hover:shadow-lg transition-shadow">
-                          <CardContent className="p-0">
+                        <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
+                          {/* Business Image */}
+                          <div className="aspect-video overflow-hidden">
                             {business.image_url && (
                               <img 
                                 src={business.image_url} 
                                 alt={business.name}
-                                className="w-full h-48 object-cover rounded-t-lg"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             )}
-                            <div className="p-6">
-                              <div className="flex items-start justify-between mb-2">
-                                <h3 className="font-semibold text-lg">{business.name}</h3>
-                                <Badge variant="secondary">{business.distance_miles} mi</Badge>
+                          </div>
+                          
+                          <CardHeader className="pb-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                {business.website ? (
+                                  <a 
+                                    href={business.website.startsWith('http') ? business.website : `https://${business.website}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
+                                  >
+                                    {business.name}
+                                  </a>
+                                ) : (
+                                  <CardTitle className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all cursor-pointer">
+                                    {business.name}
+                                  </CardTitle>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {business.distance_miles && (
+                                    <>
+                                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-xs text-muted-foreground font-medium">
+                                        {business.distance_miles} miles away
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-muted-foreground text-sm mb-3">{business.address}</p>
+                            </div>
+                          </CardHeader>
+                          
+                          <CardContent className="space-y-4">
+                            {business.address && (
+                              <a 
+                                href={getGoogleMapsDirectionsUrl(business.address, business.name)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
+                              >
+                                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                                <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
+                                  {business.address}
+                                </span>
+                              </a>
+                            )}
+                            
+                            {business.features && business.features.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {business.features.slice(0, 3).map((feature, featureIndex) => (
                                   <Badge key={featureIndex} variant="outline" className="text-xs">
@@ -549,14 +599,7 @@ export default function Explore() {
                                   </Badge>
                                 ))}
                               </div>
-                              {business.website && (
-                                <Button variant="outline" size="sm" className="w-full mt-3" asChild>
-                                  <a href={business.website} target="_blank" rel="noopener noreferrer">
-                                    Visit Website
-                                  </a>
-                                </Button>
-                              )}
-                            </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
