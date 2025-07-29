@@ -440,45 +440,6 @@ export default function Explore() {
           {/* Content Sections */}
           {location && (
             <>
-              {/* Popular Near You */}
-              {Object.keys(popularPlaces).length > 0 && (
-                <section className="mb-16">
-                  <h2 className="text-3xl font-bold mb-6">Popular Near You</h2>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Object.entries(popularPlaces).map(([category, businesses]) =>
-                      businesses.slice(0, 3).map((business, index) => (
-                        <Card key={`${category}-${index}`} className="hover:shadow-lg transition-shadow">
-                          <CardContent className="p-0">
-                            {business.image_url && (
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-48 object-cover rounded-t-lg"
-                              />
-                            )}
-                            <div className="p-6">
-                              <div className="flex items-start justify-between mb-2">
-                                <h3 className="font-semibold text-lg">{business.name}</h3>
-                                <Badge variant="secondary">{business.distance_miles} mi</Badge>
-                              </div>
-                              <p className="text-muted-foreground text-sm mb-3">{business.address}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {business.features.slice(0, 2).map((feature, featureIndex) => (
-                                  <Badge key={featureIndex} variant="outline" className="text-xs">
-                                    {feature.includes("High Ratings") && <Star className="w-3 h-3 mr-1" />}
-                                    {feature.includes("Open Now") && <Clock className="w-3 h-3 mr-1" />}
-                                    {feature}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </div>
-                </section>
-              )}
 
               {/* Trending Categories */}
               <section className="mb-16">
