@@ -1,0 +1,20 @@
+Contact: security@calmlysettled.com
+Preferred-Languages: en
+Canonical: https://calmlysettled.com/.well-known/security.txt
+Policy: https://calmlysettled.com/security-policy
+Hiring: https://calmlysettled.com/careers
+
+# Security Policy
+# 
+# We take security seriously and appreciate responsible disclosure.
+# Please report any security vulnerabilities through the contact above.
+# 
+# Expected Response Time: 48 hours
+# 
+# Please include:
+# - Description of the vulnerability
+# - Steps to reproduce
+# - Potential impact
+# - Your contact information (optional)
+# 
+# Thank you for helping keep CalmlySettled secure!
