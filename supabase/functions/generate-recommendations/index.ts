@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting setup
+const rateLimiter = new Map();
+const RATE_LIMIT = 20; // requests per window
+const RATE_WINDOW = 60000; // 1 minute in milliseconds
+
 interface QuizResponse {
   address: string;
   householdType: string;
