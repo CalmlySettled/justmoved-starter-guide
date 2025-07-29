@@ -67,7 +67,7 @@ export default function Auth() {
                   console.log('Quiz data saved successfully, clearing localStorage and navigating to dashboard');
                   localStorage.removeItem('onboardingQuizData');
                   navigate("/dashboard");
-                  return;
+                  return; // Exit early - don't check profile again
                 }
               }
             } catch (error) {
