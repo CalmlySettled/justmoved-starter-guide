@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Heart, Users, Car, DollarSign, MapPin, Camera } from "lucide-react";
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
+import { sanitizeInput, displayNameSchema, logSecurityEvent } from "@/lib/security";
 
 interface ProfileData {
   display_name: string;
@@ -147,19 +148,42 @@ const Profile = () => {
     
     setIsSaving(true);
     try {
+      // Validate and sanitize inputs
+      const sanitizedDisplayName = sanitizeInput(profileData.display_name || '');
+      
+      try {
+        if (sanitizedDisplayName) {
+          displayNameSchema.parse(sanitizedDisplayName);
+        }
+      } catch (validationError: any) {
+        await logSecurityEvent('Invalid profile input', {
+          userId: user.id,
+          error: validationError.message
+        });
+        
+        toast.error(validationError.errors?.[0]?.message || "Please check your display name");
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
           ...profileData,
+          display_name: sanitizedDisplayName,
           updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
       
+      await logSecurityEvent('Profile updated', { userId: user.id });
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error saving profile:', error);
+      await logSecurityEvent('Profile save failed', { 
+        userId: user.id, 
+        error: String(error)
+      });
       toast.error('Failed to save profile');
     } finally {
       setIsSaving(false);

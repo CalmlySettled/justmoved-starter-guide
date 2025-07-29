@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Home, Mail } from "lucide-react";
+import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -141,6 +142,37 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
+        // Validate and sanitize inputs
+        if (!email || !password || !displayName) {
+          toast({
+            title: "Error",
+            description: "Please fill in all fields",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Security validation
+        try {
+          emailSchema.parse(email);
+          passwordSchema.parse(password);
+          displayNameSchema.parse(displayName);
+        } catch (validationError: any) {
+          await logSecurityEvent('Invalid input attempt', {
+            email: email.substring(0, 5) + '***',
+            error: validationError.message
+          });
+          
+          toast({
+            title: "Invalid input",
+            description: validationError.errors?.[0]?.message || "Please check your input",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const sanitizedDisplayName = sanitizeInput(displayName);
+
         // Check if user has quiz data to determine redirect URL
         const hasQuizData = localStorage.getItem('onboardingQuizData');
         const redirectUrl = hasQuizData 
@@ -148,12 +180,12 @@ export default function Auth() {
           : `${window.location.origin}/`;
         
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.toLowerCase().trim(),
           password,
           options: {
             emailRedirectTo: redirectUrl,
             data: {
-              display_name: displayName
+              display_name: sanitizedDisplayName
             }
           }
         });
@@ -166,6 +198,7 @@ export default function Auth() {
               variant: "destructive"
             });
           } else {
+            await logSecurityEvent('Sign up failed', { error: error.message });
             toast({
               title: "Sign up failed",
               description: error.message,
@@ -188,12 +221,29 @@ export default function Auth() {
           });
         }
       } else {
+        // Sign in validation
+        try {
+          emailSchema.parse(email);
+        } catch (validationError: any) {
+          toast({
+            title: "Invalid email format",
+            description: "Please enter a valid email address",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.toLowerCase().trim(),
           password
         });
 
         if (error) {
+          await logSecurityEvent('Sign in failed', { 
+            email: email.substring(0, 5) + '***',
+            error: error.message 
+          });
+
           if (error.message.includes("Invalid login credentials")) {
             toast({
               title: "Invalid credentials",
@@ -210,6 +260,7 @@ export default function Auth() {
         }
       }
     } catch (error) {
+      await logSecurityEvent('Auth error', { error: String(error) });
       toast({
         title: "An error occurred",
         description: "Please try again later.",

@@ -789,6 +789,30 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting check
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    const userLimit = rateLimiter.get(clientIP);
+    
+    if (userLimit) {
+      if (now < userLimit.resetTime) {
+        if (userLimit.count >= RATE_LIMIT) {
+          console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+          return new Response(
+            JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        userLimit.count++;
+      } else {
+        rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+      }
+    } else {
+      rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+    }
     const requestBody = await req.json();
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     

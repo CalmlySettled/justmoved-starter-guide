@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { sanitizeInput, addressSchema, logSecurityEvent } from "@/lib/security";
 
 interface UserProfile {
   address?: string;
@@ -130,10 +131,31 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
 
     setLoading(true);
     try {
+      // Validate and sanitize address input
+      let sanitizedAddress = '';
+      if (formData.address) {
+        sanitizedAddress = sanitizeInput(formData.address);
+        try {
+          addressSchema.parse(sanitizedAddress);
+        } catch (validationError: any) {
+          await logSecurityEvent('Invalid address input', {
+            userId: user.id,
+            error: validationError.message
+          });
+          
+          toast({
+            title: "Invalid address",
+            description: validationError.errors?.[0]?.message || "Please enter a valid address",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          address: formData.address,
+          address: sanitizedAddress,
           household_type: formData.household_type,
           priorities: formData.priorities,
           priority_preferences: formData.priority_preferences,
@@ -151,7 +173,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
         const { error: recommendationError } = await supabase.functions.invoke('generate-recommendations', {
           body: {
             quizResponse: {
-              address: formData.address,
+              address: sanitizedAddress,
               household_type: formData.household_type,
               priorities: formData.priorities,
               transportation_style: formData.transportation_style,
@@ -173,6 +195,8 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
         // Don't throw here - preferences were saved successfully
       }
 
+      await logSecurityEvent('Preferences updated', { userId: user.id });
+
       toast({
         title: "Preferences Updated",
         description: "Your preferences have been updated and new recommendations are being generated.",
@@ -182,6 +206,11 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
       onProfileUpdate();
     } catch (error) {
       console.error('Error updating preferences:', error);
+      await logSecurityEvent('Preferences update failed', { 
+        userId: user.id, 
+        error: String(error)
+      });
+      
       toast({
         title: "Error",
         description: "Failed to update preferences. Please try again.",

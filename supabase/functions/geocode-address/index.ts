@@ -3,7 +3,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Security-Policy': "default-src 'self'",
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
 }
+
+// Rate limiting
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 20; // requests per minute
+const RATE_WINDOW = 60000; // 1 minute
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -12,11 +20,47 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting check
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    const userLimit = rateLimiter.get(clientIP);
+    
+    if (userLimit) {
+      if (now < userLimit.resetTime) {
+        if (userLimit.count >= RATE_LIMIT) {
+          console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+          return new Response(
+            JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        userLimit.count++;
+      } else {
+        rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+      }
+    } else {
+      rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+    }
     const { address } = await req.json();
     
     if (!address) {
       return new Response(
         JSON.stringify({ error: 'Address is required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Input validation and sanitization
+    if (typeof address !== 'string' || address.length > 200 || /[<>\"'`]/.test(address)) {
+      console.warn(`Invalid address input: ${address.substring(0, 20)}...`);
+      return new Response(
+        JSON.stringify({ error: 'Invalid address format' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
