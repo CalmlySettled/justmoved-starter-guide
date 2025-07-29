@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Heart, Camera, Search, Star, Clock } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Heart, Camera, Search, Star, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Header } from "@/components/Header";
@@ -46,25 +46,25 @@ const themedPacks = [
     title: "First 48 Hours",
     description: "Immediate essentials for your first days in a new city",
     categories: ["grocery stores", "pharmacies", "gas stations", "urgent care"],
-    icon: "⏰",
+    icon: Clock,
   },
   {
     title: "Setting Up Home",
     description: "Everything you need to make your new place feel like home",
     categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services"],
-    icon: "🏡",
+    icon: Home,
   },
   {
     title: "Getting Connected",
     description: "Essential services to get your life organized",
     categories: ["banks", "post offices", "internet providers", "cell phone stores"],
-    icon: "🔗",
+    icon: Zap,
   },
   {
     title: "Family Essentials",
     description: "Important services for families settling in",
     categories: ["pediatricians", "schools", "daycares", "parks", "libraries"],
-    icon: "👨‍👩‍👧‍👦",
+    icon: Users,
   },
 ];
 
@@ -455,7 +455,9 @@ export default function Explore() {
                     >
                       <CardHeader>
                         <div className="text-center">
-                          <div className="text-4xl mb-3">{pack.icon}</div>
+                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
+                            <pack.icon className="h-8 w-8 text-white" />
+                          </div>
                           <CardTitle className="text-xl">{pack.title}</CardTitle>
                         </div>
                       </CardHeader>
