@@ -490,13 +490,8 @@ const Popular = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  console.log('BUTTON CLICKED!!!');
-                                  alert('Button clicked!');
-                                  toggleFavorite(business, category);
-                                }}
-                                className="h-8 w-8 p-0 hover:bg-primary/10 relative z-50 pointer-events-auto bg-red-500"
-                                style={{ pointerEvents: 'auto' }}
+                                onClick={() => toggleFavorite(business, category)}
+                                className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
                                 <Star 
                                   className="h-4 w-4" 
