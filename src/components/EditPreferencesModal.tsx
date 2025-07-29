@@ -389,7 +389,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                   value={formData.budget_preference} 
                   onValueChange={(value) => setFormData({...formData, budget_preference: value})}
                 >
-                  {["Budget-conscious", "Moderate spending", "Quality over price"].map((option) => (
+                  {["Budget-conscious", "A mix of both", "Quality over price"].map((option) => (
                     <div key={option} className="flex items-center space-x-2">
                       <RadioGroupItem value={option} id={`budget-${option}`} />
                       <Label htmlFor={`budget-${option}`} className="text-sm">{option}</Label>
@@ -409,7 +409,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                   value={formData.life_stage} 
                   onValueChange={(value) => setFormData({...formData, life_stage: value})}
                 >
-                  {["Young professional", "Family with kids", "Empty nester", "Retired", "Student"].map((option) => (
+                  {["Working professional", "Couple / newly married", "Family with young kids", "Family with teens", "Empty nester", "Retired", "Student"].map((option) => (
                     <div key={option} className="flex items-center space-x-2">
                       <RadioGroupItem value={option} id={`life-${option}`} />
                       <Label htmlFor={`life-${option}`} className="text-sm">{option}</Label>
@@ -419,7 +419,8 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
               </CardContent>
             </Card>
 
-            {/* Settling Tasks */}
+            {/* Settling Tasks - Hidden for now since it's different from quiz */}
+            {false && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Current Focus</CardTitle>
@@ -450,6 +451,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 </div>
               </CardContent>
             </Card>
+            )}
           </div>
         </ScrollArea>
 
