@@ -193,7 +193,21 @@ const Popular = () => {
       }
     };
 
+    const loadFavorites = () => {
+      try {
+        const storedFavorites = localStorage.getItem('favorites');
+        if (storedFavorites) {
+          const favorites: any[] = JSON.parse(storedFavorites);
+          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
+          setFavoriteBusinesses(favoriteNames);
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    };
+
     loadLocation();
+    loadFavorites();
   }, [user]);
 
   // Reset recommendations when navigating away from the page
@@ -264,100 +278,47 @@ const Popular = () => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
-  const toggleFavorite = async (business: Business, category: string) => {
-    console.log('🔥 POPULAR PAGE - STAR BUTTON CLICKED!');
-    console.log('Popular page - toggleFavorite called for:', business.name, 'category:', category);
-    console.log('Current user:', user);
-    console.log('User ID:', user?.id);
-    if (!user) {
-      console.log('No user found - showing error');
-      toast.error('Please sign in to save favorites');
-      return;
-    }
-
-    const businessKey = business.name;
-    const isCurrentlyFavorited = favoriteBusinesses.has(businessKey);
-    
-    // Optimistic update - immediately change the UI
-    if (isCurrentlyFavorited) {
-      setFavoriteBusinesses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(businessKey);
-        return newSet;
-      });
-    } else {
-      setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
-    }
-
+  const toggleFavorite = (business: Business, category: string) => {
     try {
-      const { data: existing, error: selectError } = await supabase
-        .from('user_recommendations')
-        .select('id, is_favorite')
-        .eq('user_id', user.id)
-        .eq('business_name', business.name)
-        .maybeSingle();
-
-      console.log('Popular - Existing record check:', { existing, selectError });
-
-      if (existing) {
-        console.log('Popular - Updating existing record, toggling favorite from', existing.is_favorite);
-        const { error: updateError } = await supabase
-          .from('user_recommendations')
-          .update({ is_favorite: !existing.is_favorite })
-          .eq('id', existing.id);
-        console.log('Popular - Update result:', updateError);
-        
-        if (updateError) throw updateError;
-      } else {
-        console.log('Popular - Creating new favorite record');
-        const insertData = {
-          user_id: user.id,
-          business_name: business.name,
-          business_address: business.address,
-          business_description: business.description,
-          business_phone: business.phone,
-          business_website: business.website,
-          business_features: business.features || [],
-          category,
-          is_favorite: true,
-          is_displayed: true,
-          distance_miles: business.distance_miles,
-          business_latitude: business.latitude,
-          business_longitude: business.longitude,
-          relevance_score: 0.5
-        };
-        console.log('Popular - Insert data:', insertData);
-        console.log('Popular - All required fields check:', {
-          user_id: !!insertData.user_id,
-          business_name: !!insertData.business_name,
-          category: !!insertData.category,
-          is_favorite: insertData.is_favorite
-        });
-        
-        const { data: insertResult, error: insertError } = await supabase
-          .from('user_recommendations')
-          .insert(insertData)
-          .select('*');
-        console.log('Popular - Insert result:', { insertResult, insertError });
-        
-        if (insertError) throw insertError;
-      }
-
-      toast.success(existing?.is_favorite ? 'Removed from favorites' : 'Added to favorites');
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast.error('Failed to update favorite');
+      const storedFavorites = localStorage.getItem('favorites');
+      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
       
-      // Revert optimistic update on error
-      if (isCurrentlyFavorited) {
-        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
-      } else {
+      const businessKey = business.name;
+      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
+      
+      if (existingIndex >= 0) {
+        // Remove from favorites
+        favorites.splice(existingIndex, 1);
         setFavoriteBusinesses(prev => {
           const newSet = new Set(prev);
           newSet.delete(businessKey);
           return newSet;
         });
+        toast.success("Removed from favorites");
+      } else {
+        // Add to favorites
+        const favoriteData = {
+          business_name: business.name,
+          business_address: business.address,
+          business_description: business.description,
+          business_phone: business.phone,
+          business_website: business.website,
+          business_image: business.image_url,
+          business_features: business.features || [],
+          category: category,
+          distance_miles: business.distance_miles,
+          favorited_at: new Date().toISOString()
+        };
+        
+        favorites.push(favoriteData);
+        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+        toast.success("Added to favorites");
       }
+      
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error("Failed to update favorites");
     }
   };
 
