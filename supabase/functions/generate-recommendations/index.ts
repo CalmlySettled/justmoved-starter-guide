@@ -957,10 +957,21 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
     }
     
     const recommendationsToInsert = [];
+    const seenBusinesses = new Set(); // Track unique businesses to avoid duplicates
     
     // Convert recommendations to database format with relevance scores
     for (const [category, businesses] of Object.entries(recommendations)) {
       businesses.forEach((business, index) => {
+        // Create a unique key for this business
+        const businessKey = `${business.name}|${business.address}|${category}`;
+        
+        // Skip if we've already seen this exact business in this category
+        if (seenBusinesses.has(businessKey)) {
+          console.log(`→ Skipping duplicate business: ${business.name} in ${category}`);
+          return;
+        }
+        seenBusinesses.add(businessKey);
+        
         const relevanceScore = calculateRelevanceScore(business, category, userPreferences);
         const filterMetadata = generateFilterMetadata(business, category);
         
