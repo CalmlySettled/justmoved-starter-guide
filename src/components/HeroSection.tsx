@@ -24,7 +24,7 @@ export function HeroSection() {
         </h1>
         
         <p className="text-lg md:text-xl mb-8 text-white/90 max-w-xl mx-auto leading-relaxed">
-          Discover local favorites and feel at home in your new neighborhood.
+          Discover local essentials and feel at home in your new neighborhood.
         </p>
         
         <div className="flex flex-col gap-6 justify-center items-center">
