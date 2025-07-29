@@ -340,47 +340,166 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   return businesses.slice(0, 25);
 }
 
-// Enhanced relevance scoring with improved distance weighting
+// Enhanced relevance scoring with improved distance weighting and user preference matching
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
   let score = 0;
   
-  // Base score from rating (0-5 scale, normalized to 0-40 points)
+  // Base score from rating (0-5 scale, normalized to 0-35 points to make room for preference bonuses)
   if (business.rating) {
-    score += (business.rating / 5) * 40;
+    score += (business.rating / 5) * 35;
   }
   
-  // Enhanced distance scoring with area-based adjustments
-  if (business.distance_miles) {
-    // Urban areas: penalize distance more heavily (closer is much better)
-    // Rural areas: be more lenient with distance
-    const distanceWeight = business.distance_miles <= 1 ? 30 : // Within 1 mile gets full points
-                          business.distance_miles <= 3 ? 25 - (business.distance_miles * 3) : // 3-mile penalty
-                          business.distance_miles <= 5 ? 15 - (business.distance_miles * 2) : // 5-mile penalty  
-                          Math.max(0, 10 - business.distance_miles); // Beyond 5 miles
+  // Enhanced distance scoring with transportation-based adjustments
+  if (business.distance_miles && userPreferences) {
+    let distanceWeight = 0;
+    
+    // Adjust distance scoring based on transportation style
+    if (userPreferences.transportationStyle === 'Bike / walk') {
+      // Walkers/bikers prefer very close locations
+      distanceWeight = business.distance_miles <= 0.5 ? 25 : 
+                      business.distance_miles <= 1 ? 20 :
+                      business.distance_miles <= 2 ? 10 :
+                      Math.max(0, 5 - business.distance_miles);
+    } else if (userPreferences.transportationStyle === 'Public transit') {
+      // Transit users prefer reasonable walking distance from stops
+      distanceWeight = business.distance_miles <= 1 ? 25 :
+                      business.distance_miles <= 3 ? 20 :
+                      business.distance_miles <= 5 ? 15 :
+                      Math.max(0, 8 - business.distance_miles);
+    } else {
+      // Car users and rideshare are more flexible with distance
+      distanceWeight = business.distance_miles <= 2 ? 25 :
+                      business.distance_miles <= 5 ? 20 :
+                      business.distance_miles <= 10 ? 15 :
+                      Math.max(0, 10 - business.distance_miles);
+    }
+    
+    score += distanceWeight;
+  } else if (business.distance_miles) {
+    // Default distance scoring if no transportation preference
+    const distanceWeight = business.distance_miles <= 1 ? 25 : 
+                          business.distance_miles <= 3 ? 20 - (business.distance_miles * 2) : 
+                          business.distance_miles <= 5 ? 15 - business.distance_miles : 
+                          Math.max(0, 8 - business.distance_miles);
     score += distanceWeight;
   }
   
-  // Review count bonus (more reviews = more reliable, max 15 points)
+  // Review count bonus (more reviews = more reliable, max 10 points)
   if (business.review_count) {
-    const reviewScore = Math.min(15, Math.log10(business.review_count + 1) * 5);
+    const reviewScore = Math.min(10, Math.log10(business.review_count + 1) * 3);
     score += reviewScore;
   }
   
-  // Feature matching bonus (max 15 points)
-  if (userPreferences && business.features) {
-    let featureBonus = 0;
-    const relevantFeatures = getRelevantFeatures(category, userPreferences);
-    
-    business.features.forEach(feature => {
-      if (relevantFeatures.includes(feature.toLowerCase())) {
-        featureBonus += 2;
-      }
-    });
-    
-    score += Math.min(15, featureBonus);
+  // Enhanced preference-based scoring (max 30 points total)
+  if (userPreferences) {
+    score += calculatePreferenceBonus(business, category, userPreferences);
   }
   
   return Math.round(score * 10) / 10; // Round to 1 decimal place
+}
+
+// Calculate bonus points based on user preferences
+function calculatePreferenceBonus(business: Business, category: string, userPreferences: QuizResponse): number {
+  let bonus = 0;
+  
+  // Budget preference bonus (max 10 points)
+  if (userPreferences.budgetPreference && business.features) {
+    const businessName = business.name.toLowerCase();
+    const features = business.features.join(' ').toLowerCase();
+    
+    if (userPreferences.budgetPreference === 'I want affordable & practical options') {
+      // Boost budget-friendly chains and practical options
+      const budgetChains = ['walmart', 'target', 'aldi', 'costco', 'kroger', 'safeway', 'cvs', 'walgreens'];
+      if (budgetChains.some(chain => businessName.includes(chain))) {
+        bonus += 8;
+      } else if (features.includes('affordable') || features.includes('budget') || features.includes('chain')) {
+        bonus += 5;
+      }
+    } else if (userPreferences.budgetPreference === "I'm looking for unique, local gems") {
+      // Boost local businesses over chains
+      if (features.includes('local') && !features.includes('chain')) {
+        bonus += 8;
+      } else if (business.rating && business.rating >= 4.3 && business.review_count && business.review_count < 500) {
+        // High-rated local spots with moderate review counts
+        bonus += 6;
+      }
+    } else if (userPreferences.budgetPreference === 'A mix of both') {
+      // Balanced approach - slight boost for well-rated places regardless of type
+      if (business.rating && business.rating >= 4.2) {
+        bonus += 4;
+      }
+    }
+  }
+  
+  // Household type bonus (max 10 points)
+  if (userPreferences.householdType) {
+    const household = userPreferences.householdType.toLowerCase();
+    const businessName = business.name.toLowerCase();
+    const features = business.features ? business.features.join(' ').toLowerCase() : '';
+    
+    if (household.includes('kids')) {
+      // Family-friendly bonuses
+      if (category.includes('medical') && (businessName.includes('pediatric') || businessName.includes('children') || businessName.includes('family'))) {
+        bonus += 10;
+      } else if (category.includes('restaurants') && (features.includes('kid') || businessName.includes('family'))) {
+        bonus += 6;
+      } else if (category.includes('parks') || category.includes('playground')) {
+        bonus += 8;
+      }
+    }
+    
+    if (household.includes('pets')) {
+      // Pet-friendly bonuses
+      if (category.includes('medical') && (businessName.includes('vet') || businessName.includes('animal'))) {
+        bonus += 10;
+      } else if (category.includes('parks') && (features.includes('dog') || businessName.includes('dog park'))) {
+        bonus += 8;
+      } else if (features.includes('pet-friendly') || businessName.includes('pet')) {
+        bonus += 5;
+      }
+    }
+    
+    if (household.includes('just me')) {
+      // Solo-friendly bonuses
+      if (category.includes('restaurants') && (businessName.includes('coffee') || businessName.includes('cafe') || features.includes('counter seating'))) {
+        bonus += 5;
+      }
+    }
+  }
+  
+  // Life stage bonus (max 10 points)
+  if (userPreferences.lifeStage) {
+    const lifeStage = userPreferences.lifeStage.toLowerCase();
+    const businessName = business.name.toLowerCase();
+    
+    if (lifeStage.includes('young professional')) {
+      if (businessName.includes('coffee') || businessName.includes('co-working') || businessName.includes('networking')) {
+        bonus += 6;
+      } else if (category.includes('fitness') && businessName.includes('gym')) {
+        bonus += 4;
+      }
+    } else if (lifeStage.includes('family')) {
+      if (category.includes('medical') && businessName.includes('family')) {
+        bonus += 8;
+      } else if (category.includes('grocery') && businessName.includes('super')) {
+        bonus += 4; // Prefer larger supermarkets for families
+      }
+    } else if (lifeStage.includes('empty nester') || lifeStage.includes('retired')) {
+      if (category.includes('medical') && (businessName.includes('senior') || businessName.includes('geriatric'))) {
+        bonus += 8;
+      } else if (businessName.includes('senior') || businessName.includes('community center')) {
+        bonus += 6;
+      }
+    } else if (lifeStage.includes('student')) {
+      if (businessName.includes('student') || businessName.includes('campus') || businessName.includes('college')) {
+        bonus += 8;
+      } else if (category.includes('restaurants') && (businessName.includes('fast') || businessName.includes('quick'))) {
+        bonus += 4; // Students often prefer quick, affordable food
+      }
+    }
+  }
+  
+  return Math.min(30, bonus); // Cap at 30 points total for preference bonuses
 }
 
 // Get relevant features for scoring based on category and user preferences
