@@ -84,7 +84,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // Determine optimal search radius based on area density
 function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
-  // Major urban centers (smaller radius for dense areas)
+  // Major urban centers (smaller radius for dense downtown areas only)
   const urbanCenters = [
     { lat: 40.7128, lng: -74.0060, name: "NYC", radius: 3000 }, // 3km
     { lat: 34.0522, lng: -118.2437, name: "LA", radius: 4000 }, // 4km
@@ -95,15 +95,15 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
     { lat: 39.7392, lng: -104.9903, name: "Denver", radius: 5000 },
   ];
 
-  // Check if near major urban center
+  // Check if very close to urban center core (within 10 miles for downtown areas)
   for (const center of urbanCenters) {
     const distanceToCenter = calculateDistance(coordinates.lat, coordinates.lng, center.lat, center.lng);
-    if (distanceToCenter <= 50) { // Within 50 miles of urban center
+    if (distanceToCenter <= 10) { // Only very close to downtown core gets small radius
       return center.radius;
     }
   }
 
-  // Suburban/rural areas get larger radius
+  // Suburban and rural areas get larger radius for better coverage
   return 8000; // 8km for suburban/rural areas
 }
 
