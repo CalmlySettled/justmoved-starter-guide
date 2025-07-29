@@ -15,6 +15,7 @@ import Features from "./pages/Features";
 import HowItWorks from "./pages/HowItWorks";
 import FAQ from "./pages/FAQ";
 import Explore from "./pages/Explore";
+import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/AccountSettings";
@@ -29,6 +30,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/explore" element={<Explore />} />
+            <Route path="/popular" element={<Popular />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />

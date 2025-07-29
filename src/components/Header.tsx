@@ -50,6 +50,12 @@ export function Header() {
             Essentials
           </Link>
           <Link 
+            to="/popular"
+            className="text-muted-foreground hover:text-foreground transition-smooth"
+          >
+            Popular
+          </Link>
+          <Link 
             to="/how-it-works"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
