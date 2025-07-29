@@ -69,8 +69,22 @@ export default function Recommendations() {
     try {
       setLoading(true);
       
+      // Ensure user is authenticated before generating recommendations
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to get personalized recommendations.",
+          variant: "destructive"
+        });
+        navigate("/auth");
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: { quizResponse: quizData }
+        body: { 
+          quizResponse: quizData,
+          userId: user.id 
+        }
       });
 
       if (error) {
@@ -80,11 +94,17 @@ export default function Recommendations() {
       setRecommendations(data.recommendations);
     } catch (error: any) {
       console.error('Error generating recommendations:', error);
+      const errorMessage = error?.message || "We're having trouble generating your personalized recommendations. Please try again.";
       toast({
         title: "Error generating recommendations",
-        description: "We're having trouble generating your personalized recommendations. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
+      
+      // If this was an authentication error, redirect to auth
+      if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
+        navigate("/auth");
+      }
     } finally {
       setLoading(false);
     }

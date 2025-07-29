@@ -899,7 +899,15 @@ serve(async (req) => {
     // Save recommendations to database if userId is provided
     if (userId && Object.keys(recommendations).length > 0) {
       console.log(`Saving recommendations to database for user: ${userId}`);
-      await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
+      try {
+        await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
+        console.log('Successfully saved recommendations to database');
+      } catch (saveError) {
+        console.error('Failed to save recommendations to database:', saveError);
+        // Don't fail the entire request if save fails - user still gets recommendations
+      }
+    } else if (!userId) {
+      console.warn('No userId provided - recommendations will not be saved to database');
     }
 
     return new Response(
