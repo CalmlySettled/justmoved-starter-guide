@@ -851,18 +851,22 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
     }
     
     if (recommendationsToInsert.length > 0) {
-      console.log(`Inserting ${recommendationsToInsert.length} recommendations for user ${userId}`);
+      console.log(`Upserting ${recommendationsToInsert.length} recommendations for user ${userId}`);
       
+      // Use upsert to prevent duplicates - update if exists, insert if new
       const { data, error } = await supabase
         .from('user_recommendations')
-        .insert(recommendationsToInsert);
+        .upsert(recommendationsToInsert, {
+          onConflict: 'user_id,business_name,business_address,category',
+          ignoreDuplicates: false
+        });
       
       if (error) {
-        console.error('Error saving recommendations to database:', error);
+        console.error('Error upserting recommendations to database:', error);
         throw error;
       }
       
-      console.log(`Successfully saved ${recommendationsToInsert.length} recommendations to database`);
+      console.log(`Successfully upserted ${recommendationsToInsert.length} recommendations to database`);
     }
   } catch (error) {
     console.error('Error in saveRecommendationsToDatabase:', error);
