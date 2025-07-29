@@ -117,7 +117,7 @@ export default function Explore() {
             const locationData: LocationData = {
               latitude: parseFloat(data[0].lat),
               longitude: parseFloat(data[0].lon),
-              city: data[0].display_name.split(',')[0] || profile.address.split(',')[0],
+              city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address.split(',')[0],
             };
 
             setLocation(locationData);
@@ -226,7 +226,7 @@ export default function Explore() {
       const locationData: LocationData = {
         latitude: parseFloat(data[0].lat),
         longitude: parseFloat(data[0].lon),
-        city: data[0].display_name.split(',')[0] || manualLocation,
+        city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || manualLocation,
       };
 
       setLocation(locationData);
