@@ -518,8 +518,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-  // Return ALL businesses for final distance sorting across categories
-  return sortedBusinesses; // No limit here - will be limited globally to 6
+  // Return more businesses than needed so we can select top 6 globally
+  return sortedBusinesses.slice(0, 10); // Get 10 per priority, then pick 6 closest overall
 }
 
 // Simplified relevance scoring based primarily on distance
@@ -1113,8 +1113,12 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
   // Collect ALL businesses from ALL priorities into one array
   const allBusinesses: Business[] = [];
 
+  // Limit priorities to prevent too many API calls
+  const limitedPriorities = quizResponse.priorities.slice(0, 3);
+  console.log(`Processing ${limitedPriorities.length} priorities for 6 total results`);
+
   // For each user priority, search for businesses and add to master list
-  for (const priority of quizResponse.priorities) {
+  for (const priority of limitedPriorities) {
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
@@ -1151,7 +1155,12 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   // Take the 6 closest businesses regardless of category
   const finalResults = sortedBusinesses.slice(0, 6);
-  console.log(`Returning 6 closest businesses: ${finalResults.map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
+  console.log(`🎯 FINAL RESULT: Selected 6 closest businesses from ${allBusinesses.length} total`);
+  console.log(`🎯 FINAL BUSINESSES: ${finalResults.map(b => `${b.name} (${b.distance_miles}mi, category: ${b.category})`).join(', ')}`);
+  
+  if (finalResults.length === 0) {
+    console.error('🚨 NO FINAL RESULTS - Check if businesses are being found and have distance data');
+  }
 
   // Group by original category for response format
   const recommendations: { [key: string]: Business[] } = {};
