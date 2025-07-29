@@ -27,7 +27,7 @@ export function Footer() {
               <li><Link to="/how-it-works" className="hover:text-background transition-smooth">How It Works</Link></li>
               <li><Link to="/features" className="hover:text-background transition-smooth">Features</Link></li>
               <li><Link to="/faq" className="hover:text-background transition-smooth">FAQ</Link></li>
-              <li><a href="#" className="hover:text-background transition-smooth">Concierge Service</a></li>
+              
             </ul>
           </div>
           

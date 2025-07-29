@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Crown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function CTASection() {
@@ -24,25 +24,6 @@ export function CTASection() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-        </div>
-        
-        {/* Optional Upsell */}
-        <div className="border-2 border-dashed border-accent/30 rounded-xl p-8 bg-accent/5">
-          <div className="flex items-center justify-center mb-4">
-            <Crown className="h-8 w-8 text-accent mr-3" />
-            <h3 className="text-2xl font-semibold text-foreground">
-              Want White-Glove Service?
-            </h3>
-          </div>
-          
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Let our concierge team build your perfect local starter guide. We'll research, 
-            call, and coordinate everything so you can focus on settling in.
-          </p>
-          
-          <Button variant="accent" size="lg" className="text-lg px-8 py-4">
-            Learn About Concierge
-          </Button>
         </div>
       </div>
     </section>
