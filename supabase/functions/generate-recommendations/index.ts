@@ -346,7 +346,7 @@ async function searchGooglePlaces(
     const businesses = await Promise.all(
       uniqueResults
         .filter((place: any) => isRetailConsumerBusiness(place, category, latitude, longitude))
-        .slice(0, 15) // More results from multiple strategies
+        .slice(0, 6) // Limit to 6 raw results from API
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
           let imageUrl = '';
@@ -517,8 +517,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-  // Return results sorted purely by distance
-  return sortedBusinesses.slice(0, 4); // Limit to 4 results per category to control total
+  // Return results sorted purely by distance with strict limit
+  return sortedBusinesses.slice(0, 3); // Strict limit to 3 results per category
 }
 
 // Simplified relevance scoring based primarily on distance
@@ -1003,7 +1003,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           business_image: business.image_url,
           is_favorite: false,
           relevance_score: relevanceScore,
-          is_displayed: index < 4, // Only first 4 are displayed by default
+          is_displayed: index < 3, // Only first 3 are displayed by default
           filter_metadata: filterMetadata
         });
       });
@@ -1111,8 +1111,8 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   console.log('User priorities received:', quizResponse.priorities);
 
-  // Limit to first 3 priorities to control total recommendations
-  const limitedPriorities = quizResponse.priorities.slice(0, 3);
+  // Limit to first 2 priorities to drastically reduce total recommendations  
+  const limitedPriorities = quizResponse.priorities.slice(0, 2);
   console.log(`Limited to ${limitedPriorities.length} priorities to prevent overwhelming results`);
   
   // For each user priority, search for real businesses using APIs
