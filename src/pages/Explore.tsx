@@ -482,7 +482,7 @@ export default function Explore() {
                                  handleThemedPackClick(pack, category);
                                }}
                              >
-                               {category}
+                               {category.charAt(0).toUpperCase() + category.slice(1)}
                              </Badge>
                            ))}
                          </div>
