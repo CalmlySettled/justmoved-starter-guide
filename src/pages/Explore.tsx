@@ -111,7 +111,7 @@ export default function Explore() {
             const locationData: LocationData = {
               latitude: parseFloat(data[0].lat),
               longitude: parseFloat(data[0].lon),
-              city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',').find(part => !part.trim().match(/^\d/)) || profile.address.split(',')[1]?.trim() || profile.address.split(',')[0],
+              city: data[0].display_name.split(',')[0] || profile.address.split(',')[0],
             };
 
             setLocation(locationData);
@@ -220,7 +220,7 @@ export default function Explore() {
       const locationData: LocationData = {
         latitude: parseFloat(data[0].lat),
         longitude: parseFloat(data[0].lon),
-        city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',').find(part => !part.trim().match(/^\d/)) || manualLocation,
+        city: data[0].display_name.split(',')[0] || manualLocation,
       };
 
       setLocation(locationData);
@@ -447,28 +447,10 @@ export default function Explore() {
                             )}
                             <div className="p-6">
                               <div className="flex items-start justify-between mb-2">
-                                {business.website ? (
-                                  <a 
-                                    href={business.website} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="font-semibold text-lg hover:text-primary transition-colors"
-                                  >
-                                    {business.name}
-                                  </a>
-                                ) : (
-                                  <h3 className="font-semibold text-lg">{business.name}</h3>
-                                )}
+                                <h3 className="font-semibold text-lg">{business.name}</h3>
                                 <Badge variant="secondary">{business.distance_miles} mi</Badge>
                               </div>
-                              <a 
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name + ' ' + business.address)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-muted-foreground text-sm mb-3 hover:text-primary transition-colors block"
-                              >
-                                {business.address}
-                              </a>
+                              <p className="text-muted-foreground text-sm mb-3">{business.address}</p>
                               <div className="flex flex-wrap gap-2">
                                 {business.features.slice(0, 2).map((feature, featureIndex) => (
                                   <Badge key={featureIndex} variant="outline" className="text-xs">

@@ -37,7 +37,6 @@ interface Business {
   image_url?: string;
   rating?: number;
   review_count?: number;
-  category?: string; // Add category field for grouping
 }
 
 // Removed hardcoded brand logos - using pure API + category fallback system
@@ -88,46 +87,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
-// National chain override for major brands within 5 miles
-const NATIONAL_CHAIN_OVERRIDE_MILES = 5;
-
-const NATIONAL_CHAINS = [
-  // Grocery stores
-  'walmart', 'target', 'kroger', 'safeway', 'albertsons', 'vons', 'ralphs', 'whole foods', 'trader joe\'s', 'costco', 'sam\'s club', 'sprouts', 'fresh market', 'publix', 'wegmans', 'stop & shop', 'giant', 'food lion', 'harris teeter', 'smith\'s', 'king soopers', 'fred meyer', 'qfc', 'pavilions', 'smart & final', 'food 4 less', 'ralphs fresh fare',
-  // Pharmacies
-  'cvs', 'walgreens', 'rite aid', 'duane reade',
-  // Home improvement
-  'home depot', 'lowes', 'menards', 'ace hardware',
-  // Electronics
-  'best buy', 'staples', 'office depot',
-  // Department stores
-  'macy\'s', 'nordstrom', 'jcpenney', 'kohl\'s', 'tj maxx', 'marshall\'s', 'ross',
-  // Restaurants
-  'mcdonald\'s', 'burger king', 'subway', 'starbucks', 'dunkin\'', 'taco bell', 'kfc', 'pizza hut', 'domino\'s', 'chipotle', 'panera'
-];
-
-function isNationalChain(businessName: string): boolean {
-  const name = businessName.toLowerCase().trim();
-  return NATIONAL_CHAINS.some(chain => {
-    // Handle exact matches and partial matches (e.g., "Trader Joe's Mission Valley" contains "trader joe's")
-    return name.includes(chain) || chain.includes(name.split(' ')[0]);
-  });
-}
-
-function isNationalChainOverride(business: any, userLat: number, userLng: number): boolean {
-  const distance = calculateDistance(userLat, userLng, business.geometry?.location?.lat || 0, business.geometry?.location?.lng || 0);
-  return isNationalChain(business.name) && distance <= NATIONAL_CHAIN_OVERRIDE_MILES;
-}
-
-// Proximity override threshold - businesses within this distance get priority (reduced for national chains)
-const PROXIMITY_OVERRIDE_MILES = 0.3;
-
-// Check if a business qualifies for proximity override
-function isProximityPriority(businessLat: number, businessLng: number, userLat: number, userLng: number): boolean {
-  const distance = calculateDistance(userLat, userLng, businessLat, businessLng);
-  return distance <= PROXIMITY_OVERRIDE_MILES;
-}
-
 // Determine optimal search radius based on area density
 function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
   // Major urban centers (smaller radius for dense downtown areas only)
@@ -155,41 +114,57 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 
 // Google Places API integration
 
-  // Simplified function to check if a business is consumer-facing (minimal filtering)
-function isRetailConsumerBusiness(place: any, category: string, userLat?: number, userLng?: number): boolean {
-  const name = place.name?.toLowerCase() || '';
+// Helper function to check if a business is actually consumer-facing retail
+function isRetailConsumerBusiness(place: any, category: string): boolean {
+  const name = place.name.toLowerCase();
   const types = place.types || [];
+  const typesString = types.join(' ').toLowerCase();
   
-  console.log(`📍 DISTANCE-ONLY CHECK: "${place.name}" - Distance: ${place.distance_miles || 'unknown'}mi`);
+  // Exclude obvious B2B/wholesale businesses for grocery category
+  if (category.includes('grocery')) {
+    // Exclude wholesale distributors, suppliers, and B2B operations
+    const excludeKeywords = [
+      'wholesale', 'distributor', 'distribution', 'supplier', 'supply',
+      'foods llc', 'foods inc', 'food service', 'food services', 
+      'foodservice', 'catering', 'restaurant supply', 'commercial',
+      'industrial', 'manufacturing', 'processor', 'processing'
+    ];
+    
+    if (excludeKeywords.some(keyword => name.includes(keyword))) {
+      console.log(`→ Excluding B2B business: ${place.name}`);
+      return false;
+    }
+    
+    // Must have retail-oriented types for grocery
+    const retailTypes = [
+      'grocery_or_supermarket', 'supermarket', 'convenience_store',
+      'store', 'establishment'
+    ];
+    
+    const hasRetailType = retailTypes.some(type => types.includes(type));
+    if (!hasRetailType) {
+      console.log(`→ Excluding non-retail business: ${place.name} (types: ${types.join(', ')})`);
+      return false;
+    }
+  }
   
-  const excludeKeywords = [
-    'wholesale', 'distributor', 'b2b', 'commercial only', 'trade only',
-    'foods llc', 'foods inc', 'food service', 'food services', 'foodservice',
-    'real estate', 'insurance agency', 'accounting', 'lawyer', 'political',
-    'funeral home', 'cemetery', 'government office', 'courthouse', 'embassy'
+  // Exclude businesses that are clearly not consumer retail
+  const generalExcludeKeywords = [
+    'wholesale', 'distributor', 'b2b', 'commercial only',
+    'trade only', 'professional only', 'licensed professionals'
   ];
   
-  if (excludeKeywords.some(keyword => name.includes(keyword))) {
-    console.log(`❌ EXCLUDED: ${place.name} - B2B/non-consumer business`);
+  if (generalExcludeKeywords.some(keyword => name.includes(keyword) || typesString.includes(keyword))) {
+    console.log(`→ Excluding non-consumer business: ${place.name}`);
     return false;
   }
   
-  // Must have at least some retail-oriented type
-  const retailTypes = [
-    'grocery_or_supermarket', 'supermarket', 'store', 'clothing_store', 
-    'department_store', 'pharmacy', 'drugstore', 'gas_station',
-    'convenience_store', 'electronics_store', 'furniture_store',
-    'home_goods_store', 'hardware_store', 'restaurant', 'cafe', 
-    'meal_takeaway', 'food', 'bakery', 'establishment'
-  ];
-  
-  const hasRetailType = retailTypes.some(type => types.includes(type));
-  if (!hasRetailType) {
-    console.log(`❌ EXCLUDED: ${place.name} - No retail type found in: [${types.join(', ')}]`);
+  // Must have a reasonable rating count (indicates consumer traffic) - but be less strict
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
+    console.log(`→ Excluding business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
     return false;
   }
   
-  console.log(`✅ INCLUDED: ${place.name} - Will be sorted by distance only`);
   return true;
 }
 
@@ -270,10 +245,9 @@ async function searchGooglePlaces(
   // Define multiple search strategies for different categories
   const searchStrategies = getSearchStrategies(category);
   const allResults = new Set();
-  const rawApiResponses: any[] = [];
   
   try {
-    console.log(`🔍 DEBUGGING: Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
+    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
     
     // Execute multiple search strategies
     for (const strategy of searchStrategies) {
@@ -288,7 +262,6 @@ async function searchGooglePlaces(
       searchUrl += `&key=${googleApiKey}`;
       
       console.log(`→ Strategy: ${strategy.keyword || strategy.type}`);
-      console.log(`🔍 RAW API URL: ${searchUrl.replace(googleApiKey, 'HIDDEN_KEY')}`);
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -303,27 +276,6 @@ async function searchGooglePlaces(
 
       const data = await response.json();
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
-      
-      // 🔍 LOG RAW API RESPONSE
-      console.log(`🔍 RAW API RESPONSE for strategy "${strategy.keyword || strategy.type}":`, JSON.stringify({
-        status: data.status,
-        results_count: data.results?.length || 0,
-        results: data.results?.map(place => ({
-          name: place.name,
-          place_id: place.place_id,
-          types: place.types,
-          rating: place.rating,
-          user_ratings_total: place.user_ratings_total,
-          geometry: place.geometry?.location,
-          vicinity: place.vicinity
-        })) || []
-      }, null, 2));
-      
-      // Store raw response for debugging
-      rawApiResponses.push({
-        strategy: strategy.keyword || strategy.type,
-        response: data
-      });
 
       // Add unique results to our set
       if (data.results) {
@@ -346,8 +298,8 @@ async function searchGooglePlaces(
     // Filter and convert Google Places results to Business objects with photos and details
     const businesses = await Promise.all(
       uniqueResults
-        .filter((place: any) => isRetailConsumerBusiness(place, category, latitude, longitude))
-        .slice(0, 6) // Limit to 6 raw results from API
+        .filter((place: any) => isRetailConsumerBusiness(place, category))
+        .slice(0, 30) // Increased results from multiple strategies
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
           let imageUrl = '';
@@ -477,69 +429,82 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
-  // 🔍 DISTANCE-BASED FILTERING: Transportation should not be a hard filter
-  // Instead, use a generous radius (15 miles) and let scoring handle preference
+  // Filter businesses based on transportation style and realistic distances
   let filteredBusinesses = businesses;
   if (userPreferences?.transportationStyle) {
-    // Use generous maximum distances that don't exclude nearby options
     const getMaxDistanceForTransportation = (transportationStyle: string): number => {
       switch (transportationStyle) {
         case 'Bike / walk':
-          return 15; // Generous for safety - scoring will prefer closer
+          return 3; // 3 miles max for biking/walking
         case 'Public transit':
-          return 15; // Generous for safety - scoring will prefer closer  
+          return 8; // 8 miles max for public transit
         case 'Rideshare only':
-          return 15; // Generous for safety - scoring will prefer closer
+          return 12; // 12 miles max for rideshare
         case 'Car':
         default:
-          return 15; // Standard max distance
+          return 15; // 15 miles max for car
       }
     };
 
     const maxDistance = getMaxDistanceForTransportation(userPreferences.transportationStyle);
-    console.log(`🔍 GENEROUS FILTERING by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles (scoring will handle preference)`);
-    
-    // Log businesses before filtering
-    console.log(`🔍 BUSINESSES BEFORE DISTANCE FILTER (${businesses.length}):`, businesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
+    console.log(`Filtering businesses by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles`);
     
     filteredBusinesses = businesses.filter(business => 
       business.distance_miles && business.distance_miles <= maxDistance
     );
     
-    console.log(`🔍 BUSINESSES AFTER DISTANCE FILTER (${filteredBusinesses.length}):`, filteredBusinesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
-    console.log(`🔍 Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
+    console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
-  // Sort businesses by distance only (closest first)
-  const sortedBusinesses = filteredBusinesses.sort((a, b) => {
-    return (a.distance_miles || 999) - (b.distance_miles || 999);
-  });
-  
-  console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
-  console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
-  
-  // Return more businesses than needed so we can select top 6 globally
-  return sortedBusinesses.slice(0, 10); // Get 10 per priority, then pick 6 closest overall
+  // Return more results for the two-tier system (up to 40 for better variety)
+  return filteredBusinesses.slice(0, 40);
 }
 
-// Simplified relevance scoring based primarily on distance
+// Enhanced relevance scoring with improved distance weighting and user preference matching
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
   let score = 0;
   
-  // Base score from rating (20 points max)
+  // Base score from rating (0-5 scale, normalized to 0-35 points to make room for preference bonuses)
   if (business.rating) {
-    score += (business.rating / 5) * 20;
+    score += (business.rating / 5) * 35;
   }
   
-  // Primary scoring: Distance (60 points max - closest gets highest score)
-  if (business.distance_miles) {
-    // Inverse distance scoring - closer = higher score
-    const maxDistance = 15; // Assume max search radius
-    const distanceScore = Math.max(0, ((maxDistance - business.distance_miles) / maxDistance) * 60);
-    score += distanceScore;
+  // Enhanced distance scoring with transportation-based adjustments
+  if (business.distance_miles && userPreferences) {
+    let distanceWeight = 0;
+    
+    // Adjust distance scoring based on transportation style
+    if (userPreferences.transportationStyle === 'Bike / walk') {
+      // Walkers/bikers prefer very close locations
+      distanceWeight = business.distance_miles <= 0.5 ? 25 : 
+                      business.distance_miles <= 1 ? 20 :
+                      business.distance_miles <= 2 ? 10 :
+                      Math.max(0, 5 - business.distance_miles);
+    } else if (userPreferences.transportationStyle === 'Public transit') {
+      // Transit users prefer reasonable walking distance from stops
+      distanceWeight = business.distance_miles <= 1 ? 25 :
+                      business.distance_miles <= 3 ? 20 :
+                      business.distance_miles <= 5 ? 15 :
+                      Math.max(0, 8 - business.distance_miles);
+    } else {
+      // Car users and rideshare are more flexible with distance
+      distanceWeight = business.distance_miles <= 2 ? 25 :
+                      business.distance_miles <= 5 ? 20 :
+                      business.distance_miles <= 10 ? 15 :
+                      Math.max(0, 10 - business.distance_miles);
+    }
+    
+    score += distanceWeight;
+  } else if (business.distance_miles) {
+    // Default distance scoring if no transportation preference
+    const distanceWeight = business.distance_miles <= 1 ? 25 : 
+                          business.distance_miles <= 3 ? 20 - (business.distance_miles * 2) : 
+                          business.distance_miles <= 5 ? 15 - business.distance_miles : 
+                          Math.max(0, 8 - business.distance_miles);
+    score += distanceWeight;
   }
   
-  // Review count bonus (small factor, 10 points max)
+  // Review count bonus (more reviews = more reliable, max 10 points)
   if (business.review_count) {
     const reviewScore = Math.min(10, Math.log10(business.review_count + 1) * 3);
     score += reviewScore;
@@ -859,7 +824,6 @@ serve(async (req) => {
       rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
     }
     const requestBody = await req.json();
-    console.log('🔍 DEBUG VERSION: Enhanced debugging enabled for Sprouts investigation');
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
     const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
@@ -1004,7 +968,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           business_image: business.image_url,
           is_favorite: false,
           relevance_score: relevanceScore,
-          is_displayed: index < 3, // Only first 3 are displayed by default
+          is_displayed: index < 6, // Only first 6 are displayed by default
           filter_metadata: filterMetadata
         });
       });
@@ -1035,6 +999,8 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
 }
 
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
+  const recommendations: { [key: string]: Business[] } = {};
+  
   // Map user priorities to search terms that work with APIs
   const priorityMap: { [key: string]: string } = {
     "grocery stores": "grocery stores",
@@ -1110,15 +1076,8 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   console.log('User priorities received:', quizResponse.priorities);
 
-  // Collect ALL businesses from ALL priorities into one array
-  const allBusinesses: Business[] = [];
-
-  // Limit priorities to prevent too many API calls
-  const limitedPriorities = quizResponse.priorities.slice(0, 3);
-  console.log(`Processing ${limitedPriorities.length} priorities for 6 total results`);
-
-  // For each user priority, search for businesses and add to master list
-  for (const priority of limitedPriorities) {
+  // For each user priority, search for real businesses using APIs
+  for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
@@ -1130,44 +1089,46 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         foundMatch = true;
         
         const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`🔍 Found ${businesses.length} businesses for "${searchTerm}"`);
+        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
         
-        // Add category info to each business and add to master list
-        businesses.forEach(business => {
-          business.category = priority;
-          allBusinesses.push(business);
-          console.log(`➕ Added: ${business.name} (${business.distance_miles}mi) from ${priority}`);
-        });
+        if (businesses.length > 0) {
+          recommendations[priority] = businesses;
+          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
+        }
         break;
       }
     }
     
     if (!foundMatch) {
-      console.log(`❌ No match found for priority: "${priority}"`);
+      console.log(`No match found for priority: "${priority}"`);
     }
   }
 
-  console.log(`Total businesses found across all priorities: ${allBusinesses.length}`);
-
-  // Sort ALL businesses by distance (closest first)
-  const sortedBusinesses = allBusinesses.sort((a, b) => {
-    return (a.distance_miles || 999) - (b.distance_miles || 999);
-  });
-
-  // Take the 6 closest businesses regardless of category
-  const finalResults = sortedBusinesses.slice(0, 6);
-  console.log(`🎯 FINAL RESULT: Selected 6 closest businesses from ${allBusinesses.length} total`);
-  console.log(`🎯 FINAL BUSINESSES: ${finalResults.map(b => `${b.name} (${b.distance_miles}mi, category: ${b.category})`).join(', ')}`);
+  // Only add default categories if user has no priorities at all AND no existing priorities
+  // If they specified priorities or have existing ones, don't add defaults
+  const hasAnyPriorities = quizResponse.priorities.length > 0 || (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0);
   
-  if (finalResults.length === 0) {
-    console.error('🚨 NO FINAL RESULTS - Check if businesses are being found and have distance data');
+  if (Object.keys(recommendations).length === 0 && !hasAnyPriorities) {
+    console.log('No priorities specified and no existing priorities, adding default categories');
+    
+    const defaultCategories = [
+      { name: "Grocery stores", searchTerm: "grocery stores" },
+      { name: "Fitness options", searchTerm: "fitness gyms" },
+      { name: "Faith communities", searchTerm: "churches religious" },
+      { name: "Medical care", searchTerm: "medical health" },
+      { name: "Schools", searchTerm: "schools education" },
+      { name: "Parks", searchTerm: "parks recreation" }
+    ];
+    
+    for (const category of defaultCategories) {
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse);
+      if (businesses.length > 0) {
+        recommendations[category.name] = businesses;
+      }
+    }
+  } else if (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0) {
+    console.log(`User has existing priorities: ${quizResponse.existingPriorities.join(', ')}, not adding defaults`);
   }
 
-  // Create a single category response with all 6 businesses
-  const recommendations: { [key: string]: Business[] } = {
-    "Mixed Recommendations": finalResults
-  };
-
-  console.log(`🎯 RETURNING: 1 category with ${finalResults.length} businesses`);
   return recommendations;
 }
