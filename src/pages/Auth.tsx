@@ -106,11 +106,17 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
+        // Check if user has quiz data to determine redirect URL
+        const hasQuizData = localStorage.getItem('onboardingQuizData');
+        const redirectUrl = hasQuizData 
+          ? `${window.location.origin}/dashboard`
+          : `${window.location.origin}/`;
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: redirectUrl,
             data: {
               display_name: displayName
             }
