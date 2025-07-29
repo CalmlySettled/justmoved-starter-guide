@@ -81,6 +81,31 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
+// Determine optimal search radius based on area density
+function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
+  // Major urban centers (smaller radius for dense areas)
+  const urbanCenters = [
+    { lat: 40.7128, lng: -74.0060, name: "NYC", radius: 3000 }, // 3km
+    { lat: 34.0522, lng: -118.2437, name: "LA", radius: 4000 }, // 4km
+    { lat: 41.8781, lng: -87.6298, name: "Chicago", radius: 4000 },
+    { lat: 37.7749, lng: -122.4194, name: "SF", radius: 3000 },
+    { lat: 42.3601, lng: -71.0589, name: "Boston", radius: 3500 },
+    { lat: 47.6062, lng: -122.3321, name: "Seattle", radius: 4000 },
+    { lat: 39.7392, lng: -104.9903, name: "Denver", radius: 5000 },
+  ];
+
+  // Check if near major urban center
+  for (const center of urbanCenters) {
+    const distanceToCenter = calculateDistance(coordinates.lat, coordinates.lng, center.lat, center.lng);
+    if (distanceToCenter <= 50) { // Within 50 miles of urban center
+      return center.radius;
+    }
+  }
+
+  // Suburban/rural areas get larger radius
+  return 8000; // 8km for suburban/rural areas
+}
+
 // Google Places API integration
 
 // Helper function to check if a business is actually consumer-facing retail
@@ -137,12 +162,12 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
   return true;
 }
 
-// Google Places API integration (enhanced fallback with photo support)
+// Google Places API integration (enhanced with dynamic radius)
 async function searchGooglePlaces(
   category: string,
   latitude: number,
   longitude: number,
-  radius: number = 5000
+  customRadius?: number
 ): Promise<Business[]> {
   const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!googleApiKey) {
@@ -150,8 +175,11 @@ async function searchGooglePlaces(
     return [];
   }
 
+  // Use dynamic radius based on area density
+  const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
+  
   try {
-    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude}`);
+    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
     
     // First, do a nearby search to get places
     const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=establishment&keyword=${encodeURIComponent(category)}&key=${googleApiKey}`;
@@ -286,12 +314,16 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Enhanced business search for two-tier system
+// Enhanced business search with cached coordinates and dynamic radius
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
-  // Use only Google Places API
-  const businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng);
+  // Use dynamic radius based on location
+  const optimalRadius = getOptimalRadius(coordinates);
+  console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
+  
+  // Use only Google Places API with dynamic radius
+  const businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius);
   console.log(`Google Places found ${businesses.length} businesses`);
   
   // Calculate distances for businesses that don't have them
@@ -304,11 +336,11 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
-  // Return more results for the two-tier system (up to 20)
-  return businesses.slice(0, 20);
+  // Return more results for the two-tier system (up to 25 for better variety)
+  return businesses.slice(0, 25);
 }
 
-// Calculate relevance score based on quiz responses and business data
+// Enhanced relevance scoring with improved distance weighting
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
   let score = 0;
   
@@ -317,10 +349,15 @@ function calculateRelevanceScore(business: Business, category: string, userPrefe
     score += (business.rating / 5) * 40;
   }
   
-  // Distance penalty (closer = higher score, max 25 points)
+  // Enhanced distance scoring with area-based adjustments
   if (business.distance_miles) {
-    const distanceScore = Math.max(0, 25 - (business.distance_miles * 2));
-    score += distanceScore;
+    // Urban areas: penalize distance more heavily (closer is much better)
+    // Rural areas: be more lenient with distance
+    const distanceWeight = business.distance_miles <= 1 ? 30 : // Within 1 mile gets full points
+                          business.distance_miles <= 3 ? 25 - (business.distance_miles * 3) : // 3-mile penalty
+                          business.distance_miles <= 5 ? 15 - (business.distance_miles * 2) : // 5-mile penalty  
+                          Math.max(0, 10 - business.distance_miles); // Beyond 5 miles
+    score += distanceWeight;
   }
   
   // Review count bonus (more reviews = more reliable, max 15 points)
@@ -329,7 +366,7 @@ function calculateRelevanceScore(business: Business, category: string, userPrefe
     score += reviewScore;
   }
   
-  // Feature matching bonus (max 20 points)
+  // Feature matching bonus (max 15 points)
   if (userPreferences && business.features) {
     let featureBonus = 0;
     const relevantFeatures = getRelevantFeatures(category, userPreferences);
@@ -340,7 +377,7 @@ function calculateRelevanceScore(business: Business, category: string, userPrefe
       }
     });
     
-    score += Math.min(20, featureBonus);
+    score += Math.min(15, featureBonus);
   }
   
   return Math.round(score * 10) / 10; // Round to 1 decimal place
@@ -521,13 +558,35 @@ serve(async (req) => {
       });
     }
 
-    // Get coordinates from address
-    const coordinates = await getCoordinatesFromAddress(quizResponse.address);
-    if (!coordinates) {
-      throw new Error('Could not get coordinates for the provided address');
+    // Get coordinates - try cached first, then convert address
+    let coordinates: { lat: number; lng: number } | null = null;
+    
+    // Check if we have cached coordinates from profile
+    if (userId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('latitude, longitude')
+        .eq('user_id', userId)
+        .single();
+      
+      if (profile?.latitude && profile?.longitude) {
+        coordinates = { lat: profile.latitude, lng: profile.longitude };
+        console.log(`Using cached coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+      }
     }
-
-    console.log(`Found coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+    
+    // Fall back to address conversion if no cached coordinates
+    if (!coordinates) {
+      coordinates = await getCoordinatesFromAddress(quizResponse.address);
+      if (!coordinates) {
+        throw new Error('Could not get coordinates for the provided address');
+      }
+      console.log(`Converted address to coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+    }
 
     // Generate recommendations based on user priorities
     const recommendations = await generateRecommendations(quizResponse, coordinates);

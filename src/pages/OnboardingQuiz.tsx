@@ -12,6 +12,31 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
+// Helper function to get coordinates from address
+async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`, {
+      headers: {
+        'User-Agent': 'CalmlySettled/1.0'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error getting coordinates from address:', error);
+  }
+  return null;
+}
+
 interface QuizData {
   address: string;
   household: string[];
@@ -156,6 +181,11 @@ export default function OnboardingQuiz() {
     try {
       // If user is logged in, save to Supabase directly
       if (user) {
+        console.log('User is logged in, getting coordinates and saving profile...');
+        
+        // Get coordinates from address for caching
+        const coordinates = await getCoordinatesFromAddress(quizData.address);
+        
         const { error } = await supabase
           .from('profiles')
           .upsert({
@@ -166,7 +196,10 @@ export default function OnboardingQuiz() {
             transportation_style: quizData.transportation,
             budget_preference: quizData.lifestyle,
             life_stage: quizData.lifeStage,
-            settling_tasks: quizData.tasks
+            settling_tasks: quizData.tasks,
+            latitude: coordinates?.lat || null,
+            longitude: coordinates?.lng || null,
+            updated_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id'
           });
@@ -180,69 +213,36 @@ export default function OnboardingQuiz() {
           });
         }
 
+        console.log('Profile updated with coordinates, generating recommendations...');
+
         // Generate and save recommendations automatically
         try {
+          const quizDataForRecommendations = {
+            address: quizData.address,
+            householdType: quizData.household.join(', '),
+            priorities: quizData.priorities,
+            transportationStyle: quizData.transportation,
+            budgetPreference: quizData.lifestyle,
+            lifeStage: quizData.lifeStage,
+            settlingTasks: quizData.tasks,
+            latitude: coordinates?.lat || null,
+            longitude: coordinates?.lng || null
+          };
+
           const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
             body: {
-              quizResponse: {
-                address: quizData.address,
-                householdType: quizData.household.join(', '),
-                priorities: quizData.priorities,
-                transportationStyle: quizData.transportation,
-                budgetPreference: quizData.lifestyle,
-                lifeStage: quizData.lifeStage,
-                settlingTasks: quizData.tasks
-              }
+              quizResponse: quizDataForRecommendations,
+              userId: user.id
             }
           });
 
           if (recError) {
             console.error('Error generating recommendations:', recError);
-          } else if (recommendations?.recommendations) {
-            // First, delete existing recommendations for this user
-            const { error: deleteError } = await supabase
-              .from('user_recommendations')
-              .delete()
-              .eq('user_id', user.id);
-
-            if (deleteError) {
-              console.error('Error deleting previous recommendations:', deleteError);
-            }
-
-            // Save new recommendations to user_recommendations table
-            const recommendationsToSave: any[] = [];
-            
-            Object.entries(recommendations.recommendations).forEach(([category, businesses]: [string, any[]]) => {
-              businesses.forEach((business: any) => {
-                recommendationsToSave.push({
-                  user_id: user.id,
-                  category: category,
-                  business_name: business.name,
-                  business_address: business.address,
-                  business_description: business.description,
-                  business_phone: business.phone,
-                  business_website: business.website || null,
-                  business_image: business.image_url && business.image_url.trim() !== '' ? business.image_url : null,
-                  business_features: business.features || [],
-                  distance_miles: business.distance_miles,
-                  business_latitude: business.latitude,
-                  business_longitude: business.longitude
-                });
-              });
+          } else {
+            toast({
+              title: "Success!",
+              description: "Your preferences and recommendations have been saved to your dashboard.",
             });
-
-            const { error: saveError } = await supabase
-              .from('user_recommendations')
-              .insert(recommendationsToSave);
-
-            if (saveError) {
-              console.error('Error saving recommendations:', saveError);
-            } else {
-              toast({
-                title: "Success!",
-                description: "Your preferences and recommendations have been saved to your dashboard.",
-              });
-            }
           }
         } catch (recError) {
           console.error('Error with recommendations:', recError);
@@ -252,6 +252,11 @@ export default function OnboardingQuiz() {
         navigate("/dashboard");
       } else {
         // If user is NOT logged in, store quiz data in localStorage and redirect to signup
+        console.log('User not logged in, getting coordinates and storing for later...');
+        
+        // Get coordinates for caching
+        const coordinates = await getCoordinatesFromAddress(quizData.address);
+        
         const quizDataForStorage = {
           address: quizData.address,
           priorities: quizData.priorities,
@@ -259,7 +264,9 @@ export default function OnboardingQuiz() {
           transportation: quizData.transportation,
           budgetRange: quizData.lifestyle,
           movingTimeline: quizData.lifeStage,
-          settlingTasks: quizData.tasks
+          settlingTasks: quizData.tasks,
+          latitude: coordinates?.lat || null,
+          longitude: coordinates?.lng || null
         };
         
         localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
