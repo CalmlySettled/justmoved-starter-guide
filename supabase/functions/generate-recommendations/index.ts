@@ -574,75 +574,36 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`🔍 Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
-  // Sort businesses to prioritize proximity override businesses first
+  // Sort businesses by distance only (closest first)
   const sortedBusinesses = filteredBusinesses.sort((a, b) => {
-    // Check if either business qualifies for proximity override
-    const aIsProximity = a.latitude && a.longitude ? 
-      isProximityPriority(a.latitude, a.longitude, coordinates.lat, coordinates.lng) : false;
-    const bIsProximity = b.latitude && b.longitude ? 
-      isProximityPriority(b.latitude, b.longitude, coordinates.lat, coordinates.lng) : false;
-    
-    // Proximity businesses always come first
-    if (aIsProximity && !bIsProximity) return -1;
-    if (!aIsProximity && bIsProximity) return 1;
-    
-    // Within same tier, sort by distance
-    return (a.distance_miles || 0) - (b.distance_miles || 0);
+    return (a.distance_miles || 999) - (b.distance_miles || 999);
   });
   
-  console.log(`🚀 SORTING: Prioritized ${sortedBusinesses.filter(b => 
-    b.latitude && b.longitude ? isProximityPriority(b.latitude, b.longitude, coordinates.lat, coordinates.lng) : false
-  ).length} proximity businesses out of ${sortedBusinesses.length} total`);
+  console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
+  console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-  // Return more results for the two-tier system (up to 25 for better variety)
+  // Return results sorted purely by distance
   return sortedBusinesses.slice(0, 25);
 }
 
-// Enhanced relevance scoring with improved distance weighting and user preference matching
+// Simplified relevance scoring based primarily on distance
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
   let score = 0;
   
-  // Base score from rating (0-5 scale, normalized to 0-35 points to make room for preference bonuses)
+  // Base score from rating (20 points max)
   if (business.rating) {
-    score += (business.rating / 5) * 35;
+    score += (business.rating / 5) * 20;
   }
   
-  // Enhanced distance scoring with transportation-based adjustments
-  if (business.distance_miles && userPreferences) {
-    let distanceWeight = 0;
-    
-    // Adjust distance scoring based on transportation style
-    if (userPreferences.transportationStyle === 'Bike / walk') {
-      // Walkers/bikers prefer very close locations
-      distanceWeight = business.distance_miles <= 0.5 ? 25 : 
-                      business.distance_miles <= 1 ? 20 :
-                      business.distance_miles <= 2 ? 10 :
-                      Math.max(0, 5 - business.distance_miles);
-    } else if (userPreferences.transportationStyle === 'Public transit') {
-      // Transit users prefer reasonable walking distance from stops
-      distanceWeight = business.distance_miles <= 1 ? 25 :
-                      business.distance_miles <= 3 ? 20 :
-                      business.distance_miles <= 5 ? 15 :
-                      Math.max(0, 8 - business.distance_miles);
-    } else {
-      // Car users and rideshare are more flexible with distance
-      distanceWeight = business.distance_miles <= 2 ? 25 :
-                      business.distance_miles <= 5 ? 20 :
-                      business.distance_miles <= 10 ? 15 :
-                      Math.max(0, 10 - business.distance_miles);
-    }
-    
-    score += distanceWeight;
-  } else if (business.distance_miles) {
-    // Default distance scoring if no transportation preference
-    const distanceWeight = business.distance_miles <= 1 ? 25 : 
-                          business.distance_miles <= 3 ? 20 - (business.distance_miles * 2) : 
-                          business.distance_miles <= 5 ? 15 - business.distance_miles : 
-                          Math.max(0, 8 - business.distance_miles);
-    score += distanceWeight;
+  // Primary scoring: Distance (60 points max - closest gets highest score)
+  if (business.distance_miles) {
+    // Inverse distance scoring - closer = higher score
+    const maxDistance = 15; // Assume max search radius
+    const distanceScore = Math.max(0, ((maxDistance - business.distance_miles) / maxDistance) * 60);
+    score += distanceScore;
   }
   
-  // Review count bonus (more reviews = more reliable, max 10 points)
+  // Review count bonus (small factor, 10 points max)
   if (business.review_count) {
     const reviewScore = Math.min(10, Math.log10(business.review_count + 1) * 3);
     score += reviewScore;
