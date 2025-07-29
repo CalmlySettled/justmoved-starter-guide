@@ -140,33 +140,12 @@ export default function Auth() {
             });
           }
         } else {
-          // Send custom verification email using our edge function
-          try {
-            const confirmationUrl = `${window.location.origin}/auth/confirm?email=${email}`;
-            
-            await supabase.functions.invoke('send-verification-email', {
-              body: {
-                email: email,
-                confirmationUrl: confirmationUrl,
-                userName: displayName
-              }
-            });
-            
-            toast({
-              title: "Account created!",
-              description: "Please check your email (including spam folder) for a verification link to complete your registration."
-            });
-            setShowResendButton(true);
-          } catch (emailError) {
-            console.error('Failed to send custom verification email:', emailError);
-            toast({
-              title: "Account created!",
-              description: "Please check your email (including spam folder) for a verification link to complete your registration."
-            });
-            setShowResendButton(true);
-          }
-          // Check if user has already completed onboarding by checking for existing session
-          // The auth state change will handle navigation automatically
+          toast({
+            title: "Account created!",
+            description: "Please check your email (including spam folder) for a verification link to complete your registration."
+          });
+          setShowResendButton(true);
+          // The auth state change will handle navigation automatically after verification
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
