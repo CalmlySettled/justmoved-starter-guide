@@ -159,10 +159,9 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     return false;
   }
   
-  // Must have a reasonable rating count (indicates consumer traffic)
-  if (place.user_ratings_total !== undefined && place.user_ratings_total < 5) {
-    console.log(`→ Excluding business with low review count: ${place.name} (${place.user_ratings_total} reviews)`);
-    return false;
+  // Allow businesses with low review counts but log them for debugging
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < 2) {
+    console.log(`→ Including business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
   }
   
   return true;
@@ -299,7 +298,7 @@ async function searchGooglePlaces(
     const businesses = await Promise.all(
       uniqueResults
         .filter((place: any) => isRetailConsumerBusiness(place, category))
-        .slice(0, 15) // More results from multiple strategies
+        .slice(0, 30) // Increased results from multiple strategies
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
           let imageUrl = '';
@@ -456,8 +455,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
-  // Return more results for the two-tier system (up to 25 for better variety)
-  return filteredBusinesses.slice(0, 25);
+  // Return more results for the two-tier system (up to 40 for better variety)
+  return filteredBusinesses.slice(0, 40);
 }
 
 // Enhanced relevance scoring with improved distance weighting and user preference matching
