@@ -24,7 +24,6 @@ import {
   Trash2,
   Car,
   DollarSign,
-  Filter,
   SortAsc,
   X
 } from "lucide-react";
@@ -477,19 +476,7 @@ export default function Dashboard() {
     }
   };
 
-  const getBusinessBadges = (features: string[]) => {
-    const badges = [];
-    
-    // Only show essential badges based on actual business data
-    if (features.some(f => f.toLowerCase().includes('rating') || f.toLowerCase().includes('high'))) {
-      badges.push({ label: "High Ratings", icon: Award, color: "bg-yellow-100 text-yellow-800" });
-    }
-    if (features.some(f => f.toLowerCase().includes('local'))) {
-      badges.push({ label: "Local", icon: Heart, color: "bg-green-100 text-green-800" });
-    }
-    
-    return badges.slice(0, 2);
-  };
+  // Remove confusing badges - just show essential business info in cards
 
   // Helper function to get business image
   const getBusinessImage = (rec: SavedRecommendation) => {
@@ -868,7 +855,6 @@ export default function Dashboard() {
             {/* Favorites Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {getFavoritesData().map((rec) => {
-                const badges = getBusinessBadges(rec.business_features || []);
                 const isFavoriting = favoritingRecommendations.has(rec.id);
                 
                 return (
@@ -945,17 +931,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                         
-                        {/* Badges */}
-                        {badges.length > 0 && (
-                          <div className="flex gap-1">
-                            {badges.slice(0, 1).map((badge, badgeIndex) => (
-                              <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                                <badge.icon className="h-3 w-3" />
-                                {badge.label}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* No badges - clean display */}
                       </div>
                     </CardContent>
                   </Card>
@@ -1049,7 +1025,6 @@ export default function Dashboard() {
                 
                 <div className="grid gap-6 md:grid-cols-2">
                   {categoryRecs.map((rec) => {
-                    const badges = getBusinessBadges(rec.business_features || []);
                     const isFavoriting = favoritingRecommendations.has(rec.id);
                     return (
                       <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
@@ -1137,17 +1112,7 @@ export default function Dashboard() {
                             </a>
                           )}
                           
-                          
-                          {badges.length > 0 && (
-                            <div className="flex gap-2">
-                              {badges.map((badge, badgeIndex) => (
-                                <div key={badgeIndex} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                                  <badge.icon className="h-3 w-3" />
-                                  {badge.label}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {/* No badges - clean display */}
                         </CardContent>
                       </Card>
                     );
