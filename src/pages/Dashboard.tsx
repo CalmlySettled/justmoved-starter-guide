@@ -961,6 +961,16 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
+            <Button 
+              onClick={fetchUserData}
+              disabled={loading}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-60 hover:opacity-100"
+              title="Refresh recommendations"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
 
