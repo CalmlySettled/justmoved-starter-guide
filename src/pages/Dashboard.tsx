@@ -369,11 +369,39 @@ export default function Dashboard() {
     
     setGeneratingRecommendations(true);
     try {
+      console.log('Starting recommendation regeneration for user:', user.id);
+      console.log('User profile:', userProfile);
+      
+      // Validate required fields
+      if (!userProfile.address) {
+        toast({
+          title: "Missing Address",
+          description: "Please add your address in your profile before generating recommendations.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!userProfile.priorities || userProfile.priorities.length === 0) {
+        toast({
+          title: "Missing Priorities",
+          description: "Please set your priorities in your profile before generating recommendations.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Clear existing recommendations
-      await supabase
+      console.log('Clearing existing recommendations...');
+      const { error: deleteError } = await supabase
         .from('user_recommendations')
         .delete()
         .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Error clearing recommendations:', deleteError);
+        throw deleteError;
+      }
 
       // Generate new recommendations based on current profile
       const quizResponse = {
@@ -385,30 +413,43 @@ export default function Dashboard() {
         movingTimeline: userProfile.life_stage
       };
 
-      const { error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+      console.log('Calling generate-recommendations with:', quizResponse);
+
+      const { data, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
         body: { 
           quizResponse,
           userId: user.id
         }
       });
 
+      console.log('Edge function response:', { data, error: generateError });
+
       if (generateError) {
+        console.error('Edge function error:', generateError);
         throw generateError;
       }
 
       // Fetch the newly generated recommendations
-      const { data: freshRecData } = await supabase
+      console.log('Fetching fresh recommendations...');
+      const { data: freshRecData, error: fetchError } = await supabase
         .from('user_recommendations')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_displayed', true)
         .order('relevance_score', { ascending: false });
       
+      console.log('Fresh recommendations fetched:', freshRecData);
+
+      if (fetchError) {
+        console.error('Error fetching recommendations:', fetchError);
+        throw fetchError;
+      }
+
       setRecommendations(freshRecData || []);
       
       toast({
         title: "Recommendations Updated",
-        description: "Fresh recommendations have been generated for your current location.",
+        description: `Generated ${freshRecData?.length || 0} new recommendations for your current location.`,
       });
     } catch (error) {
       console.error('Error regenerating recommendations:', error);
