@@ -56,12 +56,6 @@ export function Header() {
             Popular
           </Link>
           <Link 
-            to="/how-it-works"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            How It Works
-          </Link>
-          <Link 
             to="/dashboard"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
