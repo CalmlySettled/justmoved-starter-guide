@@ -461,7 +461,14 @@ export default function Explore() {
                                 )}
                                 <Badge variant="secondary">{business.distance_miles} mi</Badge>
                               </div>
-                              <p className="text-muted-foreground text-sm mb-3">{business.address}</p>
+                              <a 
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name + ' ' + business.address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground text-sm mb-3 hover:text-primary transition-colors block"
+                              >
+                                {business.address}
+                              </a>
                               <div className="flex flex-wrap gap-2">
                                 {business.features.slice(0, 2).map((feature, featureIndex) => (
                                   <Badge key={featureIndex} variant="outline" className="text-xs">
