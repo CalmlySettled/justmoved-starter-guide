@@ -290,16 +290,16 @@ export default function Recommendations() {
       ];
     }
     
-    if (categoryLower.includes('restaurant') || categoryLower.includes('dining')) {
+    if (categoryLower.includes('restaurant') || categoryLower.includes('dining') || categoryLower.includes('coffee')) {
       return [
+        'Coffee Shops',
         'Family-Friendly',
+        'Date Night Spots',
+        'Quick Casual',
+        'Food Trucks',
         'Fine Dining',
-        'Casual Dining',
         'Takeout Available',
-        'Outdoor Seating',
-        'Live Music',
-        'Happy Hour',
-        'Vegan Options'
+        'Outdoor Seating'
       ];
     }
     
@@ -349,9 +349,18 @@ export default function Recommendations() {
 
   const shouldUseDynamicFilter = (category: string, filter: string) => {
     const dynamicFilters = [
+      // Medical
       'urgent care', 'walk-in', 'specialists', 'emergency', 'family practice', 'pediatrics',
-      'organic options', 'budget-friendly', 'group classes', 'personal training', 
-      '24-hour access', 'cardio machines', 'strength training'
+      // Grocery
+      'organic options', 'budget-friendly', 'international', 'national chain', 'local/independent',
+      // Fitness  
+      'group classes', 'personal training', '24-hour access', 'cardio machines', 'strength training',
+      // Restaurants - these should trigger new searches
+      'coffee shops', 'family-friendly', 'date night spots', 'quick casual', 'food trucks',
+      // Parks
+      'playgrounds', 'dog parks', 'sports fields', 'walking trails',
+      // Faith
+      'christian', 'jewish', 'muslim', 'buddhist', 'hindu', 'non-denominational'
     ];
     return dynamicFilters.includes(filter.toLowerCase());
   };
@@ -368,37 +377,58 @@ export default function Recommendations() {
       });
       const coordinates = geocodeData?.coordinates || { lat: 41.8394397, lng: -72.7516033 };
       
+      // Map filters to specific search categories for targeted results
+      const getTargetedCategory = (originalCategory: string, filter: string) => {
+        const filterLower = filter.toLowerCase();
+        
+        // For restaurant filters, use specific search terms
+        if (originalCategory.toLowerCase().includes('restaurant')) {
+          if (filterLower === 'coffee shops') return 'coffee shops';
+          if (filterLower === 'food trucks') return 'food trucks';
+          if (filterLower === 'quick casual') return 'fast food restaurants';
+          if (filterLower === 'date night spots') return 'fine dining restaurants';
+          if (filterLower === 'family-friendly') return 'family restaurants';
+        }
+        
+        // For other categories, map to specific searches
+        if (filterLower === 'urgent care') return 'urgent care centers';
+        if (filterLower === 'specialists') return 'medical specialists';
+        if (filterLower === 'playgrounds') return 'playgrounds';
+        if (filterLower === 'dog parks') return 'dog parks';
+        if (filterLower === 'national chain') return 'chain grocery stores';
+        if (filterLower === 'organic options') return 'organic grocery stores';
+        
+        // Default: use the filter as the search term
+        return filter;
+      };
+      
+      const targetedCategory = getTargetedCategory(category, filter);
+      
       const { data: filterData, error } = await supabase.functions.invoke('generate-recommendations', {
         body: { 
           quizResponse,
           dynamicFilter: {
-            category,
+            category: targetedCategory, // Use targeted category for focused search
             filter,
-            coordinates
+            coordinates,
+            replaceResults: true // Flag to replace instead of merge
           }
         }
       });
 
       if (error) throw error;
 
-      // Merge the filtered results with existing recommendations
+      // Replace the category results with new targeted results
       setRecommendations(prev => {
         if (!prev) return filterData.recommendations;
         
-        const currentBusiness = prev[category] || [];
-        const newBusinesses = filterData.recommendations[category] || [];
-        
-        // Combine and deduplicate by business name
-        const combined = [...currentBusiness];
-        newBusinesses.forEach(newBiz => {
-          if (!combined.some(existing => existing.name === newBiz.name)) {
-            combined.push(newBiz);
-          }
-        });
+        const newBusinesses = filterData.recommendations[targetedCategory] || 
+                            filterData.recommendations[category] || 
+                            Object.values(filterData.recommendations).flat();
         
         return {
           ...prev,
-          [category]: combined
+          [category]: newBusinesses // Replace with targeted results
         };
       });
       
