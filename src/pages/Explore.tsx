@@ -372,6 +372,7 @@ export default function Explore() {
   };
 
   const toggleFavorite = async (business: Business, category: string) => {
+    console.log('🔥 EXPLORE PAGE - STAR BUTTON CLICKED!');
     console.log('Explore page - toggleFavorite called for:', business.name, 'category:', category);
     if (!user) {
       toast({

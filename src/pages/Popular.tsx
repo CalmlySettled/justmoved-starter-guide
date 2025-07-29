@@ -265,6 +265,7 @@ const Popular = () => {
   };
 
   const toggleFavorite = async (business: Business, category: string) => {
+    console.log('🔥 POPULAR PAGE - STAR BUTTON CLICKED!');
     console.log('Popular page - toggleFavorite called for:', business.name, 'category:', category);
     console.log('Current user:', user);
     console.log('User ID:', user?.id);
