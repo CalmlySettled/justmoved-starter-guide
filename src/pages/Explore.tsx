@@ -447,7 +447,18 @@ export default function Explore() {
                             )}
                             <div className="p-6">
                               <div className="flex items-start justify-between mb-2">
-                                <h3 className="font-semibold text-lg">{business.name}</h3>
+                                {business.website ? (
+                                  <a 
+                                    href={business.website} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-semibold text-lg hover:text-primary transition-colors"
+                                  >
+                                    {business.name}
+                                  </a>
+                                ) : (
+                                  <h3 className="font-semibold text-lg">{business.name}</h3>
+                                )}
                                 <Badge variant="secondary">{business.distance_miles} mi</Badge>
                               </div>
                               <p className="text-muted-foreground text-sm mb-3">{business.address}</p>
