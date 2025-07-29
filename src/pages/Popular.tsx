@@ -114,16 +114,32 @@ const Popular = () => {
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('latitude, longitude, address')
+            .select('address')
             .eq('user_id', user.id)
             .single();
 
-          if (profile?.latitude && profile?.longitude) {
-            setLocation({
-              latitude: profile.latitude,
-              longitude: profile.longitude,
-              city: profile.address
-            });
+          if (profile?.address) {
+            // Geocode the saved address to get coordinates and city
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+              {
+                headers: {
+                  'User-Agent': 'CalmlySettled/1.0'
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.length > 0) {
+                setLocation({
+                  latitude: parseFloat(data[0].lat),
+                  longitude: parseFloat(data[0].lon),
+                  city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
+                });
+                return;
+              }
+            }
           }
         } catch (error) {
           console.error('Error loading saved location:', error);
@@ -131,13 +147,38 @@ const Popular = () => {
       }
       
       // If no saved location, try to get current location
-      if (!location && navigator.geolocation) {
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setLocation({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
+          async (position) => {
+            try {
+              // Reverse geocode to get city name
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`,
+                {
+                  headers: {
+                    'User-Agent': 'CalmlySettled/1.0'
+                  }
+                }
+              );
+
+              if (response.ok) {
+                const data = await response.json();
+                const city = data.address?.city || data.address?.town || data.address?.village || 'Your Location';
+                
+                setLocation({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                  city
+                });
+              }
+            } catch (error) {
+              console.error('Error reverse geocoding:', error);
+              setLocation({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                city: 'Your Location'
+              });
+            }
           },
           (error) => {
             console.error('Error getting location:', error);
@@ -255,57 +296,15 @@ const Popular = () => {
               Discover what's trending and where locals love to go
             </p>
 
-            {/* Location Section */}
-            <div className="max-w-md mx-auto mb-8">
-              <div className="space-y-2">
-                <Input
-                  placeholder="Enter your location to find popular spots"
-                  value={location?.city || ''}
-                  onChange={(e) => {
-                    // Simple manual location update for now
-                    if (e.target.value) {
-                      setLocation({
-                        latitude: 0,
-                        longitude: 0,
-                        city: e.target.value
-                      });
-                    }
-                  }}
-                  className="w-full"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (navigator.geolocation) {
-                      navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                          setLocation({
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            city: 'Current location'
-                          });
-                        },
-                        (error) => {
-                          console.error('Error getting location:', error);
-                          toast.error('Could not get your location');
-                        }
-                      );
-                    }
-                  }}
-                  className="w-full"
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Use Current Location
-                </Button>
+            {/* Location Display */}
+            {location && (
+              <div className="mb-8">
+                <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-hero text-white border-0 shadow-glow">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {location.city}
+                </Badge>
               </div>
-              {location && (
-                <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {location.city || 'Current location'}
-                </p>
-              )}
-            </div>
+            )}
           </div>
 
           {location ? (
