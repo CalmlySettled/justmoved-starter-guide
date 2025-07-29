@@ -945,6 +945,17 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
   try {
+    // First, delete existing recommendations for this user to avoid conflicts
+    const { error: deleteError } = await supabase
+      .from('user_recommendations')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (deleteError) {
+      console.error('Error deleting existing recommendations:', deleteError);
+      // Don't throw - continue with insertion
+    }
+    
     const recommendationsToInsert = [];
     
     // Convert recommendations to database format with relevance scores
@@ -975,15 +986,12 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
     }
     
     if (recommendationsToInsert.length > 0) {
-      console.log(`Upserting ${recommendationsToInsert.length} recommendations for user ${userId}`);
+      console.log(`Inserting ${recommendationsToInsert.length} recommendations for user ${userId}`);
       
-      // Use upsert to prevent duplicates - update if exists, insert if new
+      // Use simple insert since we cleared existing data
       const { data, error } = await supabase
         .from('user_recommendations')
-        .upsert(recommendationsToInsert, {
-          onConflict: 'user_id,business_name,business_address,category',
-          ignoreDuplicates: false
-        });
+        .insert(recommendationsToInsert);
       
       if (error) {
         console.error('Error upserting recommendations to database:', error);
