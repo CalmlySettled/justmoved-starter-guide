@@ -1130,19 +1130,20 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         foundMatch = true;
         
         const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`Found ${businesses.length} businesses for "${searchTerm}"`);
+        console.log(`🔍 Found ${businesses.length} businesses for "${searchTerm}"`);
         
         // Add category info to each business and add to master list
         businesses.forEach(business => {
-          business.category = priority; // Add category for reference
+          business.category = priority;
           allBusinesses.push(business);
+          console.log(`➕ Added: ${business.name} (${business.distance_miles}mi) from ${priority}`);
         });
         break;
       }
     }
     
     if (!foundMatch) {
-      console.log(`No match found for priority: "${priority}"`);
+      console.log(`❌ No match found for priority: "${priority}"`);
     }
   }
 
@@ -1162,15 +1163,11 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     console.error('🚨 NO FINAL RESULTS - Check if businesses are being found and have distance data');
   }
 
-  // Group by original category for response format
-  const recommendations: { [key: string]: Business[] } = {};
-  finalResults.forEach(business => {
-    const category = business.category || 'General';
-    if (!recommendations[category]) {
-      recommendations[category] = [];
-    }
-    recommendations[category].push(business);
-  });
+  // Create a single category response with all 6 businesses
+  const recommendations: { [key: string]: Business[] } = {
+    "Mixed Recommendations": finalResults
+  };
 
+  console.log(`🎯 RETURNING: 1 category with ${finalResults.length} businesses`);
   return recommendations;
 }
