@@ -364,105 +364,6 @@ export default function Dashboard() {
     }
   };
 
-  const regenerateRecommendations = async () => {
-    if (!user || !userProfile) return;
-    
-    setGeneratingRecommendations(true);
-    try {
-      console.log('Starting recommendation regeneration for user:', user.id);
-      console.log('User profile:', userProfile);
-      
-      // Validate required fields
-      if (!userProfile.address) {
-        toast({
-          title: "Missing Address",
-          description: "Please add your address in your profile before generating recommendations.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!userProfile.priorities || userProfile.priorities.length === 0) {
-        toast({
-          title: "Missing Priorities",
-          description: "Please set your priorities in your profile before generating recommendations.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Clear existing recommendations
-      console.log('Clearing existing recommendations...');
-      const { error: deleteError } = await supabase
-        .from('user_recommendations')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (deleteError) {
-        console.error('Error clearing recommendations:', deleteError);
-        throw deleteError;
-      }
-
-      // Generate new recommendations based on current profile
-      const quizResponse = {
-        address: userProfile.address,
-        priorities: userProfile.priorities,
-        household: userProfile.household_type,
-        transportation: userProfile.transportation_style,
-        budgetRange: userProfile.budget_preference,
-        movingTimeline: userProfile.life_stage
-      };
-
-      console.log('Calling generate-recommendations with:', quizResponse);
-
-      const { data, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
-        body: { 
-          quizResponse,
-          userId: user.id
-        }
-      });
-
-      console.log('Edge function response:', { data, error: generateError });
-
-      if (generateError) {
-        console.error('Edge function error:', generateError);
-        throw generateError;
-      }
-
-      // Fetch the newly generated recommendations
-      console.log('Fetching fresh recommendations...');
-      const { data: freshRecData, error: fetchError } = await supabase
-        .from('user_recommendations')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_displayed', true)
-        .order('relevance_score', { ascending: false });
-      
-      console.log('Fresh recommendations fetched:', freshRecData);
-
-      if (fetchError) {
-        console.error('Error fetching recommendations:', fetchError);
-        throw fetchError;
-      }
-
-      setRecommendations(freshRecData || []);
-      
-      toast({
-        title: "Recommendations Updated",
-        description: `Generated ${freshRecData?.length || 0} new recommendations for your current location.`,
-      });
-    } catch (error) {
-      console.error('Error regenerating recommendations:', error);
-      toast({
-        title: "Error",
-        description: "Failed to regenerate recommendations. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setGeneratingRecommendations(false);
-    }
-  };
-
   const toggleFavorite = async (rec: SavedRecommendation) => {
     if (!user) return;
 
@@ -961,19 +862,6 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
-            <Button 
-              onClick={() => {
-                console.log('REGENERATE BUTTON CLICKED - userProfile:', userProfile);
-                console.log('REGENERATE BUTTON CLICKED - user:', user);
-                regenerateRecommendations();
-              }}
-              disabled={generatingRecommendations}
-              variant="outline"
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${generatingRecommendations ? 'animate-spin' : ''}`} />
-              {generatingRecommendations ? 'Generating...' : 'Regenerate for Current Location'}
-            </Button>
           </div>
         </div>
 
