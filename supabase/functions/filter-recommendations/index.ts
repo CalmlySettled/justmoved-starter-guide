@@ -67,75 +67,75 @@ serve(async (req) => {
         }
         // Grocery-specific filters
         else if (filterLower === 'organic' || filterLower === 'organic options') {
-          query = query.eq('filter_metadata->>isOrganic', 'true');
+          query = query.or('filter_metadata->>isOrganic.eq.true,business_features.cs.{"Organic"},business_name.ilike.%organic%');
         }
         else if (filterLower === '24/7' || filterLower === '24 hours') {
-          query = query.eq('filter_metadata->>is24Hours', 'true');
+          query = query.or('filter_metadata->>is24Hours.eq.true,business_features.cs.{"24/7"},business_name.ilike.%24%');
         }
         else if (filterLower.includes('pickup')) {
-          query = query.eq('filter_metadata->>hasPickup', 'true');
+          query = query.or('filter_metadata->>hasPickup.eq.true,business_features.cs.{"Pickup"},business_name.ilike.%pickup%');
         }
         // Restaurant-specific filters
         else if (filterLower.includes('outdoor') && filterLower.includes('seating')) {
-          query = query.eq('filter_metadata->>hasOutdoorSeating', 'true');
+          query = query.or('filter_metadata->>hasOutdoorSeating.eq.true,business_features.cs.{"Outdoor Seating"},business_name.ilike.%outdoor%');
         }
         else if (filterLower === 'delivery') {
-          query = query.eq('filter_metadata->>hasDelivery', 'true');
+          query = query.or('filter_metadata->>hasDelivery.eq.true,business_features.cs.{"Delivery"},business_name.ilike.%delivery%');
         }
         else if (filterLower === 'vegetarian') {
-          query = query.eq('filter_metadata->>isVegetarian', 'true');
+          query = query.or('filter_metadata->>isVegetarian.eq.true,business_features.cs.{"Vegetarian"},business_name.ilike.%vegetarian%');
         }
         // Fitness-specific filters
         else if (filterLower === 'classes') {
-          query = query.eq('filter_metadata->>hasClasses', 'true');
+          query = query.or('filter_metadata->>hasClasses.eq.true,business_features.cs.{"Classes"},business_name.ilike.%classes%,business_description.ilike.%classes%');
         }
         else if (filterLower === 'pool') {
-          query = query.eq('filter_metadata->>hasPool', 'true');
+          query = query.or('filter_metadata->>hasPool.eq.true,business_features.cs.{"Pool"},business_name.ilike.%pool%');
         }
         else if (filterLower.includes('personal') && filterLower.includes('training')) {
-          query = query.eq('filter_metadata->>hasPersonalTraining', 'true');
+          query = query.or('filter_metadata->>hasPersonalTraining.eq.true,business_features.cs.{"Personal Training"},business_name.ilike.%personal%');
         }
         // Education filters
         else if (filterLower === 'public') {
-          query = query.contains('business_features', ['Public']);
+          query = query.or('business_features.cs.{"Public"},business_name.ilike.%public%');
         }
         else if (filterLower === 'private') {
-          query = query.contains('business_features', ['Private']);
+          query = query.or('business_features.cs.{"Private"},business_name.ilike.%private%');
         }
         // Recreation filters
         else if (filterLower === 'free') {
-          query = query.contains('business_features', ['Free']);
+          query = query.or('business_features.cs.{"Free"},business_name.ilike.%free%');
         }
         else if (filterLower.includes('family') && filterLower.includes('friendly')) {
-          query = query.contains('business_features', ['Family-Friendly']);
+          query = query.or('business_features.cs.{"Family-Friendly"},business_name.ilike.%family%');
         }
         else if (filterLower.includes('dog') && filterLower.includes('friendly')) {
-          query = query.contains('business_features', ['Dog-Friendly']);
+          query = query.or('business_features.cs.{"Dog-Friendly"},business_name.ilike.%dog%');
         }
         // Medical filters
         else if (filterLower === 'specialist') {
-          query = query.contains('business_features', ['Specialist']);
+          query = query.or('business_features.cs.{"Specialist"},business_name.ilike.%specialist%');
         }
-        // Faith community denomination filters
+        // Faith community denomination filters with smart matching
         else if (filterLower === 'catholic') {
-          query = query.or(`business_name.ilike.%Catholic%,business_description.ilike.%Catholic%,business_features.cs.{"Catholic"}`);
+          query = query.or('business_name.ilike.%Sacred Heart%,business_name.ilike.%St.%,business_name.ilike.%Saint%,business_name.ilike.%Catholic%,business_features.cs.{"Catholic"}');
         }
         else if (filterLower === 'baptist') {
-          query = query.or(`business_name.ilike.%Baptist%,business_description.ilike.%Baptist%,business_features.cs.{"Baptist"}`);
+          query = query.or('business_name.ilike.%Baptist%,business_features.cs.{"Baptist"}');
         }
         else if (filterLower === 'methodist') {
-          query = query.or(`business_name.ilike.%Methodist%,business_description.ilike.%Methodist%,business_features.cs.{"Methodist"}`);
+          query = query.or('business_name.ilike.%Methodist%,business_name.ilike.%Wesleyan%,business_features.cs.{"Methodist"}');
         }
         else if (filterLower === 'lutheran') {
-          query = query.or(`business_name.ilike.%Lutheran%,business_description.ilike.%Lutheran%,business_features.cs.{"Lutheran"}`);
+          query = query.or('business_name.ilike.%Lutheran%,business_features.cs.{"Lutheran"}');
         }
         else if (filterLower === 'presbyterian') {
-          query = query.or(`business_name.ilike.%Presbyterian%,business_description.ilike.%Presbyterian%,business_features.cs.{"Presbyterian"}`);
+          query = query.or('business_name.ilike.%Presbyterian%,business_features.cs.{"Presbyterian"}');
         }
         else if (filterLower === 'non-denominational') {
-          query = query.or(`business_name.ilike.%Non-denominational%,business_description.ilike.%Community%,business_features.cs.{"Non-denominational"}`);
+          query = query.or('business_name.ilike.%Community%,business_name.ilike.%Fellowship%,business_name.ilike.%Gospel%,business_features.cs.{"Non-denominational"}');
         }
-        // Generic filter - search in business features and name/description
+        // Generic filter - search broadly across name, description, and features
         else {
           query = query.or(`business_features.cs.{"${filter}"},business_name.ilike.%${filter}%,business_description.ilike.%${filter}%`);
         }
