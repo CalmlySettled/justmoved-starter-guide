@@ -427,39 +427,152 @@ export default function Recommendations() {
     
     return businesses.filter(business => {
       return categoryFilters.every(filter => {
-        // Check if the business features match the filter
         const filterLower = filter.toLowerCase();
         const businessFeatures = business.features.map(f => f.toLowerCase()).join(' ');
         const businessName = business.name.toLowerCase();
+        const businessDescription = business.description?.toLowerCase() || '';
+        const combinedText = `${businessName} ${businessFeatures} ${businessDescription}`;
         
-        // Match various ways a filter could be represented in business features
-        if (filterLower.includes('organic')) return businessFeatures.includes('organic');
-        if (filterLower.includes('budget') || filterLower.includes('affordable')) return businessFeatures.includes('budget') || businessFeatures.includes('affordable');
-        if (filterLower.includes('late') || filterLower.includes('24')) return businessFeatures.includes('24') || businessFeatures.includes('late');
-        if (filterLower.includes('local')) return businessFeatures.includes('local') || businessFeatures.includes('family');
-        if (filterLower.includes('international')) return businessFeatures.includes('international') || businessFeatures.includes('ethnic');
-        if (filterLower.includes('deli') || filterLower.includes('prepared')) return businessFeatures.includes('deli') || businessFeatures.includes('prepared');
-        if (filterLower.includes('delivery')) return businessFeatures.includes('delivery');
-        if (filterLower.includes('parking')) return businessFeatures.includes('parking');
-        if (filterLower.includes('group') || filterLower.includes('classes')) return businessFeatures.includes('classes') || businessFeatures.includes('group');
-        if (filterLower.includes('personal') || filterLower.includes('training')) return businessFeatures.includes('personal') || businessFeatures.includes('training');
-        if (filterLower.includes('sauna')) return businessFeatures.includes('sauna');
-        if (filterLower.includes('pool')) return businessFeatures.includes('pool');
-        if (filterLower.includes('cardio')) return businessFeatures.includes('cardio');
-        if (filterLower.includes('strength')) return businessFeatures.includes('strength') || businessFeatures.includes('weights');
-        if (filterLower.includes('childcare')) return businessFeatures.includes('childcare') || businessFeatures.includes('kids');
-        if (filterLower.includes('women')) return businessFeatures.includes('women') || businessFeatures.includes('female');
+        // Smart filtering logic with synonyms and context-aware matching
+        const filterMappings = {
+          // Coffee shops - look for coffee-related terms
+          'coffee shops': () => {
+            const coffeeTerms = ['coffee', 'cafe', 'espresso', 'latte', 'cappuccino', 'brew', 'roast', 'bean', 'starbucks', 'dunkin'];
+            return coffeeTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Restaurant categories
+          'family-friendly': () => {
+            const familyTerms = ['family', 'kids', 'children', 'playground', 'kid-friendly', 'casual'];
+            return familyTerms.some(term => combinedText.includes(term));
+          },
+          'date night spots': () => {
+            const dateTerms = ['romantic', 'fine dining', 'upscale', 'intimate', 'wine', 'cocktail', 'ambiance'];
+            return dateTerms.some(term => combinedText.includes(term));
+          },
+          'quick casual': () => {
+            const quickTerms = ['fast', 'quick', 'takeout', 'grab', 'counter service', 'casual', 'chipotle', 'panera'];
+            return quickTerms.some(term => combinedText.includes(term));
+          },
+          'food trucks': () => {
+            const truckTerms = ['truck', 'mobile', 'cart', 'street food', 'food truck'];
+            return truckTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Grocery/Shopping
+          'organic options': () => {
+            const organicTerms = ['organic', 'natural', 'health', 'whole foods', 'fresh', 'farm'];
+            return organicTerms.some(term => combinedText.includes(term));
+          },
+          'budget-friendly': () => {
+            const budgetTerms = ['budget', 'affordable', 'cheap', 'discount', 'value', 'walmart', 'aldi', 'save'];
+            return budgetTerms.some(term => combinedText.includes(term));
+          },
+          'international': () => {
+            const intlTerms = ['international', 'ethnic', 'asian', 'mexican', 'italian', 'indian', 'middle eastern'];
+            return intlTerms.some(term => combinedText.includes(term));
+          },
+          'local/independent': () => {
+            const localTerms = ['local', 'family owned', 'independent', 'neighborhood', 'community'];
+            const chainTerms = ['walmart', 'target', 'kroger', 'safeway', 'whole foods', 'costco'];
+            return localTerms.some(term => combinedText.includes(term)) || 
+                   !chainTerms.some(term => combinedText.includes(term));
+          },
+          'national chain': () => {
+            const chainTerms = ['walmart', 'target', 'kroger', 'safeway', 'whole foods', 'costco', 'stop & shop', 'big y'];
+            return chainTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Fitness
+          'group classes': () => {
+            const classTerms = ['class', 'group', 'yoga', 'pilates', 'zumba', 'spin', 'crossfit'];
+            return classTerms.some(term => combinedText.includes(term));
+          },
+          'personal training': () => {
+            const personalTerms = ['personal', 'trainer', 'coaching', 'one-on-one', 'private'];
+            return personalTerms.some(term => combinedText.includes(term));
+          },
+          '24-hour access': () => {
+            const hourTerms = ['24', 'hour', 'anytime', '24/7', 'always open'];
+            return hourTerms.some(term => combinedText.includes(term));
+          },
+          'cardio machines': () => {
+            const cardioTerms = ['cardio', 'treadmill', 'elliptical', 'bike', 'rowing'];
+            return cardioTerms.some(term => combinedText.includes(term));
+          },
+          'strength training': () => {
+            const strengthTerms = ['strength', 'weights', 'lifting', 'barbell', 'dumbbell', 'powerlifting'];
+            return strengthTerms.some(term => combinedText.includes(term));
+          },
+          'pool': () => {
+            const poolTerms = ['pool', 'swimming', 'aquatic', 'lap'];
+            return poolTerms.some(term => combinedText.includes(term));
+          },
+          'sauna': () => {
+            const saunaTerms = ['sauna', 'steam', 'hot room'];
+            return saunaTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Medical
+          'urgent care': () => {
+            const urgentTerms = ['urgent', 'walk-in', 'immediate', 'emergency'];
+            return urgentTerms.some(term => combinedText.includes(term));
+          },
+          'specialists': () => {
+            const specialistTerms = ['specialist', 'cardiology', 'dermatology', 'orthopedic', 'pediatric'];
+            return specialistTerms.some(term => combinedText.includes(term));
+          },
+          'family practice': () => {
+            const familyTerms = ['family', 'primary care', 'general practice', 'family medicine'];
+            return familyTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Faith communities
+          'christian': () => {
+            const christianTerms = ['christian', 'church', 'baptist', 'methodist', 'catholic', 'episcopal', 'lutheran'];
+            return christianTerms.some(term => combinedText.includes(term));
+          },
+          'jewish': () => {
+            const jewishTerms = ['jewish', 'synagogue', 'temple', 'hebrew', 'judaism'];
+            return jewishTerms.some(term => combinedText.includes(term));
+          },
+          'muslim': () => {
+            const muslimTerms = ['muslim', 'mosque', 'islamic', 'islam'];
+            return muslimTerms.some(term => combinedText.includes(term));
+          },
+          'non-denominational': () => {
+            const nonDenomTerms = ['non-denominational', 'community church', 'interdenominational'];
+            return nonDenomTerms.some(term => combinedText.includes(term));
+          },
+          
+          // Parks and recreation
+          'playgrounds': () => {
+            const playTerms = ['playground', 'play area', 'kids', 'children', 'swing', 'slide'];
+            return playTerms.some(term => combinedText.includes(term));
+          },
+          'dog parks': () => {
+            const dogTerms = ['dog', 'pet', 'canine', 'off-leash'];
+            return dogTerms.some(term => combinedText.includes(term));
+          },
+          'sports fields': () => {
+            const sportsTerms = ['sports', 'field', 'baseball', 'soccer', 'football', 'basketball', 'tennis'];
+            return sportsTerms.some(term => combinedText.includes(term));
+          },
+          'walking trails': () => {
+            const walkingTerms = ['trail', 'walking', 'path', 'hike', 'nature walk'];
+            return walkingTerms.some(term => combinedText.includes(term));
+          }
+        };
         
-        // For faith communities, check denomination in name or features
-        if (['baptist', 'catholic', 'episcopal', 'methodist', 'presbyterian', 'lutheran', 'pentecostal'].includes(filterLower)) {
-          return businessName.includes(filterLower) || businessFeatures.includes(filterLower);
+        // Check if we have a smart filter for this
+        if (filterMappings[filterLower]) {
+          return filterMappings[filterLower]();
         }
-        if (filterLower.includes('non-denominational')) {
-          return businessName.includes('community') || businessFeatures.includes('non-denominational') || businessFeatures.includes('community');
-        }
         
-        // Default: check if filter appears anywhere in features or name
-        return businessFeatures.includes(filterLower) || businessName.includes(filterLower);
+        // Fallback: enhanced keyword matching
+        return combinedText.includes(filterLower) || 
+               businessName.includes(filterLower.replace(/s$/, '')) || // Try singular form
+               businessFeatures.includes(filterLower);
       });
     });
   };
