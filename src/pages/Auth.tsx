@@ -137,8 +137,8 @@ export default function Auth() {
           toast({
             title: "Account created!",
             description: hasQuizData 
-              ? "Please check your email and click the verification link to complete your registration."
-              : "Please check your email and click the verification link to continue. We'll help you get started with a quick personalization quiz."
+              ? "Please check your email (including spam folder) for a verification link from Supabase to complete your registration."
+              : "Please check your email (including spam folder) for a verification link from Supabase to continue. We'll help you get started with a quick personalization quiz."
           });
           // Check if user has already completed onboarding by checking for existing session
           // The auth state change will handle navigation automatically
