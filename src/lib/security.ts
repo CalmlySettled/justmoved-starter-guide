@@ -84,16 +84,32 @@ export const logSecurityEvent = async (
   userId?: string
 ) => {
   try {
-    console.warn(`Security Event: ${event}`, {
+    const securityLog = {
       timestamp: new Date().toISOString(),
+      event,
       userId,
+      userAgent: navigator?.userAgent || 'unknown',
+      url: window?.location?.href || 'unknown',
       ...details
-    });
+    };
+    
+    console.warn(`Security Event: ${event}`, securityLog);
+    
+    // Store security events locally for review
+    const existingLogs = JSON.parse(localStorage.getItem('security-logs') || '[]');
+    existingLogs.push(securityLog);
+    
+    // Keep only last 100 logs
+    if (existingLogs.length > 100) {
+      existingLogs.splice(0, existingLogs.length - 100);
+    }
+    
+    localStorage.setItem('security-logs', JSON.stringify(existingLogs));
     
     // In production, you might want to send this to a logging service
     // await fetch('/api/security-log', { 
     //   method: 'POST', 
-    //   body: JSON.stringify({ event, details, userId }) 
+    //   body: JSON.stringify(securityLog) 
     // });
   } catch (error) {
     console.error('Failed to log security event:', error);
