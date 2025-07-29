@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,11 +61,13 @@ interface UserProfile {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [generatingRecommendations, setGeneratingRecommendations] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -76,6 +78,37 @@ export default function Dashboard() {
   const [filteredRecommendations, setFilteredRecommendations] = useState<{[category: string]: SavedRecommendation[]}>({});
   const [filterLoading, setFilterLoading] = useState<{[category: string]: boolean}>({});
   const [additionalResults, setAdditionalResults] = useState<{[category: string]: number}>({});
+  const lastFetchTime = useRef<number>(0);
+
+  // Memoized refresh function
+  const refreshData = useCallback(async (forceRefresh = false) => {
+    if (!user) return;
+    
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchTime.current;
+    
+    // Only refresh if forced or it's been more than 5 seconds since last fetch
+    if (!forceRefresh && timeSinceLastFetch < 5000) {
+      console.log('Skipping refresh - too recent');
+      return;
+    }
+    
+    console.log('Refreshing Dashboard data...');
+    setRefreshing(true);
+    lastFetchTime.current = now;
+    
+    try {
+      await fetchUserData();
+      if (forceRefresh) {
+        toast({
+          title: "Data refreshed",
+          description: "Your recommendations have been updated with the latest information.",
+        });
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -85,8 +118,71 @@ export default function Dashboard() {
     fetchUserData();
   }, [user, navigate]);
 
+  // Refresh data when returning to this page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('Page became visible, refreshing data...');
+        refreshData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refreshData, user]);
+
+  // Set up real-time updates for recommendations
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time subscription for user recommendations...');
+    
+    const channel = supabase
+      .channel('dashboard-recommendations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_recommendations',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setRecommendations(prev => {
+              const exists = prev.some(r => r.id === payload.new.id);
+              if (!exists) {
+                return [payload.new as SavedRecommendation, ...prev];
+              }
+              return prev;
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setRecommendations(prev => 
+              prev.map(r => 
+                r.id === payload.new.id ? { ...r, ...payload.new } : r
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setRecommendations(prev => 
+              prev.filter(r => r.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription...');
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchUserData = async () => {
     if (!user) return;
+
+    console.log('Fetching fresh user data and recommendations...');
 
     try {
       // Fetch user profile
@@ -970,14 +1066,14 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
             <Button 
-              onClick={fetchUserData}
-              disabled={loading}
+              onClick={() => refreshData(true)}
+              disabled={loading || refreshing}
               variant="ghost"
               size="icon"
               className="h-8 w-8 opacity-60 hover:opacity-100"
               title="Refresh recommendations"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
