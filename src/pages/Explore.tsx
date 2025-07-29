@@ -420,12 +420,20 @@ export default function Explore() {
           favorited_at: new Date().toISOString()
         };
         
-        favorites.push(favoriteData);
         setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
         toast({
           title: "Added to favorites",
           description: `${business.name} has been added to your favorites.`,
         });
+        
+        // Additional toast with navigation hint
+        setTimeout(() => {
+          toast({
+            title: "Find all your favorites in the Dashboard!",
+            description: "Visit the Dashboard to see all your saved places",
+            duration: 4000
+          });
+        }, 1000);
       }
       
       localStorage.setItem('favorites', JSON.stringify(favorites));

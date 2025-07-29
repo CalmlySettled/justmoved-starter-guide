@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
+import { FavoritesDropdown } from "@/components/FavoritesDropdown";
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 import { 
@@ -1046,6 +1047,11 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-page">
       <Header />
       <div className="pt-24 px-4 max-w-5xl mx-auto pb-16">
+        {/* Favorites Dropdown Navigation */}
+        <div className="mb-6 flex justify-end">
+          <FavoritesDropdown />
+        </div>
+        
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">

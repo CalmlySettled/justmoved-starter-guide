@@ -9,7 +9,6 @@ import {
 import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { FavoritesDropdown } from "./FavoritesDropdown";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -62,7 +61,6 @@ export function Header() {
           >
             Dashboard
           </Link>
-          <FavoritesDropdown />
         </nav>
         
         <div className="flex items-center space-x-4">

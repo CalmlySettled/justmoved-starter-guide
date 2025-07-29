@@ -313,6 +313,13 @@ const Popular = () => {
         favorites.push(favoriteData);
         setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
         toast.success("Added to favorites");
+        
+        // Additional toast with navigation hint
+        setTimeout(() => {
+          toast.success("Find all your favorites in the Dashboard!", {
+            duration: 4000
+          });
+        }, 1000);
       }
       
       localStorage.setItem('favorites', JSON.stringify(favorites));
