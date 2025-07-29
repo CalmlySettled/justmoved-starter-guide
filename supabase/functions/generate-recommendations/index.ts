@@ -177,8 +177,13 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'grocery stores' },
       { keyword: 'supermarkets' },
       { keyword: 'food markets' },
+      { keyword: 'supermarket' },
+      { keyword: 'grocery' },
+      { keyword: 'food store' },
+      { keyword: 'market' },
       { type: 'grocery_or_supermarket' },
-      { type: 'supermarket' }
+      { type: 'supermarket' },
+      { type: 'store' }
     );
   } else if (category.includes('medical')) {
     strategies.push(
