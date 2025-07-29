@@ -337,8 +337,35 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   });
   
+  // Filter businesses based on transportation style and realistic distances
+  let filteredBusinesses = businesses;
+  if (userPreferences?.transportationStyle) {
+    const getMaxDistanceForTransportation = (transportationStyle: string): number => {
+      switch (transportationStyle) {
+        case 'Bike / walk':
+          return 3; // 3 miles max for biking/walking
+        case 'Public transit':
+          return 8; // 8 miles max for public transit
+        case 'Rideshare only':
+          return 12; // 12 miles max for rideshare
+        case 'Car':
+        default:
+          return 15; // 15 miles max for car
+      }
+    };
+
+    const maxDistance = getMaxDistanceForTransportation(userPreferences.transportationStyle);
+    console.log(`Filtering businesses by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles`);
+    
+    filteredBusinesses = businesses.filter(business => 
+      business.distance_miles && business.distance_miles <= maxDistance
+    );
+    
+    console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
+  }
+  
   // Return more results for the two-tier system (up to 25 for better variety)
-  return businesses.slice(0, 25);
+  return filteredBusinesses.slice(0, 25);
 }
 
 // Enhanced relevance scoring with improved distance weighting and user preference matching
