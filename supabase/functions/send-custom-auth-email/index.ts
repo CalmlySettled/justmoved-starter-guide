@@ -13,12 +13,20 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
+  console.log('=== Webhook triggered ===', { 
+    method: req.method, 
+    url: req.url,
+    timestamp: new Date().toISOString()
+  });
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
+    console.log('Invalid method:', req.method);
     return new Response('Method not allowed', { 
       status: 405,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -26,8 +34,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Processing webhook payload...');
+    console.log('Hook secret available:', !!hookSecret);
+    console.log('Resend API key available:', !!Deno.env.get('RESEND_API_KEY'));
     const payload = await req.text()
     const headers = Object.fromEntries(req.headers)
+    console.log('Payload received, length:', payload.length);
+    console.log('Headers received:', Object.keys(headers).join(', '));
+    
     const wh = new Webhook(hookSecret)
     
     const {
@@ -49,8 +63,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log('Webhook verification successful!');
+    console.log('Email action type:', email_action_type);
+    console.log('User email:', user.email);
+    console.log('User metadata:', user.user_metadata);
+
     // Only handle signup confirmations, let other email types use default Supabase emails
     if (email_action_type !== 'signup') {
+      console.log('Skipping non-signup email type:', email_action_type);
       return new Response(JSON.stringify({ message: 'Not a signup confirmation, skipping custom email' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
