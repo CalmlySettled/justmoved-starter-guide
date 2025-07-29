@@ -140,31 +140,13 @@ export default function Auth() {
             });
           }
         } else if (data.user && !data.session) {
-          // Send custom verification email using our edge function
-          try {
-            const confirmationUrl = `${window.location.origin}/auth/confirm?email=${email}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-            
-            await supabase.functions.invoke('send-verification-email', {
-              body: {
-                email: email,
-                confirmationUrl: confirmationUrl,
-                userName: displayName
-              }
-            });
-            
-            toast({
-              title: "Account created!",
-              description: "Please check your email (including spam folder) for a verification link to complete your registration."
-            });
-            setShowResendButton(true);
-          } catch (emailError) {
-            console.error('Failed to send custom verification email:', emailError);
-            toast({
-              title: "Account created!",
-              description: "Please check your email (including spam folder) for a verification link to complete your registration."
-            });
-            setShowResendButton(true);
-          }
+          // User was created but needs email verification
+          // Supabase will automatically trigger our custom webhook email
+          toast({
+            title: "Account created!",
+            description: "Please check your email (including spam folder) for a verification link to complete your registration."
+          });
+          setShowResendButton(true);
         } else {
           // User was created and auto-confirmed
           toast({
@@ -217,26 +199,32 @@ export default function Auth() {
 
     setResendLoading(true);
     try {
-      // Send custom verification email using our edge function instead of Supabase's default
+      // Use Supabase's resend method - this will trigger our webhook to send custom email
       const hasQuizData = localStorage.getItem('onboardingQuizData');
       const redirectUrl = hasQuizData 
         ? `${window.location.origin}/dashboard`
         : `${window.location.origin}/`;
       
-      const confirmationUrl = `${window.location.origin}/auth/confirm?email=${email}&redirect_to=${encodeURIComponent(redirectUrl)}`;
-      
-      await supabase.functions.invoke('send-verification-email', {
-        body: {
-          email: email,
-          confirmationUrl: confirmationUrl,
-          userName: displayName || 'User'
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: redirectUrl
         }
       });
 
-      toast({
-        title: "Verification email sent!",
-        description: "Please check your email (including spam folder) for the verification link."
-      });
+      if (error) {
+        toast({
+          title: "Failed to resend",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Verification email sent!",
+          description: "Please check your email (including spam folder) for the verification link."
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
