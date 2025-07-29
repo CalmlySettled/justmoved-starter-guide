@@ -87,6 +87,15 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
+// Proximity override threshold - businesses within this distance get priority
+const PROXIMITY_OVERRIDE_MILES = 0.5;
+
+// Check if a business qualifies for proximity override
+function isProximityPriority(businessLat: number, businessLng: number, userLat: number, userLng: number): boolean {
+  const distance = calculateDistance(userLat, userLng, businessLat, businessLng);
+  return distance <= PROXIMITY_OVERRIDE_MILES;
+}
+
 // Determine optimal search radius based on area density
 function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
   // Major urban centers (smaller radius for dense downtown areas only)
@@ -114,14 +123,28 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 
 // Google Places API integration
 
-  // Helper function to check if a business is actually consumer-facing retail
-function isRetailConsumerBusiness(place: any, category: string): boolean {
+  // Helper function to check if a business is actually consumer-facing retail (with proximity override)
+function isRetailConsumerBusiness(place: any, category: string, userLat?: number, userLng?: number): boolean {
   const name = place.name.toLowerCase();
   const types = place.types || [];
   const typesString = types.join(' ').toLowerCase();
   
   // 🔍 DEBUGGING: Log every business that enters filtering
   console.log(`🔍 FILTERING: Checking business "${place.name}" with types: [${types.join(', ')}], rating: ${place.rating}, reviews: ${place.user_ratings_total}`);
+  
+  // 🚀 PROXIMITY OVERRIDE: Businesses within 0.5 miles get much more lenient filtering
+  let isProximityBusiness = false;
+  if (userLat && userLng && place.geometry?.location?.lat && place.geometry?.location?.lng) {
+    isProximityBusiness = isProximityPriority(
+      place.geometry.location.lat, 
+      place.geometry.location.lng, 
+      userLat, 
+      userLng
+    );
+    if (isProximityBusiness) {
+      console.log(`🚀 PROXIMITY OVERRIDE: ${place.name} is within ${PROXIMITY_OVERRIDE_MILES} miles - applying lenient filtering`);
+    }
+  }
   
   // Special case for known grocery chains - they should always pass
   const knownGroceryChains = ['sprouts', 'whole foods', 'safeway', 'kroger', 'vons', 'ralphs', 'albertsons', 'trader joe', 'costco', 'target', 'walmart'];
@@ -158,7 +181,25 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     }
   }
   
-  // Exclude businesses that are clearly not consumer retail
+  // 🚀 PROXIMITY OVERRIDE: Much more lenient filtering for nearby businesses
+  if (isProximityBusiness) {
+    // For proximity businesses, only exclude the most obvious non-retail places
+    const strictExcludeKeywords = ['wholesale', 'distributor', 'b2b'];
+    if (strictExcludeKeywords.some(keyword => name.includes(keyword))) {
+      console.log(`🚀 PROXIMITY: Still excluding ${place.name} (contains: ${strictExcludeKeywords.find(k => name.includes(k))})`);
+      return false;
+    }
+    // For grocery proximity, even if no grocery type, allow if it has "store" or "market" type
+    if (category.includes('grocery') && (types.includes('store') || types.includes('establishment') || name.includes('market') || name.includes('grocery'))) {
+      console.log(`🚀 PROXIMITY: ALLOWING grocery-related business ${place.name} due to proximity override`);
+      return true;
+    }
+    // No review count filtering for proximity businesses
+    console.log(`🚀 PROXIMITY: ALLOWING ${place.name} (proximity override - bypassing strict filters)`);
+    return true;
+  }
+  
+  // Exclude businesses that are clearly not consumer retail (for non-proximity)
   const generalExcludeKeywords = [
     'wholesale', 'distributor', 'b2b', 'commercial only',
     'trade only', 'professional only', 'licensed professionals'
@@ -169,7 +210,7 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     return false;
   }
   
-  // RELAXED: Reduce review count requirement to 3 (was 5)
+  // RELAXED: Reduce review count requirement to 3 (was 5) - but only for non-proximity
   if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
     console.log(`🔍 EXCLUDING business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
     return false;
@@ -332,7 +373,7 @@ async function searchGooglePlaces(
     // Filter and convert Google Places results to Business objects with photos and details
     const businesses = await Promise.all(
       uniqueResults
-        .filter((place: any) => isRetailConsumerBusiness(place, category))
+        .filter((place: any) => isRetailConsumerBusiness(place, category, latitude, longitude))
         .slice(0, 15) // More results from multiple strategies
         .map(async (place: any) => {
           // Use Google's photo API if available, otherwise no image
@@ -496,8 +537,28 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`🔍 Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
+  // Sort businesses to prioritize proximity override businesses first
+  const sortedBusinesses = filteredBusinesses.sort((a, b) => {
+    // Check if either business qualifies for proximity override
+    const aIsProximity = a.latitude && a.longitude ? 
+      isProximityPriority(a.latitude, a.longitude, coordinates.lat, coordinates.lng) : false;
+    const bIsProximity = b.latitude && b.longitude ? 
+      isProximityPriority(b.latitude, b.longitude, coordinates.lat, coordinates.lng) : false;
+    
+    // Proximity businesses always come first
+    if (aIsProximity && !bIsProximity) return -1;
+    if (!aIsProximity && bIsProximity) return 1;
+    
+    // Within same tier, sort by distance
+    return (a.distance_miles || 0) - (b.distance_miles || 0);
+  });
+  
+  console.log(`🚀 SORTING: Prioritized ${sortedBusinesses.filter(b => 
+    b.latitude && b.longitude ? isProximityPriority(b.latitude, b.longitude, coordinates.lat, coordinates.lng) : false
+  ).length} proximity businesses out of ${sortedBusinesses.length} total`);
+  
   // Return more results for the two-tier system (up to 25 for better variety)
-  return filteredBusinesses.slice(0, 25);
+  return sortedBusinesses.slice(0, 25);
 }
 
 // Enhanced relevance scoring with improved distance weighting and user preference matching
