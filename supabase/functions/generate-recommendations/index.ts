@@ -37,6 +37,7 @@ interface Business {
   image_url?: string;
   rating?: number;
   review_count?: number;
+  category?: string; // Add category field for grouping
 }
 
 // Removed hardcoded brand logos - using pure API + category fallback system
@@ -517,8 +518,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-  // Return results sorted purely by distance with strict limit
-  return sortedBusinesses.slice(0, 3); // Strict limit to 3 results per category
+  // Return ALL businesses for final distance sorting across categories
+  return sortedBusinesses; // No limit here - will be limited globally to 6
 }
 
 // Simplified relevance scoring based primarily on distance
@@ -1034,8 +1035,6 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
 }
 
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
-  const recommendations: { [key: string]: Business[] } = {};
-  
   // Map user priorities to search terms that work with APIs
   const priorityMap: { [key: string]: string } = {
     "grocery stores": "grocery stores",
@@ -1111,12 +1110,11 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   console.log('User priorities received:', quizResponse.priorities);
 
-  // Limit to first 2 priorities to drastically reduce total recommendations  
-  const limitedPriorities = quizResponse.priorities.slice(0, 2);
-  console.log(`Limited to ${limitedPriorities.length} priorities to prevent overwhelming results`);
-  
-  // For each user priority, search for real businesses using APIs
-  for (const priority of limitedPriorities) {
+  // Collect ALL businesses from ALL priorities into one array
+  const allBusinesses: Business[] = [];
+
+  // For each user priority, search for businesses and add to master list
+  for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
@@ -1128,12 +1126,13 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         foundMatch = true;
         
         const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
+        console.log(`Found ${businesses.length} businesses for "${searchTerm}"`);
         
-        if (businesses.length > 0) {
-          recommendations[priority] = businesses;
-          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
-        }
+        // Add category info to each business and add to master list
+        businesses.forEach(business => {
+          business.category = priority; // Add category for reference
+          allBusinesses.push(business);
+        });
         break;
       }
     }
@@ -1143,31 +1142,26 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     }
   }
 
-  // Only add default categories if user has no priorities at all AND no existing priorities
-  // If they specified priorities or have existing ones, don't add defaults
-  const hasAnyPriorities = quizResponse.priorities.length > 0 || (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0);
-  
-  if (Object.keys(recommendations).length === 0 && !hasAnyPriorities) {
-    console.log('No priorities specified and no existing priorities, adding default categories');
-    
-    const defaultCategories = [
-      { name: "Grocery stores", searchTerm: "grocery stores" },
-      { name: "Fitness options", searchTerm: "fitness gyms" },
-      { name: "Faith communities", searchTerm: "churches religious" },
-      { name: "Medical care", searchTerm: "medical health" },
-      { name: "Schools", searchTerm: "schools education" },
-      { name: "Parks", searchTerm: "parks recreation" }
-    ];
-    
-    for (const category of defaultCategories) {
-      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse);
-      if (businesses.length > 0) {
-        recommendations[category.name] = businesses;
-      }
+  console.log(`Total businesses found across all priorities: ${allBusinesses.length}`);
+
+  // Sort ALL businesses by distance (closest first)
+  const sortedBusinesses = allBusinesses.sort((a, b) => {
+    return (a.distance_miles || 999) - (b.distance_miles || 999);
+  });
+
+  // Take the 6 closest businesses regardless of category
+  const finalResults = sortedBusinesses.slice(0, 6);
+  console.log(`Returning 6 closest businesses: ${finalResults.map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
+
+  // Group by original category for response format
+  const recommendations: { [key: string]: Business[] } = {};
+  finalResults.forEach(business => {
+    const category = business.category || 'General';
+    if (!recommendations[category]) {
+      recommendations[category] = [];
     }
-  } else if (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0) {
-    console.log(`User has existing priorities: ${quizResponse.existingPriorities.join(', ')}, not adding defaults`);
-  }
+    recommendations[category].push(business);
+  });
 
   return recommendations;
 }
