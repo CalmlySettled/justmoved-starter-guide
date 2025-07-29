@@ -405,7 +405,18 @@ const Popular = () => {
                           
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
-                              <h3 className="font-semibold line-clamp-1">{business.name}</h3>
+                              {business.website ? (
+                                <a 
+                                  href={business.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="font-semibold text-primary hover:underline line-clamp-1"
+                                >
+                                  {business.name}
+                                </a>
+                              ) : (
+                                <h3 className="font-semibold line-clamp-1">{business.name}</h3>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -416,38 +427,19 @@ const Popular = () => {
                               </Button>
                             </div>
                             
-                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                              {business.description}
-                            </p>
-                            
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                               <MapPin className="h-3 w-3" />
-                              <span className="line-clamp-1">{business.address}</span>
+                              <span>{business.distance_miles.toFixed(1)} miles away</span>
                             </div>
                             
-                            {business.rating && (
-                              <div className="flex items-center gap-1 mb-3">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm font-medium">{business.rating}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex gap-2">
-                              {business.phone && (
-                                <Button variant="outline" size="sm" asChild>
-                                  <a href={`tel:${business.phone}`}>
-                                    <Phone className="h-3 w-3 mr-1" />
-                                    Call
-                                  </a>
-                                </Button>
-                              )}
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={getGoogleMapsUrl(business.address)} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3 w-3 mr-1" />
-                                  Visit
-                                </a>
-                              </Button>
-                            </div>
+                            <a 
+                              href={getGoogleMapsUrl(business.address)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline line-clamp-1 block"
+                            >
+                              {business.address}
+                            </a>
                           </div>
                         </CardContent>
                       </Card>
