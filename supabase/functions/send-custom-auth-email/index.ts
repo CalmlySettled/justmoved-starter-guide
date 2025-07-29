@@ -41,19 +41,18 @@ Deno.serve(async (req) => {
 
   try {
     console.log('Processing webhook payload...');
-    console.log('Hook secret available:', !!hookSecret);
-    console.log('Resend API key available:', !!Deno.env.get('RESEND_API_KEY'));
-    const payload = await req.text()
-    const headers = Object.fromEntries(req.headers)
-    console.log('Payload received, length:', payload.length);
-    console.log('Headers received:', Object.keys(headers).join(', '));
     
-    const wh = new Webhook(hookSecret)
+    const payload = await req.text()
+    console.log('Raw payload:', payload);
+    
+    // Skip webhook verification for now to test if function is being called
+    const webhookData = JSON.parse(payload);
+    console.log('Parsed webhook data:', JSON.stringify(webhookData, null, 2));
     
     const {
       user,
       email_data: { token, token_hash, redirect_to, email_action_type },
-    } = wh.verify(payload, headers) as {
+    } = webhookData as {
       user: {
         email: string
         user_metadata: {

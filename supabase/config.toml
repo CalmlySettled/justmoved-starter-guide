@@ -1,11 +1,9 @@
 project_id = "ghbnvodnnxgxkiufcael"
 
 # Configure webhook for custom email
-# Disable custom webhook for now to restore default emails
-# [auth.hook.send_email]
-# enabled = true
-# uri = "https://ghbnvodnnxgxkiufcael.supabase.co/functions/v1/send-custom-auth-email"
-# secrets = []
+[auth.hook.send_email]
+enabled = true
+uri = "pg-functions://postgres/send-custom-auth-email"
 
 [functions.generate-recommendations]
 verify_jwt = false
