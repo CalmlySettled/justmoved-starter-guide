@@ -10,6 +10,7 @@ interface QuizResponse {
   address: string;
   householdType: string;
   priorities: string[];
+  priorityPreferences?: Record<string, string[]>;
   transportationStyle: string;
   budgetPreference: string;
   lifeStage: string;
@@ -401,6 +402,51 @@ function calculateRelevanceScore(business: Business, category: string, userPrefe
 // Calculate bonus points based on user preferences
 function calculatePreferenceBonus(business: Business, category: string, userPreferences: QuizResponse): number {
   let bonus = 0;
+  
+  // Sub-preference bonus (NEW - max 15 points)
+  if (userPreferences.priorityPreferences && userPreferences.priorityPreferences[category]) {
+    const subPreferences = userPreferences.priorityPreferences[category];
+    const businessName = business.name.toLowerCase();
+    const features = business.features ? business.features.join(' ').toLowerCase() : '';
+    const description = business.description ? business.description.toLowerCase() : '';
+    
+    subPreferences.forEach(pref => {
+      const prefLower = pref.toLowerCase();
+      
+      // Check if business matches specific sub-preferences
+      if (businessName.includes(prefLower) || features.includes(prefLower) || description.includes(prefLower)) {
+        bonus += 3; // 3 points per matching sub-preference
+      }
+      
+      // Special handling for specific sub-preferences
+      if (prefLower.includes('organic') && (businessName.includes('organic') || businessName.includes('whole foods') || businessName.includes('fresh') || features.includes('organic'))) {
+        bonus += 5;
+      } else if (prefLower.includes('budget-friendly') && (businessName.includes('aldi') || businessName.includes('walmart') || businessName.includes('dollar') || features.includes('budget'))) {
+        bonus += 5;
+      } else if (prefLower.includes('24/7') && (features.includes('24') || businessName.includes('24') || description.includes('24 hour'))) {
+        bonus += 4;
+      } else if (prefLower.includes('pediatrician') && (businessName.includes('pediatr') || businessName.includes('children') || businessName.includes('kids'))) {
+        bonus += 6;
+      } else if (prefLower.includes('family physician') && (businessName.includes('family') || businessName.includes('primary care'))) {
+        bonus += 5;
+      } else if (prefLower.includes('urgent care') && (businessName.includes('urgent') || businessName.includes('walk-in'))) {
+        bonus += 5;
+      } else if (prefLower.includes('yoga') && (businessName.includes('yoga') || businessName.includes('pilates'))) {
+        bonus += 4;
+      } else if (prefLower.includes('gym') && (businessName.includes('gym') || businessName.includes('fitness') || businessName.includes('health club'))) {
+        bonus += 4;
+      } else if (prefLower.includes('swimming') && (businessName.includes('pool') || businessName.includes('aquatic') || features.includes('pool'))) {
+        bonus += 4;
+      } else if (prefLower.includes('dog park') && (businessName.includes('dog') || features.includes('dog'))) {
+        bonus += 5;
+      } else if (prefLower.includes('playground') && (businessName.includes('playground') || features.includes('playground'))) {
+        bonus += 4;
+      }
+    });
+    
+    // Cap the sub-preference bonus
+    bonus = Math.min(15, bonus);
+  }
   
   // Budget preference bonus (max 10 points)
   if (userPreferences.budgetPreference && business.features) {
