@@ -21,6 +21,7 @@ interface Business {
   website?: string;
   image?: string;
   image_url?: string;
+  distance_miles?: number;
 }
 
 interface Recommendations {
@@ -894,13 +895,19 @@ export default function Recommendations() {
                                 </div>
                               )}
 
-                              {/* Hours */}
-                              <div className="text-center">
-                                <div className="inline-flex items-center gap-1.5 text-muted-foreground text-sm">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{hours}</span>
-                                </div>
-                              </div>
+                               {/* Distance and Hours */}
+                               <div className="text-center space-y-1">
+                                 {business.distance_miles && (
+                                   <div className="inline-flex items-center gap-1.5 text-primary text-sm font-medium">
+                                     <MapPin className="h-3 w-3" />
+                                     <span>{business.distance_miles} miles away</span>
+                                   </div>
+                                 )}
+                                 <div className="inline-flex items-center gap-1.5 text-muted-foreground text-sm">
+                                   <Clock className="h-3 w-3" />
+                                   <span>{hours}</span>
+                                 </div>
+                               </div>
 
                               {/* Tags/Badges */}
                               {badges.length > 0 && (

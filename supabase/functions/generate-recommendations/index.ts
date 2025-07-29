@@ -517,8 +517,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-  // Return results sorted purely by distance
-  return sortedBusinesses.slice(0, 25);
+   // Return results sorted purely by distance
+   return sortedBusinesses.slice(0, 6); // Limit to 6 results per category
 }
 
 // Simplified relevance scoring based primarily on distance
