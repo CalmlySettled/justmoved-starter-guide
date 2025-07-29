@@ -659,7 +659,11 @@ export default function Explore() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
+                                onClick={() => {
+                                  console.log('EXPLORE BUTTON CLICKED!!!');
+                                  alert('Explore button clicked!');
+                                  toggleFavorite(business, selectedCategory || 'essentials');
+                                }}
                                 className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
                                 <Star 
