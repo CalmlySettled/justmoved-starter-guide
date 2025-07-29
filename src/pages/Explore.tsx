@@ -402,7 +402,7 @@ export default function Explore() {
         .select('id, is_favorite')
         .eq('user_id', user.id)
         .eq('business_name', business.name)
-        .single();
+        .maybeSingle();
 
       console.log('Explore - Existing record check:', { existing, selectError });
 
