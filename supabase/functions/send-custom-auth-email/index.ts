@@ -5,8 +5,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { VerificationEmail } from './_templates/verification-email.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
-// Use a hardcoded secret temporarily for testing
-const hookSecret = 'calmlysettled-webhook-secret-2025-xyz789'
+const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
 
 console.log('=== Function starting up ===');
 console.log('RESEND_API_KEY available:', !!Deno.env.get('RESEND_API_KEY'));
@@ -43,11 +42,12 @@ Deno.serve(async (req) => {
     console.log('Processing webhook payload...');
     
     const payload = await req.text()
-    console.log('Raw payload:', payload);
+    const headers = Object.fromEntries(req.headers)
+    console.log('Payload received, length:', payload.length);
     
-    // Skip webhook verification for now to test if function is being called
-    const webhookData = JSON.parse(payload);
-    console.log('Parsed webhook data:', JSON.stringify(webhookData, null, 2));
+    // Verify webhook signature
+    const wh = new Webhook(hookSecret)
+    const webhookData = wh.verify(payload, headers);
     
     const {
       user,
