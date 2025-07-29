@@ -370,6 +370,60 @@ export default function Explore() {
     }
   };
 
+  const toggleFavorite = async (business: Business, category: string) => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save favorites",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_recommendations')
+        .select('id, is_favorite')
+        .eq('user_id', user.id)
+        .eq('business_name', business.name)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('user_recommendations')
+          .update({ is_favorite: !existing.is_favorite })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_recommendations')
+          .insert({
+            user_id: user.id,
+            business_name: business.name,
+            business_address: business.address,
+            business_description: business.description,
+            business_phone: business.phone,
+            business_website: business.website,
+            business_features: business.features,
+            category,
+            is_favorite: true,
+            distance_miles: business.distance_miles
+          });
+      }
+
+      toast({
+        title: existing?.is_favorite ? 'Removed from favorites' : 'Added to favorites',
+        description: `${business.name} has been ${existing?.is_favorite ? 'removed from' : 'added to'} your favorites.`,
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-page">
       <Header />
@@ -551,6 +605,14 @@ export default function Explore() {
                                   )}
                                 </div>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
+                                className="h-8 w-8 p-0 hover:bg-primary/10"
+                              >
+                                <Heart className="h-4 w-4" />
+                              </Button>
                             </div>
                           </CardHeader>
                           
