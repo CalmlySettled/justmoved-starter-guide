@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Heart, Users, Car, DollarSign, MapPin, Camera } from "lucide-react";
+import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 
 interface ProfileData {
   display_name: string;
@@ -74,6 +75,11 @@ const Profile = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleProfileUpdate = () => {
+    // Refresh the profile data when preferences are updated
+    fetchProfile();
   };
 
   const handleSave = async () => {
@@ -236,9 +242,10 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  <Button variant="outline" className="w-full">
-                    Edit Preferences
-                  </Button>
+                  <EditPreferencesModal 
+                    userProfile={profileData}
+                    onProfileUpdate={handleProfileUpdate}
+                  />
                 </div>
               </div>
             </CardContent>
