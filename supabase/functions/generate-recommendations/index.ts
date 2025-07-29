@@ -517,8 +517,8 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
-   // Return results sorted purely by distance
-   return sortedBusinesses.slice(0, 6); // Limit to 6 results per category
+  // Return results sorted purely by distance
+  return sortedBusinesses.slice(0, 4); // Limit to 4 results per category to control total
 }
 
 // Simplified relevance scoring based primarily on distance
@@ -1003,7 +1003,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           business_image: business.image_url,
           is_favorite: false,
           relevance_score: relevanceScore,
-          is_displayed: index < 6, // Only first 6 are displayed by default
+          is_displayed: index < 4, // Only first 4 are displayed by default
           filter_metadata: filterMetadata
         });
       });
@@ -1111,8 +1111,12 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   console.log('User priorities received:', quizResponse.priorities);
 
+  // Limit to first 3 priorities to control total recommendations
+  const limitedPriorities = quizResponse.priorities.slice(0, 3);
+  console.log(`Limited to ${limitedPriorities.length} priorities to prevent overwhelming results`);
+  
   // For each user priority, search for real businesses using APIs
-  for (const priority of quizResponse.priorities) {
+  for (const priority of limitedPriorities) {
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     

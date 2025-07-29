@@ -22,6 +22,9 @@ interface Business {
   image?: string;
   image_url?: string;
   distance_miles?: number;
+  latitude?: number;
+  longitude?: number;
+  review_count?: number;
 }
 
 interface Recommendations {
