@@ -39,6 +39,7 @@ export default function Auth() {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
           console.log('Auth state change - checking for stored quiz data:', storedQuizData);
+          console.log('Session user ID:', session?.user?.id);
           
           if (storedQuizData) {
             try {
@@ -55,7 +56,7 @@ export default function Auth() {
                     user_id: session.user.id,
                     address: quizData.address,
                     priorities: quizData.priorities,
-                    priority_preferences: quizData.priorityPreferences || {},
+                    priority_preferences: {}, // Empty for now, this will be filled later via preferences modal
                     household_type: quizData.household,
                     transportation_style: quizData.transportation,
                     budget_preference: quizData.budgetRange,
@@ -80,7 +81,7 @@ export default function Auth() {
                           address: quizData.address,
                           householdType: quizData.household,
                           priorities: quizData.priorities,
-                          priorityPreferences: quizData.priorityPreferences || {},
+                          priorityPreferences: {}, // Empty for now
                           transportationStyle: quizData.transportation,
                           budgetPreference: quizData.budgetRange,
                           lifeStage: quizData.movingTimeline,
