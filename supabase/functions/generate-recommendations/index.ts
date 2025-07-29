@@ -154,106 +154,41 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 
 // Google Places API integration
 
-  // Helper function to check if a business is actually consumer-facing retail (with proximity override)
+  // Simplified function to check if a business is consumer-facing (minimal filtering)
 function isRetailConsumerBusiness(place: any, category: string, userLat?: number, userLng?: number): boolean {
-  const name = place.name.toLowerCase();
+  const name = place.name?.toLowerCase() || '';
   const types = place.types || [];
-  const typesString = types.join(' ').toLowerCase();
   
-  // 🔍 DEBUGGING: Log every business that enters filtering
-  console.log(`🔍 FILTERING: Checking business "${place.name}" with types: [${types.join(', ')}], rating: ${place.rating}, reviews: ${place.user_ratings_total}`);
+  console.log(`📍 DISTANCE-ONLY CHECK: "${place.name}" - Distance: ${place.distance_miles || 'unknown'}mi`);
   
-  // 🚀 PROXIMITY OVERRIDE: Businesses within 0.5 miles get much more lenient filtering
-  let isProximityBusiness = false;
-  if (userLat && userLng && place.geometry?.location?.lat && place.geometry?.location?.lng) {
-    isProximityBusiness = isProximityPriority(
-      place.geometry.location.lat, 
-      place.geometry.location.lng, 
-      userLat, 
-      userLng
-    );
-    if (isProximityBusiness) {
-      console.log(`🚀 PROXIMITY OVERRIDE: ${place.name} is within ${PROXIMITY_OVERRIDE_MILES} miles - applying lenient filtering`);
-    }
-  }
-  
-  // 🏆 NATIONAL CHAIN OVERRIDE: National chains within 5 miles ALWAYS pass
-  if (userLat && userLng && isNationalChainOverride(place, userLat, userLng)) {
-    console.log(`🏆 NATIONAL CHAIN OVERRIDE: ${place.name} is within ${NATIONAL_CHAIN_OVERRIDE_MILES} miles - BYPASSING ALL FILTERS`);
-    return true;
-  }
-  
-  // Special case for known grocery chains - they should always pass
-  const knownGroceryChains = ['sprouts', 'whole foods', 'safeway', 'kroger', 'vons', 'ralphs', 'albertsons', 'trader joe', 'costco', 'target', 'walmart'];
-  if (category.includes('grocery') && knownGroceryChains.some(chain => name.includes(chain))) {
-    console.log(`🔍 ALLOWING known grocery chain: ${place.name}`);
-    return true;
-  }
-  
-  // Exclude obvious B2B/wholesale businesses for grocery category
-  if (category.includes('grocery')) {
-    // Exclude wholesale distributors, suppliers, and B2B operations
-    const excludeKeywords = [
-      'wholesale', 'distributor', 'distribution', 'supplier', 'supply',
-      'foods llc', 'foods inc', 'food service', 'food services', 
-      'foodservice', 'catering', 'restaurant supply', 'commercial',
-      'industrial', 'manufacturing', 'processor', 'processing'
-    ];
-    
-    if (excludeKeywords.some(keyword => name.includes(keyword))) {
-      console.log(`🔍 EXCLUDING B2B business: ${place.name} (contains: ${excludeKeywords.find(k => name.includes(k))})`);
-      return false;
-    }
-    
-    // Must have retail-oriented types for grocery
-    const retailTypes = [
-      'grocery_or_supermarket', 'supermarket', 'convenience_store',
-      'store', 'establishment'
-    ];
-    
-    const hasRetailType = retailTypes.some(type => types.includes(type));
-    if (!hasRetailType) {
-      console.log(`🔍 EXCLUDING non-retail business: ${place.name} (types: ${types.join(', ')}) - no retail type found`);
-      return false;
-    }
-  }
-  
-  // 🚀 PROXIMITY OVERRIDE: Much more lenient filtering for nearby businesses
-  if (isProximityBusiness) {
-    // For proximity businesses, only exclude the most obvious non-retail places
-    const strictExcludeKeywords = ['wholesale', 'distributor', 'b2b'];
-    if (strictExcludeKeywords.some(keyword => name.includes(keyword))) {
-      console.log(`🚀 PROXIMITY: Still excluding ${place.name} (contains: ${strictExcludeKeywords.find(k => name.includes(k))})`);
-      return false;
-    }
-    // For grocery proximity, even if no grocery type, allow if it has "store" or "market" type
-    if (category.includes('grocery') && (types.includes('store') || types.includes('establishment') || name.includes('market') || name.includes('grocery'))) {
-      console.log(`🚀 PROXIMITY: ALLOWING grocery-related business ${place.name} due to proximity override`);
-      return true;
-    }
-    // No review count filtering for proximity businesses
-    console.log(`🚀 PROXIMITY: ALLOWING ${place.name} (proximity override - bypassing strict filters)`);
-    return true;
-  }
-  
-  // Exclude businesses that are clearly not consumer retail (for non-proximity)
-  const generalExcludeKeywords = [
-    'wholesale', 'distributor', 'b2b', 'commercial only',
-    'trade only', 'professional only', 'licensed professionals'
+  const excludeKeywords = [
+    'wholesale', 'distributor', 'b2b', 'commercial only', 'trade only',
+    'foods llc', 'foods inc', 'food service', 'food services', 'foodservice',
+    'real estate', 'insurance agency', 'accounting', 'lawyer', 'political',
+    'funeral home', 'cemetery', 'government office', 'courthouse', 'embassy'
   ];
   
-  if (generalExcludeKeywords.some(keyword => name.includes(keyword) || typesString.includes(keyword))) {
-    console.log(`🔍 EXCLUDING non-consumer business: ${place.name} (contains: ${generalExcludeKeywords.find(k => name.includes(k) || typesString.includes(k))})`);
+  if (excludeKeywords.some(keyword => name.includes(keyword))) {
+    console.log(`❌ EXCLUDED: ${place.name} - B2B/non-consumer business`);
     return false;
   }
   
-  // RELAXED: Reduce review count requirement to 3 (was 5) - but only for non-proximity
-  if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
-    console.log(`🔍 EXCLUDING business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+  // Must have at least some retail-oriented type
+  const retailTypes = [
+    'grocery_or_supermarket', 'supermarket', 'store', 'clothing_store', 
+    'department_store', 'pharmacy', 'drugstore', 'gas_station',
+    'convenience_store', 'electronics_store', 'furniture_store',
+    'home_goods_store', 'hardware_store', 'restaurant', 'cafe', 
+    'meal_takeaway', 'food', 'bakery', 'establishment'
+  ];
+  
+  const hasRetailType = retailTypes.some(type => types.includes(type));
+  if (!hasRetailType) {
+    console.log(`❌ EXCLUDED: ${place.name} - No retail type found in: [${types.join(', ')}]`);
     return false;
   }
   
-  console.log(`🔍 ALLOWING business: ${place.name}`);
+  console.log(`✅ INCLUDED: ${place.name} - Will be sorted by distance only`);
   return true;
 }
 
