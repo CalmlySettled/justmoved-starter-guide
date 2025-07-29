@@ -306,8 +306,8 @@ export default function Explore() {
     }
   };
 
-  // Handle themed pack selection
-  const handleThemedPackClick = async (pack: typeof themedPacks[0]) => {
+  // Handle themed pack selection  
+  const handleThemedPackClick = async (pack: typeof themedPacks[0], specificCategory?: string) => {
     if (!location) {
       toast({
         title: "Location required",
@@ -317,7 +317,8 @@ export default function Explore() {
       return;
     }
 
-    setSelectedCategory(pack.title);
+    const categoriesToSearch = specificCategory ? [specificCategory] : pack.categories;
+    setSelectedCategory(specificCategory || pack.title);
     setIsLoadingCategory(true);
     
     try {
@@ -326,19 +327,23 @@ export default function Explore() {
           exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          categories: pack.categories
+          categories: categoriesToSearch
         }
       });
 
       if (error) throw error;
       
-      // Flatten results from all categories in the pack
-      const allResults: Business[] = [];
-      Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
-        allResults.push(...businesses);
-      });
-      
-      setCategoryResults(allResults);
+      // If searching for a specific category, show only those results
+      if (specificCategory) {
+        setCategoryResults(data.recommendations?.[specificCategory] || []);
+      } else {
+        // Flatten results from all categories in the pack
+        const allResults: Business[] = [];
+        Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        setCategoryResults(allResults);
+      }
     } catch (error) {
       console.error("Error loading themed pack results:", error);
       toast({
@@ -506,21 +511,24 @@ export default function Explore() {
                           <CardTitle className="text-xl">{pack.title}</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {pack.categories.slice(0, 3).map((category, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {category}
-                            </Badge>
-                          ))}
-                          {pack.categories.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{pack.categories.length - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
+                       <CardContent>
+                         <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
+                         <div className="flex flex-wrap gap-2 justify-center">
+                           {pack.categories.map((category, index) => (
+                             <Badge 
+                               key={index} 
+                               variant="outline" 
+                               className="text-xs cursor-pointer hover:bg-muted transition-colors"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleThemedPackClick(pack, category);
+                               }}
+                             >
+                               {category}
+                             </Badge>
+                           ))}
+                         </div>
+                       </CardContent>
                     </Card>
                   ))}
                 </div>
