@@ -342,10 +342,11 @@ export default function Recommendations() {
     try {
       setLoading(true);
       
-      // Get coordinates from the address
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(quizResponse.zipCode)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'demo'}`);
-      const data = await response.json();
-      const coordinates = data.results?.[0]?.geometry?.location || { lat: 41.8394397, lng: -72.7516033 };
+      // Get coordinates securely from server-side geocoding
+      const { data: geocodeData } = await supabase.functions.invoke('geocode-address', {
+        body: { address: quizResponse.zipCode }
+      });
+      const coordinates = geocodeData?.coordinates || { lat: 41.8394397, lng: -72.7516033 };
       
       const { data: filterData, error } = await supabase.functions.invoke('generate-recommendations', {
         body: { 
