@@ -41,18 +41,18 @@ export function Footer() {
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
-                <span>1-800-CALMLY</span>
+                <span>925-437-6966</span>
               </li>
               <li className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>San Francisco, CA</span>
+                <span>Bloomfield, CT</span>
               </li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-background/20 pt-8 text-center text-background/60">
-          <p>&copy; 2024 CalmlySettled. All rights reserved. Making moves memorable since 2024.</p>
+          <p>&copy; 2025 CalmlySettled. All rights reserved. Making moves memorable since 2025.</p>
         </div>
       </div>
     </footer>
