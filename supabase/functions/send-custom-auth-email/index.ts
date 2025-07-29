@@ -1,0 +1,107 @@
+import React from 'npm:react@18.3.1'
+import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
+import { Resend } from 'npm:resend@4.0.0'
+import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { VerificationEmail } from './_templates/verification-email.tsx'
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
+const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { 
+      status: 405,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    })
+  }
+
+  try {
+    const payload = await req.text()
+    const headers = Object.fromEntries(req.headers)
+    const wh = new Webhook(hookSecret)
+    
+    const {
+      user,
+      email_data: { token, token_hash, redirect_to, email_action_type },
+    } = wh.verify(payload, headers) as {
+      user: {
+        email: string
+        user_metadata: {
+          display_name?: string
+        }
+      }
+      email_data: {
+        token: string
+        token_hash: string
+        redirect_to: string
+        email_action_type: string
+        site_url: string
+      }
+    }
+
+    // Only handle signup confirmations, let other email types use default Supabase emails
+    if (email_action_type !== 'signup') {
+      return new Response(JSON.stringify({ message: 'Not a signup confirmation, skipping custom email' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      })
+    }
+
+    console.log(`Sending custom verification email to: ${user.email}`)
+
+    const html = await renderAsync(
+      React.createElement(VerificationEmail, {
+        supabase_url: Deno.env.get('SUPABASE_URL') ?? '',
+        token,
+        token_hash,
+        redirect_to,
+        email_action_type,
+        userName: user.user_metadata?.display_name,
+      })
+    )
+
+    const { error } = await resend.emails.send({
+      from: 'CalmlySettled <onboarding@resend.dev>',
+      to: [user.email],
+      subject: 'Welcome to CalmlySettled - Verify Your Email',
+      html,
+    })
+
+    if (error) {
+      console.error('Resend error:', error)
+      throw error
+    }
+
+    console.log(`Custom verification email sent successfully to: ${user.email}`)
+
+    return new Response(JSON.stringify({ message: 'Custom email sent successfully' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    })
+
+  } catch (error) {
+    console.error('Error in send-custom-auth-email function:', error)
+    
+    return new Response(
+      JSON.stringify({
+        error: {
+          message: error.message || 'Failed to send custom email',
+        },
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      }
+    )
+  }
+})
