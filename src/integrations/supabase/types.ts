@@ -26,6 +26,7 @@ export type Database = {
           life_stage: string | null
           longitude: number | null
           priorities: string[] | null
+          priority_preferences: Json | null
           settling_tasks: string[] | null
           transportation_style: string | null
           updated_at: string
@@ -42,6 +43,7 @@ export type Database = {
           life_stage?: string | null
           longitude?: number | null
           priorities?: string[] | null
+          priority_preferences?: Json | null
           settling_tasks?: string[] | null
           transportation_style?: string | null
           updated_at?: string
@@ -58,6 +60,7 @@ export type Database = {
           life_stage?: string | null
           longitude?: number | null
           priorities?: string[] | null
+          priority_preferences?: Json | null
           settling_tasks?: string[] | null
           transportation_style?: string | null
           updated_at?: string

@@ -231,6 +231,7 @@ export default function OnboardingQuiz() {
             address: quizData.address,
             household_type: quizData.household.join(', '),
             priorities: quizData.priorities,
+            priority_preferences: quizData.priorityPreferences,
             transportation_style: quizData.transportation,
             budget_preference: quizData.lifestyle,
             life_stage: quizData.lifeStage,

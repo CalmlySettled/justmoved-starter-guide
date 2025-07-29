@@ -52,6 +52,7 @@ interface UserProfile {
   address?: string;
   household_type?: string;
   priorities: string[];
+  priority_preferences?: Record<string, string[]>;
   transportation_style?: string;
   budget_preference?: string;
   life_stage?: string;
@@ -99,7 +100,10 @@ export default function Dashboard() {
         throw profileError;
       }
 
-      setUserProfile(profileData);
+      setUserProfile({
+        ...profileData,
+        priority_preferences: (profileData?.priority_preferences as Record<string, string[]>) || {}
+      });
 
       // Fetch only displayed recommendations by default (max 6 per category)
       const { data: recData, error: recError } = await supabase

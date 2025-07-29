@@ -18,6 +18,7 @@ interface UserProfile {
   address?: string;
   household_type?: string;
   priorities: string[];
+  priority_preferences?: Record<string, string[]>;
   transportation_style?: string;
   budget_preference?: string;
   life_stage?: string;
@@ -36,6 +37,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
     address: "",
     household_type: "",
     priorities: [],
+    priority_preferences: {},
     transportation_style: "",
     budget_preference: "",
     life_stage: "",
@@ -51,6 +53,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
         address: userProfile.address || "",
         household_type: userProfile.household_type || "",
         priorities: userProfile.priorities || [],
+        priority_preferences: userProfile.priority_preferences || {},
         transportation_style: userProfile.transportation_style || "",
         budget_preference: userProfile.budget_preference || "",
         life_stage: userProfile.life_stage || "",
@@ -88,6 +91,39 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
     return (formData.household_type || "").split(', ').filter(Boolean);
   };
 
+  // Define sub-preferences for each main category (same as onboarding quiz)
+  const subPreferenceOptions: Record<string, string[]> = {
+    "Grocery stores": ["Organic options", "Budget-friendly", "International foods", "24/7 availability", "Local produce"],
+    "Medical care / Pharmacy": ["Pediatrician", "OBGYN", "Family physician", "Urgent care", "Dental care", "Mental health"],
+    "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
+    "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
+    "Parks": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas"],
+    "Faith communities": ["Christian", "Jewish", "Muslim", "Buddhist", "Hindu", "Non-denominational"],
+    "Public transit / commute info": ["Bus routes", "Train stations", "Bike lanes", "Park & ride", "Commuter lots"],
+    "Green space / trails": ["Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
+    "Restaurants / coffee shops": ["Family-friendly", "Date night spots", "Quick casual", "Coffee shops", "Food trucks"],
+    "Social events or community groups": ["Family activities", "Young professionals", "Hobby groups", "Sports leagues", "Volunteer opportunities"]
+  };
+
+  const handleSubPreferenceChange = (category: string, preference: string, checked: boolean) => {
+    const currentPrefs = (formData.priority_preferences || {})[category] || [];
+    let newPrefs;
+    
+    if (checked) {
+      newPrefs = [...currentPrefs, preference];
+    } else {
+      newPrefs = currentPrefs.filter(p => p !== preference);
+    }
+    
+    setFormData({
+      ...formData,
+      priority_preferences: {
+        ...formData.priority_preferences,
+        [category]: newPrefs
+      }
+    });
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -99,6 +135,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
           address: formData.address,
           household_type: formData.household_type,
           priorities: formData.priorities,
+          priority_preferences: formData.priority_preferences,
           transportation_style: formData.transportation_style,
           budget_preference: formData.budget_preference,
           life_stage: formData.life_stage,
@@ -218,6 +255,51 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 </div>
               </CardContent>
             </Card>
+
+            {/* Sub-Preferences - Only show if priorities are selected */}
+            {formData.priorities.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Customize Your Preferences</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Fine-tune your selected categories for more personalized recommendations
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {formData.priorities.map((category) => (
+                      <div key={category} className="p-4 border rounded-lg bg-background/50">
+                        <h4 className="font-semibold text-primary mb-3">{category}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {subPreferenceOptions[category]?.map((preference) => (
+                            <div key={preference} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${category}-${preference}`}
+                                checked={((formData.priority_preferences || {})[category] || []).includes(preference)}
+                                onCheckedChange={(checked) => handleSubPreferenceChange(category, preference, checked as boolean)}
+                              />
+                              <Label 
+                                htmlFor={`${category}-${preference}`} 
+                                className="text-sm font-medium cursor-pointer"
+                              >
+                                {preference}
+                              </Label>
+                            </div>
+                          )) || (
+                            <p className="text-muted-foreground text-sm">No specific options available for this category.</p>
+                          )}
+                        </div>
+                        {((formData.priority_preferences || {})[category]?.length || 0) > 0 && (
+                          <div className="mt-3 text-xs text-muted-foreground">
+                            {(formData.priority_preferences || {})[category]?.length} preferences selected
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Transportation */}
             <Card>
