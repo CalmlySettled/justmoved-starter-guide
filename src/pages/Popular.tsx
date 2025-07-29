@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -103,6 +104,7 @@ const spotlightSections = [
 
 const Popular = () => {
   const { user } = useAuth();
+  const routerLocation = useLocation();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [recommendations, setRecommendations] = useState<PopularRecommendations>({});
   const [loading, setLoading] = useState(false);
@@ -191,6 +193,15 @@ const Popular = () => {
     loadLocation();
   }, [user]);
 
+  // Reset recommendations when navigating away from the page
+  useEffect(() => {
+    return () => {
+      // Cleanup function that runs when component unmounts
+      setRecommendations({});
+      setActiveCategory(null);
+    };
+  }, [routerLocation.pathname]);
+
   const handleLocationSelect = (selectedLocation: LocationData) => {
     setLocation(selectedLocation);
   };
@@ -201,6 +212,8 @@ const Popular = () => {
       return;
     }
 
+    // Clear previous results and set loading state
+    setRecommendations({});
     setLoading(true);
     setActiveCategory(category);
 
@@ -228,10 +241,10 @@ const Popular = () => {
           .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
           .slice(0, 12); // Limit to 12 results
 
-        setRecommendations(prev => ({
-          ...prev,
+        // Set only the current category results (replaces any existing)
+        setRecommendations({
           [category]: sortedResults
-        }));
+        });
         
         toast.success(`Found ${sortedResults.length} popular ${category.toLowerCase()} near you`);
       }
