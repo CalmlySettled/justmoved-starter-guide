@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Heart, Camera, Search, Star, Clock, Home, Zap, Link, Users } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Camera, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Header } from "@/components/Header";
@@ -37,7 +37,7 @@ const trendingCategories = [
   { name: "Fitness", icon: Dumbbell, searchTerm: "fitness gyms", color: "bg-blue-500" },
   { name: "Grocery", icon: ShoppingCart, searchTerm: "grocery stores", color: "bg-green-500" },
   { name: "Parks", icon: TreePine, searchTerm: "parks recreation", color: "bg-emerald-500" },
-  { name: "Restaurants", icon: Heart, searchTerm: "restaurants", color: "bg-red-500" },
+  { name: "Restaurants", icon: Star, searchTerm: "restaurants", color: "bg-red-500" },
   { name: "Entertainment", icon: Camera, searchTerm: "entertainment venues", color: "bg-purple-500" },
 ];
 
@@ -406,6 +406,7 @@ export default function Explore() {
             business_features: business.features,
             category,
             is_favorite: true,
+            is_displayed: true,
             distance_miles: business.distance_miles
           });
       }
@@ -611,7 +612,7 @@ export default function Explore() {
                                 onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
                                 className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
-                                <Heart className="h-4 w-4" />
+                                <Star className="h-4 w-4" />
                               </Button>
                             </div>
                           </CardHeader>

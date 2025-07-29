@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { MapPin, Phone, Star, ExternalLink, Heart, Sparkles, TrendingUp, Clock } from "lucide-react";
+import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -293,6 +293,7 @@ const Popular = () => {
             business_features: business.features,
             category,
             is_favorite: true,
+            is_displayed: true,
             distance_miles: business.distance_miles
           });
       }
@@ -436,7 +437,7 @@ const Popular = () => {
                                 onClick={() => toggleFavorite(business, category)}
                                 className="h-8 w-8 p-0 hover:bg-primary/10"
                               >
-                                <Heart className="h-4 w-4" />
+                                <Star className="h-4 w-4" />
                               </Button>
                             </div>
                             
