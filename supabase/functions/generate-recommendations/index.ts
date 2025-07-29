@@ -277,18 +277,22 @@ async function searchGooglePlaces(
       const data = await response.json();
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
 
-      // Add unique results to our set
+      // Add unique results to our set using place_id for true uniqueness
       if (data.results) {
         data.results.forEach(place => {
           if (place.place_id) {
-            allResults.add(JSON.stringify(place));
+            // Use place_id as the unique identifier instead of JSON.stringify
+            allResults.add(place.place_id + '|' + JSON.stringify(place));
           }
         });
       }
     }
 
-    // Convert back to array and parse
-    const uniqueResults = Array.from(allResults).map(result => JSON.parse(result));
+    // Convert back to array and parse, extracting the JSON part
+    const uniqueResults = Array.from(allResults).map(result => {
+      const [placeId, jsonData] = result.split('|', 2);
+      return JSON.parse(jsonData);
+    });
     console.log(`Combined ${uniqueResults.length} unique businesses from all strategies`);
 
     if (uniqueResults.length === 0) {
@@ -957,17 +961,18 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
     }
     
     const recommendationsToInsert = [];
-    const seenBusinesses = new Set(); // Track unique businesses to avoid duplicates
+    const seenBusinesses = new Set(); // Track unique businesses globally across all categories
     
     // Convert recommendations to database format with relevance scores
     for (const [category, businesses] of Object.entries(recommendations)) {
       businesses.forEach((business, index) => {
-        // Create a unique key for this business
-        const businessKey = `${business.name}|${business.address}|${category}`;
+        // Create a unique key for this business GLOBALLY (not per category)
+        // Use name + address to identify truly unique businesses
+        const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
         
-        // Skip if we've already seen this exact business in this category
+        // Skip if we've already seen this exact business anywhere
         if (seenBusinesses.has(businessKey)) {
-          console.log(`→ Skipping duplicate business: ${business.name} in ${category}`);
+          console.log(`→ Skipping duplicate business: ${business.name} (already exists in another category)`);
           return;
         }
         seenBusinesses.add(businessKey);
