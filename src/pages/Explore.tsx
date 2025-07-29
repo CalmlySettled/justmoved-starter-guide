@@ -379,10 +379,10 @@ export default function Explore() {
           {/* Header Section */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Explore Nearby Trends
+              Explore Nearby Essentials
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Discover popular spots and hidden gems near you
+              Find everything you need to settle into your new community
             </p>
 
             {/* Location Section */}
