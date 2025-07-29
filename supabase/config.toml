@@ -3,7 +3,7 @@ project_id = "ghbnvodnnxgxkiufcael"
 # Configure webhook for custom email
 [auth.hook.send_email]
 enabled = true
-uri = "https://ghbnvodnnxgxkiufcael.supabase.co/functions/v1/send-custom-auth-email"
+uri = "pg-functions://postgres/send-custom-auth-email"
 secrets = ["SEND_EMAIL_HOOK_SECRET"]
 
 [functions.generate-recommendations]
