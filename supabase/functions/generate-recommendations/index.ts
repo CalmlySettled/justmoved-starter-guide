@@ -159,9 +159,10 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     return false;
   }
   
-  // Allow businesses with low review counts but log them for debugging
-  if (place.user_ratings_total !== undefined && place.user_ratings_total < 2) {
-    console.log(`→ Including business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+  // Must have a reasonable rating count (indicates consumer traffic) - but be less strict
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
+    console.log(`→ Excluding business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+    return false;
   }
   
   return true;
