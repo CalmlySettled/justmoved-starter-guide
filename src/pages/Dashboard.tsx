@@ -116,6 +116,11 @@ export default function Dashboard() {
       console.log('Dashboard - Fetched recommendations:', recData);
       console.log('Dashboard - Total recommendations count:', recData?.length);
       console.log('Dashboard - Favorites count:', recData?.filter(r => r.is_favorite).length);
+      console.log('Dashboard - Sample favorites:', recData?.filter(r => r.is_favorite).map(r => ({
+        name: r.business_name,
+        category: r.category,
+        is_favorite: r.is_favorite
+      })));
 
       if (recError) {
         throw recError;
