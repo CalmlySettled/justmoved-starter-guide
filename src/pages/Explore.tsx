@@ -424,18 +424,27 @@ export default function Explore() {
           business_description: business.description,
           business_phone: business.phone,
           business_website: business.website,
-          business_features: business.features,
+          business_features: business.features || [],
           category,
           is_favorite: true,
           is_displayed: true,
-          distance_miles: business.distance_miles
+          distance_miles: business.distance_miles,
+          business_latitude: business.latitude,
+          business_longitude: business.longitude,
+          relevance_score: 0.5
         };
         console.log('Explore - Insert data:', insertData);
+        console.log('Explore - All required fields check:', {
+          user_id: !!insertData.user_id,
+          business_name: !!insertData.business_name,
+          category: !!insertData.category,
+          is_favorite: insertData.is_favorite
+        });
         
-        const { error: insertError } = await supabase
+        const { data: insertResult, error: insertError } = await supabase
           .from('user_recommendations')
-          .insert(insertData);
-        console.log('Explore - Insert result:', insertError);
+          .insert(insertData)
+          .select('*');
         
         if (insertError) throw insertError;
       }
