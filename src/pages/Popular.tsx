@@ -294,7 +294,7 @@ const Popular = () => {
         .select('id, is_favorite')
         .eq('user_id', user.id)
         .eq('business_name', business.name)
-        .single();
+        .maybeSingle();
 
       console.log('Popular - Existing record check:', { existing, selectError });
 
