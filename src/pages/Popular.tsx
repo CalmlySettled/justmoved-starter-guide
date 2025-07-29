@@ -266,7 +266,10 @@ const Popular = () => {
 
   const toggleFavorite = async (business: Business, category: string) => {
     console.log('Popular page - toggleFavorite called for:', business.name, 'category:', category);
+    console.log('Current user:', user);
+    console.log('User ID:', user?.id);
     if (!user) {
+      console.log('No user found - showing error');
       toast.error('Please sign in to save favorites');
       return;
     }
