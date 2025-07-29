@@ -479,15 +479,15 @@ export default function Dashboard() {
 
   const getBusinessBadges = (features: string[]) => {
     const badges = [];
-    if (features.some(f => f.toLowerCase().includes('24') || f.toLowerCase().includes('hour'))) {
-      badges.push({ label: "24 Hours", icon: Clock, color: "bg-blue-100 text-blue-800" });
-    }
-    if (features.some(f => f.toLowerCase().includes('local') || f.toLowerCase().includes('family'))) {
-      badges.push({ label: "Local", icon: Heart, color: "bg-green-100 text-green-800" });
-    }
-    if (features.some(f => f.toLowerCase().includes('rating') || f.toLowerCase().includes('review'))) {
+    
+    // Only show essential badges based on actual business data
+    if (features.some(f => f.toLowerCase().includes('rating') || f.toLowerCase().includes('high'))) {
       badges.push({ label: "High Ratings", icon: Award, color: "bg-yellow-100 text-yellow-800" });
     }
+    if (features.some(f => f.toLowerCase().includes('local'))) {
+      badges.push({ label: "Local", icon: Heart, color: "bg-green-100 text-green-800" });
+    }
+    
     return badges.slice(0, 2);
   };
 

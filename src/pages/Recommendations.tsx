@@ -132,8 +132,8 @@ export default function Recommendations() {
   const getBusinessBadges = (business: Business) => {
     const badges = [];
     
-    // ⭐ "High Ratings" for businesses with rating ≥ 4.5
-    if (business.rating && business.rating >= 4.5) {
+    // ⭐ "High Ratings" for businesses with rating ≥ 4.0
+    if (business.rating && business.rating >= 4.0) {
       badges.push({ 
         label: "High Ratings", 
         icon: "⭐", 
@@ -141,67 +141,20 @@ export default function Recommendations() {
       });
     }
     
-    // 🏪 "Local Favorite" for non-franchise businesses (heuristic: uncommon name patterns)
+    // 🏪 "Local Favorite" for non-franchise businesses
     const businessNameLower = business.name.toLowerCase();
     const franchiseIndicators = ['mcdonalds', 'subway', 'starbucks', 'walmart', 'target', 'cvs', 'walgreens', 'kroger', 'safeway', 'whole foods', 'trader joe', 'costco', 'planet fitness', 'la fitness'];
     const isLocalFavorite = !franchiseIndicators.some(franchise => businessNameLower.includes(franchise));
     
     if (isLocalFavorite) {
       badges.push({ 
-        label: "Local Favorite", 
+        label: "Local", 
         icon: "🏪", 
-        color: "bg-purple-50 text-purple-700 border border-purple-200" 
+        color: "bg-green-50 text-green-700 border border-green-200" 
       });
     }
     
-    // 🕒 "Open Late" if closing time is after 10 PM (parse hours if available)
-    if (business.hours) {
-      const hoursText = business.hours.toLowerCase();
-      // Look for closing times after 10pm or 24-hour indicators
-      if (hoursText.includes('11') || hoursText.includes('12') || hoursText.includes('24') || hoursText.includes('midnight') || hoursText.includes('open late')) {
-        badges.push({ 
-          label: "Open Late", 
-          icon: "🕒", 
-          color: "bg-blue-50 text-blue-700 border border-blue-200" 
-        });
-      }
-    }
-    
-    // 🌱 "Organic Options" if business types or features include organic
-    if (business.features.some(f => f.toLowerCase().includes('organic')) || 
-        business.description.toLowerCase().includes('organic') ||
-        businessNameLower.includes('organic') || 
-        businessNameLower.includes('whole foods') || 
-        businessNameLower.includes('fresh')) {
-      badges.push({ 
-        label: "Organic Options", 
-        icon: "🌱", 
-        color: "bg-emerald-50 text-emerald-700 border border-emerald-200" 
-      });
-    }
-    
-    // 💸 "Budget-Friendly" based on features or common budget indicators
-    if (business.features.some(f => f.toLowerCase().includes('budget') || f.toLowerCase().includes('affordable')) ||
-        businessNameLower.includes('aldi') || 
-        businessNameLower.includes('walmart') || 
-        businessNameLower.includes('dollar')) {
-      badges.push({ 
-        label: "Budget-Friendly", 
-        icon: "💸", 
-        color: "bg-orange-50 text-orange-700 border border-orange-200" 
-      });
-    }
-    
-    // 🚗 "Curbside Available" if service attributes are present
-    if (business.features.some(f => f.toLowerCase().includes('pickup') || f.toLowerCase().includes('curbside') || f.toLowerCase().includes('drive'))) {
-      badges.push({ 
-        label: "Curbside Available", 
-        icon: "🚗", 
-        color: "bg-indigo-50 text-indigo-700 border border-indigo-200" 
-      });
-    }
-    
-    return badges.slice(0, 2); // Limit to 1-2 badges per card
+    return badges.slice(0, 2); // Only show 2 most important badges
   };
 
   const getBusinessImage = (business: Business, category: string) => {

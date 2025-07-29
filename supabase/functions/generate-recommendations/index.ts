@@ -239,25 +239,16 @@ async function searchGooglePlaces(
   }
 }
 
-// Generate features based on Yelp business data
+// Generate essential features based on Yelp business data (simplified)
 function generateFeaturesFromYelpData(business: any): string[] {
   const features: string[] = [];
   
-  // Rating-based features
+  // Essential rating-based feature
   if (business.rating >= 4.0) {
     features.push('High Ratings');
   }
   
-  // Price-based features
-  if (business.price) {
-    if (business.price === '$' || business.price === '$$') {
-      features.push('Budget-Friendly');
-    } else if (business.price === '$$$$') {
-      features.push('Premium');
-    }
-  }
-
-  // Chain vs Local
+  // Essential local vs chain classification
   const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
   const isChain = chainKeywords.some(keyword => 
     business.name.toLowerCase().includes(keyword)
@@ -269,99 +260,28 @@ function generateFeaturesFromYelpData(business: any): string[] {
     features.push('Local');
   }
 
-  // Category-specific features
-  if (business.categories) {
-    const categoryTitles = business.categories.map((cat: any) => cat.title.toLowerCase());
-    
-    // Grocery store features
-    if (categoryTitles.some((title: string) => title.includes('organic'))) {
-      features.push('Organic Options');
-    }
-    
-    // Fitness features
-    if (categoryTitles.some((title: string) => title.includes('yoga'))) {
-      features.push('Yoga Classes');
-    }
-    if (categoryTitles.some((title: string) => title.includes('personal training'))) {
-      features.push('Personal Training');
-    }
-    
-    // Religious features
-    if (categoryTitles.some((title: string) => title.includes('catholic'))) {
-      features.push('Catholic');
-    }
-    if (categoryTitles.some((title: string) => title.includes('baptist'))) {
-      features.push('Baptist');
-    }
-    if (categoryTitles.some((title: string) => title.includes('methodist'))) {
-      features.push('Methodist');
-    }
-    if (categoryTitles.some((title: string) => title.includes('lutheran'))) {
-      features.push('Lutheran');
-    }
-    if (categoryTitles.some((title: string) => title.includes('presbyterian'))) {
-      features.push('Presbyterian');
-    }
-  }
-
-  // Accessibility and convenience features
-  if (business.transactions?.includes('pickup')) {
-    features.push('Pickup Available');
-  }
-  if (business.transactions?.includes('delivery')) {
-    features.push('Delivery Available');
-  }
-
   return features.length > 0 ? features : ['Local Business'];
 }
 
-// Helper function to generate features from Google Places data
+// Helper function to generate essential features from Google Places data
 function generateFeaturesFromGoogleData(place: any): string[] {
   const features: string[] = [];
   
+  // Essential rating-based feature
   if (place.rating && place.rating >= 4.0) {
     features.push('High Ratings');
   }
   
-  if (place.price_level !== undefined) {
-    if (place.price_level <= 2) {
-      features.push('Budget-Friendly');
-    } else if (place.price_level >= 3) {
-      features.push('Premium');
-    }
-  }
-  
-  if (place.opening_hours?.open_now) {
-    features.push('Open Now');
-  }
-  
-  if (place.types?.includes('meal_takeaway') || place.types?.includes('meal_delivery')) {
-    features.push('Takeout Available');
-  }
-  
-  // Extract denomination info from business name for faith communities
+  // Essential local vs chain classification
   const businessName = place.name?.toLowerCase() || '';
-  if (businessName.includes('catholic')) {
-    features.push('Catholic');
-  }
-  if (businessName.includes('baptist')) {
-    features.push('Baptist');
-  }
-  if (businessName.includes('methodist')) {
-    features.push('Methodist');
-  }
-  if (businessName.includes('lutheran')) {
-    features.push('Lutheran');
-  }
-  if (businessName.includes('presbyterian')) {
-    features.push('Presbyterian');
-  }
-  if (businessName.includes('community') && (businessName.includes('church') || businessName.includes('fellowship'))) {
-    features.push('Non-denominational');
-  }
+  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
+  const isChain = chainKeywords.some(keyword => businessName.includes(keyword));
   
-  // Always add Local for community feel
-  features.push('Local');
+  if (isChain) {
+    features.push('Chain');
+  } else {
+    features.push('Local');
+  }
   
   return features;
 }
