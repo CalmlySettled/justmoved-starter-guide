@@ -30,6 +30,8 @@ export default function Auth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change event:', event, 'Session:', !!session);
+        
         if (session) {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
@@ -74,16 +76,21 @@ export default function Auth() {
           }
           
           // Check if user has completed onboarding in Supabase
-          const { data: profile } = await supabase
+          console.log('Checking if user has profile data...');
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('address, priorities')
             .eq('user_id', session.user.id)
             .single();
           
+          console.log('Profile data:', profile, 'Error:', profileError);
+          
           // If they have profile data, go to dashboard, otherwise onboarding
           if (profile?.address && profile?.priorities?.length > 0) {
+            console.log('User has profile data, navigating to dashboard');
             navigate("/dashboard");
           } else {
+            console.log('User has no profile data, navigating to onboarding');
             navigate("/onboarding");
           }
         }
