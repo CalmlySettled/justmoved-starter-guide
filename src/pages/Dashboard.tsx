@@ -364,6 +364,64 @@ export default function Dashboard() {
     }
   };
 
+  const regenerateRecommendations = async () => {
+    if (!user || !userProfile) return;
+    
+    setGeneratingRecommendations(true);
+    try {
+      // Clear existing recommendations
+      await supabase
+        .from('user_recommendations')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Generate new recommendations based on current profile
+      const quizResponse = {
+        address: userProfile.address,
+        priorities: userProfile.priorities,
+        household: userProfile.household_type,
+        transportation: userProfile.transportation_style,
+        budgetRange: userProfile.budget_preference,
+        movingTimeline: userProfile.life_stage
+      };
+
+      const { error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+        body: { 
+          quizResponse,
+          userId: user.id
+        }
+      });
+
+      if (generateError) {
+        throw generateError;
+      }
+
+      // Fetch the newly generated recommendations
+      const { data: freshRecData } = await supabase
+        .from('user_recommendations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_displayed', true)
+        .order('relevance_score', { ascending: false });
+      
+      setRecommendations(freshRecData || []);
+      
+      toast({
+        title: "Recommendations Updated",
+        description: "Fresh recommendations have been generated for your current location.",
+      });
+    } catch (error) {
+      console.error('Error regenerating recommendations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to regenerate recommendations. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingRecommendations(false);
+    }
+  };
+
   const toggleFavorite = async (rec: SavedRecommendation) => {
     if (!user) return;
 
@@ -862,6 +920,15 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
+            <Button 
+              onClick={regenerateRecommendations}
+              disabled={generatingRecommendations}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${generatingRecommendations ? 'animate-spin' : ''}`} />
+              {generatingRecommendations ? 'Generating...' : 'Regenerate for Current Location'}
+            </Button>
           </div>
         </div>
 
