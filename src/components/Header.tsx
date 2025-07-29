@@ -47,7 +47,7 @@ export function Header() {
             to="/explore"
             className="text-muted-foreground hover:text-foreground transition-smooth"
           >
-            Explore
+            Essentials
           </Link>
           <Link 
             to="/how-it-works"
