@@ -8,14 +8,7 @@ export function TestimonialSection() {
           <Quote className="h-12 w-12 mx-auto text-white/80 mb-6" />
           
           <blockquote className="text-2xl md:text-3xl font-medium text-white leading-relaxed mb-8">
-            "When I moved from the city of Philadelphia to the suburbs of Connecticut, I quickly realized how 
-            overwhelming it could feel to find my way in a new place. I spent hours searching Google, 
-            Google Maps, and countless websites just to answer simple questions like where to buy 
-            groceries, which pharmacy to use, and what local spots might make me feel at home. I 
-            wanted one resource that could bring all of that together — a place to make settling in not 
-            only easier, but calmer and more enjoyable. That's why I created CalmlySettled: to help 
-            people like you feel at home, faster, with trusted recommendations and a personalized 
-            dashboard to guide you every step of the way."
+            "Every year, nearly 30 million Americans move — and I was one of them. When I relocated from Philadelphia to the suburbs of Connecticut, I quickly realized how overwhelming it was to find the basics: a grocery store, a pharmacy, even a spot to feel at home. I wished there was one trusted place to bring it all together. That's why I created CalmlySettled — to make settling in easier, faster, and a lot less stressful."
           </blockquote>
           
           <div className="flex items-center justify-center space-x-4">
