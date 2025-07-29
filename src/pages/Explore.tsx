@@ -588,18 +588,6 @@ export default function Explore() {
                                 </span>
                               </a>
                             )}
-                            
-                            {business.features && business.features.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {business.features.slice(0, 3).map((feature, featureIndex) => (
-                                  <Badge key={featureIndex} variant="outline" className="text-xs">
-                                    {feature.includes("High Ratings") && <Star className="w-3 h-3 mr-1" />}
-                                    {feature.includes("Open Now") && <Clock className="w-3 h-3 mr-1" />}
-                                    {feature}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
