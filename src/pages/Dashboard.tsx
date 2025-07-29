@@ -962,7 +962,11 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-4 justify-center">
             <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
             <Button 
-              onClick={regenerateRecommendations}
+              onClick={() => {
+                console.log('REGENERATE BUTTON CLICKED - userProfile:', userProfile);
+                console.log('REGENERATE BUTTON CLICKED - user:', user);
+                regenerateRecommendations();
+              }}
               disabled={generatingRecommendations}
               variant="outline"
               className="gap-2"
