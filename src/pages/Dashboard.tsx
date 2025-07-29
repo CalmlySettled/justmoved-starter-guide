@@ -118,6 +118,72 @@ export default function Dashboard() {
         throw recError;
       }
 
+      // If no recommendations exist for this user, we need to generate them
+      if (!recData || recData.length === 0) {
+        console.log('No recommendations found for user, checking for profile data to generate new ones');
+        
+        // If user has no profile either, they need to take the quiz
+        if (!profileData || !profileData.priorities || profileData.priorities.length === 0) {
+          console.log('No profile or priorities found, user needs to take quiz');
+          setRecommendations([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Generate recommendations using profile data
+        console.log('Generating recommendations from profile data:', profileData.priorities);
+        setGeneratingRecommendations(true);
+        
+        try {
+          const quizResponse = {
+            address: profileData.address || '',
+            householdType: profileData.household_type || 'Individual',
+            priorities: profileData.priorities,
+            priorityPreferences: profileData.priority_preferences || {},
+            transportationStyle: profileData.transportation_style || 'Car',
+            budgetPreference: profileData.budget_preference || 'A mix of both',
+            lifeStage: profileData.life_stage || 'Working professional',
+            settlingTasks: profileData.settling_tasks || [],
+            latitude: profileData.latitude,
+            longitude: profileData.longitude
+          };
+
+          const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+            body: { 
+              quizResponse,
+              userId: user.id
+            }
+          });
+
+          if (generateError) {
+            console.error('Error generating recommendations:', generateError);
+            toast({
+              title: "Error generating recommendations",
+              description: "Please try again or retake the quiz",
+              variant: "destructive",
+            });
+          } else {
+            console.log('Successfully generated new recommendations');
+            // Fetch the newly generated recommendations
+            const { data: freshRecData } = await supabase
+              .from('user_recommendations')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('is_displayed', true)
+              .order('relevance_score', { ascending: false });
+            
+            setRecommendations(freshRecData || []);
+          }
+        } catch (error) {
+          console.error('Error in recommendation generation:', error);
+        } finally {
+          setGeneratingRecommendations(false);
+        }
+        
+        setLoading(false);
+        return;
+      }
+
       // Clean up unwanted recommendations - only keep categories in user's priorities
       if (profileData?.priorities && recData) {
         const userPriorities = profileData.priorities;
