@@ -152,214 +152,6 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
   return 8000; // 8km for suburban/rural areas
 }
 
-// Foursquare Places API integration
-async function searchFoursquarePlaces(
-  category: string,
-  latitude: number,
-  longitude: number,
-  customRadius?: number
-): Promise<Business[]> {
-  const foursquareApiKey = Deno.env.get('FOURSQUARE_API_KEY');
-  if (!foursquareApiKey) {
-    console.log('Foursquare API key not found, skipping Foursquare search');
-    return [];
-  }
-
-  const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
-  
-  try {
-    console.log(`🔍 FOURSQUARE: Searching for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
-    
-    // Map our categories to Foursquare categories
-    const foursquareQuery = mapCategoryToFoursquareQuery(category);
-    
-    const searchUrl = `https://api.foursquare.com/v3/places/search?ll=${latitude},${longitude}&radius=${radius}&query=${encodeURIComponent(foursquareQuery)}&limit=20`;
-    
-    console.log(`🔍 FOURSQUARE API URL: ${searchUrl}`);
-    
-    const response = await fetch(searchUrl, {
-      headers: {
-        'Authorization': foursquareApiKey,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error('Foursquare API error:', response.status, response.statusText);
-      return [];
-    }
-
-    const data = await response.json();
-    console.log(`→ Foursquare returned ${data.results?.length || 0} businesses`);
-    
-    // 🔍 LOG RAW FOURSQUARE RESPONSE
-    console.log(`🔍 RAW FOURSQUARE RESPONSE:`, JSON.stringify({
-      results_count: data.results?.length || 0,
-      results: data.results?.slice(0, 5).map(place => ({
-        name: place.name,
-        fsq_id: place.fsq_id,
-        categories: place.categories?.map(cat => cat.name),
-        location: place.location,
-        rating: place.rating
-      })) || []
-    }, null, 2));
-
-    if (!data.results || data.results.length === 0) {
-      return [];
-    }
-
-    // Convert Foursquare results to Business objects
-    const businesses = await Promise.all(
-      data.results
-        .filter((place: any) => isFoursquareConsumerBusiness(place, category))
-        .slice(0, 15)
-        .map(async (place: any) => {
-          let imageUrl = '';
-          let website = '';
-          let phone = '';
-          
-          // Get place details for additional info
-          if (place.fsq_id) {
-            try {
-              const detailsUrl = `https://api.foursquare.com/v3/places/${place.fsq_id}?fields=website,tel,photos`;
-              const detailsResponse = await fetch(detailsUrl, {
-                headers: {
-                  'Authorization': foursquareApiKey,
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                website = detailsData.website || '';
-                phone = detailsData.tel || '';
-                
-                // Get photo if available
-                if (detailsData.photos && detailsData.photos.length > 0) {
-                  const photo = detailsData.photos[0];
-                  imageUrl = `${photo.prefix}400x400${photo.suffix}`;
-                  console.log(`→ Using Foursquare photo for: ${place.name}`);
-                }
-                
-                if (website) {
-                  console.log(`→ Found website for ${place.name}: ${website}`);
-                }
-              }
-            } catch (error) {
-              console.log(`→ Could not fetch Foursquare details for: ${place.name}`);
-            }
-          }
-
-          return {
-            name: place.name,
-            address: place.location?.formatted_address || `${place.location?.address || ''}, ${place.location?.locality || ''}`.trim(),
-            description: place.categories?.map(cat => cat.name).join(', ') || '',
-            phone: phone,
-            features: generateFeaturesFromFoursquareData(place),
-            latitude: place.geocodes?.main?.latitude,
-            longitude: place.geocodes?.main?.longitude,
-            distance_miles: undefined, // Will calculate later
-            website: website,
-            image_url: imageUrl,
-            rating: place.rating || 0,
-            review_count: place.stats?.total_ratings || 0
-          };
-        })
-    );
-
-    return businesses.filter(b => b.name && b.address);
-
-  } catch (error) {
-    console.error('Error fetching from Foursquare API:', error);
-    return [];
-  }
-}
-
-// Map our categories to Foursquare-friendly queries
-function mapCategoryToFoursquareQuery(category: string): string {
-  const categoryMappings = {
-    'grocery stores': 'grocery store supermarket',
-    'pharmacy': 'pharmacy drugstore',
-    'hardware stores': 'hardware store home improvement',
-    'fitness gyms': 'gym fitness center',
-    'restaurants': 'restaurant',
-    'coffee shops': 'coffee shop cafe',
-    'medical clinics': 'medical clinic doctor',
-    'veterinary clinics': 'veterinary clinic',
-    'banks': 'bank',
-    'post office': 'post office',
-    'parks recreation': 'park recreation',
-    'entertainment venues': 'entertainment venue',
-  };
-  
-  return categoryMappings[category] || category;
-}
-
-// Check if a Foursquare business is consumer-facing
-function isFoursquareConsumerBusiness(place: any, category: string): boolean {
-  const name = place.name?.toLowerCase() || '';
-  const categories = place.categories?.map(cat => cat.name.toLowerCase()) || [];
-  
-  console.log(`📍 FOURSQUARE CHECK: "${place.name}" - Categories: [${categories.join(', ')}]`);
-  
-  const excludeKeywords = [
-    'wholesale', 'distributor', 'b2b', 'commercial only', 'trade only',
-    'foods llc', 'foods inc', 'food service', 'food services', 'foodservice',
-    'real estate office', 'insurance agency', 'accounting', 'lawyer', 'political',
-    'funeral home', 'cemetery', 'government office', 'courthouse', 'embassy'
-  ];
-  
-  if (excludeKeywords.some(keyword => name.includes(keyword))) {
-    console.log(`❌ FOURSQUARE EXCLUDED: ${place.name} - B2B/non-consumer business`);
-    return false;
-  }
-  
-  // Check if it has consumer-oriented categories
-  const consumerCategories = [
-    'grocery', 'supermarket', 'store', 'shop', 'restaurant', 'cafe', 'pharmacy',
-    'bank', 'gym', 'fitness', 'medical', 'clinic', 'post office', 'park',
-    'entertainment', 'retail', 'market', 'food', 'dining'
-  ];
-  
-  const hasConsumerCategory = categories.some(cat => 
-    consumerCategories.some(consumer => cat.includes(consumer))
-  );
-  
-  if (!hasConsumerCategory) {
-    console.log(`❌ FOURSQUARE EXCLUDED: ${place.name} - No consumer category found`);
-    return false;
-  }
-  
-  console.log(`✅ FOURSQUARE INCLUDED: ${place.name} - Consumer business`);
-  return true;
-}
-
-// Generate features from Foursquare data
-function generateFeaturesFromFoursquareData(place: any): string[] {
-  const features: string[] = [];
-  
-  // Rating-based feature
-  if (place.rating && place.rating >= 4.0) {
-    features.push('High Ratings');
-  }
-  
-  // Chain vs local classification
-  const businessName = place.name?.toLowerCase() || '';
-  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
-  const isChain = chainKeywords.some(keyword => businessName.includes(keyword));
-  
-  if (isChain) {
-    features.push('Chain');
-  } else {
-    features.push('Local');
-  }
-  
-  // Add source identifier
-  features.push('Foursquare Verified');
-  
-  return features;
-}
-
 // Google Places API integration
 
   // Simplified function to check if a business is consumer-facing (minimal filtering)
@@ -662,7 +454,7 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Enhanced business search with cached coordinates and dynamic radius (Google + Foursquare)
+// Enhanced business search with cached coordinates and dynamic radius
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
@@ -670,28 +462,23 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   const optimalRadius = getOptimalRadius(coordinates);
   console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
-  // Search both Google Places and Foursquare in parallel for better coverage
-  const [googleBusinesses, foursquareBusinesses] = await Promise.all([
-    searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius),
-    searchFoursquarePlaces(category, coordinates.lat, coordinates.lng, optimalRadius)
-  ]);
+  // Use only Google Places API with dynamic radius
+  const businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius);
+  console.log(`Google Places found ${businesses.length} businesses`);
   
-  console.log(`Google Places found ${googleBusinesses.length} businesses`);
-  console.log(`Foursquare found ${foursquareBusinesses.length} businesses`);
-  
-  // Combine and deduplicate results from both APIs
-  const combinedBusinesses = combineAndDeduplicateBusinesses(googleBusinesses, foursquareBusinesses);
-  console.log(`Combined and deduplicated: ${combinedBusinesses.length} unique businesses`);
-  
-  // Calculate distances for all businesses
-  const businessesWithDistance = combinedBusinesses.map(business => {
-    const distance = calculateDistance(coordinates.lat, coordinates.lng, business.latitude, business.longitude);
-    return { ...business, distance_miles: distance };
+  // Calculate distances for businesses that don't have them
+  businesses.forEach(business => {
+    if (business.latitude && business.longitude && !business.distance_miles) {
+      business.distance_miles = calculateDistance(
+        coordinates.lat, coordinates.lng,
+        business.latitude, business.longitude
+      );
+    }
   });
   
   // 🔍 DISTANCE-BASED FILTERING: Transportation should not be a hard filter
   // Instead, use a generous radius (15 miles) and let scoring handle preference
-  let filteredBusinesses = businessesWithDistance;
+  let filteredBusinesses = businesses;
   if (userPreferences?.transportationStyle) {
     // Use generous maximum distances that don't exclude nearby options
     const getMaxDistanceForTransportation = (transportationStyle: string): number => {
@@ -705,76 +492,6 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
         case 'Car':
         default:
           return 15; // Standard max distance
-}
-
-// Combine and deduplicate businesses from multiple APIs
-function combineAndDeduplicateBusinesses(googleBusinesses: Business[], foursquareBusinesses: Business[]): Business[] {
-  const businessMap = new Map<string, Business>();
-  
-  // Add Google businesses first
-  googleBusinesses.forEach(business => {
-    const key = createBusinessKey(business);
-    if (!businessMap.has(key)) {
-      businessMap.set(key, { ...business, features: [...business.features, 'Google Verified'] });
-    }
-  });
-  
-  // Add Foursquare businesses, avoiding duplicates
-  foursquareBusinesses.forEach(business => {
-    const key = createBusinessKey(business);
-    if (!businessMap.has(key)) {
-      businessMap.set(key, business);
-    } else {
-      // If duplicate found, merge the best data
-      const existingBusiness = businessMap.get(key);
-      const mergedBusiness = mergeDuplicateBusinesses(existingBusiness!, business);
-      businessMap.set(key, mergedBusiness);
-    }
-  });
-  
-  return Array.from(businessMap.values());
-}
-
-// Create a unique key for deduplication based on name and location
-function createBusinessKey(business: Business): string {
-  const normalizedName = business.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-  const lat = business.latitude ? Math.round(business.latitude * 1000) / 1000 : 0;
-  const lng = business.longitude ? Math.round(business.longitude * 1000) / 1000 : 0;
-  return `${normalizedName}_${lat}_${lng}`;
-}
-
-// Merge data from duplicate businesses found across APIs
-function mergeDuplicateBusinesses(google: Business, foursquare: Business): Business {
-  console.log(`🔄 MERGING DUPLICATE: "${google.name}" from Google + Foursquare`);
-  
-  return {
-    name: google.name, // Prefer Google name (usually cleaner)
-    address: google.address || foursquare.address,
-    description: google.description || foursquare.description,
-    phone: foursquare.phone || google.phone, // Foursquare often has better phone data
-    features: [...new Set([...google.features, ...foursquare.features])], // Combine unique features
-    latitude: google.latitude || foursquare.latitude,
-    longitude: google.longitude || foursquare.longitude,
-    distance_miles: google.distance_miles || foursquare.distance_miles,
-    website: foursquare.website || google.website, // Foursquare often has better website data
-    image_url: google.image_url || foursquare.image_url, // Prefer Google photos (usually better quality)
-    rating: Math.max(google.rating || 0, foursquare.rating || 0), // Use higher rating
-    review_count: Math.max(google.review_count || 0, foursquare.review_count || 0)
-  };
-}
-
-  if (userPreferences?.transportationStyle) {
-    // Use generous maximum distances that don't exclude nearby options
-    const getMaxDistanceForTransportation = (transportationStyle: string): number => {
-      switch (transportationStyle) {
-        case 'Bike / walk':
-          return 15; // Generous for safety - scoring will prefer closer
-        case 'Drive':
-          return 25; // Wide radius for driving
-        case 'Public transit':
-          return 20; // Moderate radius for transit
-        default:
-          return 15; // Conservative fallback
       }
     };
 
@@ -782,14 +499,14 @@ function mergeDuplicateBusinesses(google: Business, foursquare: Business): Busin
     console.log(`🔍 GENEROUS FILTERING by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles (scoring will handle preference)`);
     
     // Log businesses before filtering
-    console.log(`🔍 BUSINESSES BEFORE DISTANCE FILTER (${businessesWithDistance.length}):`, businessesWithDistance.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
+    console.log(`🔍 BUSINESSES BEFORE DISTANCE FILTER (${businesses.length}):`, businesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
     
-    filteredBusinesses = businessesWithDistance.filter(business => 
+    filteredBusinesses = businesses.filter(business => 
       business.distance_miles && business.distance_miles <= maxDistance
     );
     
     console.log(`🔍 BUSINESSES AFTER DISTANCE FILTER (${filteredBusinesses.length}):`, filteredBusinesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
-    console.log(`🔍 Filtered from ${businessesWithDistance.length} to ${filteredBusinesses.length} businesses based on transportation`);
+    console.log(`🔍 Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
   // Sort businesses by distance only (closest first)
@@ -801,7 +518,7 @@ function mergeDuplicateBusinesses(google: Business, foursquare: Business): Busin
   console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
   
   // Return results sorted purely by distance
-  return sortedBusinesses.slice(0, 12); // Increased limit due to better coverage from dual APIs
+  return sortedBusinesses.slice(0, 25);
 }
 
 // Simplified relevance scoring based primarily on distance
