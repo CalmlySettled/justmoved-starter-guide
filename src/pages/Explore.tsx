@@ -363,7 +363,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-page">
       <Header />
       
       <main className="pt-24 pb-16">
@@ -442,13 +442,13 @@ export default function Explore() {
             <>
 
               {/* Just Moved Collections */}
-              <section className="mb-16">
-                <h2 className="text-3xl font-bold mb-6">Just Moved Collections</h2>
+              <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
+                <h2 className="text-3xl font-bold mb-6 text-center">Just Moved Collections</h2>
                 <div className="grid grid-cols-2 gap-6">
                   {themedPacks.map((pack) => (
                     <Card 
                       key={pack.title}
-                      className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                      className="cursor-pointer bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0"
                       onClick={() => handleThemedPackClick(pack)}
                     >
                       <CardHeader>
@@ -482,12 +482,12 @@ export default function Explore() {
 
               {/* Trending Categories */}
               <section className="mb-16">
-                <h2 className="text-3xl font-bold mb-6">Trending Categories</h2>
+                <h2 className="text-3xl font-bold mb-6 text-center">Popular Categories Near You</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {trendingCategories.map((category) => (
                     <Card 
                       key={category.name}
-                      className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                      className="cursor-pointer shadow-card hover:shadow-card-hover transition-all duration-300 hover:scale-110 border-0 bg-gradient-card"
                       onClick={() => handleCategoryClick(category)}
                     >
                       <CardContent className="p-6 text-center">

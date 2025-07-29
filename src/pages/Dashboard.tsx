@@ -908,7 +908,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="min-h-screen bg-gradient-page">
         <Header />
         <div className="pt-24 px-6 max-w-6xl mx-auto">
           <div className="text-center mb-8">
@@ -918,7 +918,7 @@ export default function Dashboard() {
           
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="h-64">
+              <Card key={i} className="h-64 bg-gradient-card shadow-card border-0">
                 <CardHeader>
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
@@ -939,7 +939,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-page">
       <Header />
       <div className="pt-24 px-4 max-w-5xl mx-auto pb-16">
         {/* Header Section */}
@@ -976,7 +976,7 @@ export default function Dashboard() {
 
         {/* Favorites Section - Interactive Visual Display */}
         {recommendations.filter(rec => rec.is_favorite).length > 0 && (
-          <div className="mb-12">
+          <section className="mb-12 bg-gradient-section rounded-2xl p-8 shadow-soft">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl">
@@ -1037,7 +1037,7 @@ export default function Dashboard() {
                 const isFavoriting = favoritingRecommendations.has(rec.id);
                 
                 return (
-                  <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden hover:scale-[1.02]">
+                  <Card key={rec.id} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden hover:scale-[1.02]">
                     {/* Business Image */}
                     <div className="aspect-[4/3] overflow-hidden relative">
                       <img 
@@ -1117,12 +1117,12 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Saved Recommendations */}
         {recommendations.length > 0 ? (
-          <div className="space-y-16">
+          <div className="space-y-12">
             {(() => {
               // Sort categories to show user's original priorities first, then new ones
               const userPriorities = userProfile?.priorities || [];
@@ -1175,7 +1175,7 @@ export default function Dashboard() {
                   {categoryRecs.map((rec) => {
                     const isFavoriting = favoritingRecommendations.has(rec.id);
                     return (
-                      <Card key={rec.id} className="group hover:shadow-elegant transition-all duration-300 border-0 shadow-soft bg-card rounded-2xl overflow-hidden">
+                      <Card key={rec.id} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
                         {/* Business Image */}
                         <div className="aspect-video overflow-hidden">
                            <img 
