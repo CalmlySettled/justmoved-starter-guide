@@ -503,8 +503,8 @@ export default function Explore() {
 
               {/* Themed Packs */}
               <section className="mb-16">
-                <h2 className="text-3xl font-bold mb-6">Themed Collections</h2>
-                <div className="grid md:grid-cols-3 gap-6">
+                <h2 className="text-3xl font-bold mb-6">Just Moved Collections</h2>
+                <div className="grid grid-cols-2 gap-6">
                   {themedPacks.map((pack) => (
                     <Card 
                       key={pack.title}
