@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/confirm" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/account-settings" element={<AccountSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
