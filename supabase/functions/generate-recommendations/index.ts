@@ -864,6 +864,7 @@ serve(async (req) => {
       rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
     }
     const requestBody = await req.json();
+    console.log('🔍 DEBUG VERSION: Enhanced debugging enabled for Sprouts investigation');
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
     const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
