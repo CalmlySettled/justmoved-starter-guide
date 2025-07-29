@@ -296,6 +296,12 @@ function generateFeaturesFromYelpData(business: any): string[] {
     if (categoryTitles.some((title: string) => title.includes('methodist'))) {
       features.push('Methodist');
     }
+    if (categoryTitles.some((title: string) => title.includes('lutheran'))) {
+      features.push('Lutheran');
+    }
+    if (categoryTitles.some((title: string) => title.includes('presbyterian'))) {
+      features.push('Presbyterian');
+    }
   }
 
   // Accessibility and convenience features
@@ -331,6 +337,27 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   
   if (place.types?.includes('meal_takeaway') || place.types?.includes('meal_delivery')) {
     features.push('Takeout Available');
+  }
+  
+  // Extract denomination info from business name for faith communities
+  const businessName = place.name?.toLowerCase() || '';
+  if (businessName.includes('catholic')) {
+    features.push('Catholic');
+  }
+  if (businessName.includes('baptist')) {
+    features.push('Baptist');
+  }
+  if (businessName.includes('methodist')) {
+    features.push('Methodist');
+  }
+  if (businessName.includes('lutheran')) {
+    features.push('Lutheran');
+  }
+  if (businessName.includes('presbyterian')) {
+    features.push('Presbyterian');
+  }
+  if (businessName.includes('community') && (businessName.includes('church') || businessName.includes('fellowship'))) {
+    features.push('Non-denominational');
   }
   
   // Always add Local for community feel

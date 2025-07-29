@@ -54,6 +54,10 @@ export function getCategoryFilterOptions(category: string): string[] {
     return ['Nearby', 'Free', 'Family-Friendly', 'Dog-Friendly'];
   }
   
+  if (categoryLower.includes('faith') || categoryLower.includes('church') || categoryLower.includes('religious') || categoryLower.includes('worship')) {
+    return ['Catholic', 'Baptist', 'Methodist', 'Lutheran', 'Presbyterian', 'Non-denominational', 'High Rated', 'Nearby'];
+  }
+  
   // Default filters for any category
   return ['High Rated', 'Nearby', 'Budget-Friendly', 'Local'];
 }

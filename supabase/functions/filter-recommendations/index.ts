@@ -116,6 +116,25 @@ serve(async (req) => {
         else if (filterLower === 'specialist') {
           query = query.contains('business_features', ['Specialist']);
         }
+        // Faith community denomination filters
+        else if (filterLower === 'catholic') {
+          query = query.or(`business_name.ilike.%Catholic%,business_description.ilike.%Catholic%,business_features.cs.{"Catholic"}`);
+        }
+        else if (filterLower === 'baptist') {
+          query = query.or(`business_name.ilike.%Baptist%,business_description.ilike.%Baptist%,business_features.cs.{"Baptist"}`);
+        }
+        else if (filterLower === 'methodist') {
+          query = query.or(`business_name.ilike.%Methodist%,business_description.ilike.%Methodist%,business_features.cs.{"Methodist"}`);
+        }
+        else if (filterLower === 'lutheran') {
+          query = query.or(`business_name.ilike.%Lutheran%,business_description.ilike.%Lutheran%,business_features.cs.{"Lutheran"}`);
+        }
+        else if (filterLower === 'presbyterian') {
+          query = query.or(`business_name.ilike.%Presbyterian%,business_description.ilike.%Presbyterian%,business_features.cs.{"Presbyterian"}`);
+        }
+        else if (filterLower === 'non-denominational') {
+          query = query.or(`business_name.ilike.%Non-denominational%,business_description.ilike.%Community%,business_features.cs.{"Non-denominational"}`);
+        }
         // Generic filter - search in business features and name/description
         else {
           query = query.or(`business_features.cs.{"${filter}"},business_name.ilike.%${filter}%,business_description.ilike.%${filter}%`);
