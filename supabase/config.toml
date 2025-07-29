@@ -1,7 +1,16 @@
 project_id = "ghbnvodnnxgxkiufcael"
 
+# Configure webhook for custom email
+[auth.hook.send_email]
+enabled = true
+uri = "pg-functions://postgres/send_custom_auth_email"
+secrets = ["SEND_EMAIL_HOOK_SECRET"]
+
 [functions.generate-recommendations]
 verify_jwt = false
 
 [functions.filter-recommendations]
+verify_jwt = false
+
+[functions.send-custom-auth-email]
 verify_jwt = false
