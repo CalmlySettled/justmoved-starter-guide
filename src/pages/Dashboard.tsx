@@ -990,38 +990,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Category-specific filters */}
-                <div className="mb-8">
-                  <div className="flex flex-wrap gap-2">
-                    {getCategoryFilters(category).map((filter) => (
-                      <Badge 
-                        key={filter}
-                        variant="outline"
-                        className={`cursor-pointer transition-all hover:scale-105 ${
-                          activeCategoryFilter[category] === filter
-                            ? "bg-primary text-primary-foreground border-primary shadow-md" 
-                            : "bg-background text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/50"
-                        } ${filterLoading[category] ? 'opacity-50 cursor-wait' : ''}`}
-                        onClick={() => !filterLoading[category] && handleCategoryFilter(category, filter)}
-                      >
-                        {filter}
-                        {filterLoading[category] && activeCategoryFilter[category] === filter && (
-                          <RefreshCw className="h-3 w-3 ml-1 animate-spin" />
-                        )}
-                      </Badge>
-                    ))}
-                    {activeCategoryFilter[category] && (
-                      <Badge 
-                        variant="outline" 
-                        className="cursor-pointer text-muted-foreground hover:text-foreground border-dashed"
-                        onClick={() => handleCategoryFilter(category, activeCategoryFilter[category]!)}
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Clear
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+                {/* Filters removed for cleaner UX */}
                 
                 <div className="grid gap-6 md:grid-cols-2">
                   {categoryRecs.map((rec) => {
