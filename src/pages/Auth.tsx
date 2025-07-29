@@ -54,11 +54,14 @@ export default function Auth() {
                     user_id: session.user.id,
                     address: quizData.address,
                     priorities: quizData.priorities,
+                    priority_preferences: quizData.priorityPreferences || {},
                     household_type: quizData.household,
                     transportation_style: quizData.transportation,
                     budget_preference: quizData.budgetRange,
                     life_stage: quizData.movingTimeline,
-                    settling_tasks: quizData.settlingTasks || []
+                    settling_tasks: quizData.settlingTasks || [],
+                    latitude: quizData.latitude,
+                    longitude: quizData.longitude
                   }, {
                     onConflict: 'user_id'
                   });
@@ -66,7 +69,37 @@ export default function Auth() {
                 if (error) {
                   console.error('Error saving quiz data to profile:', error);
                 } else {
-                  console.log('Quiz data saved successfully, clearing localStorage and navigating to dashboard');
+                  console.log('Quiz data saved successfully, generating recommendations...');
+                  
+                  // Generate recommendations immediately after profile is saved
+                  try {
+                    const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
+                      body: { 
+                        quizResponse: {
+                          address: quizData.address,
+                          householdType: quizData.household,
+                          priorities: quizData.priorities,
+                          priorityPreferences: quizData.priorityPreferences || {},
+                          transportationStyle: quizData.transportation,
+                          budgetPreference: quizData.budgetRange,
+                          lifeStage: quizData.movingTimeline,
+                          settlingTasks: quizData.settlingTasks || [],
+                          latitude: quizData.latitude,
+                          longitude: quizData.longitude
+                        },
+                        userId: session.user.id
+                      }
+                    });
+                    
+                    if (recError) {
+                      console.error('Error generating recommendations:', recError);
+                    } else {
+                      console.log('Recommendations generated successfully');
+                    }
+                  } catch (recError) {
+                    console.error('Error calling generate-recommendations function:', recError);
+                  }
+                  
                   localStorage.removeItem('onboardingQuizData');
                   navigate("/dashboard");
                   return; // Exit early - don't check profile again
