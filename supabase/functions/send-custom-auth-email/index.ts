@@ -5,7 +5,13 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { VerificationEmail } from './_templates/verification-email.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
-const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
+// Use a hardcoded secret temporarily for testing
+const hookSecret = 'calmlysettled-webhook-secret-2025-xyz789'
+
+console.log('=== Function starting up ===');
+console.log('RESEND_API_KEY available:', !!Deno.env.get('RESEND_API_KEY'));
+console.log('Hook secret set to:', hookSecret);
+console.log('SUPABASE_URL available:', !!Deno.env.get('SUPABASE_URL'));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
