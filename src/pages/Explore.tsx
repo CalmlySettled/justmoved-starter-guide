@@ -43,22 +43,28 @@ const trendingCategories = [
 
 const themedPacks = [
   {
-    title: "Just Moved Essentials",
-    description: "Everything you need to get settled",
-    categories: ["grocery stores", "pharmacy", "bank", "post office"],
-    icon: "🏠",
+    title: "First 48 Hours",
+    description: "Immediate essentials for your first days in a new city",
+    categories: ["grocery stores", "pharmacies", "gas stations", "urgent care"],
+    icon: "⏰",
   },
   {
-    title: "Explore Like a Local",
-    description: "Hidden gems and neighborhood favorites",
-    categories: ["coffee shops", "bookstores", "farmers markets", "local shops"],
-    icon: "🗺️",
+    title: "Setting Up Home",
+    description: "Everything you need to make your new place feel like home",
+    categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services"],
+    icon: "🏡",
   },
   {
-    title: "Weekend Warriors",
-    description: "Adventure and relaxation spots",
-    categories: ["hiking trails", "breweries", "entertainment venues", "parks recreation"],
-    icon: "🏃‍♀️",
+    title: "Getting Connected",
+    description: "Essential services to get your life organized",
+    categories: ["banks", "post offices", "internet providers", "cell phone stores"],
+    icon: "🔗",
+  },
+  {
+    title: "Family Essentials",
+    description: "Important services for families settling in",
+    categories: ["pediatricians", "schools", "daycares", "parks", "libraries"],
+    icon: "👨‍👩‍👧‍👦",
   },
 ];
 
