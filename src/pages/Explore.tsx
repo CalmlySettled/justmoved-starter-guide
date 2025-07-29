@@ -517,7 +517,7 @@ export default function Explore() {
               {selectedCategory && (
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-bold">{selectedCategory}</h2>
+                    <h2 className="text-3xl font-bold">{selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
                     <Button variant="outline" onClick={() => setSelectedCategory(null)}>
                       Clear
                     </Button>
