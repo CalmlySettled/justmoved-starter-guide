@@ -105,14 +105,17 @@ export default function Dashboard() {
         priority_preferences: (profileData?.priority_preferences as Record<string, string[]>) || {}
       });
 
-      // Fetch only displayed recommendations by default (max 6 per category)
+      // Fetch all recommendations including favorites
       const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_displayed', true)
         .order('relevance_score', { ascending: false })
         .order('created_at', { ascending: false });
+
+      console.log('Dashboard - Fetched recommendations:', recData);
+      console.log('Dashboard - Total recommendations count:', recData?.length);
+      console.log('Dashboard - Favorites count:', recData?.filter(r => r.is_favorite).length);
 
       if (recError) {
         throw recError;

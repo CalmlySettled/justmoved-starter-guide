@@ -262,40 +262,50 @@ const Popular = () => {
   };
 
   const toggleFavorite = async (business: Business, category: string) => {
+    console.log('Popular page - toggleFavorite called for:', business.name, 'category:', category);
     if (!user) {
       toast.error('Please sign in to save favorites');
       return;
     }
 
     try {
-      const { data: existing } = await supabase
+      const { data: existing, error: selectError } = await supabase
         .from('user_recommendations')
         .select('id, is_favorite')
         .eq('user_id', user.id)
         .eq('business_name', business.name)
         .single();
 
+      console.log('Popular - Existing record check:', { existing, selectError });
+
       if (existing) {
-        await supabase
+        console.log('Popular - Updating existing record, toggling favorite from', existing.is_favorite);
+        const { error: updateError } = await supabase
           .from('user_recommendations')
           .update({ is_favorite: !existing.is_favorite })
           .eq('id', existing.id);
+        console.log('Popular - Update result:', updateError);
       } else {
-        await supabase
+        console.log('Popular - Creating new favorite record');
+        const insertData = {
+          user_id: user.id,
+          business_name: business.name,
+          business_address: business.address,
+          business_description: business.description,
+          business_phone: business.phone,
+          business_website: business.website,
+          business_features: business.features,
+          category,
+          is_favorite: true,
+          is_displayed: true,
+          distance_miles: business.distance_miles
+        };
+        console.log('Popular - Insert data:', insertData);
+        
+        const { error: insertError } = await supabase
           .from('user_recommendations')
-          .insert({
-            user_id: user.id,
-            business_name: business.name,
-            business_address: business.address,
-            business_description: business.description,
-            business_phone: business.phone,
-            business_website: business.website,
-            business_features: business.features,
-            category,
-            is_favorite: true,
-            is_displayed: true,
-            distance_miles: business.distance_miles
-          });
+          .insert(insertData);
+        console.log('Popular - Insert result:', insertError);
       }
 
       toast.success(existing?.is_favorite ? 'Removed from favorites' : 'Added to favorites');
