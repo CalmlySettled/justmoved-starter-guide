@@ -39,6 +39,15 @@ interface Business {
   review_count?: number;
 }
 
+// Removed hardcoded brand logos - using pure API + category fallback system
+// All image logic now handled by frontend for better consistency and scaling
+
+// Simplified function - no brand logo logic, pure API approach
+function getBrandLogo(businessName: string): string | null {
+  // Brand logos removed - frontend handles all image logic now
+  return null;
+}
+
 // Helper function to get coordinates from address using OpenStreetMap Nominatim
 async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -88,24 +97,67 @@ const NATIONAL_CHAINS = [
   'cvs', 'walgreens', 'rite aid', 'duane reade',
   // Home improvement
   'home depot', 'lowes', 'menards', 'ace hardware',
-  // Fitness
-  'planet fitness', 'la fitness', 'gold\'s gym', '24 hour fitness', 'anytime fitness'
+  // Electronics
+  'best buy', 'staples', 'office depot',
+  // Department stores
+  'macy\'s', 'nordstrom', 'jcpenney', 'kohl\'s', 'tj maxx', 'marshall\'s', 'ross',
+  // Restaurants
+  'mcdonald\'s', 'burger king', 'subway', 'starbucks', 'dunkin\'', 'taco bell', 'kfc', 'pizza hut', 'domino\'s', 'chipotle', 'panera'
 ];
 
-// Check if a business is a national chain
 function isNationalChain(businessName: string): boolean {
-  const name = businessName.toLowerCase();
+  const name = businessName.toLowerCase().trim();
   return NATIONAL_CHAINS.some(chain => {
     // Handle exact matches and partial matches (e.g., "Trader Joe's Mission Valley" contains "trader joe's")
     return name.includes(chain) || chain.includes(name.split(' ')[0]);
   });
 }
 
+function isNationalChainOverride(business: any, userLat: number, userLng: number): boolean {
+  const distance = calculateDistance(userLat, userLng, business.geometry?.location?.lat || 0, business.geometry?.location?.lng || 0);
+  return isNationalChain(business.name) && distance <= NATIONAL_CHAIN_OVERRIDE_MILES;
+}
+
+// Proximity override threshold - businesses within this distance get priority (reduced for national chains)
+const PROXIMITY_OVERRIDE_MILES = 0.3;
+
+// Check if a business qualifies for proximity override
+function isProximityPriority(businessLat: number, businessLng: number, userLat: number, userLng: number): boolean {
+  const distance = calculateDistance(userLat, userLng, businessLat, businessLng);
+  return distance <= PROXIMITY_OVERRIDE_MILES;
+}
+
+// Determine optimal search radius based on area density
+function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
+  // Major urban centers (smaller radius for dense downtown areas only)
+  const urbanCenters = [
+    { lat: 40.7128, lng: -74.0060, name: "NYC", radius: 3000 }, // 3km
+    { lat: 34.0522, lng: -118.2437, name: "LA", radius: 4000 }, // 4km
+    { lat: 41.8781, lng: -87.6298, name: "Chicago", radius: 4000 },
+    { lat: 37.7749, lng: -122.4194, name: "SF", radius: 3000 },
+    { lat: 42.3601, lng: -71.0589, name: "Boston", radius: 3500 },
+    { lat: 47.6062, lng: -122.3321, name: "Seattle", radius: 4000 },
+    { lat: 39.7392, lng: -104.9903, name: "Denver", radius: 5000 },
+  ];
+
+  // Check if very close to urban center core (within 10 miles for downtown areas)
+  for (const center of urbanCenters) {
+    const distanceToCenter = calculateDistance(coordinates.lat, coordinates.lng, center.lat, center.lng);
+    if (distanceToCenter <= 10) { // Only very close to downtown core gets small radius
+      return center.radius;
+    }
+  }
+
+  // Suburban and rural areas get larger radius for better coverage
+  return 8000; // 8km for suburban/rural areas
+}
+
 // Foursquare Places API integration
 async function searchFoursquarePlaces(
   category: string,
   latitude: number,
-  longitude: number
+  longitude: number,
+  customRadius?: number
 ): Promise<Business[]> {
   const foursquareApiKey = Deno.env.get('FOURSQUARE_API_KEY');
   if (!foursquareApiKey) {
@@ -113,31 +165,18 @@ async function searchFoursquarePlaces(
     return [];
   }
 
+  const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
+  
   try {
-    const radius = 8000; // 8km radius
-    const limit = 20;
+    console.log(`🔍 FOURSQUARE: Searching for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
     
-    // Map categories to Foursquare category IDs
-    const categoryMap: { [key: string]: string } = {
-      'grocery': '17069',
-      'supermarket': '17069',
-      'medical': '15014',
-      'fitness': '18021',
-      'restaurant': '13065',
-      'coffee': '13034',
-      'pharmacy': '17072'
-    };
+    // Map our categories to Foursquare categories
+    const foursquareQuery = mapCategoryToFoursquareQuery(category);
     
-    const foursquareCategory = categoryMap[category.toLowerCase()] || '';
+    const searchUrl = `https://api.foursquare.com/v3/places/search?ll=${latitude},${longitude}&radius=${radius}&query=${encodeURIComponent(foursquareQuery)}&limit=20`;
     
-    let searchUrl = `https://api.foursquare.com/v3/places/search?ll=${latitude},${longitude}&radius=${radius}&limit=${limit}`;
+    console.log(`🔍 FOURSQUARE API URL: ${searchUrl}`);
     
-    if (foursquareCategory) {
-      searchUrl += `&categories=${foursquareCategory}`;
-    } else {
-      searchUrl += `&query=${encodeURIComponent(category)}`;
-    }
-
     const response = await fetch(searchUrl, {
       headers: {
         'Authorization': foursquareApiKey,
@@ -146,62 +185,219 @@ async function searchFoursquarePlaces(
     });
 
     if (!response.ok) {
-      console.error(`Foursquare API error: ${response.status}`);
+      console.error('Foursquare API error:', response.status, response.statusText);
       return [];
     }
 
     const data = await response.json();
-    const businesses: Business[] = [];
+    console.log(`→ Foursquare returned ${data.results?.length || 0} businesses`);
+    
+    // 🔍 LOG RAW FOURSQUARE RESPONSE
+    console.log(`🔍 RAW FOURSQUARE RESPONSE:`, JSON.stringify({
+      results_count: data.results?.length || 0,
+      results: data.results?.slice(0, 5).map(place => ({
+        name: place.name,
+        fsq_id: place.fsq_id,
+        categories: place.categories?.map(cat => cat.name),
+        location: place.location,
+        rating: place.rating
+      })) || []
+    }, null, 2));
 
-    if (data.results && Array.isArray(data.results)) {
-      for (const place of data.results) {
-        try {
-          // Get additional details for each place
-          const detailsUrl = `https://api.foursquare.com/v3/places/${place.fsq_id}`;
-          const detailsResponse = await fetch(detailsUrl, {
-            headers: {
-              'Authorization': foursquareApiKey,
-              'Accept': 'application/json'
-            }
-          });
-          
-          if (detailsResponse.ok) {
-            const details = await detailsResponse.json();
-            
-            const business: Business = {
-              name: place.name || 'Unknown',
-              address: place.location?.formatted_address || 'Address not available',
-              description: details.description || place.categories?.[0]?.name || 'Local business',
-              phone: details.tel || '',
-              features: [
-                details.rating ? `${details.rating}/10 rating` : '',
-                details.price ? `Price level: ${details.price}` : '',
-                place.categories?.[0]?.name || '',
-                'Foursquare Verified'
-              ].filter(Boolean),
-              hours: details.hours?.display || '',
-              website: details.website || '',
-              latitude: place.geocodes?.main?.latitude,
-              longitude: place.geocodes?.main?.longitude,
-              image_url: details.photos?.[0]?.prefix + '300x300' + details.photos?.[0]?.suffix || '',
-              rating: details.rating,
-              review_count: details.stats?.total_checkins || 0
-            };
-
-            businesses.push(business);
-          }
-        } catch (error) {
-          console.error('Error fetching Foursquare place details:', error);
-        }
-      }
+    if (!data.results || data.results.length === 0) {
+      return [];
     }
 
-    console.log(`Foursquare returned ${businesses.length} businesses for "${category}"`);
-    return businesses;
+    // Convert Foursquare results to Business objects
+    const businesses = await Promise.all(
+      data.results
+        .filter((place: any) => isFoursquareConsumerBusiness(place, category))
+        .slice(0, 15)
+        .map(async (place: any) => {
+          let imageUrl = '';
+          let website = '';
+          let phone = '';
+          
+          // Get place details for additional info
+          if (place.fsq_id) {
+            try {
+              const detailsUrl = `https://api.foursquare.com/v3/places/${place.fsq_id}?fields=website,tel,photos`;
+              const detailsResponse = await fetch(detailsUrl, {
+                headers: {
+                  'Authorization': foursquareApiKey,
+                  'Accept': 'application/json'
+                }
+              });
+              
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                website = detailsData.website || '';
+                phone = detailsData.tel || '';
+                
+                // Get photo if available
+                if (detailsData.photos && detailsData.photos.length > 0) {
+                  const photo = detailsData.photos[0];
+                  imageUrl = `${photo.prefix}400x400${photo.suffix}`;
+                  console.log(`→ Using Foursquare photo for: ${place.name}`);
+                }
+                
+                if (website) {
+                  console.log(`→ Found website for ${place.name}: ${website}`);
+                }
+              }
+            } catch (error) {
+              console.log(`→ Could not fetch Foursquare details for: ${place.name}`);
+            }
+          }
+
+          return {
+            name: place.name,
+            address: place.location?.formatted_address || `${place.location?.address || ''}, ${place.location?.locality || ''}`.trim(),
+            description: place.categories?.map(cat => cat.name).join(', ') || '',
+            phone: phone,
+            features: generateFeaturesFromFoursquareData(place),
+            latitude: place.geocodes?.main?.latitude,
+            longitude: place.geocodes?.main?.longitude,
+            distance_miles: undefined, // Will calculate later
+            website: website,
+            image_url: imageUrl,
+            rating: place.rating || 0,
+            review_count: place.stats?.total_ratings || 0
+          };
+        })
+    );
+
+    return businesses.filter(b => b.name && b.address);
+
   } catch (error) {
-    console.error('Error searching Foursquare Places:', error);
+    console.error('Error fetching from Foursquare API:', error);
     return [];
   }
+}
+
+// Map our categories to Foursquare-friendly queries
+function mapCategoryToFoursquareQuery(category: string): string {
+  const categoryMappings = {
+    'grocery stores': 'grocery store supermarket',
+    'pharmacy': 'pharmacy drugstore',
+    'hardware stores': 'hardware store home improvement',
+    'fitness gyms': 'gym fitness center',
+    'restaurants': 'restaurant',
+    'coffee shops': 'coffee shop cafe',
+    'medical clinics': 'medical clinic doctor',
+    'veterinary clinics': 'veterinary clinic',
+    'banks': 'bank',
+    'post office': 'post office',
+    'parks recreation': 'park recreation',
+    'entertainment venues': 'entertainment venue',
+  };
+  
+  return categoryMappings[category] || category;
+}
+
+// Check if a Foursquare business is consumer-facing
+function isFoursquareConsumerBusiness(place: any, category: string): boolean {
+  const name = place.name?.toLowerCase() || '';
+  const categories = place.categories?.map(cat => cat.name.toLowerCase()) || [];
+  
+  console.log(`📍 FOURSQUARE CHECK: "${place.name}" - Categories: [${categories.join(', ')}]`);
+  
+  const excludeKeywords = [
+    'wholesale', 'distributor', 'b2b', 'commercial only', 'trade only',
+    'foods llc', 'foods inc', 'food service', 'food services', 'foodservice',
+    'real estate office', 'insurance agency', 'accounting', 'lawyer', 'political',
+    'funeral home', 'cemetery', 'government office', 'courthouse', 'embassy'
+  ];
+  
+  if (excludeKeywords.some(keyword => name.includes(keyword))) {
+    console.log(`❌ FOURSQUARE EXCLUDED: ${place.name} - B2B/non-consumer business`);
+    return false;
+  }
+  
+  // Check if it has consumer-oriented categories
+  const consumerCategories = [
+    'grocery', 'supermarket', 'store', 'shop', 'restaurant', 'cafe', 'pharmacy',
+    'bank', 'gym', 'fitness', 'medical', 'clinic', 'post office', 'park',
+    'entertainment', 'retail', 'market', 'food', 'dining'
+  ];
+  
+  const hasConsumerCategory = categories.some(cat => 
+    consumerCategories.some(consumer => cat.includes(consumer))
+  );
+  
+  if (!hasConsumerCategory) {
+    console.log(`❌ FOURSQUARE EXCLUDED: ${place.name} - No consumer category found`);
+    return false;
+  }
+  
+  console.log(`✅ FOURSQUARE INCLUDED: ${place.name} - Consumer business`);
+  return true;
+}
+
+// Generate features from Foursquare data
+function generateFeaturesFromFoursquareData(place: any): string[] {
+  const features: string[] = [];
+  
+  // Rating-based feature
+  if (place.rating && place.rating >= 4.0) {
+    features.push('High Ratings');
+  }
+  
+  // Chain vs local classification
+  const businessName = place.name?.toLowerCase() || '';
+  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
+  const isChain = chainKeywords.some(keyword => businessName.includes(keyword));
+  
+  if (isChain) {
+    features.push('Chain');
+  } else {
+    features.push('Local');
+  }
+  
+  // Add source identifier
+  features.push('Foursquare Verified');
+  
+  return features;
+}
+
+// Google Places API integration
+
+  // Simplified function to check if a business is consumer-facing (minimal filtering)
+function isRetailConsumerBusiness(place: any, category: string, userLat?: number, userLng?: number): boolean {
+  const name = place.name?.toLowerCase() || '';
+  const types = place.types || [];
+  
+  console.log(`📍 DISTANCE-ONLY CHECK: "${place.name}" - Distance: ${place.distance_miles || 'unknown'}mi`);
+  
+  const excludeKeywords = [
+    'wholesale', 'distributor', 'b2b', 'commercial only', 'trade only',
+    'foods llc', 'foods inc', 'food service', 'food services', 'foodservice',
+    'real estate', 'insurance agency', 'accounting', 'lawyer', 'political',
+    'funeral home', 'cemetery', 'government office', 'courthouse', 'embassy'
+  ];
+  
+  if (excludeKeywords.some(keyword => name.includes(keyword))) {
+    console.log(`❌ EXCLUDED: ${place.name} - B2B/non-consumer business`);
+    return false;
+  }
+  
+  // Must have at least some retail-oriented type
+  const retailTypes = [
+    'grocery_or_supermarket', 'supermarket', 'store', 'clothing_store', 
+    'department_store', 'pharmacy', 'drugstore', 'gas_station',
+    'convenience_store', 'electronics_store', 'furniture_store',
+    'home_goods_store', 'hardware_store', 'restaurant', 'cafe', 
+    'meal_takeaway', 'food', 'bakery', 'establishment'
+  ];
+  
+  const hasRetailType = retailTypes.some(type => types.includes(type));
+  if (!hasRetailType) {
+    console.log(`❌ EXCLUDED: ${place.name} - No retail type found in: [${types.join(', ')}]`);
+    return false;
+  }
+  
+  console.log(`✅ INCLUDED: ${place.name} - Will be sorted by distance only`);
+  return true;
 }
 
 // Define multiple search strategies for different categories to improve coverage
@@ -276,11 +472,12 @@ async function searchGooglePlaces(
   }
 
   // Use dynamic radius based on area density
-  const radius = customRadius || 8000;
+  const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
   
   // Define multiple search strategies for different categories
   const searchStrategies = getSearchStrategies(category);
   const allResults = new Set();
+  const rawApiResponses: any[] = [];
   
   try {
     console.log(`🔍 DEBUGGING: Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
@@ -307,99 +504,216 @@ async function searchGooglePlaces(
       });
 
       if (!response.ok) {
-        console.error(`Google Places API error for strategy ${strategy.keyword || strategy.type}: ${response.status}`);
+        console.error('Google Places API error:', response.status, response.statusText);
         continue;
       }
 
       const data = await response.json();
-      console.log(`🔍 RAW API RESPONSE for strategy "${strategy.keyword || strategy.type}": ${JSON.stringify({
+      console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
+      
+      // 🔍 LOG RAW API RESPONSE
+      console.log(`🔍 RAW API RESPONSE for strategy "${strategy.keyword || strategy.type}":`, JSON.stringify({
         status: data.status,
         results_count: data.results?.length || 0,
-        results: data.results || []
-      })}`);
-      console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
+        results: data.results?.map(place => ({
+          name: place.name,
+          place_id: place.place_id,
+          types: place.types,
+          rating: place.rating,
+          user_ratings_total: place.user_ratings_total,
+          geometry: place.geometry?.location,
+          vicinity: place.vicinity
+        })) || []
+      }, null, 2));
+      
+      // Store raw response for debugging
+      rawApiResponses.push({
+        strategy: strategy.keyword || strategy.type,
+        response: data
+      });
 
       // Add unique results to our set
-      if (data.results && Array.isArray(data.results)) {
-        data.results.forEach((place: any) => {
-          if (place.name && place.vicinity) {
+      if (data.results) {
+        data.results.forEach(place => {
+          if (place.place_id) {
             allResults.add(JSON.stringify(place));
           }
         });
       }
     }
 
-    // Convert unique results back to objects and process them
-    const uniquePlaces = Array.from(allResults).map(result => JSON.parse(result as string));
-    console.log(`Combined ${uniquePlaces.length} unique businesses from all strategies`);
+    // Convert back to array and parse
+    const uniqueResults = Array.from(allResults).map(result => JSON.parse(result));
+    console.log(`Combined ${uniqueResults.length} unique businesses from all strategies`);
 
-    const businesses: Business[] = [];
-
-    for (const place of uniquePlaces) {
-      const business: Business = {
-        name: place.name || 'Unknown',
-        address: place.vicinity || 'Address not available',
-        description: place.types?.[0]?.replace(/_/g, ' ') || 'Local business',
-        phone: '',
-        features: [
-          place.rating ? `${place.rating}/5 rating` : '',
-          place.user_ratings_total ? `${place.user_ratings_total} reviews` : '',
-          place.price_level ? `Price level: ${place.price_level}/4` : '',
-          place.types?.[0]?.replace(/_/g, ' ') || '',
-          'Google Verified'
-        ].filter(Boolean),
-        hours: '',
-        website: '',
-        latitude: place.geometry?.location?.lat,
-        longitude: place.geometry?.location?.lng,
-        image_url: place.photos?.[0]?.photo_reference ? 
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${googleApiKey}` : '',
-        rating: place.rating,
-        review_count: place.user_ratings_total || 0
-      };
-
-      businesses.push(business);
+    if (uniqueResults.length === 0) {
+      return [];
     }
 
-    console.log(`Google Places returned ${businesses.length} businesses for "${category}"`);
-    return businesses;
+    // Filter and convert Google Places results to Business objects with photos and details
+    const businesses = await Promise.all(
+      uniqueResults
+        .filter((place: any) => isRetailConsumerBusiness(place, category, latitude, longitude))
+        .slice(0, 15) // More results from multiple strategies
+        .map(async (place: any) => {
+          // Use Google's photo API if available, otherwise no image
+          let imageUrl = '';
+          let website = '';
+          let phone = '';
+          
+          if (place.photos && place.photos.length > 0) {
+            const photoReference = place.photos[0].photo_reference;
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
+            console.log(`→ Using Google photo for: ${place.name}`);
+          } else {
+            console.log(`→ No image available for: ${place.name}`);
+          }
+
+          // Fetch place details for website and phone
+          if (place.place_id) {
+            try {
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
+              const detailsResponse = await fetch(detailsUrl);
+              
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                if (detailsData.result) {
+                  website = detailsData.result.website || '';
+                  phone = detailsData.result.formatted_phone_number || '';
+                  if (website) {
+                    console.log(`→ Found website for ${place.name}: ${website}`);
+                  }
+                }
+              }
+            } catch (error) {
+              console.log(`→ Could not fetch details for: ${place.name}`);
+            }
+          }
+
+          return {
+            name: place.name,
+            address: place.vicinity || '',
+            description: place.types?.join(', ') || '',
+            phone: phone,
+            features: generateFeaturesFromGoogleData(place),
+            latitude: place.geometry?.location?.lat,
+            longitude: place.geometry?.location?.lng,
+            distance_miles: undefined, // Will calculate later
+            website: website,
+            image_url: imageUrl,
+            rating: place.rating || 0,
+            review_count: place.user_ratings_total || 0
+          };
+        })
+    );
+
+    return businesses.filter(b => b.name && b.address);
+
   } catch (error) {
-    console.error('Error searching Google Places:', error);
+    console.error('Error fetching from Google Places API:', error);
     return [];
   }
 }
 
-// Combined search function that merges Google and Foursquare results
-async function searchAllSources(
-  category: string,
-  latitude: number,
-  longitude: number
-): Promise<Business[]> {
-  console.log(`🔍 Searching all sources for "${category}" at ${latitude}, ${longitude}`);
+// Generate essential features based on Yelp business data (simplified)
+function generateFeaturesFromYelpData(business: any): string[] {
+  const features: string[] = [];
   
-  // Search both APIs in parallel
+  // Essential rating-based feature
+  if (business.rating >= 4.0) {
+    features.push('High Ratings');
+  }
+  
+  // Essential local vs chain classification
+  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
+  const isChain = chainKeywords.some(keyword => 
+    business.name.toLowerCase().includes(keyword)
+  );
+  
+  if (isChain) {
+    features.push('Chain');
+  } else {
+    features.push('Local');
+  }
+
+  return features.length > 0 ? features : ['Local Business'];
+}
+
+// Helper function to generate essential features from Google Places data
+function generateFeaturesFromGoogleData(place: any): string[] {
+  const features: string[] = [];
+  
+  // Essential rating-based feature
+  if (place.rating && place.rating >= 4.0) {
+    features.push('High Ratings');
+  }
+  
+  // Essential local vs chain classification
+  const businessName = place.name?.toLowerCase() || '';
+  const chainKeywords = ['starbucks', 'mcdonald', 'subway', 'walmart', 'target', 'safeway', 'kroger', 'whole foods', 'planet fitness', 'la fitness', 'anytime fitness'];
+  const isChain = chainKeywords.some(keyword => businessName.includes(keyword));
+  
+  if (isChain) {
+    features.push('Chain');
+  } else {
+    features.push('Local');
+  }
+  
+  return features;
+}
+
+// Enhanced business search with cached coordinates and dynamic radius (Google + Foursquare)
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
+  console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
+  
+  // Use dynamic radius based on location
+  const optimalRadius = getOptimalRadius(coordinates);
+  console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
+  
+  // Search both Google Places and Foursquare in parallel for better coverage
   const [googleBusinesses, foursquareBusinesses] = await Promise.all([
-    searchGooglePlaces(category, latitude, longitude),
-    searchFoursquarePlaces(category, latitude, longitude)
+    searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius),
+    searchFoursquarePlaces(category, coordinates.lat, coordinates.lng, optimalRadius)
   ]);
   
-  console.log(`Google found ${googleBusinesses.length} businesses, Foursquare found ${foursquareBusinesses.length} businesses`);
+  console.log(`Google Places found ${googleBusinesses.length} businesses`);
+  console.log(`Foursquare found ${foursquareBusinesses.length} businesses`);
   
-  // Add distance to all businesses
-  const allBusinessesWithDistance = [...googleBusinesses, ...foursquareBusinesses].map(business => {
-    if (business.latitude && business.longitude) {
-      const distance = calculateDistance(latitude, longitude, business.latitude, business.longitude);
-      return { ...business, distance_miles: distance };
-    }
-    return business;
+  // Combine and deduplicate results from both APIs
+  const combinedBusinesses = combineAndDeduplicateBusinesses(googleBusinesses, foursquareBusinesses);
+  console.log(`Combined and deduplicated: ${combinedBusinesses.length} unique businesses`);
+  
+  // Calculate distances for all businesses
+  const businessesWithDistance = combinedBusinesses.map(business => {
+    const distance = calculateDistance(coordinates.lat, coordinates.lng, business.latitude, business.longitude);
+    return { ...business, distance_miles: distance };
   });
   
-  // Merge and deduplicate businesses
-  const businessMap = new Map();
+  // 🔍 DISTANCE-BASED FILTERING: Transportation should not be a hard filter
+  // Instead, use a generous radius (15 miles) and let scoring handle preference
+  let filteredBusinesses = businessesWithDistance;
+  if (userPreferences?.transportationStyle) {
+    // Use generous maximum distances that don't exclude nearby options
+    const getMaxDistanceForTransportation = (transportationStyle: string): number => {
+      switch (transportationStyle) {
+        case 'Bike / walk':
+          return 15; // Generous for safety - scoring will prefer closer
+        case 'Public transit':
+          return 15; // Generous for safety - scoring will prefer closer  
+        case 'Rideshare only':
+          return 15; // Generous for safety - scoring will prefer closer
+        case 'Car':
+        default:
+          return 15; // Standard max distance
+}
+
+// Combine and deduplicate businesses from multiple APIs
+function combineAndDeduplicateBusinesses(googleBusinesses: Business[], foursquareBusinesses: Business[]): Business[] {
+  const businessMap = new Map<string, Business>();
   
-  // Add Google businesses first (they tend to have better data)
+  // Add Google businesses first
   googleBusinesses.forEach(business => {
-    const key = `${business.name.toLowerCase()}-${business.address.toLowerCase()}`;
+    const key = createBusinessKey(business);
     if (!businessMap.has(key)) {
       businessMap.set(key, { ...business, features: [...business.features, 'Google Verified'] });
     }
@@ -407,13 +721,13 @@ async function searchAllSources(
   
   // Add Foursquare businesses, avoiding duplicates
   foursquareBusinesses.forEach(business => {
-    const key = `${business.name.toLowerCase()}-${business.address.toLowerCase()}`;
+    const key = createBusinessKey(business);
     if (!businessMap.has(key)) {
       businessMap.set(key, business);
     } else {
-      // Merge additional features from Foursquare if business already exists
-      const existing = businessMap.get(key);
-      const mergedBusiness = { ...existing, features: [...new Set([...existing.features, ...business.features])] };
+      // If duplicate found, merge the best data
+      const existingBusiness = businessMap.get(key);
+      const mergedBusiness = mergeDuplicateBusinesses(existingBusiness!, business);
       businessMap.set(key, mergedBusiness);
     }
   });
@@ -421,7 +735,320 @@ async function searchAllSources(
   return Array.from(businessMap.values());
 }
 
-// Dynamic filter function
+// Create a unique key for deduplication based on name and location
+function createBusinessKey(business: Business): string {
+  const normalizedName = business.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  const lat = business.latitude ? Math.round(business.latitude * 1000) / 1000 : 0;
+  const lng = business.longitude ? Math.round(business.longitude * 1000) / 1000 : 0;
+  return `${normalizedName}_${lat}_${lng}`;
+}
+
+// Merge data from duplicate businesses found across APIs
+function mergeDuplicateBusinesses(google: Business, foursquare: Business): Business {
+  console.log(`🔄 MERGING DUPLICATE: "${google.name}" from Google + Foursquare`);
+  
+  return {
+    name: google.name, // Prefer Google name (usually cleaner)
+    address: google.address || foursquare.address,
+    description: google.description || foursquare.description,
+    phone: foursquare.phone || google.phone, // Foursquare often has better phone data
+    features: [...new Set([...google.features, ...foursquare.features])], // Combine unique features
+    latitude: google.latitude || foursquare.latitude,
+    longitude: google.longitude || foursquare.longitude,
+    distance_miles: google.distance_miles || foursquare.distance_miles,
+    website: foursquare.website || google.website, // Foursquare often has better website data
+    image_url: google.image_url || foursquare.image_url, // Prefer Google photos (usually better quality)
+    rating: Math.max(google.rating || 0, foursquare.rating || 0), // Use higher rating
+    review_count: Math.max(google.review_count || 0, foursquare.review_count || 0)
+  };
+}
+
+  if (userPreferences?.transportationStyle) {
+    // Use generous maximum distances that don't exclude nearby options
+    const getMaxDistanceForTransportation = (transportationStyle: string): number => {
+      switch (transportationStyle) {
+        case 'Bike / walk':
+          return 15; // Generous for safety - scoring will prefer closer
+        case 'Drive':
+          return 25; // Wide radius for driving
+        case 'Public transit':
+          return 20; // Moderate radius for transit
+        default:
+          return 15; // Conservative fallback
+      }
+    };
+
+    const maxDistance = getMaxDistanceForTransportation(userPreferences.transportationStyle);
+    console.log(`🔍 GENEROUS FILTERING by transportation style "${userPreferences.transportationStyle}" with max distance: ${maxDistance} miles (scoring will handle preference)`);
+    
+    // Log businesses before filtering
+    console.log(`🔍 BUSINESSES BEFORE DISTANCE FILTER (${businessesWithDistance.length}):`, businessesWithDistance.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
+    
+    filteredBusinesses = businessesWithDistance.filter(business => 
+      business.distance_miles && business.distance_miles <= maxDistance
+    );
+    
+    console.log(`🔍 BUSINESSES AFTER DISTANCE FILTER (${filteredBusinesses.length}):`, filteredBusinesses.map(b => `${b.name} (${b.distance_miles}mi)`).join(', '));
+    console.log(`🔍 Filtered from ${businessesWithDistance.length} to ${filteredBusinesses.length} businesses based on transportation`);
+  }
+  
+  // Sort businesses by distance only (closest first)
+  const sortedBusinesses = filteredBusinesses.sort((a, b) => {
+    return (a.distance_miles || 999) - (b.distance_miles || 999);
+  });
+  
+  console.log(`🚀 DISTANCE-ONLY SORTING: Sorted ${sortedBusinesses.length} businesses by distance`);
+  console.log(`🚀 Top 5 closest: ${sortedBusinesses.slice(0, 5).map(b => `${b.name} (${b.distance_miles}mi)`).join(', ')}`);
+  
+  // Return results sorted purely by distance
+  return sortedBusinesses.slice(0, 12); // Increased limit due to better coverage from dual APIs
+}
+
+// Simplified relevance scoring based primarily on distance
+function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
+  let score = 0;
+  
+  // Base score from rating (20 points max)
+  if (business.rating) {
+    score += (business.rating / 5) * 20;
+  }
+  
+  // Primary scoring: Distance (60 points max - closest gets highest score)
+  if (business.distance_miles) {
+    // Inverse distance scoring - closer = higher score
+    const maxDistance = 15; // Assume max search radius
+    const distanceScore = Math.max(0, ((maxDistance - business.distance_miles) / maxDistance) * 60);
+    score += distanceScore;
+  }
+  
+  // Review count bonus (small factor, 10 points max)
+  if (business.review_count) {
+    const reviewScore = Math.min(10, Math.log10(business.review_count + 1) * 3);
+    score += reviewScore;
+  }
+  
+  // Enhanced preference-based scoring (max 30 points total)
+  if (userPreferences) {
+    score += calculatePreferenceBonus(business, category, userPreferences);
+  }
+  
+  return Math.round(score * 10) / 10; // Round to 1 decimal place
+}
+
+// Calculate bonus points based on user preferences
+function calculatePreferenceBonus(business: Business, category: string, userPreferences: QuizResponse): number {
+  let bonus = 0;
+  
+  // Sub-preference bonus (NEW - max 15 points)
+  if (userPreferences.priorityPreferences && userPreferences.priorityPreferences[category]) {
+    const subPreferences = userPreferences.priorityPreferences[category];
+    const businessName = business.name.toLowerCase();
+    const features = business.features ? business.features.join(' ').toLowerCase() : '';
+    const description = business.description ? business.description.toLowerCase() : '';
+    
+    subPreferences.forEach(pref => {
+      const prefLower = pref.toLowerCase();
+      
+      // Check if business matches specific sub-preferences
+      if (businessName.includes(prefLower) || features.includes(prefLower) || description.includes(prefLower)) {
+        bonus += 3; // 3 points per matching sub-preference
+      }
+      
+      // Special handling for specific sub-preferences
+      if (prefLower.includes('organic') && (businessName.includes('organic') || businessName.includes('whole foods') || businessName.includes('fresh') || features.includes('organic'))) {
+        bonus += 5;
+      } else if (prefLower.includes('budget-friendly') && (businessName.includes('aldi') || businessName.includes('walmart') || businessName.includes('dollar') || features.includes('budget'))) {
+        bonus += 5;
+      } else if (prefLower.includes('24/7') && (features.includes('24') || businessName.includes('24') || description.includes('24 hour'))) {
+        bonus += 4;
+      } else if (prefLower.includes('pediatrician') && (businessName.includes('pediatr') || businessName.includes('children') || businessName.includes('kids'))) {
+        bonus += 6;
+      } else if (prefLower.includes('family physician') && (businessName.includes('family') || businessName.includes('primary care'))) {
+        bonus += 5;
+      } else if (prefLower.includes('urgent care') && (businessName.includes('urgent') || businessName.includes('walk-in'))) {
+        bonus += 5;
+      } else if (prefLower.includes('yoga') && (businessName.includes('yoga') || businessName.includes('pilates'))) {
+        bonus += 4;
+      } else if (prefLower.includes('gym') && (businessName.includes('gym') || businessName.includes('fitness') || businessName.includes('health club'))) {
+        bonus += 4;
+      } else if (prefLower.includes('swimming') && (businessName.includes('pool') || businessName.includes('aquatic') || features.includes('pool'))) {
+        bonus += 4;
+      } else if (prefLower.includes('dog park') && (businessName.includes('dog') || features.includes('dog'))) {
+        bonus += 5;
+      } else if (prefLower.includes('playground') && (businessName.includes('playground') || features.includes('playground'))) {
+        bonus += 4;
+      }
+    });
+    
+    // Cap the sub-preference bonus
+    bonus = Math.min(15, bonus);
+  }
+  
+  // Budget preference bonus (max 10 points)
+  if (userPreferences.budgetPreference && business.features) {
+    const businessName = business.name.toLowerCase();
+    const features = business.features.join(' ').toLowerCase();
+    
+    if (userPreferences.budgetPreference === 'I want affordable & practical options') {
+      // Boost budget-friendly chains and practical options
+      const budgetChains = ['walmart', 'target', 'aldi', 'costco', 'kroger', 'safeway', 'cvs', 'walgreens'];
+      if (budgetChains.some(chain => businessName.includes(chain))) {
+        bonus += 8;
+      } else if (features.includes('affordable') || features.includes('budget') || features.includes('chain')) {
+        bonus += 5;
+      }
+    } else if (userPreferences.budgetPreference === "I'm looking for unique, local gems") {
+      // Boost local businesses over chains
+      if (features.includes('local') && !features.includes('chain')) {
+        bonus += 8;
+      } else if (business.rating && business.rating >= 4.3 && business.review_count && business.review_count < 500) {
+        // High-rated local spots with moderate review counts
+        bonus += 6;
+      }
+    } else if (userPreferences.budgetPreference === 'A mix of both') {
+      // Balanced approach - slight boost for well-rated places regardless of type
+      if (business.rating && business.rating >= 4.2) {
+        bonus += 4;
+      }
+    }
+  }
+  
+  // Household type bonus (max 10 points)
+  if (userPreferences.householdType) {
+    const household = userPreferences.householdType.toLowerCase();
+    const businessName = business.name.toLowerCase();
+    const features = business.features ? business.features.join(' ').toLowerCase() : '';
+    
+    if (household.includes('kids')) {
+      // Family-friendly bonuses
+      if (category.includes('medical') && (businessName.includes('pediatric') || businessName.includes('children') || businessName.includes('family'))) {
+        bonus += 10;
+      } else if (category.includes('restaurants') && (features.includes('kid') || businessName.includes('family'))) {
+        bonus += 6;
+      } else if (category.includes('parks') || category.includes('playground')) {
+        bonus += 8;
+      }
+    }
+    
+    if (household.includes('pets')) {
+      // Pet-friendly bonuses
+      if (category.includes('medical') && (businessName.includes('vet') || businessName.includes('animal'))) {
+        bonus += 10;
+      } else if (category.includes('parks') && (features.includes('dog') || businessName.includes('dog park'))) {
+        bonus += 8;
+      } else if (features.includes('pet-friendly') || businessName.includes('pet')) {
+        bonus += 5;
+      }
+    }
+    
+    if (household.includes('just me')) {
+      // Solo-friendly bonuses
+      if (category.includes('restaurants') && (businessName.includes('coffee') || businessName.includes('cafe') || features.includes('counter seating'))) {
+        bonus += 5;
+      }
+    }
+  }
+  
+  // Life stage bonus (max 10 points)
+  if (userPreferences.lifeStage) {
+    const lifeStage = userPreferences.lifeStage.toLowerCase();
+    const businessName = business.name.toLowerCase();
+    
+    if (lifeStage.includes('young professional')) {
+      if (businessName.includes('coffee') || businessName.includes('co-working') || businessName.includes('networking')) {
+        bonus += 6;
+      } else if (category.includes('fitness') && businessName.includes('gym')) {
+        bonus += 4;
+      }
+    } else if (lifeStage.includes('family')) {
+      if (category.includes('medical') && businessName.includes('family')) {
+        bonus += 8;
+      } else if (category.includes('grocery') && businessName.includes('super')) {
+        bonus += 4; // Prefer larger supermarkets for families
+      }
+    } else if (lifeStage.includes('empty nester') || lifeStage.includes('retired')) {
+      if (category.includes('medical') && (businessName.includes('senior') || businessName.includes('geriatric'))) {
+        bonus += 8;
+      } else if (businessName.includes('senior') || businessName.includes('community center')) {
+        bonus += 6;
+      }
+    } else if (lifeStage.includes('student')) {
+      if (businessName.includes('student') || businessName.includes('campus') || businessName.includes('college')) {
+        bonus += 8;
+      } else if (category.includes('restaurants') && (businessName.includes('fast') || businessName.includes('quick'))) {
+        bonus += 4; // Students often prefer quick, affordable food
+      }
+    }
+  }
+  
+  return Math.min(30, bonus); // Cap at 30 points total for preference bonuses
+}
+
+// Get relevant features for scoring based on category and user preferences
+function getRelevantFeatures(category: string, userPreferences: QuizResponse): string[] {
+  const features: string[] = [];
+  
+  // Budget preference features
+  if (userPreferences.budget_preference === 'budget-friendly') {
+    features.push('affordable', 'budget', 'cheap', 'low prices', 'discount');
+  } else if (userPreferences.budget_preference === 'premium') {
+    features.push('premium', 'luxury', 'high-end', 'upscale', 'gourmet');
+  }
+  
+  // Transportation features
+  if (userPreferences.transportation_style === 'walking') {
+    features.push('walkable', 'pedestrian friendly');
+  } else if (userPreferences.transportation_style === 'public transit') {
+    features.push('transit accessible', 'near bus stop', 'metro accessible');
+  } else if (userPreferences.transportation_style === 'driving') {
+    features.push('parking', 'drive-through', 'ample parking');
+  }
+  
+  // Category-specific features
+  if (category.includes('grocery')) {
+    features.push('organic', '24/7', 'fresh produce', 'local', 'pickup available');
+  } else if (category.includes('fitness')) {
+    features.push('classes', 'personal training', 'pool', 'equipment');
+  } else if (category.includes('restaurants')) {
+    features.push('outdoor seating', 'takeout', 'delivery', 'vegetarian');
+  }
+  
+  return features;
+}
+
+// Generate filter metadata for enhanced searching
+function generateFilterMetadata(business: Business, category: string): any {
+  const metadata: any = {
+    hasWebsite: !!business.website,
+    hasPhone: !!business.phone,
+    distance: business.distance_miles || 0,
+    rating: business.rating || 0,
+    reviewCount: business.review_count || 0
+  };
+  
+  // Category-specific metadata
+  if (category.includes('grocery')) {
+    metadata.isOrganic = business.features?.some(f => f.toLowerCase().includes('organic')) || false;
+    metadata.is24Hours = business.features?.some(f => f.toLowerCase().includes('24')) || false;
+    metadata.hasPickup = business.features?.some(f => f.toLowerCase().includes('pickup')) || false;
+  }
+  
+  if (category.includes('restaurants')) {
+    metadata.hasOutdoorSeating = business.features?.some(f => f.toLowerCase().includes('outdoor')) || false;
+    metadata.hasDelivery = business.features?.some(f => f.toLowerCase().includes('delivery')) || false;
+    metadata.isVegetarian = business.features?.some(f => f.toLowerCase().includes('vegetarian')) || false;
+  }
+  
+  if (category.includes('fitness')) {
+    metadata.hasClasses = business.features?.some(f => f.toLowerCase().includes('classes')) || false;
+    metadata.hasPool = business.features?.some(f => f.toLowerCase().includes('pool')) || false;
+    metadata.hasPersonalTraining = business.features?.some(f => f.toLowerCase().includes('personal')) || false;
+  }
+  
+  return metadata;
+}
+
+// Handle dynamic filtering for specific business types
 async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   const { category, filter, coordinates } = dynamicFilter;
   
@@ -429,45 +1056,19 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   
   // Define specific search terms for dynamic filters
   const filterSearchTerms: { [key: string]: string } = {
-    // Medical filters
     'urgent care': 'urgent care',
     'walk-in': 'walk in clinic',
     'specialists': 'medical specialists',
     'emergency': 'emergency room hospital',
     'family practice': 'family medicine primary care',
     'pediatrics': 'pediatrician children doctor',
-    
-    // Restaurant filters - THIS WAS MISSING!
-    'coffee shops': 'coffee cafe espresso',
-    'family-friendly': 'family restaurant casual dining',
-    'date night spots': 'fine dining romantic restaurant',
-    'quick casual': 'fast casual restaurants',
-    'food trucks': 'food truck mobile food',
-    
-    // Grocery filters
     'organic options': 'organic grocery natural foods',
     'budget-friendly': 'discount grocery affordable',
-    'national chain': 'walmart target kroger safeway whole foods',
-    'local/independent': 'local grocery independent market',
-    
-    // Fitness filters
     'group classes': 'group fitness classes',
     'personal training': 'personal trainer fitness',
     '24-hour access': '24 hour gym fitness',
     'cardio machines': 'cardio gym fitness center',
-    'strength training': 'weight lifting gym strength',
-    
-    // Parks filters
-    'playgrounds': 'playground children play area',
-    'dog parks': 'dog park pet off leash',
-    'sports fields': 'sports field baseball soccer',
-    'walking trails': 'walking trail hiking path',
-    
-    // Faith filters
-    'christian': 'christian church baptist methodist',
-    'jewish': 'synagogue temple jewish',
-    'muslim': 'mosque islamic center',
-    'non-denominational': 'community church non denominational'
+    'strength training': 'weight lifting gym strength'
   };
   
   const searchTerm = filterSearchTerms[filter.toLowerCase()] || filter;
@@ -508,41 +1109,151 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   }
 }
 
-// Calculate relevance score for saving to database
-function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
-  let score = 5; // Base score
-  
-  // Distance bonus (closer = higher score)
-  if (business.distance_miles) {
-    if (business.distance_miles <= 1) score += 3;
-    else if (business.distance_miles <= 3) score += 2;
-    else if (business.distance_miles <= 5) score += 1;
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
-  
-  // Rating bonus
-  if (business.rating) {
-    if (business.rating >= 4.5) score += 2;
-    else if (business.rating >= 4.0) score += 1;
-  }
-  
-  // Review count bonus
-  if (business.review_count && business.review_count > 100) score += 1;
-  
-  return Math.min(score, 10); // Cap at 10
-}
 
-// Generate filter metadata for database
-function generateFilterMetadata(business: Business, category: string): any {
-  const metadata: any = {};
-  
-  if (category.toLowerCase().includes('fitness')) {
-    metadata.hasClasses = business.features?.some(f => f.toLowerCase().includes('classes')) || false;
-    metadata.hasPool = business.features?.some(f => f.toLowerCase().includes('pool')) || false;
-    metadata.hasPersonalTraining = business.features?.some(f => f.toLowerCase().includes('personal')) || false;
+  try {
+    // Rate limiting check
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    const userLimit = rateLimiter.get(clientIP);
+    
+    if (userLimit) {
+      if (now < userLimit.resetTime) {
+        if (userLimit.count >= RATE_LIMIT) {
+          console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+          return new Response(
+            JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        userLimit.count++;
+      } else {
+        rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+      }
+    } else {
+      rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
+    }
+    const requestBody = await req.json();
+    console.log('🔍 DEBUG VERSION: Enhanced debugging enabled for Sprouts investigation');
+    console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
+    
+    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
+    
+    // Handle explore mode requests
+    if (exploreMode) {
+      if (!latitude || !longitude || !categories) {
+        return new Response(JSON.stringify({ error: 'Explore mode requires latitude, longitude, and categories' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const coordinates = { lat: latitude, lng: longitude };
+      const recommendations: { [key: string]: Business[] } = {};
+      
+      for (const category of categories) {
+        console.log(`Exploring category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates);
+        recommendations[category] = businesses;
+        console.log(`Found ${businesses.length} businesses for "${category}"`);
+      }
+      
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // If dynamic filter is provided, fetch additional specific results
+    if (dynamicFilter) {
+      console.log('Dynamic filter requested:', JSON.stringify(dynamicFilter, null, 2));
+      return await handleDynamicFilter(quizResponse, dynamicFilter);
+    }
+
+    // Handle regular quiz-based requests
+    if (!quizResponse || !quizResponse.address) {
+      return new Response(JSON.stringify({ error: 'Quiz response with address is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get coordinates - try cached first, then convert address
+    let coordinates: { lat: number; lng: number } | null = null;
+    
+    // Check if we have cached coordinates from profile
+    if (userId) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('latitude, longitude')
+        .eq('user_id', userId)
+        .single();
+      
+      if (profile?.latitude && profile?.longitude) {
+        coordinates = { lat: profile.latitude, lng: profile.longitude };
+        console.log(`Using cached coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+      }
+    }
+    
+    // Fall back to address conversion if no cached coordinates
+    if (!coordinates) {
+      coordinates = await getCoordinatesFromAddress(quizResponse.address);
+      if (!coordinates) {
+        throw new Error('Could not get coordinates for the provided address');
+      }
+      console.log(`Converted address to coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+    }
+
+    // Generate recommendations based on user priorities
+    const recommendations = await generateRecommendations(quizResponse, coordinates);
+
+    console.log('Generated recommendations categories:', Object.keys(recommendations));
+
+    // Save recommendations to database if userId is provided
+    if (userId && Object.keys(recommendations).length > 0) {
+      console.log(`Saving recommendations to database for user: ${userId}`);
+      try {
+        await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
+        console.log('Successfully saved recommendations to database');
+      } catch (saveError) {
+        console.error('Failed to save recommendations to database:', saveError);
+        // Don't fail the entire request if save fails - user still gets recommendations
+      }
+    } else if (!userId) {
+      console.warn('No userId provided - recommendations will not be saved to database');
+    }
+
+    return new Response(
+      JSON.stringify({ recommendations }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error('Error in generate-recommendations function:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      }
+    );
   }
-  
-  return metadata;
-}
+});
 
 // Enhanced function to save recommendations with relevance scores
 async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse) {
@@ -661,88 +1372,45 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "community groups": "community centers",
     "community": "community centers",
     "events": "community centers",
-    "childcare / daycare": "childcare daycare",
-    "childcare": "childcare daycare",
-    "daycare": "childcare daycare",
-    "kids": "childcare daycare",
-    "children": "childcare daycare",
-    "entertainment": "entertainment venues",
-    "movies": "entertainment venues",
-    "theater": "entertainment venues",
-    "arts": "entertainment venues",
-    "music": "entertainment venues",
-    "auto services (repair, registration)": "auto services",
-    "auto services": "auto services",
-    "auto": "auto services",
-    "car repair": "auto services",
-    "garage": "auto services",
-    "mechanic": "auto services",
-    "beauty / hair salons": "beauty salon",
-    "beauty": "beauty salon",
-    "hair salon": "beauty salon",
-    "salon": "beauty salon",
-    "barber": "beauty salon",
-    "dmv / government services": "government services",
-    "dmv": "government services",
-    "government": "government services",
-    "city hall": "government services",
-    "post office": "government services"
+    "home improvement / hardware stores": "hardware stores",
+    "home improvement": "hardware stores",
+    "hardware stores": "hardware stores",
+    "hardware": "hardware stores",
+    "tools": "hardware stores",
+    "building supplies": "hardware stores",
+    "home depot": "hardware stores",
+    "lowes": "hardware stores",
+    "improvement": "hardware stores",
+    "dmv / government services": "government offices",
+    "dmv": "government offices",
+    "government services": "government offices",
+    "government": "government offices",
+    "city hall": "government offices",
+    "town hall": "government offices",
+    "motor vehicle": "government offices",
+    "registry": "government offices",
+    "municipal": "government offices"
   };
 
-  // Define category data structure for recommendations
-  const categoryData = [
-    {
-      name: "Grocery stores",
-      searchTerms: ["grocery stores", "supermarkets", "food markets"],
-      icon: "🛒",
-      description: "Fresh groceries and daily essentials"
-    },
-    {
-      name: "Medical care",
-      searchTerms: ["medical clinics", "doctors offices", "urgent care", "family practice"],
-      icon: "🏥",
-      description: "Healthcare providers and medical services"
-    },
-    {
-      name: "Fitness options",
-      searchTerms: ["fitness gyms", "health clubs", "yoga studios", "pilates studios"],
-      icon: "💪",
-      description: "Gyms, studios, and fitness facilities"
-    },
-    {
-      name: "Restaurants / coffee shops",
-      searchTerms: ["restaurants", "coffee shops", "cafes", "dining"],
-      icon: "🍽️",
-      description: "Dining options and coffee shops"
-    },
-    {
-      name: "Parks",
-      searchTerms: ["parks recreation", "playgrounds", "community parks"],
-      icon: "🌳",
-      description: "Parks and recreational spaces"
-    }
-  ];
+  console.log('User priorities received:', quizResponse.priorities);
 
-  console.log(`Starting recommendations for ${quizResponse.priorities?.length || 0} user priorities`);
-
-  // Process each user priority
-  for (const priority of quizResponse.priorities || []) {
-    console.log(`\nProcessing priority: "${priority}"`);
+  // For each user priority, search for real businesses using APIs
+  for (const priority of quizResponse.priorities) {
+    const priorityLower = priority.toLowerCase();
+    console.log(`Processing priority: "${priority}"`);
     
+    // Check for direct matches or partial matches
     let foundMatch = false;
-    
-    // Try to match with category data
-    for (const category of categoryData) {
-      const searchTerm = priorityMap[priority.toLowerCase()] || priority;
-      
-      if (category.searchTerms.some(term => term.includes(searchTerm.split(' ')[0]) || searchTerm.includes(term.split(' ')[0]))) {
-        console.log(`✅ MATCHED "${priority}" → "${category.name}"`);
+    for (const [key, searchTerm] of Object.entries(priorityMap)) {
+      if (priorityLower.includes(key) || key.includes(priorityLower)) {
+        console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
         foundMatch = true;
         
-        if (!recommendations[category.name]) {
-          const businesses = await searchAllSources(searchTerm, coordinates.lat, coordinates.lng);
-          console.log(`Found ${businesses.length} businesses for "${searchTerm}"`);
-          recommendations[category.name] = businesses;
+        const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
+        
+        if (businesses.length > 0) {
+          recommendations[priority] = businesses;
           console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
         }
         break;
@@ -756,14 +1424,23 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   // Only add default categories if user has no priorities at all AND no existing priorities
   // If they specified priorities or have existing ones, don't add defaults
-  if ((!quizResponse.priorities || quizResponse.priorities.length === 0) && 
-      (!quizResponse.existingPriorities || quizResponse.existingPriorities.length === 0)) {
-    console.log('No user priorities specified and no existing priorities, adding default categories');
+  const hasAnyPriorities = quizResponse.priorities.length > 0 || (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0);
+  
+  if (Object.keys(recommendations).length === 0 && !hasAnyPriorities) {
+    console.log('No priorities specified and no existing priorities, adding default categories');
     
-    for (const category of categoryData) {
-      if (!recommendations[category.name]) {
-        const businesses = await searchAllSources(category.searchTerms[0], coordinates.lat, coordinates.lng);
-        console.log(`Found ${businesses.length} businesses for "${category.searchTerms[0]}"`);
+    const defaultCategories = [
+      { name: "Grocery stores", searchTerm: "grocery stores" },
+      { name: "Fitness options", searchTerm: "fitness gyms" },
+      { name: "Faith communities", searchTerm: "churches religious" },
+      { name: "Medical care", searchTerm: "medical health" },
+      { name: "Schools", searchTerm: "schools education" },
+      { name: "Parks", searchTerm: "parks recreation" }
+    ];
+    
+    for (const category of defaultCategories) {
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse);
+      if (businesses.length > 0) {
         recommendations[category.name] = businesses;
       }
     }
@@ -773,119 +1450,3 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   return recommendations;
 }
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    // Rate limiting check
-    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
-    const now = Date.now();
-    const userLimit = rateLimiter.get(clientIP);
-    
-    if (userLimit) {
-      if (now < userLimit.resetTime) {
-        if (userLimit.count >= RATE_LIMIT) {
-          return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        userLimit.count++;
-      } else {
-        rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
-      }
-    } else {
-      rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
-    }
-    
-    const requestBody = await req.json();
-    console.log('🔍 DEBUG VERSION: Enhanced debugging enabled for coffee shop investigation');
-    console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
-    
-    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
-    
-    // Handle explore mode requests
-    if (exploreMode) {
-      if (!latitude || !longitude || !categories) {
-        return new Response(JSON.stringify({ error: 'Explore mode requires latitude, longitude, and categories' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      const recommendations: { [key: string]: Business[] } = {};
-      for (const category of categories) {
-        const businesses = await searchAllSources(category, latitude, longitude);
-        recommendations[category] = businesses;
-        console.log(`Found ${businesses.length} businesses for "${category}"`);
-      }
-      
-      return new Response(JSON.stringify({ recommendations }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    // If dynamic filter is provided, fetch additional specific results
-    if (dynamicFilter) {
-      console.log('Dynamic filter requested:', JSON.stringify(dynamicFilter, null, 2));
-      return await handleDynamicFilter(quizResponse, dynamicFilter);
-    }
-
-    // Handle regular quiz-based requests
-    if (!quizResponse || !quizResponse.address) {
-      return new Response(JSON.stringify({ error: 'Quiz response with address is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Get coordinates from address
-    const coordinates = await getCoordinatesFromAddress(quizResponse.address);
-    if (!coordinates) {
-      return new Response(JSON.stringify({ error: 'Could not geocode address' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`Coordinates for ${quizResponse.address}: ${coordinates.lat}, ${coordinates.lng}`);
-
-    // Generate recommendations based on user priorities and preferences
-    const recommendations = await generateRecommendations(quizResponse, coordinates);
-
-    console.log(`Generated ${Object.keys(recommendations).length} categories with total businesses:`, 
-      Object.values(recommendations).reduce((sum, arr) => sum + arr.length, 0)
-    );
-
-    // If userId provided, save recommendations to database
-    if (userId) {
-      try {
-        await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
-        console.log('Recommendations saved to database successfully');
-      } catch (dbError) {
-        console.error('Failed to save to database:', dbError);
-        // Continue with response even if database save fails
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ recommendations }),
-      {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
-    );
-  } catch (error: any) {
-    console.error('Error in generate-recommendations function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
-    );
-  }
-});
