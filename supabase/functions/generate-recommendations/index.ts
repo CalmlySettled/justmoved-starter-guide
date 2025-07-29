@@ -87,8 +87,39 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return Math.round(distance * 10) / 10; // Round to 1 decimal place
 }
 
-// Proximity override threshold - businesses within this distance get priority
-const PROXIMITY_OVERRIDE_MILES = 0.5;
+// National chain override for major brands within 5 miles
+const NATIONAL_CHAIN_OVERRIDE_MILES = 5;
+
+const NATIONAL_CHAINS = [
+  // Grocery stores
+  'walmart', 'target', 'kroger', 'safeway', 'albertsons', 'vons', 'ralphs', 'whole foods', 'trader joe\'s', 'costco', 'sam\'s club', 'sprouts', 'fresh market', 'publix', 'wegmans', 'stop & shop', 'giant', 'food lion', 'harris teeter', 'smith\'s', 'king soopers', 'fred meyer', 'qfc', 'pavilions', 'smart & final', 'food 4 less', 'ralphs fresh fare',
+  // Pharmacies
+  'cvs', 'walgreens', 'rite aid', 'duane reade',
+  // Home improvement
+  'home depot', 'lowes', 'menards', 'ace hardware',
+  // Electronics
+  'best buy', 'staples', 'office depot',
+  // Department stores
+  'macy\'s', 'nordstrom', 'jcpenney', 'kohl\'s', 'tj maxx', 'marshall\'s', 'ross',
+  // Restaurants
+  'mcdonald\'s', 'burger king', 'subway', 'starbucks', 'dunkin\'', 'taco bell', 'kfc', 'pizza hut', 'domino\'s', 'chipotle', 'panera'
+];
+
+function isNationalChain(businessName: string): boolean {
+  const name = businessName.toLowerCase().trim();
+  return NATIONAL_CHAINS.some(chain => {
+    // Handle exact matches and partial matches (e.g., "Trader Joe's Mission Valley" contains "trader joe's")
+    return name.includes(chain) || chain.includes(name.split(' ')[0]);
+  });
+}
+
+function isNationalChainOverride(business: any, userLat: number, userLng: number): boolean {
+  const distance = calculateDistance(userLat, userLng, business.geometry?.location?.lat || 0, business.geometry?.location?.lng || 0);
+  return isNationalChain(business.name) && distance <= NATIONAL_CHAIN_OVERRIDE_MILES;
+}
+
+// Proximity override threshold - businesses within this distance get priority (reduced for national chains)
+const PROXIMITY_OVERRIDE_MILES = 0.3;
 
 // Check if a business qualifies for proximity override
 function isProximityPriority(businessLat: number, businessLng: number, userLat: number, userLng: number): boolean {
@@ -144,6 +175,12 @@ function isRetailConsumerBusiness(place: any, category: string, userLat?: number
     if (isProximityBusiness) {
       console.log(`🚀 PROXIMITY OVERRIDE: ${place.name} is within ${PROXIMITY_OVERRIDE_MILES} miles - applying lenient filtering`);
     }
+  }
+  
+  // 🏆 NATIONAL CHAIN OVERRIDE: National chains within 5 miles ALWAYS pass
+  if (userLat && userLng && isNationalChainOverride(place, userLat, userLng)) {
+    console.log(`🏆 NATIONAL CHAIN OVERRIDE: ${place.name} is within ${NATIONAL_CHAIN_OVERRIDE_MILES} miles - BYPASSING ALL FILTERS`);
+    return true;
   }
   
   // Special case for known grocery chains - they should always pass
