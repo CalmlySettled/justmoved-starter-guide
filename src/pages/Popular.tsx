@@ -18,16 +18,17 @@ interface LocationData {
 }
 
 interface Business {
-  id: string;
   name: string;
   address: string;
   description: string;
   phone?: string;
   website?: string;
+  image_url?: string;
   features: string[];
+  latitude: number;
+  longitude: number;
+  distance_miles: number;
   rating?: number;
-  distance?: number;
-  image?: string;
 }
 
 interface PopularRecommendations {
@@ -195,7 +196,10 @@ const Popular = () => {
   };
 
   const fetchTrendingPlaces = async (category: string, searchTerms: string[]) => {
-    if (!location) return;
+    if (!location) {
+      toast.error('Location required to find popular places');
+      return;
+    }
 
     setLoading(true);
     setActiveCategory(category);
@@ -203,28 +207,37 @@ const Popular = () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
-          mode: 'explore',
-          location: {
-            latitude: location.latitude,
-            longitude: location.longitude
-          },
-          category,
-          searchTerms,
-          userId: user?.id
+          exploreMode: true,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
         }
       });
 
       if (error) throw error;
 
       if (data?.recommendations) {
+        // Flatten results from all search terms
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        // Sort by distance and take top results
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 12); // Limit to 12 results
+
         setRecommendations(prev => ({
           ...prev,
-          [category]: data.recommendations[category] || []
+          [category]: sortedResults
         }));
+        
+        toast.success(`Found ${sortedResults.length} popular ${category.toLowerCase()} near you`);
       }
     } catch (error) {
       console.error('Error fetching trending places:', error);
-      toast.error('Failed to load trending places');
+      toast.error('Failed to load popular places. Please try again.');
     } finally {
       setLoading(false);
       setActiveCategory(null);
@@ -267,7 +280,7 @@ const Popular = () => {
             business_features: business.features,
             category,
             is_favorite: true,
-            distance_miles: business.distance
+            distance_miles: business.distance_miles
           });
       }
 
@@ -378,12 +391,12 @@ const Popular = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {businesses.map((business) => (
-                      <Card key={business.id} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                      <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
-                          {business.image && (
+                          {business.image_url && (
                             <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
                               <img 
-                                src={business.image} 
+                                src={business.image_url} 
                                 alt={business.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
