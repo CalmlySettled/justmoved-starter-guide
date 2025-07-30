@@ -437,6 +437,9 @@ export default function Explore() {
       }
       
       localStorage.setItem('favorites', JSON.stringify(favorites));
+      
+      // Trigger manual event for same-window updates
+      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
     } catch (error) {
       console.error('Error toggling favorite:', error);
       toast({

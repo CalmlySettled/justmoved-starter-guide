@@ -35,12 +35,38 @@ export function FavoritesDropdown() {
 
   useEffect(() => {
     loadFavorites();
+    
+    // Listen for localStorage changes from other pages
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log('🔥 DROPDOWN - Storage change detected:', e);
+      if (e.key === 'favorites') {
+        loadFavorites();
+      }
+    };
+    
+    // Listen for manual events from same window
+    const handleManualUpdate = () => {
+      console.log('🔥 DROPDOWN - Manual favorites update detected');
+      loadFavorites();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('favoritesUpdated', handleManualUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('favoritesUpdated', handleManualUpdate);
+    };
   }, []);
 
   const loadFavorites = () => {
+    console.log('🔥 DROPDOWN - loadFavorites called');
     const storedFavorites = localStorage.getItem('favorites');
+    console.log('🔥 DROPDOWN - Raw localStorage:', storedFavorites);
     if (storedFavorites) {
-      setFavorites(JSON.parse(storedFavorites));
+      const parsed = JSON.parse(storedFavorites);
+      console.log('🔥 DROPDOWN - Parsed favorites:', parsed);
+      setFavorites(parsed);
     }
   };
 

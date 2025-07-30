@@ -279,6 +279,9 @@ const Popular = () => {
   };
 
   const toggleFavorite = (business: Business, category: string) => {
+    console.log('🔥 POPULAR - toggleFavorite called for:', business.name);
+    console.log('🔥 POPULAR - Current localStorage before:', localStorage.getItem('favorites'));
+    
     try {
       const storedFavorites = localStorage.getItem('favorites');
       const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
@@ -323,6 +326,10 @@ const Popular = () => {
       }
       
       localStorage.setItem('favorites', JSON.stringify(favorites));
+      console.log('🔥 POPULAR - localStorage after update:', localStorage.getItem('favorites'));
+      
+      // Trigger manual event for same-window updates
+      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
     } catch (error) {
       console.error('Error toggling favorite:', error);
       toast.error("Failed to update favorites");
