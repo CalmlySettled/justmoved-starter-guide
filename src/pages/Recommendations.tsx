@@ -548,33 +548,39 @@ export default function Recommendations() {
 
     try {
       // First check if the business is already saved
-      const { data: existingRecommendation, error: fetchError } = await supabase
+      const { data: existingRecommendations, error: fetchError } = await supabase
         .from('user_recommendations')
         .select('id, is_favorite')
         .eq('user_id', user.id)
         .eq('business_name', business.name)
         .eq('business_address', business.address)
-        .eq('category', category)
-        .maybeSingle();
+        .eq('category', category);
 
       if (fetchError) {
         throw fetchError;
       }
 
-      if (existingRecommendation) {
-        // Update existing recommendation's favorite status
+      if (existingRecommendations && existingRecommendations.length > 0) {
+        // Get the current favorite status from the first record
+        const currentFavoriteStatus = existingRecommendations[0].is_favorite;
+        const newFavoriteStatus = !currentFavoriteStatus;
+        
+        // Update ALL matching records to have the same favorite status
         const { error: updateError } = await supabase
           .from('user_recommendations')
-          .update({ is_favorite: !existingRecommendation.is_favorite })
-          .eq('id', existingRecommendation.id);
+          .update({ is_favorite: newFavoriteStatus })
+          .eq('user_id', user.id)
+          .eq('business_name', business.name)
+          .eq('business_address', business.address)
+          .eq('category', category);
 
         if (updateError) {
           throw updateError;
         }
 
         toast({
-          title: existingRecommendation.is_favorite ? "Removed from favorites" : "Added to favorites",
-          description: `${business.name} has been ${existingRecommendation.is_favorite ? 'removed from' : 'added to'} your favorites.`,
+          title: currentFavoriteStatus ? "Removed from favorites" : "Added to favorites",
+          description: `${business.name} has been ${currentFavoriteStatus ? 'removed from' : 'added to'} your favorites.`,
         });
       } else {
         // Save as new recommendation with favorite status
