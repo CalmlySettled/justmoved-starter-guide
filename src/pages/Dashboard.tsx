@@ -288,12 +288,12 @@ export default function Dashboard() {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       console.log('Mobile Debug: Profile query result:', { profileData, profileError });
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Mobile Debug: Profile error (not 404):', profileError);
+      if (profileError) {
+        console.error('Mobile Debug: Profile error:', profileError);
         throw profileError;
       }
 

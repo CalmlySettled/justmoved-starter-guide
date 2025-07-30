@@ -65,6 +65,7 @@ export default function Auth() {
                 
                 while (!profileSaved && profileSaveAttempts < maxRetries) {
                   try {
+                    console.log('Mobile Debug: Attempting profile save, attempt', profileSaveAttempts + 1);
                     const { error } = await supabase
                       .from('profiles')
                       .upsert({
@@ -94,11 +95,11 @@ export default function Auth() {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                       }
                     } else {
-                      console.log('Mobile Debug: Quiz data saved successfully, generating recommendations...');
+                      console.log('Mobile Debug: Profile saved successfully on attempt', profileSaveAttempts + 1);
                       profileSaved = true;
                     }
                   } catch (error) {
-                    console.error('Mobile Debug: Unexpected error saving profile:', error);
+                    console.error('Mobile Debug: Unexpected error saving profile (attempt', profileSaveAttempts + 1, '):', error);
                     profileSaveAttempts++;
                     
                     if (profileSaveAttempts < maxRetries) {
@@ -163,7 +164,7 @@ export default function Auth() {
               .from('profiles')
               .select('address, priorities')
               .eq('user_id', session.user.id)
-              .single();
+              .maybeSingle();
             
             console.log('Mobile Debug: Profile data:', profile, 'Error:', profileError);
             
