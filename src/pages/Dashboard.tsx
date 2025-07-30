@@ -368,14 +368,18 @@ export default function Dashboard() {
       if (!recData || recData.length === 0) {
         console.log('No recommendations found for user, checking for profile data to generate new ones');
         
-        // Check if there's saved quiz data from the signup flow
-        const savedQuizData = localStorage.getItem('onboardingQuizData');
-        const pendingQuizProcessing = localStorage.getItem('pendingQuizProcessing');
+        // Enhanced quiz data recovery - check multiple storage locations
+        const localStorageData = localStorage.getItem('onboardingQuizData');
+        const sessionStorageData = sessionStorage.getItem('onboardingQuizData');
+        const savedQuizData = localStorageData || sessionStorageData;
         
-        if (savedQuizData && pendingQuizProcessing) {
-          console.log('Found saved quiz data after signup, processing it...');
+        // Also check if user has quiz data in metadata (backup recovery)
+        const metadataQuizData = user.user_metadata?.quizData;
+        
+        if (savedQuizData || metadataQuizData) {
+          console.log('Found quiz data, processing it...');
           try {
-            const quizData = JSON.parse(savedQuizData);
+            const quizData = savedQuizData ? JSON.parse(savedQuizData) : metadataQuizData;
             
             // Save the quiz data to user profile
             const { error: profileError } = await supabase
@@ -440,9 +444,18 @@ export default function Dashboard() {
               
               setGeneratingRecommendations(false);
               
-              // Clean up saved data
-              localStorage.removeItem('onboardingQuizData');
-              localStorage.removeItem('pendingQuizProcessing');
+              // Clean up saved data only if it came from storage
+              if (savedQuizData) {
+                localStorage.removeItem('onboardingQuizData');
+                sessionStorage.removeItem('onboardingQuizData');
+              }
+              
+              // Clear metadata backup if used
+              if (metadataQuizData) {
+                await supabase.auth.updateUser({
+                  data: { quizData: null }
+                });
+              }
               
               // Refresh data to get the new recommendations
               const { data: freshRecData } = await supabase
@@ -457,8 +470,10 @@ export default function Dashboard() {
             }
           } catch (error) {
             console.error('Error processing saved quiz data:', error);
-            localStorage.removeItem('onboardingQuizData');
-            localStorage.removeItem('pendingQuizProcessing');
+            if (savedQuizData) {
+              localStorage.removeItem('onboardingQuizData');
+              sessionStorage.removeItem('onboardingQuizData');
+            }
           }
         }
         
