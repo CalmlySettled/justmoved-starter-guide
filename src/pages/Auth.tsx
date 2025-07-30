@@ -294,12 +294,15 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 mb-4">
+          <button 
+            onClick={() => navigate("/")}
+            className="inline-flex items-center space-x-2 mb-4 hover:opacity-80 transition-smooth cursor-pointer"
+          >
             <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
               <Home className="h-7 w-7 text-white" />
             </div>
             <span className="text-3xl font-bold text-foreground">CalmlySettled</span>
-          </div>
+          </button>
           <p className="text-muted-foreground">Welcome to your neighborhood guide</p>
         </div>
 
