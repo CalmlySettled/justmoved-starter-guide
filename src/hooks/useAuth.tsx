@@ -20,28 +20,125 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [authRetryAttempts, setAuthRetryAttempts] = useState(0);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const detectMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      setIsMobile(isMobileDevice);
+      console.log('Mobile Debug: Device detection -', { isMobileDevice, userAgent });
+    };
+    detectMobile();
+  }, []);
+
+  // Mobile-specific session recovery
+  const recoverSession = async () => {
+    if (!isMobile) return;
+    
+    console.log('Mobile Debug: Attempting session recovery...');
+    try {
+      // Force refresh session
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Mobile Debug: Session recovery failed:', error);
+        return;
+      }
+      
+      if (session) {
+        console.log('Mobile Debug: Session recovered successfully');
+        setSession(session);
+        setUser(session.user);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Mobile Debug: Session recovery error:', error);
+    }
+  };
 
   useEffect(() => {
+    let retryTimeout: NodeJS.Timeout;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session);
+      async (event, session) => {
+        console.log('Mobile Debug: Auth state changed:', { event, session, isMobile });
+        
+        // Clear any pending retries
+        if (retryTimeout) clearTimeout(retryTimeout);
+        
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        // Mobile-specific handling
+        if (isMobile) {
+          if (event === 'SIGNED_IN' && session) {
+            console.log('Mobile Debug: Sign in detected on mobile');
+            // Give extra time for mobile session to stabilize
+            setTimeout(() => {
+              setLoading(false);
+            }, 1000);
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            console.log('Mobile Debug: Token refreshed on mobile');
+            setLoading(false);
+          } else if (!session) {
+            console.log('Mobile Debug: No session on mobile, setting loading to false');
+            setLoading(false);
+          }
+        } else {
+          setLoading(false);
+        }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // THEN check for existing session with retry logic for mobile
+    const checkSession = async () => {
+      try {
+        console.log('Mobile Debug: Initial session check starting...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        console.log('Mobile Debug: Initial session check result:', { session, error, isMobile });
+        
+        if (error) {
+          console.error('Mobile Debug: Session check error:', error);
+          if (isMobile && authRetryAttempts < 3) {
+            console.log('Mobile Debug: Retrying session check...', authRetryAttempts + 1);
+            setAuthRetryAttempts(prev => prev + 1);
+            retryTimeout = setTimeout(checkSession, 2000);
+            return;
+          }
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Mobile-specific session handling
+        if (isMobile) {
+          if (!session && authRetryAttempts < 2) {
+            console.log('Mobile Debug: No session found, attempting recovery...');
+            await recoverSession();
+          } else {
+            console.log('Mobile Debug: Setting loading to false after session check');
+            setTimeout(() => setLoading(false), 500);
+          }
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Mobile Debug: Session check failed:', error);
+        setLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
-  }, []);
+    checkSession();
+
+    return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      subscription.unsubscribe();
+    };
+  }, [isMobile, authRetryAttempts]);
 
   const signOut = async () => {
     try {
