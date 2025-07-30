@@ -574,7 +574,7 @@ export default function OnboardingQuiz() {
                   "Parks / Trails",
                   "Social events or community groups"
                 ].map((option) => (
-                  <div key={option} className="flex items-center space-x-3 py-2">
+                  <div key={option} className="flex items-center space-x-3 py-1">
                     <Checkbox
                       id={option}
                       checked={quizData.priorities.includes(option)}
@@ -582,7 +582,7 @@ export default function OnboardingQuiz() {
                       disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 5}
                       className="min-h-[24px] min-w-[24px]"
                     />
-                    <Label htmlFor={option} className="text-base cursor-pointer flex-1 py-2">{option}</Label>
+                    <Label htmlFor={option} className="text-base cursor-pointer flex-1 py-1">{option}</Label>
                   </div>
                 ))}
               </div>
@@ -641,7 +641,7 @@ export default function OnboardingQuiz() {
             {currentQuestion === 5 && (
               <RadioGroup value={quizData.transportation} onValueChange={(value) => setQuizData({...quizData, transportation: value})}>
                 {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
-                  <div key={option} className="flex items-center space-x-3 py-3">
+                  <div key={option} className="flex items-center space-x-3 py-1.5">
                     <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
                     <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
                   </div>
@@ -657,10 +657,10 @@ export default function OnboardingQuiz() {
                   "I'm looking for unique, local gems", 
                   "A mix of both"
                  ].map((option) => (
-                  <div key={option} className="flex items-center space-x-3 py-3">
-                    <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
-                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
-                  </div>
+                   <div key={option} className="flex items-center space-x-3 py-1.5">
+                     <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
+                     <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
+                   </div>
                 ))}
               </RadioGroup>
             )}
@@ -676,10 +676,10 @@ export default function OnboardingQuiz() {
                   "Empty nester / retired",
                   "Student"
                  ].map((option) => (
-                  <div key={option} className="flex items-center space-x-3 py-3">
-                    <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
-                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
-                  </div>
+                   <div key={option} className="flex items-center space-x-3 py-1.5">
+                     <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
+                     <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
+                   </div>
                 ))}
               </RadioGroup>
             )}
