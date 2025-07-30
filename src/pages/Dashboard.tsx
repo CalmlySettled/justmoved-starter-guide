@@ -64,7 +64,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1224,10 +1224,11 @@ export default function Dashboard() {
   };
 
   console.log('Dashboard render - User:', user);
+  console.log('Dashboard render - AuthLoading:', authLoading);
   console.log('Dashboard render - Loading:', loading);
   console.log('Dashboard render - Recommendations:', recommendations.length);
   
-  if (!user && !loading) {
+  if (!user && !authLoading) {
     return (
       <div className="min-h-screen bg-gradient-page">
         <Header />
@@ -1254,7 +1255,7 @@ export default function Dashboard() {
     );
   }
   
-  if (loading) {
+  if (authLoading || loading) {
     console.log('Mobile Debug: Showing loading state');
     const userAgent = navigator.userAgent || navigator.vendor;
     const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
