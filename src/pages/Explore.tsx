@@ -599,7 +599,7 @@ export default function Explore() {
               {/* Just Moved Collections */}
               <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Just Moved Collections</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                   {themedPacks.map((pack) => (
                     <Card 
                       key={pack.title}
@@ -654,7 +654,7 @@ export default function Explore() {
                       <p className="mt-4 text-muted-foreground">Loading recommendations...</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                       {categoryResults.map((business, index) => (
                         <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
                           {/* Business Image */}
@@ -698,12 +698,12 @@ export default function Explore() {
                               </div>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
-                                className="h-8 w-8 p-0 hover:bg-primary/10"
+                                className="h-10 w-10 p-0 hover:bg-primary/10 min-h-[44px] min-w-[44px]"
                               >
                                 <Star 
-                                  className="h-4 w-4" 
+                                  className="h-5 w-5" 
                                   fill={favoriteBusinesses.has(business.name) ? "currentColor" : "none"}
                                 />
                               </Button>

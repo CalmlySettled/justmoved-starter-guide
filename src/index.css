@@ -140,5 +140,25 @@ All colors MUST be HSL.
   /* Improve button accessibility on mobile */
   button, [role="button"] {
     touch-action: manipulation;
+    min-height: 44px; /* Ensure all buttons meet touch target requirements */
+  }
+  
+  /* Mobile-specific spacing */
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-text {
+    @apply text-base sm:text-lg;
+  }
+  
+  /* Better mobile card layouts */
+  .mobile-card {
+    @apply p-4 sm:p-6 rounded-xl;
+  }
+  
+  /* Mobile-optimized forms */
+  .mobile-form-input {
+    @apply h-12 px-4 text-base rounded-lg;
   }
 }

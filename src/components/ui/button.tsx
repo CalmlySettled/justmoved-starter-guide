@@ -22,10 +22,11 @@ const buttonVariants = cva(
         accent: "bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-soft transition-smooth",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-10 px-4 py-2 min-h-[44px]", // Mobile-friendly touch target
+        sm: "h-9 rounded-md px-3 min-h-[40px]",
+        lg: "h-11 rounded-md px-8 min-h-[48px]",
+        icon: "h-10 w-10 min-h-[44px] min-w-[44px]", // Mobile-friendly icon buttons
+        mobile: "h-12 px-6 py-3 min-h-[48px] text-base", // Extra large for mobile
       },
     },
     defaultVariants: {

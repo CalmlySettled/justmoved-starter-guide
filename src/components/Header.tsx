@@ -73,7 +73,7 @@ export function Header() {
           {isMobile && (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden min-h-[44px] min-w-[44px]">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -103,7 +103,7 @@ export function Header() {
                   
                   <div className="border-t border-border pt-6 space-y-4">
                     <Link to="/onboarding" onClick={() => setIsOpen(false)}>
-                      <Button variant="default" className="w-full">
+                      <Button variant="default" size="mobile" className="w-full">
                         Settle Me In
                       </Button>
                     </Link>
@@ -111,19 +111,20 @@ export function Header() {
                     {user ? (
                       <>
                         <Link to="/profile" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
+                          <Button variant="ghost" size="mobile" className="w-full justify-start">
                             <User className="h-4 w-4 mr-2" />
                             Profile
                           </Button>
                         </Link>
                         <Link to="/account-settings" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">
+                          <Button variant="ghost" size="mobile" className="w-full justify-start">
                             <Settings className="h-4 w-4 mr-2" />
                             Account Settings
                           </Button>
                         </Link>
                         <Button 
                           variant="ghost" 
+                          size="mobile"
                           className="w-full justify-start text-destructive hover:text-destructive"
                           onClick={() => {
                             signOut();
@@ -136,7 +137,7 @@ export function Header() {
                       </>
                     ) : (
                       <Link to="/auth" onClick={() => setIsOpen(false)}>
-                        <Button variant="default" className="w-full">
+                        <Button variant="default" size="mobile" className="w-full">
                           Sign In
                         </Button>
                       </Link>
