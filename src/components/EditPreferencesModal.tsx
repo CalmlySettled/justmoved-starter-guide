@@ -99,10 +99,9 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
     "Pharmacy": ["24/7 availability", "Insurance accepted", "Drive-thru", "Compounding", "Vaccinations", "Health screenings"],
     "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
     "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
-    "Parks": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas"],
     "Faith communities": ["Non-denominational", "Catholic", "Jewish", "Muslim", "Buddhist", "Hindu"],
     "Public transit / commute info": ["Bus routes", "Train stations", "Bike lanes", "Park & ride", "Commuter lots"],
-    "Green space / trails": ["Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
+    "Parks / Trails": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas", "Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
     "Restaurants / coffee shops": ["Family-friendly", "Date night spots", "Quick casual", "Coffee shops", "Food trucks"],
     "Social events or community groups": ["Family activities", "Young professionals", "Hobby groups", "Sports leagues", "Volunteer opportunities"]
   };
@@ -295,9 +294,8 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     "Public transit / commute info",
                     "Restaurants / coffee shops",
                     "Fitness options",
-                    "Parks",
                     "Faith communities",
-                    "Green space / trails",
+                    "Parks / Trails",
                     "Social events or community groups"
                   ].map((option) => (
                     <div key={option} className="flex items-center space-x-2">
