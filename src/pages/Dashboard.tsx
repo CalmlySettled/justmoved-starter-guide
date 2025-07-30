@@ -416,12 +416,15 @@ export default function Dashboard() {
                 longitude: quizData.longitude
               };
 
+              console.log('CALLING GENERATE-RECOMMENDATIONS with quiz data:', quizResponse);
               const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
                 body: { 
                   quizResponse,
                   userId: user.id
                 }
               });
+
+              console.log('GENERATE-RECOMMENDATIONS RESPONSE:', { newRecsData, generateError });
 
               if (generateError) {
                 console.error('Error generating recommendations from saved quiz:', generateError);
@@ -430,26 +433,40 @@ export default function Dashboard() {
                   description: "Please try retaking the quiz",
                   variant: "destructive",
                 });
+                
+                // Don't clean up quiz data if there was an error
+                localStorage.setItem('failedQuizProcessing', JSON.stringify(quizData));
               } else {
                 console.log('Successfully generated recommendations from saved quiz data');
                 toast({
                   title: "Welcome! Your recommendations are ready",
                   description: "We've generated personalized recommendations based on your quiz responses.",
                 });
+                
+                // Only clean up quiz data if recommendations were successfully generated
+                localStorage.removeItem('onboardingQuizData');
+                localStorage.removeItem('pendingQuizProcessing');
               }
               
               setGeneratingRecommendations(false);
               
-              // Clean up saved data
-              localStorage.removeItem('onboardingQuizData');
-              localStorage.removeItem('pendingQuizProcessing');
+              // Add delay to ensure edge function has time to save recommendations
+              console.log('Waiting for recommendations to be saved...');
+              await new Promise(resolve => setTimeout(resolve, 3000));
               
               // Refresh data to get the new recommendations
-              const { data: freshRecData } = await supabase
+              console.log('Fetching fresh recommendations...');
+              const { data: freshRecData, error: fetchError } = await supabase
                 .from('user_recommendations')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('relevance_score', { ascending: false });
+              
+              console.log('FRESH RECOMMENDATIONS FETCH:', { 
+                count: freshRecData?.length, 
+                error: fetchError,
+                sample: freshRecData?.slice(0, 3)?.map(r => ({ name: r.business_name, category: r.category }))
+              });
               
               setRecommendations(freshRecData || []);
               setLoading(false);
