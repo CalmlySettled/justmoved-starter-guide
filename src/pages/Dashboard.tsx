@@ -368,6 +368,100 @@ export default function Dashboard() {
       if (!recData || recData.length === 0) {
         console.log('No recommendations found for user, checking for profile data to generate new ones');
         
+        // Check if there's saved quiz data from the signup flow
+        const savedQuizData = localStorage.getItem('onboardingQuizData');
+        const pendingQuizProcessing = localStorage.getItem('pendingQuizProcessing');
+        
+        if (savedQuizData && pendingQuizProcessing) {
+          console.log('Found saved quiz data after signup, processing it...');
+          try {
+            const quizData = JSON.parse(savedQuizData);
+            
+            // Save the quiz data to user profile
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .upsert({
+                user_id: user.id,
+                address: quizData.address,
+                household_type: quizData.household,
+                priorities: quizData.priorities,
+                transportation_style: quizData.transportation,
+                budget_preference: quizData.budgetRange,
+                life_stage: quizData.movingTimeline,
+                settling_tasks: quizData.settlingTasks || [],
+                latitude: quizData.latitude,
+                longitude: quizData.longitude,
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'user_id'
+              });
+
+            if (profileError) {
+              console.error('Error saving quiz data to profile:', profileError);
+            } else {
+              console.log('Successfully saved quiz data to profile');
+              
+              // Generate recommendations with the saved quiz data
+              setGeneratingRecommendations(true);
+              
+              const quizResponse = {
+                address: quizData.address,
+                householdType: quizData.household,
+                priorities: quizData.priorities,
+                transportationStyle: quizData.transportation,
+                budgetPreference: quizData.budgetRange,
+                lifeStage: quizData.movingTimeline,
+                settlingTasks: quizData.settlingTasks || [],
+                latitude: quizData.latitude,
+                longitude: quizData.longitude
+              };
+
+              const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+                body: { 
+                  quizResponse,
+                  userId: user.id
+                }
+              });
+
+              if (generateError) {
+                console.error('Error generating recommendations from saved quiz:', generateError);
+                toast({
+                  title: "Error generating recommendations",
+                  description: "Please try retaking the quiz",
+                  variant: "destructive",
+                });
+              } else {
+                console.log('Successfully generated recommendations from saved quiz data');
+                toast({
+                  title: "Welcome! Your recommendations are ready",
+                  description: "We've generated personalized recommendations based on your quiz responses.",
+                });
+              }
+              
+              setGeneratingRecommendations(false);
+              
+              // Clean up saved data
+              localStorage.removeItem('onboardingQuizData');
+              localStorage.removeItem('pendingQuizProcessing');
+              
+              // Refresh data to get the new recommendations
+              const { data: freshRecData } = await supabase
+                .from('user_recommendations')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('relevance_score', { ascending: false });
+              
+              setRecommendations(freshRecData || []);
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error('Error processing saved quiz data:', error);
+            localStorage.removeItem('onboardingQuizData');
+            localStorage.removeItem('pendingQuizProcessing');
+          }
+        }
+        
         // If user has no profile either, they need to take the quiz
         if (!profileData || !profileData.priorities || profileData.priorities.length === 0) {
           console.log('No profile or priorities found, user needs to take quiz');

@@ -29,31 +29,40 @@ export default function VerifyEmail() {
           const { data: { session } } = await supabase.auth.getSession();
           console.log('Mobile Debug: VerifyEmail - Session check:', session);
           
-          if (session?.user) {
-            console.log('Mobile Debug: VerifyEmail - User verified successfully');
-            setVerificationStatus('success');
-            
-            // Mobile-specific handling
-            if (isMobile) {
-              console.log('Mobile Debug: VerifyEmail - Mobile redirect with delay');
-              setTimeout(() => {
-                navigate('/dashboard', { replace: true });
-              }, 2000);
-            } else {
-              // Desktop handling
-              if (window.opener) {
-                try {
-                  window.opener.postMessage({ type: 'EMAIL_VERIFIED' }, window.location.origin);
-                  window.opener.focus();
-                  setTimeout(() => window.close(), 1000);
-                } catch (error) {
-                  console.log('Cannot communicate with opener, redirecting normally');
+            if (session?.user) {
+              console.log('Mobile Debug: VerifyEmail - User verified successfully');
+              setVerificationStatus('success');
+              
+              // Check if there's saved quiz data to process
+              const savedQuizData = localStorage.getItem('onboardingQuizData');
+              console.log('Mobile Debug: VerifyEmail - Saved quiz data found:', !!savedQuizData);
+              
+              if (savedQuizData) {
+                // Mark that user should be redirected to dashboard with quiz processing
+                localStorage.setItem('pendingQuizProcessing', 'true');
+              }
+              
+              // Mobile-specific handling
+              if (isMobile) {
+                console.log('Mobile Debug: VerifyEmail - Mobile redirect with delay');
+                setTimeout(() => {
+                  navigate('/dashboard', { replace: true });
+                }, 2000);
+              } else {
+                // Desktop handling
+                if (window.opener) {
+                  try {
+                    window.opener.postMessage({ type: 'EMAIL_VERIFIED' }, window.location.origin);
+                    window.opener.focus();
+                    setTimeout(() => window.close(), 1000);
+                  } catch (error) {
+                    console.log('Cannot communicate with opener, redirecting normally');
+                    setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
+                  }
+                } else {
                   setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
                 }
-              } else {
-                setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
               }
-            }
           } else {
             console.log('Mobile Debug: VerifyEmail - No session found, checking URL params');
             // Check URL parameters for verification tokens
