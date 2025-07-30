@@ -31,14 +31,18 @@ export function useMobileAuth() {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('Mobile Debug: Session validation result:', !!currentSession);
       
+      // Always set mobile auth ready after checking - whether session exists or not
+      setMobileAuthReady(true);
+      
       if (currentSession?.user) {
-        setMobileAuthReady(true);
         return true;
       }
       
       return false;
     } catch (error) {
       console.error('Mobile Debug: Session validation failed:', error);
+      // Even if validation fails, mark mobile auth as ready so app doesn't get stuck
+      setMobileAuthReady(true);
       return false;
     }
   }, [isMobile]);
