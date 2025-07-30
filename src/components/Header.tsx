@@ -42,9 +42,9 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
           <img 
-            src="/lovable-uploads/88cc55f9-29df-468c-b894-b89731843340.png" 
+            src="/src/assets/calmlysettled-logo-transparent.png" 
             alt="CalmlySettled" 
-            className="h-10 sm:h-12"
+            className="h-12 sm:h-14"
           />
         </Link>
         
