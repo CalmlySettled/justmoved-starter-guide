@@ -135,15 +135,43 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
       return false;
     }
     
-    // Must have retail-oriented types for grocery
-    const retailTypes = [
-      'grocery_or_supermarket', 'supermarket', 'convenience_store',
-      'store', 'establishment'
+    // For grocery searches, exclude non-grocery retail stores
+    const nonGroceryRetail = [
+      'clothing', 'department_store', 'electronics_store', 'furniture_store',
+      'jewelry_store', 'shoe_store', 'shopping_mall', 'book_store',
+      'home_goods_store', 'beauty_salon', 'spa', 'gym', 'bank',
+      'gas_station', 'car_dealer', 'pharmacy'
     ];
     
-    const hasRetailType = retailTypes.some(type => types.includes(type));
-    if (!hasRetailType) {
-      console.log(`→ Excluding non-retail business: ${place.name} (types: ${types.join(', ')})`);
+    // Exclude if it's clearly a non-grocery retail store
+    if (nonGroceryRetail.some(type => types.includes(type))) {
+      console.log(`→ Excluding non-grocery retail: ${place.name} (types: ${types.join(', ')})`);
+      return false;
+    }
+    
+    // Exclude specific non-grocery store names
+    const nonGroceryNames = [
+      'macy', 'nordstrom', 'target', 'walmart', 'best buy', 'home depot',
+      'lowes', 'cvs', 'walgreens', 'rite aid', 'apple store', 'starbucks'
+    ];
+    
+    if (nonGroceryNames.some(storeName => name.includes(storeName)) && 
+        !name.includes('market') && !name.includes('grocery') && !name.includes('food')) {
+      console.log(`→ Excluding non-grocery store: ${place.name}`);
+      return false;
+    }
+    
+    // Must have grocery-oriented types
+    const groceryTypes = [
+      'grocery_or_supermarket', 'supermarket', 'convenience_store', 'food'
+    ];
+    
+    const hasGroceryType = groceryTypes.some(type => types.includes(type)) ||
+                          name.includes('market') || name.includes('grocery') || 
+                          name.includes('supermarket') || name.includes('food');
+    
+    if (!hasGroceryType) {
+      console.log(`→ Excluding non-grocery business: ${place.name} (types: ${types.join(', ')})`);
       return false;
     }
   }
@@ -180,10 +208,8 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'supermarket' },
       { keyword: 'grocery' },
       { keyword: 'food store' },
-      { keyword: 'market' },
       { type: 'grocery_or_supermarket' },
-      { type: 'supermarket' },
-      { type: 'store' }
+      { type: 'supermarket' }
     );
   } else if (category.includes('medical')) {
     strategies.push(
