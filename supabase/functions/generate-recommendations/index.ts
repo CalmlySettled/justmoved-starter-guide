@@ -1368,7 +1368,15 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "town hall": "government offices",
     "motor vehicle": "government offices",
     "registry": "government offices",
-    "municipal": "government offices"
+    "municipal": "government offices",
+    "banking / financial services": "banks financial",
+    "banking": "banks financial",
+    "financial services": "banks financial",
+    "financial": "banks financial",
+    "banks": "banks financial",
+    "bank": "banks financial",
+    "credit union": "banks financial",
+    "atm": "banks financial"
   };
 
   console.log('User priorities received:', quizResponse.priorities);
