@@ -311,12 +311,29 @@ export default function OnboardingQuiz() {
               Thanks for completing the quiz! We're building your personalized local guide based on your preferences.
             </p>
             <Button 
-              onClick={handleComplete} 
+              onClick={() => {
+                // Save quiz data to localStorage
+                const coordinates = null; // Will be calculated during signup
+                const quizDataForStorage = {
+                  address: quizData.address,
+                  priorities: quizData.priorities,
+                  household: quizData.household.join(', '),
+                  transportation: quizData.transportation,
+                  budgetRange: quizData.lifestyle,
+                  movingTimeline: quizData.lifeStage,
+                  settlingTasks: quizData.tasks,
+                  latitude: coordinates,
+                  longitude: coordinates
+                };
+                localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+                
+                // ALWAYS redirect to signup
+                navigate("/auth");
+              }}
               variant="hero" 
               size="lg"
-              disabled={loading}
             >
-              {loading ? "Generating Recommendations..." : "View Your Personalized Guide"}
+              View Your Personalized Guide
             </Button>
           </CardContent>
         </Card>
