@@ -1233,10 +1233,10 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-page">
         <Header />
         <main className="pt-24 pb-16">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center py-12">
               <div className="max-w-lg mx-auto space-y-6 p-8 bg-muted/50 rounded-lg border">
-                <h3 className="text-3xl font-bold">Take the quiz to get your dashboard</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold">Take the quiz to get your dashboard</h3>
                 <p className="text-muted-foreground">
                   Complete our quick quiz to get personalized recommendations and save your favorites
                 </p>
@@ -1266,7 +1266,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-gradient-page">
         <Header />
-        <div className="pt-24 px-6 max-w-6xl mx-auto">
+        <div className="pt-24 px-4 sm:px-6 max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-4">Loading Your Dashboard</h1>
             <p className="text-muted-foreground">Retrieving your saved recommendations...</p>
@@ -1329,7 +1329,7 @@ export default function Dashboard() {
         
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
             Your Neighborhood Dashboard
           </h1>
           
@@ -1395,7 +1395,7 @@ export default function Dashboard() {
                     <span className="text-2xl">{getCategoryIcon(category)}</span>
                   </div>
                   <div>
-                    <h2 className="text-3xl font-bold text-foreground">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                       {category.charAt(0).toUpperCase() + category.slice(1)}
                     </h2>
                     <p className="text-muted-foreground mt-1">

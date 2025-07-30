@@ -37,9 +37,9 @@ const features = [
 export function FeaturesSection() {
   return (
     <section className="py-20 bg-background">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
             Everything You Need in One Place
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -48,13 +48,13 @@ export function FeaturesSection() {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature, index) => (
             <Card 
               key={index}
               className="group hover:shadow-card transition-smooth bg-gradient-card border-border/50"
             >
-              <CardContent className="p-8 text-center">
+              <CardContent className="p-6 sm:p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-6 rounded-xl bg-gradient-hero flex items-center justify-center shadow-soft group-hover:shadow-glow transition-smooth">
                   <feature.icon className="h-8 w-8 text-white" />
                 </div>

@@ -355,7 +355,7 @@ const Popular = () => {
       <Header />
       
       <main className="pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Header Section */}
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -384,7 +384,7 @@ const Popular = () => {
               {/* Trending Categories Grid */}
               <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-8 text-center">Trending Categories</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {trendingCategories.map((category) => (
                     <Card 
                       key={category.name}
@@ -413,7 +413,7 @@ const Popular = () => {
               {/* Spotlight Sections */}
               <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-8 text-center">Local Spotlight</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {spotlightSections.map((section) => (
                     <Card 
                       key={section.title}
@@ -448,7 +448,7 @@ const Popular = () => {
                     <Badge variant="secondary">{businesses.length} places</Badge>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {businesses.map((business) => (
                       <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
@@ -511,7 +511,7 @@ const Popular = () => {
               ))}
 
               {loading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {[...Array(6)].map((_, i) => (
                     <Card key={i}>
                       <CardContent className="p-4">
@@ -541,7 +541,7 @@ const Popular = () => {
                 <p className="text-muted-foreground">
                   Take our quick quiz to explore trending places, hot spots, and local favorites in your area
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 my-8 opacity-60">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 my-8 opacity-60">
                   {trendingCategories.slice(0, 6).map((category) => (
                     <div key={category.name} className="text-center">
                       <div className={`w-12 h-12 mx-auto mb-2 rounded-full ${category.color} flex items-center justify-center text-lg`}>

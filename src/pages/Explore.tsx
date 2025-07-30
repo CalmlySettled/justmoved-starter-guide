@@ -469,10 +469,10 @@ export default function Explore() {
       <Header />
       
       <main className="pt-24 pb-16">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Header Section */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               Explore Nearby Essentials
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
@@ -587,8 +587,8 @@ export default function Explore() {
 
               {/* Just Moved Collections */}
               <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-                <h2 className="text-3xl font-bold mb-6 text-center">Just Moved Collections</h2>
-                <div className="grid grid-cols-2 gap-6">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Just Moved Collections</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {themedPacks.map((pack) => (
                     <Card 
                       key={pack.title}
@@ -631,7 +631,7 @@ export default function Explore() {
               {selectedCategory && (
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-bold">{selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
                     <Button variant="outline" onClick={() => setSelectedCategory(null)}>
                       Clear
                     </Button>
@@ -643,7 +643,7 @@ export default function Explore() {
                       <p className="mt-4 text-muted-foreground">Loading recommendations...</p>
                     </div>
                   ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {categoryResults.map((business, index) => (
                         <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
                           {/* Business Image */}

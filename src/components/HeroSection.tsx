@@ -15,8 +15,8 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/60 to-transparent" />
       
       {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center text-white">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
           Your new city 
           <span className="bg-gradient-accent bg-clip-text text-transparent block">
             awaits
@@ -32,7 +32,7 @@ export function HeroSection() {
             <Button 
               variant="hero" 
               size="lg"
-              className="text-xl px-12 py-8 min-w-[250px] transform hover:scale-110 shadow-2xl"
+              className="text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-8 min-w-[200px] sm:min-w-[250px] transform hover:scale-110 shadow-2xl"
             >
               Settle Me In
               <ArrowRight className="ml-3 h-6 w-6" />
