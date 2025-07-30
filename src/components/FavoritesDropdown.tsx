@@ -222,11 +222,15 @@ export function FavoritesDropdown() {
                       </div>
                     )}
 
-                    {business.business_description && (
-                      <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                        {business.business_description}
-                      </p>
-                    )}
+                    {/* Show clean category-based description instead of raw business_description */}
+                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                      {business.category?.toLowerCase().includes('grocery') 
+                        ? "Your neighborhood grocery destination"
+                        : business.category?.toLowerCase().includes('restaurant')
+                        ? "Local dining favorite"
+                        : "Highly recommended local spot"
+                      }
+                    </p>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
