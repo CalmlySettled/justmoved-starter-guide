@@ -77,6 +77,7 @@ export default function Dashboard() {
   const [filteredRecommendations, setFilteredRecommendations] = useState<{[category: string]: SavedRecommendation[]}>({});
   const [filterLoading, setFilterLoading] = useState<{[category: string]: boolean}>({});
   const [additionalResults, setAdditionalResults] = useState<{[category: string]: number}>({});
+  const [favoriteBusinessNames, setFavoriteBusinessNames] = useState<Set<string>>(new Set());
   const lastFetchTime = useRef<number>(0);
 
   // Memoized refresh function
@@ -114,7 +115,36 @@ export default function Dashboard() {
       navigate("/auth");
       return;
     }
+    
+    const loadFavorites = () => {
+      try {
+        const storedFavorites = localStorage.getItem('favorites');
+        if (storedFavorites) {
+          const favorites: any[] = JSON.parse(storedFavorites);
+          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
+          setFavoriteBusinessNames(favoriteNames);
+        } else {
+          setFavoriteBusinessNames(new Set());
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    };
+
+    const handleFavoritesUpdate = () => {
+      console.log('🔥 DASHBOARD - Received favorites update event');
+      loadFavorites();
+    };
+    
     fetchUserData();
+    loadFavorites();
+    
+    // Listen for favorites updates from dropdown
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+    };
   }, [user, navigate]);
 
   // Refresh data when returning to this page
@@ -1171,12 +1201,12 @@ export default function Dashboard() {
                                 onClick={() => toggleFavorite(rec)}
                                 disabled={isFavoriting}
                                 className={`ml-1 transition-colors ${
-                                  rec.is_favorite 
+                                  favoriteBusinessNames.has(rec.business_name)
                                     ? 'text-yellow-500 hover:text-yellow-600' 
                                     : 'text-muted-foreground hover:text-yellow-500'
                                 }`}
                               >
-                                <Star className={`h-4 w-4 ${rec.is_favorite ? 'fill-current' : ''}`} />
+                                <Star className={`h-4 w-4 ${favoriteBusinessNames.has(rec.business_name) ? 'fill-current' : ''}`} />
                               </Button>
                               <Button
                                 variant="ghost"
