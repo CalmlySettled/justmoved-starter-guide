@@ -44,36 +44,80 @@ export default function Auth() {
           if (storedQuizData) {
             try {
               const quizData = JSON.parse(storedQuizData);
-              console.log('Parsed quiz data:', quizData);
+              console.log('Mobile Debug: Parsed quiz data:', quizData);
               
               if (quizData.address && quizData.priorities && quizData.priorities.length > 0) {
-                console.log('Valid quiz data found, saving to profile...');
+                console.log('Mobile Debug: Valid quiz data found, saving to profile...');
                 
-                // Save quiz data to Supabase using upsert and correct column names
-                const { error } = await supabase
-                  .from('profiles')
-                  .upsert({
-                    user_id: session.user.id,
-                    address: quizData.address,
-                    priorities: quizData.priorities,
-                    priority_preferences: {}, // Empty for now, this will be filled later via preferences modal
-                    household_type: quizData.household,
-                    transportation_style: quizData.transportation,
-                    budget_preference: quizData.budgetRange,
-                    life_stage: quizData.movingTimeline,
-                    settling_tasks: quizData.settlingTasks || [],
-                    latitude: quizData.latitude,
-                    longitude: quizData.longitude
-                  }, {
-                    onConflict: 'user_id'
+                // Mobile-specific: Add delay to ensure user is properly authenticated
+                const userAgent = navigator.userAgent || navigator.vendor;
+                const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+                
+                if (isMobile) {
+                  console.log('Mobile Debug: Adding auth delay for mobile device');
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                // Enhanced profile saving with retry logic for mobile
+                let profileSaveAttempts = 0;
+                const maxRetries = 3;
+                let profileSaved = false;
+                
+                while (!profileSaved && profileSaveAttempts < maxRetries) {
+                  try {
+                    const { error } = await supabase
+                      .from('profiles')
+                      .upsert({
+                        user_id: session.user.id,
+                        address: quizData.address,
+                        priorities: quizData.priorities,
+                        priority_preferences: {},
+                        household_type: quizData.household,
+                        transportation_style: quizData.transportation,
+                        budget_preference: quizData.budgetRange,
+                        life_stage: quizData.movingTimeline,
+                        settling_tasks: quizData.settlingTasks || [],
+                        latitude: quizData.latitude,
+                        longitude: quizData.longitude,
+                        display_name: session.user.user_metadata?.display_name || 'User'
+                      }, {
+                        onConflict: 'user_id',
+                        ignoreDuplicates: false
+                      });
+                    
+                    if (error) {
+                      console.error('Mobile Debug: Profile save error (attempt', profileSaveAttempts + 1, '):', error);
+                      profileSaveAttempts++;
+                      
+                      if (profileSaveAttempts < maxRetries) {
+                        console.log('Mobile Debug: Retrying profile save in 1 second...');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                      }
+                    } else {
+                      console.log('Mobile Debug: Quiz data saved successfully, generating recommendations...');
+                      profileSaved = true;
+                    }
+                  } catch (error) {
+                    console.error('Mobile Debug: Unexpected error saving profile:', error);
+                    profileSaveAttempts++;
+                    
+                    if (profileSaveAttempts < maxRetries) {
+                      await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                  }
+                }
+                
+                if (!profileSaved) {
+                  console.error('Mobile Debug: Failed to save profile after', maxRetries, 'attempts');
+                  toast({
+                    title: "Warning",
+                    description: "We couldn't save your preferences, but you can still see your recommendations.",
+                    variant: "destructive",
                   });
+                }
                 
-                if (error) {
-                  console.error('Error saving quiz data to profile:', error);
-                } else {
-                  console.log('Quiz data saved successfully, generating recommendations...');
-                  
-                  // Generate recommendations immediately after profile is saved
+                // Generate recommendations only if profile was saved successfully
+                if (profileSaved) {
                   try {
                     const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
                       body: { 
@@ -81,7 +125,7 @@ export default function Auth() {
                           address: quizData.address,
                           householdType: quizData.household,
                           priorities: quizData.priorities,
-                          priorityPreferences: {}, // Empty for now
+                          priorityPreferences: {},
                           transportationStyle: quizData.transportation,
                           budgetPreference: quizData.budgetRange,
                           lifeStage: quizData.movingTimeline,
@@ -101,11 +145,11 @@ export default function Auth() {
                   } catch (recError) {
                     console.error('Error calling generate-recommendations function:', recError);
                   }
-                  
-                  localStorage.removeItem('onboardingQuizData');
-                  navigate("/dashboard");
-                  return; // Exit early - don't check profile again
                 }
+                
+                localStorage.removeItem('onboardingQuizData');
+                navigate("/dashboard");
+                return;
               }
             } catch (error) {
               console.error('Error parsing stored quiz data:', error);
@@ -113,26 +157,26 @@ export default function Auth() {
           }
           
           // Check if user has completed onboarding in Supabase
-          console.log('Checking if user has profile data...');
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('address, priorities')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          console.log('Profile data:', profile, 'Error:', profileError);
-          console.log('Profile address:', profile?.address);
-          console.log('Profile priorities:', profile?.priorities);
-          console.log('Profile priorities length:', profile?.priorities?.length);
-          
-          // If they have profile data, go to dashboard, otherwise onboarding
-          if (profile?.address && profile?.priorities && profile?.priorities.length > 0) {
-            console.log('User has profile data, navigating to dashboard');
-            navigate("/dashboard");
-          } else {
-            console.log('User has no profile data, navigating to onboarding');
-            console.log('Missing address:', !profile?.address);
-            console.log('Missing priorities:', !profile?.priorities || profile?.priorities.length === 0);
+          console.log('Mobile Debug: Checking if user has profile data...');
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('address, priorities')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            console.log('Mobile Debug: Profile data:', profile, 'Error:', profileError);
+            
+            // If they have profile data, go to dashboard, otherwise onboarding
+            if (profile?.address && profile?.priorities && profile?.priorities.length > 0) {
+              console.log('Mobile Debug: User has profile data, navigating to dashboard');
+              navigate("/dashboard");
+            } else {
+              console.log('Mobile Debug: User has no profile data, navigating to onboarding');
+              navigate("/onboarding");
+            }
+          } catch (error) {
+            console.error('Mobile Debug: Error checking profile:', error);
             navigate("/onboarding");
           }
         }
