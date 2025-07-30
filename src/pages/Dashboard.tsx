@@ -114,16 +114,43 @@ export default function Dashboard() {
     console.log('Mobile Debug: Dashboard useEffect - User state:', user);
     console.log('Mobile Debug: Dashboard useEffect - Loading state:', loading);
     
-    // Simplified authentication check - if no user and auth is done loading, redirect
-    if (!loading && !user) {
-      console.log('Mobile Debug: Dashboard - No user found after auth loading complete, redirecting to auth');
+    // Detect mobile
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    console.log('Mobile Debug: Dashboard - Mobile device detected:', isMobile);
+    
+    // Mobile-specific auth check with retry
+    if (isMobile && !user && !loading) {
+      console.log('Mobile Debug: Dashboard - No user on mobile, attempting session recovery');
+      
+      // Give mobile auth more time to initialize
+      const mobileAuthTimeout = setTimeout(async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('Mobile Debug: Dashboard - Session recovery check:', session);
+          
+          if (!session) {
+            console.log('Mobile Debug: Dashboard - No session found, redirecting to auth');
+            navigate("/auth");
+          }
+        } catch (error) {
+          console.error('Mobile Debug: Dashboard - Session recovery failed:', error);
+          navigate("/auth");
+        }
+      }, 2000);
+      
+      return () => clearTimeout(mobileAuthTimeout);
+    }
+    
+    // Only redirect if we're done loading and there's no user (desktop behavior)
+    if (!isMobile && !loading && !user) {
+      console.log('Desktop - No user found after loading complete, redirecting to auth');
       navigate("/auth");
       return;
     }
     
-    // Only proceed if we have a user
     if (!user) {
-      console.log('Mobile Debug: Dashboard - No user yet, waiting for auth...');
+      console.log('Mobile Debug: Dashboard - No user yet, waiting...');
       return;
     }
     
@@ -147,27 +174,27 @@ export default function Dashboard() {
       loadFavorites();
     };
     
-    // Set a reasonable timeout for data loading (5 seconds for mobile, 3 for desktop)
-    const userAgent = navigator.userAgent || navigator.vendor;
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    const timeoutDelay = isMobile ? 5000 : 3000;
-    
+    // Mobile-specific timeout with longer delay
+    const timeoutDelay = isMobile ? 15000 : 10000;
     const timeoutId = setTimeout(() => {
       console.log('Mobile Debug: fetchUserData timeout after', timeoutDelay, 'ms, setting loading to false');
       setLoading(false);
       
-      toast({
-        title: "Taking longer than expected",
-        description: "Your dashboard is still loading. You can try refreshing if needed.",
-        action: (
-          <Button variant="outline" size="sm" onClick={() => {
-            setLoading(true);
-            fetchUserData();
-          }}>
-            Retry
-          </Button>
-        )
-      });
+      // On mobile, show retry option
+      if (isMobile) {
+        toast({
+          title: "Loading taking longer than expected",
+          description: "Tap here to retry loading your recommendations",
+          action: (
+            <Button variant="outline" size="sm" onClick={() => {
+              setLoading(true);
+              fetchUserData();
+            }}>
+              Retry
+            </Button>
+          )
+        });
+      }
     }, timeoutDelay);
     
     fetchUserData().finally(() => {
@@ -182,7 +209,7 @@ export default function Dashboard() {
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
       clearTimeout(timeoutId);
     };
-  }, [user, navigate]);
+  }, [user, navigate, loading]);
 
   // Refresh data when returning to this page
   useEffect(() => {
@@ -509,19 +536,11 @@ export default function Dashboard() {
 
       setRecommendations(recData || []);
     } catch (error) {
-      console.error('Mobile Debug: Error fetching user data:', error);
+      console.error('Error fetching user data:', error);
       toast({
-        title: "Error loading dashboard",
-        description: "We couldn't load your dashboard. Please try refreshing the page.",
-        variant: "destructive",
-        action: (
-          <Button variant="outline" size="sm" onClick={() => {
-            setLoading(true);
-            fetchUserData();
-          }}>
-            Retry
-          </Button>
-        )
+        title: "Error loading data",
+        description: "We couldn't load your recommendations. Please refresh the page.",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
