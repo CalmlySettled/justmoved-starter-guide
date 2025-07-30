@@ -227,132 +227,34 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Quiz completion: Starting handleComplete');
+      console.log('Quiz completion: Starting - ALWAYS redirecting to signup');
       
-      // Simple authentication check: user exists, session is valid, and has existing profile data
-      let userIsAuthenticated = false;
+      // ALWAYS redirect to signup after quiz completion - no exceptions
+      // This is the most reliable way to ensure mobile users get prompted to sign up
       
-      if (user && !authLoading) {
-        try {
-          // Check if user has an existing profile with saved quiz data
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('address, priorities')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          // User is only considered authenticated if they have existing profile data
-          if (profile && profile.address && profile.priorities && profile.priorities.length > 0) {
-            console.log('Quiz completion: User has existing profile, updating data');
-            userIsAuthenticated = true;
-          } else {
-            console.log('Quiz completion: User exists but no profile data, treating as new user');
-            userIsAuthenticated = false;
-          }
-        } catch (error) {
-          console.log('Quiz completion: Error checking profile, treating as unauthenticated');
-          userIsAuthenticated = false;
-        }
-      }
+      const coordinates = await getCoordinatesFromAddress(quizData.address);
       
-      // If user is definitively authenticated with existing data, update their profile
-      if (userIsAuthenticated) {
-        // Get coordinates from address for caching
-        const coordinates = await getCoordinatesFromAddress(quizData.address);
-        
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            user_id: user.id,
-            address: quizData.address,
-            household_type: quizData.household.join(', '),
-            priorities: quizData.priorities,
-            priority_preferences: quizData.priorityPreferences,
-            transportation_style: quizData.transportation,
-            budget_preference: quizData.lifestyle,
-            life_stage: quizData.lifeStage,
-            settling_tasks: quizData.tasks,
-            latitude: coordinates?.lat || null,
-            longitude: coordinates?.lng || null,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id'
-          });
-
-        if (error) {
-          console.error('Error saving profile:', error);
-          toast({
-            title: "Warning",
-            description: "We couldn't save your preferences, but you can still see your recommendations.",
-            variant: "destructive"
-          });
-        }
-
-        // Generate recommendations for existing users
-        try {
-          const quizDataForRecommendations = {
-            address: quizData.address,
-            householdType: quizData.household.join(', '),
-            priorities: quizData.priorities,
-            priorityPreferences: quizData.priorityPreferences,
-            transportationStyle: quizData.transportation,
-            budgetPreference: quizData.lifestyle,
-            lifeStage: quizData.lifeStage,
-            settlingTasks: quizData.tasks,
-            latitude: coordinates?.lat || null,
-            longitude: coordinates?.lng || null
-          };
-
-          await supabase.functions.invoke('generate-recommendations', {
-            body: {
-              quizResponse: quizDataForRecommendations,
-              userId: user.id
-            }
-          });
-
-          toast({
-            title: "Success!",
-            description: "Your preferences and recommendations have been updated.",
-          });
-        } catch (recError) {
-          console.error('Error generating recommendations:', recError);
-        }
-
-        // Track Google Ads conversion
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'conversion', {
-            'send_to': 'AW-1741019579l/Q2gnCPfp_fsaEM-C6ulA'
-          });
-        }
-
-        navigate("/dashboard");
-      } else {
-        // Default flow for ALL new users: save to localStorage and redirect to signup
-        console.log('Quiz completion: Redirecting to signup for authentication');
-        
-        const coordinates = await getCoordinatesFromAddress(quizData.address);
-        
-        const quizDataForStorage = {
-          address: quizData.address,
-          priorities: quizData.priorities,
-          household: quizData.household.join(', '),
-          transportation: quizData.transportation,
-          budgetRange: quizData.lifestyle,
-          movingTimeline: quizData.lifeStage,
-          settlingTasks: quizData.tasks,
-          latitude: coordinates?.lat || null,
-          longitude: coordinates?.lng || null
-        };
-        
-        localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
-        
-        toast({
-          title: "Quiz Complete!",
-          description: "Please sign up to save your preferences and get personalized recommendations.",
-        });
-        
-        navigate("/auth");
-      }
+      const quizDataForStorage = {
+        address: quizData.address,
+        priorities: quizData.priorities,
+        household: quizData.household.join(', '),
+        transportation: quizData.transportation,
+        budgetRange: quizData.lifestyle,
+        movingTimeline: quizData.lifeStage,
+        settlingTasks: quizData.tasks,
+        latitude: coordinates?.lat || null,
+        longitude: coordinates?.lng || null
+      };
+      
+      localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+      
+      toast({
+        title: "Quiz Complete!",
+        description: "Please sign up to save your preferences and get personalized recommendations.",
+      });
+      
+      console.log('Quiz completion: Navigating to /auth');
+      navigate("/auth");
       
     } catch (error) {
       console.error('Mobile Debug: Error in handleComplete:', error);
