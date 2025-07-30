@@ -543,16 +543,16 @@ export default function Explore() {
                     </div>
                     
                     <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                      <p className="text-sm font-medium">Sign up to explore your area</p>
+                      <p className="text-sm font-medium">Take the quiz to explore your area</p>
                       <p className="text-xs text-muted-foreground">
-                        Create a free account to find nearby essentials and save your favorites
+                        Complete our quick quiz to find nearby essentials and save your favorites
                       </p>
                       <Button 
-                        onClick={() => window.location.href = '/auth'}
+                        onClick={() => window.location.href = '/onboarding'}
                         size="sm"
                         className="mt-2"
                       >
-                        Sign Up Now
+                        Take the Quiz
                       </Button>
                     </div>
                   </>

@@ -1236,17 +1236,20 @@ export default function Dashboard() {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center py-12">
               <div className="max-w-lg mx-auto space-y-6 p-8 bg-muted/50 rounded-lg border">
-                <h3 className="text-3xl font-bold">Sign up to explore your area</h3>
+                <h3 className="text-3xl font-bold">Take the quiz to get your dashboard</h3>
                 <p className="text-muted-foreground">
-                  Create a free account to find nearby essentials and save your favorites
+                  Complete our quick quiz to get personalized recommendations and save your favorites
                 </p>
                 <Button 
-                  onClick={() => window.location.href = '/auth'}
+                  onClick={() => window.location.href = '/onboarding'}
                   size="lg"
                   className="bg-gradient-hero hover:opacity-90 text-white border-0"
                 >
-                  Sign Up Now
+                  Take the Quiz
                 </Button>
+                <p className="text-sm text-muted-foreground">
+                  Already completed the quiz? <button onClick={() => window.location.href = '/auth'} className="text-primary hover:underline">Sign in</button>
+                </p>
               </div>
             </div>
           </div>
