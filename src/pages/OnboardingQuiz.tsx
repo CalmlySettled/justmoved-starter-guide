@@ -390,7 +390,7 @@ export default function OnboardingQuiz() {
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
-              {currentQuestion === 2 && "Who did you move with?"}
+              {currentQuestion === 2 && "Who do you live with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
               {currentQuestion === 4 && "Let's personalize your selections"}
               {currentQuestion === 5 && "How do you typically get around?"}
