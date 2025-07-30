@@ -524,13 +524,44 @@ const Popular = () => {
                 </div>
               )}
             </>
-          ) : (
+          ) : user ? (
             <div className="text-center py-16">
               <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-2xl font-semibold mb-2">Share Your Location</h2>
               <p className="text-muted-foreground max-w-md mx-auto">
                 Let us know where you are to discover the hottest spots and trending places near you
               </p>
+            </div>
+          ) : (
+            // Non-authenticated users see sign up prompt
+            <div className="text-center py-16">
+              <div className="max-w-lg mx-auto space-y-6 p-8 bg-muted/50 rounded-lg border">
+                <TrendingUp className="h-16 w-16 text-primary mx-auto" />
+                <h2 className="text-3xl font-bold">Discover What's Popular</h2>
+                <p className="text-muted-foreground">
+                  Sign up to explore trending places, hot spots, and local favorites in your area
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 my-8 opacity-60">
+                  {trendingCategories.slice(0, 6).map((category) => (
+                    <div key={category.name} className="text-center">
+                      <div className={`w-12 h-12 mx-auto mb-2 rounded-full ${category.color} flex items-center justify-center text-lg`}>
+                        {category.icon}
+                      </div>
+                      <p className="text-sm font-medium">{category.name}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  onClick={() => window.location.href = '/auth'}
+                  size="lg"
+                  className="mt-6"
+                >
+                  Sign Up to Explore Popular Places
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Already have an account? <button onClick={() => window.location.href = '/auth'} className="text-primary hover:underline">Sign in</button>
+                </p>
+              </div>
             </div>
           )}
         </div>

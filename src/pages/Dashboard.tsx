@@ -114,37 +114,9 @@ export default function Dashboard() {
     console.log('Mobile Debug: Dashboard useEffect - User state:', user);
     console.log('Mobile Debug: Dashboard useEffect - Loading state:', loading);
     
-    // Detect mobile
-    const userAgent = navigator.userAgent || navigator.vendor;
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    console.log('Mobile Debug: Dashboard - Mobile device detected:', isMobile);
-    
-    // Mobile-specific auth check with retry
-    if (isMobile && !user && !loading) {
-      console.log('Mobile Debug: Dashboard - No user on mobile, attempting session recovery');
-      
-      // Give mobile auth more time to initialize
-      const mobileAuthTimeout = setTimeout(async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('Mobile Debug: Dashboard - Session recovery check:', session);
-          
-          if (!session) {
-            console.log('Mobile Debug: Dashboard - No session found, redirecting to auth');
-            navigate("/auth");
-          }
-        } catch (error) {
-          console.error('Mobile Debug: Dashboard - Session recovery failed:', error);
-          navigate("/auth");
-        }
-      }, 2000);
-      
-      return () => clearTimeout(mobileAuthTimeout);
-    }
-    
-    // Only redirect if we're done loading and there's no user (desktop behavior)
-    if (!isMobile && !loading && !user) {
-      console.log('Desktop - No user found after loading complete, redirecting to auth');
+    // If no user and not loading, redirect to auth immediately for non-authenticated users
+    if (!loading && !user) {
+      console.log('No user found after loading complete, redirecting to auth');
       navigate("/auth");
       return;
     }
@@ -174,28 +146,10 @@ export default function Dashboard() {
       loadFavorites();
     };
     
-    // Mobile-specific timeout with longer delay
-    const timeoutDelay = isMobile ? 15000 : 10000;
     const timeoutId = setTimeout(() => {
-      console.log('Mobile Debug: fetchUserData timeout after', timeoutDelay, 'ms, setting loading to false');
+      console.log('fetchUserData timeout, setting loading to false');
       setLoading(false);
-      
-      // On mobile, show retry option
-      if (isMobile) {
-        toast({
-          title: "Loading taking longer than expected",
-          description: "Tap here to retry loading your recommendations",
-          action: (
-            <Button variant="outline" size="sm" onClick={() => {
-              setLoading(true);
-              fetchUserData();
-            }}>
-              Retry
-            </Button>
-          )
-        });
-      }
-    }, timeoutDelay);
+    }, 10000);
     
     fetchUserData().finally(() => {
       clearTimeout(timeoutId);
