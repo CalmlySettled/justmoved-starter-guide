@@ -301,9 +301,7 @@ export default function OnboardingQuiz() {
         // Track Google Ads conversion for full onboarding completion
         if (typeof gtag !== 'undefined') {
           gtag('event', 'conversion', {
-            'send_to': 'AW-CONVERSION_ID/CONVERSION_LABEL', // Replace with your actual conversion ID and label
-            'value': 1.0,
-            'currency': 'USD'
+            'send_to': 'AW-1741019579l/Q2gnCPfp_fsaEM-C6ulA'
           });
         }
 
