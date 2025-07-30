@@ -11,7 +11,6 @@ import Recommendations from "./pages/Recommendations";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
-import VerifyEmailSuccess from "./pages/VerifyEmailSuccess";
 import NotFound from "./pages/NotFound";
 import Features from "./pages/Features";
 import HowItWorks from "./pages/HowItWorks";
@@ -42,8 +41,7 @@ const AppContent = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<Auth />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/verify-email-success" element={<VerifyEmailSuccess />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/account-settings" element={<AccountSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

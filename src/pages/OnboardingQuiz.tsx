@@ -184,7 +184,7 @@ export default function OnboardingQuiz() {
     "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
     "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
     "Parks": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas"],
-    "Faith communities": ["Non-denominational", "Catholic", "Jewish", "Muslim", "Buddhist", "Hindu"],
+    "Faith communities": ["Christian", "Jewish", "Muslim", "Buddhist", "Hindu", "Non-denominational"],
     "Public transit / commute info": ["Bus routes", "Train stations", "Bike lanes", "Park & ride", "Commuter lots"],
     "Green space / trails": ["Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
     "Restaurants / coffee shops": ["Family-friendly", "Date night spots", "Quick casual", "Coffee shops", "Food trucks"],
@@ -227,9 +227,11 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Quiz completion: Starting - redirecting to signup');
+      console.log('Quiz completion: Starting - ALWAYS redirecting to signup');
       
-      // Get coordinates and prepare quiz data
+      // ALWAYS redirect to signup after quiz completion - no exceptions
+      // This is the most reliable way to ensure mobile users get prompted to sign up
+      
       const coordinates = await getCoordinatesFromAddress(quizData.address);
       
       const quizDataForStorage = {
@@ -237,35 +239,60 @@ export default function OnboardingQuiz() {
         priorities: quizData.priorities,
         household: quizData.household.join(', '),
         transportation: quizData.transportation,
-        lifestyle: quizData.lifestyle, // Keep this for backward compatibility
-        budgetRange: quizData.lifestyle, // This maps to budget_preference in DB
-        lifeStage: quizData.lifeStage, // Keep this for backward compatibility  
-        movingTimeline: quizData.lifeStage, // This maps to life_stage in DB
+        budgetRange: quizData.lifestyle,
+        movingTimeline: quizData.lifeStage,
         settlingTasks: quizData.tasks,
         latitude: coordinates?.lat || null,
         longitude: coordinates?.lng || null
       };
       
-      console.log('Quiz completion: Saving quiz data to storage:', quizDataForStorage);
+      localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
       
-      // Save to both localStorage and sessionStorage for backup
-      const quizDataString = JSON.stringify(quizDataForStorage);
-      localStorage.setItem('onboardingQuizData', quizDataString);
-      sessionStorage.setItem('onboardingQuizData', quizDataString);
+      toast({
+        title: "Quiz Complete!",
+        description: "Please sign up to save your preferences and get personalized recommendations.",
+      });
       
-      console.log('Quiz completion: Data saved to storage successfully');
-      
-      // Show completion state briefly, then redirect
-      setIsComplete(true);
-      
+      console.log('Quiz completion: Navigating to /auth');
+      navigate("/auth");
       
     } catch (error) {
-      console.error('Error in handleComplete:', error);
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Mobile Debug: Error in handleComplete:', error);
+      
+      // Always fall back to unauthenticated flow on any error
+      try {
+        console.log('Mobile Debug: Falling back to unauthenticated flow due to error...');
+        
+        const coordinates = await getCoordinatesFromAddress(quizData.address);
+        
+        const quizDataForStorage = {
+          address: quizData.address,
+          priorities: quizData.priorities,
+          household: quizData.household.join(', '),
+          transportation: quizData.transportation,
+          budgetRange: quizData.lifestyle,
+          movingTimeline: quizData.lifeStage,
+          settlingTasks: quizData.tasks,
+          latitude: coordinates?.lat || null,
+          longitude: coordinates?.lng || null
+        };
+        
+        localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+        
+        toast({
+          title: "Quiz Complete!",
+          description: "Please sign up to save your preferences and get personalized recommendations.",
+        });
+        
+        navigate("/auth");
+      } catch (fallbackError) {
+        console.error('Mobile Debug: Even fallback failed:', fallbackError);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -278,18 +305,35 @@ export default function OnboardingQuiz() {
           <CardContent className="text-center py-12">
             <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6" />
             <h1 className="text-3xl font-bold text-foreground mb-4">
-              Quiz Complete!
+              Welcome to Your New City!
             </h1>
             <p className="text-muted-foreground mb-8">
-              Now let's create your account to save your preferences and get personalized recommendations.
+              Thanks for completing the quiz! We're building your personalized local guide based on your preferences.
             </p>
             <Button 
+              onClick={() => {
+                // Save quiz data to localStorage
+                const coordinates = null; // Will be calculated during signup
+                const quizDataForStorage = {
+                  address: quizData.address,
+                  priorities: quizData.priorities,
+                  household: quizData.household.join(', '),
+                  transportation: quizData.transportation,
+                  budgetRange: quizData.lifestyle,
+                  movingTimeline: quizData.lifeStage,
+                  settlingTasks: quizData.tasks,
+                  latitude: coordinates,
+                  longitude: coordinates
+                };
+                localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+                
+                // ALWAYS redirect to signup
+                navigate("/auth");
+              }}
               variant="hero" 
               size="lg"
-              onClick={() => navigate("/auth")}
-              className="w-full max-w-sm"
             >
-              Continue to Sign Up
+              View Your Personalized Guide
             </Button>
           </CardContent>
         </Card>
@@ -346,7 +390,7 @@ export default function OnboardingQuiz() {
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
-              {currentQuestion === 2 && "Who do you live with?"}
+              {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
               {currentQuestion === 4 && "Let's personalize your selections"}
               {currentQuestion === 5 && "How do you typically get around?"}
@@ -379,7 +423,7 @@ export default function OnboardingQuiz() {
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                   {[
                     { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
-                    { option: "Partner/spouse", image: "/lovable-uploads/ea53ace5-f492-4dc9-8921-4fcfc81ef61d.png" },
+                    { option: "Partner/spouse", image: "/lovable-uploads/8b05914a-27e0-4556-92d1-3af85ca2eb0e.png" },
                     { option: "Kids", image: "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png" },
                     { option: "Pets", image: "/lovable-uploads/1e2a30f1-b0ae-4d5d-9f37-81a784f9ae05.png" },
                     { option: "Other (multi-gen family, roommates, etc.)", image: "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png" }

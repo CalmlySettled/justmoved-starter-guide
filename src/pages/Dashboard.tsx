@@ -6,8 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { MobileLoadingScreen } from "@/components/MobileLoadingScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { FavoritesDropdown } from "@/components/FavoritesDropdown";
@@ -67,15 +65,6 @@ export default function Dashboard() {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { 
-    isMobile, 
-    mobileAuthReady, 
-    retryMobileAuth, 
-    canRetry, 
-    isAuthenticated, 
-    needsAuth, 
-    isLoading: mobileLoading 
-  } = useMobileAuth();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,31 +111,46 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
-    console.log('Mobile Debug: Dashboard useEffect - Auth states:', { 
-      user: !!user, 
-      loading, 
-      isMobile, 
-      mobileAuthReady, 
-      isAuthenticated, 
-      needsAuth 
-    });
+    console.log('Mobile Debug: Dashboard useEffect - User state:', user);
+    console.log('Mobile Debug: Dashboard useEffect - Loading state:', loading);
     
-    // Handle authentication redirects with mobile awareness
-    if (needsAuth && mobileAuthReady) {
-      console.log('Mobile Debug: Dashboard - Redirecting to auth (no user found)');
+    // Detect mobile
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    console.log('Mobile Debug: Dashboard - Mobile device detected:', isMobile);
+    
+    // Mobile-specific auth check with retry
+    if (isMobile && !user && !loading) {
+      console.log('Mobile Debug: Dashboard - No user on mobile, attempting session recovery');
+      
+      // Give mobile auth more time to initialize
+      const mobileAuthTimeout = setTimeout(async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('Mobile Debug: Dashboard - Session recovery check:', session);
+          
+          if (!session) {
+            console.log('Mobile Debug: Dashboard - No session found, redirecting to auth');
+            navigate("/auth");
+          }
+        } catch (error) {
+          console.error('Mobile Debug: Dashboard - Session recovery failed:', error);
+          navigate("/auth");
+        }
+      }, 2000);
+      
+      return () => clearTimeout(mobileAuthTimeout);
+    }
+    
+    // Only redirect if we're done loading and there's no user (desktop behavior)
+    if (!isMobile && !loading && !user) {
+      console.log('Desktop - No user found after loading complete, redirecting to auth');
       navigate("/auth");
       return;
     }
     
-    // For mobile: if we have a user but mobile auth isn't ready, wait
-    if (isMobile && user && !mobileAuthReady) {
-      console.log('Mobile Debug: Dashboard - User exists but mobile auth not ready, waiting...');
-      return;
-    }
-    
-    // For desktop or when mobile auth is ready: proceed if authenticated
-    if (!isAuthenticated) {
-      console.log('Mobile Debug: Dashboard - Not authenticated, waiting...');
+    if (!user) {
+      console.log('Mobile Debug: Dashboard - No user yet, waiting...');
       return;
     }
     
@@ -171,23 +175,20 @@ export default function Dashboard() {
     };
     
     // Mobile-specific timeout with longer delay
-    const timeoutDelay = isMobile ? 20000 : 12000;
+    const timeoutDelay = isMobile ? 15000 : 10000;
     const timeoutId = setTimeout(() => {
       console.log('Mobile Debug: fetchUserData timeout after', timeoutDelay, 'ms, setting loading to false');
       setLoading(false);
       
-      // On mobile, show retry option with better UX
+      // On mobile, show retry option
       if (isMobile) {
         toast({
-          title: "Still loading...",
-          description: "Your data is taking longer than usual to load",
+          title: "Loading taking longer than expected",
+          description: "Tap here to retry loading your recommendations",
           action: (
-            <Button variant="outline" size="sm" onClick={async () => {
+            <Button variant="outline" size="sm" onClick={() => {
               setLoading(true);
-              const retrySuccess = await retryMobileAuth();
-              if (retrySuccess) {
-                fetchUserData();
-              }
+              fetchUserData();
             }}>
               Retry
             </Button>
@@ -208,7 +209,7 @@ export default function Dashboard() {
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
       clearTimeout(timeoutId);
     };
-  }, [user, navigate, loading, isMobile, mobileAuthReady, isAuthenticated, needsAuth, retryMobileAuth]);
+  }, [user, navigate, loading]);
 
   // Refresh data when returning to this page
   useEffect(() => {
@@ -279,7 +280,6 @@ export default function Dashboard() {
     }
 
     console.log('Mobile Debug: Fetching fresh user data and recommendations for user:', user.id);
-    console.log('Mobile Debug: Device type:', isMobile ? 'Mobile' : 'Desktop');
 
     try {
       // Fetch user profile
@@ -368,18 +368,14 @@ export default function Dashboard() {
       if (!recData || recData.length === 0) {
         console.log('No recommendations found for user, checking for profile data to generate new ones');
         
-        // Enhanced quiz data recovery - check multiple storage locations
-        const localStorageData = localStorage.getItem('onboardingQuizData');
-        const sessionStorageData = sessionStorage.getItem('onboardingQuizData');
-        const savedQuizData = localStorageData || sessionStorageData;
+        // Check if there's saved quiz data from the signup flow
+        const savedQuizData = localStorage.getItem('onboardingQuizData');
+        const pendingQuizProcessing = localStorage.getItem('pendingQuizProcessing');
         
-        // Also check if user has quiz data in metadata (backup recovery)
-        const metadataQuizData = user.user_metadata?.quizData;
-        
-        if (savedQuizData || metadataQuizData) {
-          console.log('Found quiz data, processing it...');
+        if (savedQuizData && pendingQuizProcessing) {
+          console.log('Found saved quiz data after signup, processing it...');
           try {
-            const quizData = savedQuizData ? JSON.parse(savedQuizData) : metadataQuizData;
+            const quizData = JSON.parse(savedQuizData);
             
             // Save the quiz data to user profile
             const { error: profileError } = await supabase
@@ -390,8 +386,8 @@ export default function Dashboard() {
                 household_type: quizData.household,
                 priorities: quizData.priorities,
                 transportation_style: quizData.transportation,
-                budget_preference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
-                life_stage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
+                budget_preference: quizData.budgetRange,
+                life_stage: quizData.movingTimeline,
                 settling_tasks: quizData.settlingTasks || [],
                 latitude: quizData.latitude,
                 longitude: quizData.longitude,
@@ -413,8 +409,8 @@ export default function Dashboard() {
                 householdType: quizData.household,
                 priorities: quizData.priorities,
                 transportationStyle: quizData.transportation,
-                budgetPreference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
-                lifeStage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
+                budgetPreference: quizData.budgetRange,
+                lifeStage: quizData.movingTimeline,
                 settlingTasks: quizData.settlingTasks || [],
                 latitude: quizData.latitude,
                 longitude: quizData.longitude
@@ -444,18 +440,9 @@ export default function Dashboard() {
               
               setGeneratingRecommendations(false);
               
-              // Clean up saved data only if it came from storage
-              if (savedQuizData) {
-                localStorage.removeItem('onboardingQuizData');
-                sessionStorage.removeItem('onboardingQuizData');
-              }
-              
-              // Clear metadata backup if used
-              if (metadataQuizData) {
-                await supabase.auth.updateUser({
-                  data: { quizData: null }
-                });
-              }
+              // Clean up saved data
+              localStorage.removeItem('onboardingQuizData');
+              localStorage.removeItem('pendingQuizProcessing');
               
               // Refresh data to get the new recommendations
               const { data: freshRecData } = await supabase
@@ -470,10 +457,8 @@ export default function Dashboard() {
             }
           } catch (error) {
             console.error('Error processing saved quiz data:', error);
-            if (savedQuizData) {
-              localStorage.removeItem('onboardingQuizData');
-              sessionStorage.removeItem('onboardingQuizData');
-            }
+            localStorage.removeItem('onboardingQuizData');
+            localStorage.removeItem('pendingQuizProcessing');
           }
         }
         
@@ -1248,29 +1233,11 @@ export default function Dashboard() {
   console.log('Dashboard render - Loading:', loading);
   console.log('Dashboard render - Recommendations:', recommendations.length);
   
-  // Mobile-specific loading screen - show when mobile auth is initializing OR when we have a user but mobile auth isn't ready
-  if (mobileLoading || (isMobile && user && !mobileAuthReady)) {
-    console.log('Mobile Debug: Showing mobile loading screen');
-    return (
-      <MobileLoadingScreen 
-        type="auth"
-        onRetry={canRetry ? retryMobileAuth : undefined}
-        canRetry={canRetry}
-        showRetryButton={!mobileAuthReady}
-      />
-    );
-  }
-  
-  // If no user and we're not on mobile or mobile auth is ready, redirect to auth
-  if (!user && (!isMobile || mobileAuthReady)) {
-    console.log('Mobile Debug: No user found, redirecting to auth');
-    navigate("/auth");
-    return null;
-  }
-  
-  // Standard loading state
   if (loading) {
-    console.log('Mobile Debug: Showing standard loading state');
+    console.log('Mobile Debug: Showing loading state');
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
     return (
       <div className="min-h-screen bg-gradient-page">
         <Header />
@@ -1279,12 +1246,12 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold mb-4">Loading Your Dashboard</h1>
             <p className="text-muted-foreground">Retrieving your saved recommendations...</p>
             
-            {/* Enhanced mobile loading message */}
+            {/* Mobile-specific loading message */}
             {isMobile && (
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg">
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                 <div className="flex items-center justify-center space-x-2 mb-3">
                   <RefreshCw className="h-5 w-5 animate-spin text-primary" />
-                  <span className="font-medium">Mobile device detected...</span>
+                  <span className="font-medium">Loading on mobile device...</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   This may take a moment longer on mobile devices
@@ -1292,16 +1259,13 @@ export default function Dashboard() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={async () => {
+                  onClick={() => {
                     console.log('Mobile Debug: Manual retry triggered');
                     setLoading(true);
-                    if (canRetry) {
-                      await retryMobileAuth();
-                    }
                     fetchUserData();
                   }}
                 >
-                  Retry Connection
+                  Retry if stuck
                 </Button>
               </div>
             )}
