@@ -26,6 +26,57 @@ export default function Favorites() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const getBusinessTagline = (business: FavoriteBusiness) => {
+    // Generate clean taglines based on category
+    if (business.category?.toLowerCase().includes('grocery')) {
+      if (business.business_name.toLowerCase().includes('geissler')) return "Family-owned grocery chain with great produce";
+      if (business.business_features.some(f => f.toLowerCase().includes('organic'))) return "Fresh organic produce and natural foods";
+      if (business.business_features.some(f => f.toLowerCase().includes('affordable'))) return "Affordable groceries for everyday needs";
+      return "Your neighborhood grocery destination";
+    }
+    if (business.category?.toLowerCase().includes('fitness')) {
+      return "Stay active and healthy in your community";
+    }
+    if (business.category?.toLowerCase().includes('restaurant')) {
+      return "Local dining favorite";
+    }
+    if (business.category?.toLowerCase().includes('faith')) {
+      return "Welcoming spiritual community";
+    }
+    if (business.category?.toLowerCase().includes('green space')) {
+      return "Perfect for outdoor activities and relaxation";
+    }
+    return "Highly recommended local spot";
+  };
+
+  const getBusinessBadges = (business: FavoriteBusiness) => {
+    const badges = [];
+    
+    // Local badge for non-franchise businesses
+    const businessNameLower = business.business_name.toLowerCase();
+    const franchiseIndicators = ['mcdonalds', 'subway', 'starbucks', 'walmart', 'target', 'cvs', 'walgreens', 'kroger', 'safeway', 'whole foods', 'trader joe', 'costco', 'planet fitness', 'la fitness'];
+    const isLocalFavorite = !franchiseIndicators.some(franchise => businessNameLower.includes(franchise));
+    
+    if (isLocalFavorite) {
+      badges.push({ 
+        label: "Local", 
+        icon: "🏪", 
+        color: "bg-green-50 text-green-700 border border-green-200" 
+      });
+    }
+    
+    // Add a nearby badge if distance is available
+    if (business.distance_miles && business.distance_miles <= 2) {
+      badges.push({ 
+        label: "Nearby", 
+        icon: "📍", 
+        color: "bg-blue-50 text-blue-700 border border-blue-200" 
+      });
+    }
+    
+    return badges.slice(0, 2); // Only show 2 most important badges
+  };
+
   useEffect(() => {
     if (user) {
       loadFavorites();
@@ -180,7 +231,10 @@ export default function Favorites() {
                             {business.category}
                           </span>
                         </div>
-                        <CardTitle className="text-lg mb-1 truncate">{business.business_name}</CardTitle>
+                         <CardTitle className="text-lg mb-1 truncate">{business.business_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {getBusinessTagline(business)}
+                        </p>
                         {business.business_address && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                             <MapPin className="h-3 w-3 flex-shrink-0" />
@@ -211,22 +265,18 @@ export default function Favorites() {
                       </p>
                     )}
                     
-                    {business.business_features && business.business_features.length > 0 && (
+                    {/* Display clean badges instead of raw features */}
+                    {getBusinessBadges(business).length > 0 && (
                       <div className="mb-4">
-                        <div className="flex flex-wrap gap-1">
-                          {business.business_features.slice(0, 3).map((feature, index) => (
+                        <div className="flex flex-wrap gap-2">
+                          {getBusinessBadges(business).map((badge, index) => (
                             <span 
                               key={index} 
-                              className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded"
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${badge.color}`}
                             >
-                              {feature}
+                              {badge.icon} {badge.label}
                             </span>
                           ))}
-                          {business.business_features.length > 3 && (
-                            <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
-                              +{business.business_features.length - 3} more
-                            </span>
-                          )}
                         </div>
                       </div>
                     )}
