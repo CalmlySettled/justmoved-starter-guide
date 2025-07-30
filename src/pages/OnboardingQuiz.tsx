@@ -106,7 +106,7 @@ export default function OnboardingQuiz() {
       case 1: // Address - neighborhood/cityscape
         return "/lovable-uploads/da2a2bcf-7c5a-4b95-bc28-3b8bd337cc1c.png";
       case 2: // Household - cozy home
-        return "/lovable-uploads/faff85f7-6acc-4cad-ade7-047669365bed.png";
+        return "/lovable-uploads/03da8b85-f799-4bcc-9d63-c91a0b6663a3.png";
       case 3: // Priorities - vibrant community
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
       case 4: // Customize - personalization
