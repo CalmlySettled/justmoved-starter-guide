@@ -329,8 +329,8 @@ export default function OnboardingQuiz() {
         }
         
       } else {
-        // User not authenticated - use original localStorage flow
-        console.log('Unauthenticated user completing quiz - saving to localStorage');
+        // User not authenticated - save to localStorage and show completion screen
+        console.log('Unauthenticated user completing quiz - saving to localStorage and showing completion screen');
         
         const quizDataForStorage = {
           address: quizData.address,
@@ -346,13 +346,8 @@ export default function OnboardingQuiz() {
         
         localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
         
-        toast({
-          title: "Quiz Complete!",
-          description: "Please sign up to save your preferences and get personalized recommendations.",
-        });
-        
-        console.log('Quiz completion: Navigating to /auth');
-        navigate("/auth");
+        // Set completion state to show the welcome screen with signup button
+        setIsComplete(true);
       }
       
     } catch (error) {
