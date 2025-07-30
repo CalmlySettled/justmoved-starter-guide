@@ -55,133 +55,74 @@ export default function Auth() {
                 
                 if (isMobile) {
                   console.log('Mobile Debug: Adding auth delay for mobile device');
-                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 
-                // Enhanced profile saving with retry logic for mobile
-                let profileSaveAttempts = 0;
-                const maxRetries = 3;
-                let profileSaved = false;
-                
-                while (!profileSaved && profileSaveAttempts < maxRetries) {
-                  try {
-                    console.log('Mobile Debug: Attempting profile save, attempt', profileSaveAttempts + 1);
-                    
-                    // First check if profile already exists (from trigger)
-                    const { data: existingProfile } = await supabase
-                      .from('profiles')
-                      .select('user_id')
-                      .eq('user_id', session.user.id)
-                      .maybeSingle();
-                    
-                    if (existingProfile) {
-                      console.log('Mobile Debug: Profile already exists, updating with quiz data');
-                      // Profile exists, just update it
-                      const { error } = await supabase
-                        .from('profiles')
-                        .update({
-                          address: quizData.address,
-                          priorities: quizData.priorities,
-                          priority_preferences: {},
-                          household_type: quizData.household,
-                          transportation_style: quizData.transportation,
-                          budget_preference: quizData.budgetRange,
-                          life_stage: quizData.movingTimeline,
-                          settling_tasks: quizData.settlingTasks || [],
-                          latitude: quizData.latitude,
-                          longitude: quizData.longitude
-                        })
-                        .eq('user_id', session.user.id);
-                      
-                      if (error) {
-                        console.error('Mobile Debug: Profile update error (attempt', profileSaveAttempts + 1, '):', error);
-                        profileSaveAttempts++;
-                        if (profileSaveAttempts < maxRetries) {
-                          await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
-                      } else {
-                        console.log('Mobile Debug: Profile updated successfully on attempt', profileSaveAttempts + 1);
-                        profileSaved = true;
-                      }
-                    } else {
-                      console.log('Mobile Debug: No existing profile, creating new one');
-                      // Profile doesn't exist, create it
-                      const { error } = await supabase
-                        .from('profiles')
-                        .insert({
-                          user_id: session.user.id,
-                          address: quizData.address,
-                          priorities: quizData.priorities,
-                          priority_preferences: {},
-                          household_type: quizData.household,
-                          transportation_style: quizData.transportation,
-                          budget_preference: quizData.budgetRange,
-                          life_stage: quizData.movingTimeline,
-                          settling_tasks: quizData.settlingTasks || [],
-                          latitude: quizData.latitude,
-                          longitude: quizData.longitude,
-                          display_name: session.user.user_metadata?.display_name || 'User'
-                        });
-                      
-                      if (error) {
-                        console.error('Mobile Debug: Profile insert error (attempt', profileSaveAttempts + 1, '):', error);
-                        profileSaveAttempts++;
-                        if (profileSaveAttempts < maxRetries) {
-                          await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
-                      } else {
-                        console.log('Mobile Debug: Profile created successfully on attempt', profileSaveAttempts + 1);
-                        profileSaved = true;
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Mobile Debug: Unexpected error saving profile (attempt', profileSaveAttempts + 1, '):', error);
-                    profileSaveAttempts++;
-                    
-                    if (profileSaveAttempts < maxRetries) {
-                      await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
+                // Simplified profile creation - no more conflicts with trigger
+                try {
+                  console.log('Mobile Debug: Creating profile with quiz data...');
+                  const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                      user_id: session.user.id,
+                      address: quizData.address,
+                      priorities: quizData.priorities,
+                      priority_preferences: {},
+                      household_type: quizData.household,
+                      transportation_style: quizData.transportation,
+                      budget_preference: quizData.budgetRange,
+                      life_stage: quizData.movingTimeline,
+                      settling_tasks: quizData.settlingTasks || [],
+                      latitude: quizData.latitude,
+                      longitude: quizData.longitude,
+                      display_name: session.user.user_metadata?.display_name || 'User'
+                    });
+
+                  if (profileError) {
+                    console.error('Mobile Debug: Profile creation error:', profileError);
+                    // Store quiz data in user metadata as backup
+                    await supabase.auth.updateUser({
+                      data: { quizData: quizData }
+                    });
+                    console.log('Mobile Debug: Quiz data stored in user metadata as backup');
+                  } else {
+                    console.log('Mobile Debug: Profile created successfully with quiz data');
                   }
-                }
-                
-                if (!profileSaved) {
-                  console.error('Mobile Debug: Failed to save profile after', maxRetries, 'attempts');
-                  toast({
-                    title: "Warning",
-                    description: "We couldn't save your preferences, but you can still see your recommendations.",
-                    variant: "destructive",
+                } catch (error) {
+                  console.error('Mobile Debug: Unexpected error creating profile:', error);
+                  // Store quiz data in user metadata as backup
+                  await supabase.auth.updateUser({
+                    data: { quizData: quizData }
                   });
                 }
                 
-                // Generate recommendations only if profile was saved successfully
-                if (profileSaved) {
-                  try {
-                    const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
-                      body: { 
-                        quizResponse: {
-                          address: quizData.address,
-                          householdType: quizData.household,
-                          priorities: quizData.priorities,
-                          priorityPreferences: {},
-                          transportationStyle: quizData.transportation,
-                          budgetPreference: quizData.budgetRange,
-                          lifeStage: quizData.movingTimeline,
-                          settlingTasks: quizData.settlingTasks || [],
-                          latitude: quizData.latitude,
-                          longitude: quizData.longitude
-                        },
-                        userId: session.user.id
-                      }
-                    });
-                    
-                    if (recError) {
-                      console.error('Error generating recommendations:', recError);
-                    } else {
-                      console.log('Recommendations generated successfully');
+                // Generate recommendations regardless of profile save status (they can still see them)
+                try {
+                  const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
+                    body: { 
+                      quizResponse: {
+                        address: quizData.address,
+                        householdType: quizData.household,
+                        priorities: quizData.priorities,
+                        priorityPreferences: {},
+                        transportationStyle: quizData.transportation,
+                        budgetPreference: quizData.budgetRange,
+                        lifeStage: quizData.movingTimeline,
+                        settlingTasks: quizData.settlingTasks || [],
+                        latitude: quizData.latitude,
+                        longitude: quizData.longitude
+                      },
+                      userId: session.user.id
                     }
-                  } catch (recError) {
-                    console.error('Error calling generate-recommendations function:', recError);
+                  });
+                  
+                  if (recError) {
+                    console.error('Error generating recommendations:', recError);
+                  } else {
+                    console.log('Recommendations generated successfully');
                   }
+                } catch (recError) {
+                  console.error('Error calling generate-recommendations function:', recError);
                 }
                 
                 localStorage.removeItem('onboardingQuizData');

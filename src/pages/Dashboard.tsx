@@ -297,6 +297,47 @@ export default function Dashboard() {
         throw profileError;
       }
 
+      // Fallback: Check user metadata if no profile exists (backup recovery)
+      if (!profileData && user.user_metadata?.quizData) {
+        console.log('Mobile Debug: No profile found, attempting recovery from user metadata');
+        const quizData = user.user_metadata.quizData;
+        
+        try {
+          const { error: recoveryError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              address: quizData.address,
+              priorities: quizData.priorities,
+              priority_preferences: {},
+              household_type: quizData.household,
+              transportation_style: quizData.transportation,
+              budget_preference: quizData.budgetRange,
+              life_stage: quizData.movingTimeline,
+              settling_tasks: quizData.settlingTasks || [],
+              latitude: quizData.latitude,
+              longitude: quizData.longitude,
+              display_name: user.user_metadata?.display_name || 'User'
+            });
+
+          if (!recoveryError) {
+            console.log('Mobile Debug: Profile recovered from user metadata');
+            // Re-fetch the profile
+            const { data: recoveredProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            if (recoveredProfile) {
+              setUserProfile(recoveredProfile as UserProfile);
+            }
+          }
+        } catch (error) {
+          console.error('Mobile Debug: Failed to recover profile from metadata:', error);
+        }
+      }
+
       setUserProfile({
         ...profileData,
         priority_preferences: (profileData?.priority_preferences as Record<string, string[]>) || {}
