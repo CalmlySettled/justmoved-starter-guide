@@ -452,6 +452,78 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
+// Function to deduplicate businesses by name within 5 miles, keeping closest
+function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates: { lat: number; lng: number }): Business[] {
+  const businessGroups = new Map<string, Business[]>();
+  
+  // Group businesses by name (case-insensitive)
+  businesses.forEach(business => {
+    const normalizedName = business.name.toLowerCase().trim();
+    if (!businessGroups.has(normalizedName)) {
+      businessGroups.set(normalizedName, []);
+    }
+    businessGroups.get(normalizedName)!.push(business);
+  });
+  
+  const deduplicatedBusinesses: Business[] = [];
+  
+  // For each business name group, keep only locations that are >5 miles apart
+  businessGroups.forEach((locations, businessName) => {
+    if (locations.length === 1) {
+      // Only one location, keep it
+      deduplicatedBusinesses.push(locations[0]);
+      return;
+    }
+    
+    // Sort by distance from user (closest first)
+    locations.forEach(business => {
+      if (business.latitude && business.longitude) {
+        business.distance_miles = calculateDistance(
+          userCoordinates.lat, 
+          userCoordinates.lng, 
+          business.latitude, 
+          business.longitude
+        );
+      }
+    });
+    
+    locations.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
+    
+    // Keep the closest location and any others that are >5 miles away from each other
+    const keptLocations: Business[] = [];
+    
+    for (const location of locations) {
+      if (!location.latitude || !location.longitude) {
+        continue; // Skip locations without coordinates
+      }
+      
+      // Check if this location is >5 miles from all kept locations
+      const tooClose = keptLocations.some(kept => {
+        if (!kept.latitude || !kept.longitude) return false;
+        const distance = calculateDistance(
+          location.latitude!, 
+          location.longitude!, 
+          kept.latitude, 
+          kept.longitude
+        );
+        return distance <= 5;
+      });
+      
+      if (!tooClose) {
+        keptLocations.push(location);
+        console.log(`→ Keeping ${businessName} at ${location.address} (${location.distance_miles}mi from user)`);
+      } else {
+        console.log(`→ Filtering out duplicate ${businessName} at ${location.address} (too close to existing location)`);
+      }
+    }
+    
+    deduplicatedBusinesses.push(...keptLocations);
+  });
+  
+  console.log(`Deduplication: ${businesses.length} → ${deduplicatedBusinesses.length} businesses`);
+  return deduplicatedBusinesses;
+}
+
 // Enhanced business search with cached coordinates and dynamic radius
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
@@ -461,8 +533,13 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
   // Use only Google Places API with dynamic radius
-  const businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius);
+  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius);
   console.log(`Google Places found ${businesses.length} businesses`);
+  
+  // Apply deduplication to remove same-name businesses within 5 miles
+  if (businesses.length > 0) {
+    businesses = deduplicateBusinessesByLocation(businesses, coordinates);
+  }
   
   // CRITICAL: Add fallback for when Google Places fails
   if (businesses.length === 0) {
