@@ -114,8 +114,9 @@ export default function Dashboard() {
     console.log('Dashboard useEffect - User state:', user);
     console.log('Dashboard useEffect - Loading state:', loading);
     
-    if (!user) {
-      console.log('No user found, redirecting to auth');
+    // Only redirect if we're done loading and there's no user
+    if (!loading && !user) {
+      console.log('No user found after loading complete, redirecting to auth');
       navigate("/auth");
       return;
     }
