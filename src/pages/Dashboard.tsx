@@ -111,7 +111,11 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
+    console.log('Dashboard useEffect - User state:', user);
+    console.log('Dashboard useEffect - Loading state:', loading);
+    
     if (!user) {
+      console.log('No user found, redirecting to auth');
       navigate("/auth");
       return;
     }
@@ -1022,7 +1026,12 @@ export default function Dashboard() {
     return "Welcome to your new neighborhood! Here's what we recommend for you.";
   };
 
+  console.log('Dashboard render - User:', user);
+  console.log('Dashboard render - Loading:', loading);
+  console.log('Dashboard render - Recommendations:', recommendations.length);
+  
   if (loading) {
+    console.log('Showing loading state');
     return (
       <div className="min-h-screen bg-gradient-page">
         <Header />
