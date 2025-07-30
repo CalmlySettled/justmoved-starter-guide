@@ -237,15 +237,23 @@ export default function OnboardingQuiz() {
         priorities: quizData.priorities,
         household: quizData.household.join(', '),
         transportation: quizData.transportation,
-        budgetRange: quizData.lifestyle,
-        movingTimeline: quizData.lifeStage,
+        lifestyle: quizData.lifestyle, // Keep this for backward compatibility
+        budgetRange: quizData.lifestyle, // This maps to budget_preference in DB
+        lifeStage: quizData.lifeStage, // Keep this for backward compatibility  
+        movingTimeline: quizData.lifeStage, // This maps to life_stage in DB
         settlingTasks: quizData.tasks,
         latitude: coordinates?.lat || null,
         longitude: coordinates?.lng || null
       };
       
-      // Save to localStorage for use after signup
-      localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+      console.log('Quiz completion: Saving quiz data to storage:', quizDataForStorage);
+      
+      // Save to both localStorage and sessionStorage for backup
+      const quizDataString = JSON.stringify(quizDataForStorage);
+      localStorage.setItem('onboardingQuizData', quizDataString);
+      sessionStorage.setItem('onboardingQuizData', quizDataString);
+      
+      console.log('Quiz completion: Data saved to storage successfully');
       
       // Show completion state briefly, then redirect
       setIsComplete(true);

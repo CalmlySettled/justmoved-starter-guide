@@ -46,8 +46,8 @@ export default function VerifyEmailSuccess() {
                         priority_preferences: {},
                         household_type: quizData.household,
                         transportation_style: quizData.transportation,
-                        budget_preference: quizData.budgetRange,
-                        life_stage: quizData.movingTimeline,
+                        budget_preference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                        life_stage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
                         settling_tasks: quizData.settlingTasks || [],
                         latitude: quizData.latitude,
                         longitude: quizData.longitude,
@@ -70,8 +70,8 @@ export default function VerifyEmailSuccess() {
                             priorities: quizData.priorities,
                             priorityPreferences: {},
                             transportationStyle: quizData.transportation,
-                            budgetPreference: quizData.budgetRange,
-                            lifeStage: quizData.movingTimeline,
+                            budgetPreference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                            lifeStage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
                             settlingTasks: quizData.settlingTasks || [],
                             latitude: quizData.latitude,
                             longitude: quizData.longitude

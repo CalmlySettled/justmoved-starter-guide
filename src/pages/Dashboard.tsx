@@ -390,8 +390,8 @@ export default function Dashboard() {
                 household_type: quizData.household,
                 priorities: quizData.priorities,
                 transportation_style: quizData.transportation,
-                budget_preference: quizData.budgetRange,
-                life_stage: quizData.movingTimeline,
+                budget_preference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                life_stage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
                 settling_tasks: quizData.settlingTasks || [],
                 latitude: quizData.latitude,
                 longitude: quizData.longitude,
@@ -413,8 +413,8 @@ export default function Dashboard() {
                 householdType: quizData.household,
                 priorities: quizData.priorities,
                 transportationStyle: quizData.transportation,
-                budgetPreference: quizData.budgetRange,
-                lifeStage: quizData.movingTimeline,
+                budgetPreference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                lifeStage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
                 settlingTasks: quizData.settlingTasks || [],
                 latitude: quizData.latitude,
                 longitude: quizData.longitude

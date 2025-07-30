@@ -57,15 +57,15 @@ const transferQuizDataToProfile = async (session: any) => {
               address: quizData.address,
               priorities: quizData.priorities,
               priority_preferences: {},
-              household_type: quizData.household,
-              transportation_style: quizData.transportation,
-              budget_preference: quizData.budgetRange,
-              life_stage: quizData.movingTimeline,
-              settling_tasks: quizData.settlingTasks || [],
-              latitude: quizData.latitude,
-              longitude: quizData.longitude,
-              display_name: session.user.user_metadata?.display_name || 'User',
-              updated_at: new Date().toISOString()
+                      household_type: quizData.household,
+                      transportation_style: quizData.transportation,
+                      budget_preference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                      life_stage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
+                      settling_tasks: quizData.settlingTasks || [],
+                      latitude: quizData.latitude,
+                      longitude: quizData.longitude,
+                      display_name: session.user.user_metadata?.display_name || 'User',
+                      updated_at: new Date().toISOString()
             }, {
               onConflict: 'user_id'
             });
@@ -99,14 +99,14 @@ const transferQuizDataToProfile = async (session: any) => {
             quizResponse: {
               address: quizData.address,
               householdType: quizData.household,
-              priorities: quizData.priorities,
-              priorityPreferences: {},
-              transportationStyle: quizData.transportation,
-              budgetPreference: quizData.budgetRange,
-              lifeStage: quizData.movingTimeline,
-              settlingTasks: quizData.settlingTasks || [],
-              latitude: quizData.latitude,
-              longitude: quizData.longitude
+                        priorities: quizData.priorities,
+                        priorityPreferences: {},
+                        transportationStyle: quizData.transportation,
+                        budgetPreference: quizData.budgetRange || quizData.lifestyle, // Handle both field names
+                        lifeStage: quizData.movingTimeline || quizData.lifeStage, // Handle both field names
+                        settlingTasks: quizData.settlingTasks || [],
+                        latitude: quizData.latitude,
+                        longitude: quizData.longitude
             },
             userId: session.user.id
           }
