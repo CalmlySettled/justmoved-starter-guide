@@ -8,7 +8,8 @@ import {
   Preview,
   Text,
   Section,
-  Img,
+  Button,
+  Hr,
 } from 'npm:@react-email/components@0.0.22'
 import * as React from 'npm:react@18.3.1'
 
@@ -71,19 +72,19 @@ export const VerificationEmail = ({
         </Text>
         
         <Section style={buttonContainer}>
-          <Link
-            href={`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
+          <Button
+            href={`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to || `${supabase_url}/verify-email`)}`}
             style={button}
           >
             Verify Email Address
-          </Link>
+          </Button>
         </Section>
         
         <Text style={smallText}>
           Or copy and paste this link into your browser:
         </Text>
         <Text style={linkText}>
-          {`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
+          {`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to || `${supabase_url}/verify-email`)}`}
         </Text>
         
         <Text style={footerText}>

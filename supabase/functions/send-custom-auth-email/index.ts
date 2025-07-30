@@ -96,10 +96,11 @@ Deno.serve(async (req) => {
     )
 
     const { error } = await resend.emails.send({
-      from: 'CalmlySettled <onboarding@resend.dev>',
+      from: 'CalmlySettled <hello@calmysettled.com>',
       to: [user.email],
-      subject: 'Welcome to CalmlySettled - Verify Your Email',
+      subject: 'Verify your email to get started with CalmlySettled',
       html,
+      replyTo: 'support@calmlysettled.com',
     })
 
     if (error) {
@@ -115,16 +116,36 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error in send-custom-auth-email function:', error)
+    console.error('=== ERROR in send-custom-auth-email function ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', error);
+    
+    // More specific error handling
+    let errorMessage = 'Failed to send verification email';
+    let statusCode = 500;
+    
+    if (error.name === 'ValidationError') {
+      errorMessage = 'Invalid webhook signature';
+      statusCode = 401;
+    } else if (error.message?.includes('resend')) {
+      errorMessage = 'Email service error';
+    } else if (error.message?.includes('webhook')) {
+      errorMessage = 'Webhook verification failed';
+      statusCode = 401;
+    }
     
     return new Response(
       JSON.stringify({
         error: {
-          message: error.message || 'Failed to send custom email',
+          message: errorMessage,
+          details: error.message || 'Unknown error',
+          timestamp: new Date().toISOString(),
         },
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     )
