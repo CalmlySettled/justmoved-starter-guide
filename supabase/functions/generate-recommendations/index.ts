@@ -238,6 +238,8 @@ async function searchGooglePlaces(
     console.log('Google Places API key not found, skipping Google search');
     return [];
   }
+  
+  console.log('Google Places API key found, testing API...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
