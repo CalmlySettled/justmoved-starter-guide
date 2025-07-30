@@ -561,9 +561,14 @@ export default function Recommendations() {
       }
 
       if (existingRecommendations && existingRecommendations.length > 0) {
-        // Get the current favorite status from the first record
-        const currentFavoriteStatus = existingRecommendations[0].is_favorite;
-        const newFavoriteStatus = !currentFavoriteStatus;
+        console.log('Found existing records for business:', business.name);
+        console.log('Current favorite statuses:', existingRecommendations.map(r => r.is_favorite));
+        
+        // Check if ANY record is currently favorited
+        const anyFavorited = existingRecommendations.some(rec => rec.is_favorite);
+        const newFavoriteStatus = !anyFavorited;
+        
+        console.log('Any favorited:', anyFavorited, 'New status will be:', newFavoriteStatus);
         
         // Update ALL matching records to have the same favorite status
         const { error: updateError } = await supabase
@@ -575,12 +580,15 @@ export default function Recommendations() {
           .eq('category', category);
 
         if (updateError) {
+          console.error('Error updating favorite status:', updateError);
           throw updateError;
         }
 
+        console.log('Successfully updated favorite status to:', newFavoriteStatus);
+
         toast({
-          title: currentFavoriteStatus ? "Removed from favorites" : "Added to favorites",
-          description: `${business.name} has been ${currentFavoriteStatus ? 'removed from' : 'added to'} your favorites.`,
+          title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
+          description: `${business.name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
         });
       } else {
         // Save as new recommendation with favorite status
