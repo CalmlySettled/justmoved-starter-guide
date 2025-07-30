@@ -200,14 +200,28 @@ const Popular = () => {
           const favorites: any[] = JSON.parse(storedFavorites);
           const favoriteNames = new Set(favorites.map(fav => fav.business_name));
           setFavoriteBusinesses(favoriteNames);
+        } else {
+          setFavoriteBusinesses(new Set());
         }
       } catch (error) {
         console.error('Error loading favorites:', error);
       }
     };
 
+    const handleFavoritesUpdate = () => {
+      console.log('🔥 POPULAR - Received favorites update event');
+      loadFavorites();
+    };
+
     loadLocation();
     loadFavorites();
+    
+    // Listen for favorites updates from dropdown
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+    };
   }, [user]);
 
   // Reset recommendations when navigating away from the page

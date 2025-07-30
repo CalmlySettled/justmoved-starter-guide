@@ -150,14 +150,28 @@ export default function Explore() {
           const favorites: any[] = JSON.parse(storedFavorites);
           const favoriteNames = new Set(favorites.map(fav => fav.business_name));
           setFavoriteBusinesses(favoriteNames);
+        } else {
+          setFavoriteBusinesses(new Set());
         }
       } catch (error) {
         console.error('Error loading favorites:', error);
       }
     };
 
+    const handleFavoritesUpdate = () => {
+      console.log('🔥 EXPLORE - Received favorites update event');
+      loadFavorites();
+    };
+
     loadUserLocation();
     loadFavorites();
+    
+    // Listen for favorites updates from dropdown
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
+    
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
+    };
   }, [user]);
 
   // Get user's current location
