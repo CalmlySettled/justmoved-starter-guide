@@ -419,6 +419,7 @@ export default function Auth() {
               
               <Button 
                 type="submit" 
+                size="mobile"
                 className="w-full" 
                 disabled={loading}
               >
@@ -430,6 +431,7 @@ export default function Auth() {
               <div className="mt-4">
                 <Button 
                   variant="outline" 
+                  size="mobile"
                   onClick={handleResendVerification}
                   disabled={resendLoading}
                   className="w-full"

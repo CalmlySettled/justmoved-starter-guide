@@ -122,16 +122,18 @@ export default function OnboardingQuiz() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isTransitioning) return;
+    
+    if (currentQuestion === totalQuestions) {
+      // Call handleComplete when on last question
+      await handleComplete();
+      return;
+    }
     
     setIsTransitioning(true);
     setTimeout(() => {
-      if (currentQuestion < totalQuestions) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        setIsComplete(true);
-      }
+      setCurrentQuestion(currentQuestion + 1);
       setIsTransitioning(false);
     }, 150);
   };
@@ -451,8 +453,8 @@ export default function OnboardingQuiz() {
         <Card className={`backdrop-blur-md bg-white/95 shadow-2xl border-0 transition-all duration-300 ${
           isTransitioning ? 'animate-fade-out scale-95' : 'animate-fade-in scale-100'
         }`}>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center leading-tight">
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
@@ -540,14 +542,15 @@ export default function OnboardingQuiz() {
                   "Parks / Trails",
                   "Social events or community groups"
                 ].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
+                  <div key={option} className="flex items-center space-x-3 py-2">
                     <Checkbox
                       id={option}
                       checked={quizData.priorities.includes(option)}
                       onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
                       disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 5}
+                      className="min-h-[24px] min-w-[24px]"
                     />
-                    <Label htmlFor={option} className="text-base">{option}</Label>
+                    <Label htmlFor={option} className="text-base cursor-pointer flex-1 py-2">{option}</Label>
                   </div>
                 ))}
               </div>
@@ -571,16 +574,17 @@ export default function OnboardingQuiz() {
                       <Card key={category} className="p-4 bg-background/50 border border-primary/20">
                         <h3 className="font-semibold text-lg mb-3 text-primary">{category}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {subPreferenceOptions[category]?.map((preference) => (
-                            <div key={preference} className="flex items-center space-x-2">
+                           {subPreferenceOptions[category]?.map((preference) => (
+                            <div key={preference} className="flex items-center space-x-3 py-2">
                               <Checkbox
                                 id={`${category}-${preference}`}
                                 checked={(quizData.priorityPreferences[category] || []).includes(preference)}
                                 onCheckedChange={(checked) => handleSubPreferenceChange(category, preference, checked as boolean)}
+                                className="min-h-[20px] min-w-[20px]"
                               />
                               <Label 
                                 htmlFor={`${category}-${preference}`} 
-                                className="text-sm font-medium cursor-pointer"
+                                className="text-sm font-medium cursor-pointer flex-1 py-1"
                               >
                                 {preference}
                               </Label>
@@ -605,9 +609,9 @@ export default function OnboardingQuiz() {
             {currentQuestion === 5 && (
               <RadioGroup value={quizData.transportation} onValueChange={(value) => setQuizData({...quizData, transportation: value})}>
                 {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={option} />
-                    <Label htmlFor={option} className="text-base">{option}</Label>
+                  <div key={option} className="flex items-center space-x-3 py-3">
+                    <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
+                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -620,10 +624,10 @@ export default function OnboardingQuiz() {
                   "I want affordable & practical options",
                   "I'm looking for unique, local gems", 
                   "A mix of both"
-                ].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={option} />
-                    <Label htmlFor={option} className="text-base">{option}</Label>
+                 ].map((option) => (
+                  <div key={option} className="flex items-center space-x-3 py-3">
+                    <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
+                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -639,10 +643,10 @@ export default function OnboardingQuiz() {
                   "Family with teens", 
                   "Empty nester / retired",
                   "Student"
-                ].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={option} />
-                    <Label htmlFor={option} className="text-base">{option}</Label>
+                 ].map((option) => (
+                  <div key={option} className="flex items-center space-x-3 py-3">
+                    <RadioGroupItem value={option} id={option} className="min-h-[24px] min-w-[24px]" />
+                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -650,11 +654,13 @@ export default function OnboardingQuiz() {
 
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-8">
+            <div className="flex justify-between pt-8 gap-4">
               <Button
                 variant="outline"
+                size="mobile"
                 onClick={handlePrevious}
                 disabled={currentQuestion === 1}
+                className="min-w-[120px]"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Previous
@@ -664,6 +670,8 @@ export default function OnboardingQuiz() {
                 onClick={handleNext}
                 disabled={!canProceed()}
                 variant={currentQuestion === totalQuestions ? "hero" : "default"}
+                size="mobile"
+                className="min-w-[120px]"
               >
                 {currentQuestion === totalQuestions ? "Complete Quiz" : "Next"}
                 <ArrowRight className="h-4 w-4 ml-2" />
