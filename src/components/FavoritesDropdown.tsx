@@ -74,6 +74,9 @@ export function FavoritesDropdown() {
     const updatedFavorites = favorites.filter(fav => fav.business_name !== businessName);
     setFavorites(updatedFavorites);
     localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+    
+    // Trigger event for other components to update
+    window.dispatchEvent(new CustomEvent('favoritesUpdated'));
   };
 
   const getGoogleMapsUrl = (business: FavoriteBusiness) => {
@@ -166,7 +169,9 @@ export function FavoritesDropdown() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => removeFavorite(business.business_name)}
                       className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                      title="Remove from favorites"
                     >
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                     </Button>
