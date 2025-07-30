@@ -227,45 +227,36 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Mobile Debug: handleComplete called');
-      console.log('Mobile Debug: user state:', user);
-      console.log('Mobile Debug: authLoading state:', authLoading);
+      console.log('Quiz completion: Starting handleComplete');
       
-      // ALWAYS default to unauthenticated flow first for quiz completion
-      // Only proceed with authenticated flow if user is definitely logged in
+      // Simple authentication check: user exists, session is valid, and has existing profile data
       let userIsAuthenticated = false;
       
       if (user && !authLoading) {
-        console.log('Mobile Debug: User object exists, testing authentication...');
-        
         try {
-          // Test if user is actually authenticated by attempting a simple API call
-          const { data, error: testError } = await supabase
+          // Check if user has an existing profile with saved quiz data
+          const { data: profile } = await supabase
             .from('profiles')
-            .select('user_id')
+            .select('address, priorities')
             .eq('user_id', user.id)
-            .limit(1);
+            .maybeSingle();
           
-          if (!testError && data !== null) {
-            console.log('Mobile Debug: Auth test passed, user is authenticated');
+          // User is only considered authenticated if they have existing profile data
+          if (profile && profile.address && profile.priorities && profile.priorities.length > 0) {
+            console.log('Quiz completion: User has existing profile, updating data');
             userIsAuthenticated = true;
           } else {
-            console.log('Mobile Debug: Auth test failed:', testError);
+            console.log('Quiz completion: User exists but no profile data, treating as new user');
             userIsAuthenticated = false;
           }
-        } catch (authTestError) {
-          console.log('Mobile Debug: Auth test exception:', authTestError);
+        } catch (error) {
+          console.log('Quiz completion: Error checking profile, treating as unauthenticated');
           userIsAuthenticated = false;
         }
-      } else {
-        console.log('Mobile Debug: No user or still loading, treating as unauthenticated');
-        userIsAuthenticated = false;
       }
       
-      // If user is definitively authenticated, save directly to Supabase
+      // If user is definitively authenticated with existing data, update their profile
       if (userIsAuthenticated) {
-        console.log('Mobile Debug: Processing as authenticated user...');
-        
         // Get coordinates from address for caching
         const coordinates = await getCoordinatesFromAddress(quizData.address);
         
@@ -297,9 +288,7 @@ export default function OnboardingQuiz() {
           });
         }
 
-        console.log('Profile updated with coordinates, generating recommendations...');
-
-        // Generate and save recommendations automatically
+        // Generate recommendations for existing users
         try {
           const quizDataForRecommendations = {
             address: quizData.address,
@@ -314,39 +303,33 @@ export default function OnboardingQuiz() {
             longitude: coordinates?.lng || null
           };
 
-          const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
+          await supabase.functions.invoke('generate-recommendations', {
             body: {
               quizResponse: quizDataForRecommendations,
               userId: user.id
             }
           });
 
-          if (recError) {
-            console.error('Error generating recommendations:', recError);
-          } else {
-            toast({
-              title: "Success!",
-              description: "Your preferences and recommendations have been saved to your dashboard.",
-            });
-          }
+          toast({
+            title: "Success!",
+            description: "Your preferences and recommendations have been updated.",
+          });
         } catch (recError) {
-          console.error('Error with recommendations:', recError);
+          console.error('Error generating recommendations:', recError);
         }
 
-        // Track Google Ads conversion for full onboarding completion
+        // Track Google Ads conversion
         if (typeof gtag !== 'undefined') {
           gtag('event', 'conversion', {
             'send_to': 'AW-1741019579l/Q2gnCPfp_fsaEM-C6ulA'
           });
         }
 
-        // Navigate to dashboard for logged in users
         navigate("/dashboard");
       } else {
-        // Default flow: store quiz data and redirect to signup
-        console.log('Mobile Debug: Processing as unauthenticated user - redirecting to signup...');
+        // Default flow for ALL new users: save to localStorage and redirect to signup
+        console.log('Quiz completion: Redirecting to signup for authentication');
         
-        // Get coordinates for caching
         const coordinates = await getCoordinatesFromAddress(quizData.address);
         
         const quizDataForStorage = {
