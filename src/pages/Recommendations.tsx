@@ -553,6 +553,7 @@ export default function Recommendations() {
         .select('id, is_favorite')
         .eq('user_id', user.id)
         .eq('business_name', business.name)
+        .eq('business_address', business.address)
         .eq('category', category)
         .maybeSingle();
 
