@@ -259,11 +259,9 @@ export default function Favorites() {
                   </CardHeader>
                   
                   <CardContent className="pt-0">
-                    {business.business_description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {business.business_description}
-                      </p>
-                    )}
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {getBusinessTagline(business)}
+                    </p>
                     
                     {/* Display clean badges instead of raw features */}
                     {getBusinessBadges(business).length > 0 && (
