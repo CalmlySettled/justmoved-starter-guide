@@ -29,7 +29,27 @@ export const VerificationEmail = ({
   userName,
 }: VerificationEmailProps) => (
   <Html>
-    <Head />
+    <Head>
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          function handleVerification() {
+            // Check if this was opened from another tab
+            if (window.opener) {
+              // This was opened in a new tab, focus the original tab and close this one
+              window.opener.focus();
+              window.close();
+            }
+          }
+          
+          // Run when page loads
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', handleVerification);
+          } else {
+            handleVerification();
+          }
+        `
+      }} />
+    </Head>
     <Preview>Verify your email to complete your CalmlySettled registration</Preview>
     <Body style={main}>
       <Container style={container}>

@@ -177,8 +177,8 @@ export default function Auth() {
         // Check if user has quiz data to determine redirect URL
         const hasQuizData = localStorage.getItem('onboardingQuizData');
         const redirectUrl = hasQuizData 
-          ? `${window.location.origin}/dashboard`
-          : `${window.location.origin}/`;
+          ? `${window.location.origin}/verify-email`
+          : `${window.location.origin}/verify-email`;
         
         const { data, error } = await supabase.auth.signUp({
           email: email.toLowerCase().trim(),
@@ -287,8 +287,8 @@ export default function Auth() {
       // Use Supabase's resend method - this will trigger our webhook to send custom email
       const hasQuizData = localStorage.getItem('onboardingQuizData');
       const redirectUrl = hasQuizData 
-        ? `${window.location.origin}/dashboard`
-        : `${window.location.origin}/`;
+        ? `${window.location.origin}/verify-email`
+        : `${window.location.origin}/verify-email`;
       
       const { error } = await supabase.auth.resend({
         type: 'signup',
