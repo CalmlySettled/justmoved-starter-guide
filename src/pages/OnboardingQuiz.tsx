@@ -226,42 +226,53 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Quiz completion: Starting');
-      console.log('User authenticated:', !!user);
+      console.log('🟡 Quiz completion: Starting');
+      console.log('🟡 User authenticated:', !!user);
+      console.log('🟡 Quiz data being saved:', quizData);
       
+      console.log('🟡 Getting coordinates for address:', quizData.address);
       const coordinates = await getCoordinatesFromAddress(quizData.address);
+      console.log('🟡 Coordinates result:', coordinates);
       
       if (user) {
         // User is already authenticated - save directly to their profile
-        console.log('Authenticated user completing quiz - saving to profile');
+        console.log('🟢 Authenticated user completing quiz - saving to profile');
+        console.log('🟢 User ID:', user.id);
         
         try {
+          const profileData = {
+            user_id: user.id,
+            address: quizData.address,
+            household_type: quizData.household.join(', '),
+            priorities: quizData.priorities,
+            priority_preferences: quizData.priorityPreferences,
+            transportation_style: quizData.transportation,
+            budget_preference: quizData.lifestyle,
+            life_stage: quizData.lifeStage,
+            settling_tasks: quizData.tasks,
+            latitude: coordinates?.lat || null,
+            longitude: coordinates?.lng || null,
+            updated_at: new Date().toISOString(),
+          };
+          
+          console.log('🟢 Profile data to save:', profileData);
+          
           // Save to user profile
-          const { error: profileError } = await supabase
+          const { data: profileData_result, error: profileError } = await supabase
             .from('profiles')
-            .upsert({
-              user_id: user.id,
-              address: quizData.address,
-              household_type: quizData.household.join(', '),
-              priorities: quizData.priorities,
-              priority_preferences: quizData.priorityPreferences,
-              transportation_style: quizData.transportation,
-              budget_preference: quizData.lifestyle,
-              life_stage: quizData.lifeStage,
-              settling_tasks: quizData.tasks,
-              latitude: coordinates?.lat || null,
-              longitude: coordinates?.lng || null,
-              updated_at: new Date().toISOString(),
-            }, {
+            .upsert(profileData, {
               onConflict: 'user_id'
-            });
+            })
+            .select();
+
+          console.log('🟢 Supabase upsert result:', { data: profileData_result, error: profileError });
 
           if (profileError) {
-            console.error('Error saving profile:', profileError);
+            console.error('🔴 Error saving profile:', profileError);
             throw profileError;
           }
 
-          console.log('Profile saved successfully');
+          console.log('🟢 Profile saved successfully:', profileData_result);
 
           // Generate recommendations immediately
           const quizResponse = {
@@ -277,29 +288,33 @@ export default function OnboardingQuiz() {
             longitude: coordinates?.lng || null
           };
 
-          console.log('Generating recommendations for authenticated user');
-          const { data: recsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
-            body: { 
-              quizResponse,
-              userId: user.id
-            }
-          });
+           console.log('🟢 Generating recommendations for authenticated user');
+           console.log('🟢 Quiz response data:', quizResponse);
+           
+           const { data: recsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+             body: { 
+               quizResponse,
+               userId: user.id
+             }
+           });
 
-          if (generateError) {
-            console.error('Error generating recommendations:', generateError);
-            // Don't throw - still redirect to dashboard with toast
-            toast({
-              title: "Profile saved!",
-              description: "There was an issue generating recommendations. Please try refreshing your dashboard.",
-              variant: "destructive"
-            });
-          } else {
-            console.log('Recommendations generated successfully');
-            toast({
-              title: "Profile complete!",
-              description: "Your personalized recommendations are ready on your dashboard.",
-            });
-          }
+           console.log('🟢 Generate recommendations result:', { data: recsData, error: generateError });
+
+           if (generateError) {
+             console.error('🔴 Error generating recommendations:', generateError);
+             // Don't throw - still redirect to dashboard with toast
+             toast({
+               title: "Profile saved!",
+               description: "There was an issue generating recommendations. Please try refreshing your dashboard.",
+               variant: "destructive"
+             });
+           } else {
+             console.log('🟢 Recommendations generated successfully:', recsData);
+             toast({
+               title: "Profile complete!",
+               description: "Your personalized recommendations are ready on your dashboard.",
+             });
+           }
 
           // Redirect to dashboard
           navigate("/dashboard");
