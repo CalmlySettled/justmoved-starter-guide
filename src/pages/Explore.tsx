@@ -362,6 +362,8 @@ export default function Explore() {
     setSelectedCategory(specificCategory || pack.title);
     setIsLoadingCategory(true);
     
+    console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
