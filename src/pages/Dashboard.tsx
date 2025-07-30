@@ -138,9 +138,15 @@ export default function Dashboard() {
       return;
     }
     
-    // Don't proceed if mobile auth isn't ready or no user
-    if (!isAuthenticated || !mobileAuthReady) {
-      console.log('Mobile Debug: Dashboard - Waiting for auth/mobile initialization');
+    // For mobile: if we have a user but mobile auth isn't ready, wait
+    if (isMobile && user && !mobileAuthReady) {
+      console.log('Mobile Debug: Dashboard - User exists but mobile auth not ready, waiting...');
+      return;
+    }
+    
+    // For desktop or when mobile auth is ready: proceed if authenticated
+    if (!isAuthenticated) {
+      console.log('Mobile Debug: Dashboard - Not authenticated, waiting...');
       return;
     }
     
@@ -1227,8 +1233,8 @@ export default function Dashboard() {
   console.log('Dashboard render - Loading:', loading);
   console.log('Dashboard render - Recommendations:', recommendations.length);
   
-  // Mobile-specific loading screen
-  if (mobileLoading || (isMobile && !mobileAuthReady)) {
+  // Mobile-specific loading screen - show when mobile auth is initializing OR when we have a user but mobile auth isn't ready
+  if (mobileLoading || (isMobile && user && !mobileAuthReady)) {
     console.log('Mobile Debug: Showing mobile loading screen');
     return (
       <MobileLoadingScreen 
@@ -1238,6 +1244,13 @@ export default function Dashboard() {
         showRetryButton={!mobileAuthReady}
       />
     );
+  }
+  
+  // If no user and we're not on mobile or mobile auth is ready, redirect to auth
+  if (!user && (!isMobile || mobileAuthReady)) {
+    console.log('Mobile Debug: No user found, redirecting to auth');
+    navigate("/auth");
+    return null;
   }
   
   // Standard loading state
