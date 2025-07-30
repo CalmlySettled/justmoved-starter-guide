@@ -433,11 +433,34 @@ export default function Dashboard() {
           }
         }
         
-        // If user has no profile either, they need to take the quiz
-        if (!profileData || !profileData.priorities || profileData.priorities.length === 0) {
-          console.log('No profile or priorities found, user needs to take quiz');
+        // Check if user has incomplete profile (signed up without taking quiz)
+        const hasIncompleteProfile = !profileData || 
+                                   !profileData.priorities || 
+                                   profileData.priorities.length === 0 ||
+                                   !profileData.address ||
+                                   !profileData.latitude ||
+                                   !profileData.longitude;
+        
+        if (hasIncompleteProfile) {
+          console.log('User has incomplete profile - needs to take quiz');
+          console.log('Profile data:', {
+            hasProfile: !!profileData,
+            hasPriorities: profileData?.priorities?.length > 0,
+            hasAddress: !!profileData?.address,
+            hasCoordinates: !!(profileData?.latitude && profileData?.longitude)
+          });
+          
+          // Clear any old recommendations
           setRecommendations([]);
           setLoading(false);
+          
+          // Show helpful message about completing profile
+          toast({
+            title: "Complete your profile",
+            description: "Take our quick quiz to get personalized recommendations for your area",
+            duration: 5000,
+          });
+          
           return;
         }
         
