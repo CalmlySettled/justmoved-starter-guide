@@ -9,6 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { Home, Mail } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 
+// Declare global gtag function for Google Ads conversion tracking
+declare global {
+  function gtag(...args: any[]): void;
+}
+
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -168,12 +173,22 @@ export default function Auth() {
             description: "Please check your email (including spam folder) for a verification link to complete your registration."
           });
           setShowResendButton(true);
+          
+          // Track Google Ads conversion for signup
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'conversion', {'send_to': 'AW-17410195791/Q2gnCPfp_fsaEM-C6u1A'});
+          }
         } else {
           // User was created and auto-confirmed
           toast({
             title: "Account created!",
             description: "Welcome! You're now signed in."
           });
+          
+          // Track Google Ads conversion for signup
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'conversion', {'send_to': 'AW-17410195791/Q2gnCPfp_fsaEM-C6u1A'});
+          }
         }
       } else {
         // Sign in validation
