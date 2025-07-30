@@ -241,40 +241,72 @@ export default function OnboardingQuiz() {
         console.log('🟢 Authenticated user completing quiz - saving to profile');
         console.log('🟢 User ID:', user.id);
         
-        try {
-          const profileData = {
-            user_id: user.id,
-            address: quizData.address,
-            household_type: quizData.household.join(', '),
-            priorities: quizData.priorities,
-            priority_preferences: quizData.priorityPreferences,
-            transportation_style: quizData.transportation,
-            budget_preference: quizData.lifestyle,
-            life_stage: quizData.lifeStage,
-            settling_tasks: quizData.tasks,
-            latitude: coordinates?.lat || null,
-            longitude: coordinates?.lng || null,
-            updated_at: new Date().toISOString(),
-          };
-          
-          console.log('🟢 Profile data to save:', profileData);
-          
-          // Save to user profile
-          const { data: profileData_result, error: profileError } = await supabase
-            .from('profiles')
-            .upsert(profileData, {
-              onConflict: 'user_id'
-            })
-            .select();
+         try {
+           console.log('🟡 MOBILE QUIZ DEBUG - Building profile data...');
+           
+           // Mobile-specific: Ensure all data is properly serialized
+           const profileData = {
+             user_id: user.id,
+             address: String(quizData.address || ''),
+             household_type: Array.isArray(quizData.household) ? quizData.household.join(', ') : String(quizData.household || ''),
+             priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
+             priority_preferences: quizData.priorityPreferences || {},
+             transportation_style: String(quizData.transportation || ''),
+             budget_preference: String(quizData.lifestyle || ''),
+             life_stage: String(quizData.lifeStage || ''),
+             settling_tasks: Array.isArray(quizData.tasks) ? quizData.tasks : [],
+             latitude: coordinates?.lat || null,
+             longitude: coordinates?.lng || null,
+             updated_at: new Date().toISOString(),
+           };
+           
+           console.log('🟡 MOBILE QUIZ DEBUG - Profile data prepared:', profileData);
+           console.log('🟡 MOBILE QUIZ DEBUG - Address length:', profileData.address.length);
+           console.log('🟡 MOBILE QUIZ DEBUG - Priorities count:', profileData.priorities.length);
+           
+           // Mobile-specific: Add retry logic for flaky mobile connections
+           let profileResult = null;
+           let profileError = null;
+           
+           for (let attempt = 1; attempt <= 3; attempt++) {
+             console.log(`🟡 MOBILE QUIZ DEBUG - Profile save attempt ${attempt}/3`);
+             
+             const { data, error } = await supabase
+               .from('profiles')
+               .upsert(profileData, {
+                 onConflict: 'user_id'
+               })
+               .select();
+               
+             profileResult = data;
+             profileError = error;
+             
+             if (!error) {
+               console.log('🟢 MOBILE QUIZ DEBUG - Profile save successful on attempt', attempt);
+               break;
+             }
+             
+             console.error(`🔴 MOBILE QUIZ DEBUG - Profile save attempt ${attempt} failed:`, error);
+             
+             if (attempt < 3) {
+               console.log('🟡 MOBILE QUIZ DEBUG - Waiting 1 second before retry...');
+               await new Promise(resolve => setTimeout(resolve, 1000));
+             }
+           }
 
-          console.log('🟢 Supabase upsert result:', { data: profileData_result, error: profileError });
+           console.log('🟢 MOBILE QUIZ DEBUG - Final profile save result:', { data: profileResult, error: profileError });
 
-          if (profileError) {
-            console.error('🔴 Error saving profile:', profileError);
-            throw profileError;
-          }
+           if (profileError) {
+             console.error('🔴 MOBILE QUIZ DEBUG - All profile save attempts failed:', profileError);
+             
+             // Mobile fallback: Save to localStorage as backup
+             console.log('🟡 MOBILE QUIZ DEBUG - Saving to localStorage as fallback...');
+             localStorage.setItem('pendingProfileData', JSON.stringify(profileData));
+             
+             throw profileError;
+           }
 
-          console.log('🟢 Profile saved successfully:', profileData_result);
+           console.log('🟢 MOBILE QUIZ DEBUG - Profile saved successfully:', profileResult);
 
           // Generate recommendations immediately
           const quizResponse = {
