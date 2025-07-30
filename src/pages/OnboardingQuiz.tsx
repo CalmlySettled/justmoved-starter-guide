@@ -250,14 +250,6 @@ export default function OnboardingQuiz() {
       // Show completion state briefly, then redirect
       setIsComplete(true);
       
-      // Wait a bit to show the completion screen, then navigate
-      setTimeout(() => {
-        toast({
-          title: "Quiz Complete!",
-          description: "Please sign up to save your preferences and get personalized recommendations.",
-        });
-        navigate("/auth");
-      }, 1500);
       
     } catch (error) {
       console.error('Error in handleComplete:', error);
@@ -276,18 +268,21 @@ export default function OnboardingQuiz() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="text-center py-12">
-            <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6 animate-pulse" />
+            <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6" />
             <h1 className="text-3xl font-bold text-foreground mb-4">
               Quiz Complete!
             </h1>
             <p className="text-muted-foreground mb-8">
-              Redirecting you to sign up so you can save your preferences and get personalized recommendations...
+              Now let's create your account to save your preferences and get personalized recommendations.
             </p>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
+            <Button 
+              variant="hero" 
+              size="lg"
+              onClick={() => navigate("/auth")}
+              className="w-full max-w-sm"
+            >
+              Continue to Sign Up
+            </Button>
           </CardContent>
         </Card>
       </div>
