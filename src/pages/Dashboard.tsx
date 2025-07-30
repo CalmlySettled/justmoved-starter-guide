@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useMobileAuth } from "@/hooks/useMobileAuth";
+import { MobileLoadingScreen } from "@/components/MobileLoadingScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { FavoritesDropdown } from "@/components/FavoritesDropdown";
@@ -65,6 +67,15 @@ export default function Dashboard() {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { 
+    isMobile, 
+    mobileAuthReady, 
+    retryMobileAuth, 
+    canRetry, 
+    isAuthenticated, 
+    needsAuth, 
+    isLoading: mobileLoading 
+  } = useMobileAuth();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,46 +122,25 @@ export default function Dashboard() {
   }, [user]);
 
   useEffect(() => {
-    console.log('Mobile Debug: Dashboard useEffect - User state:', user);
-    console.log('Mobile Debug: Dashboard useEffect - Loading state:', loading);
+    console.log('Mobile Debug: Dashboard useEffect - Auth states:', { 
+      user: !!user, 
+      loading, 
+      isMobile, 
+      mobileAuthReady, 
+      isAuthenticated, 
+      needsAuth 
+    });
     
-    // Detect mobile
-    const userAgent = navigator.userAgent || navigator.vendor;
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    console.log('Mobile Debug: Dashboard - Mobile device detected:', isMobile);
-    
-    // Mobile-specific auth check with retry
-    if (isMobile && !user && !loading) {
-      console.log('Mobile Debug: Dashboard - No user on mobile, attempting session recovery');
-      
-      // Give mobile auth more time to initialize
-      const mobileAuthTimeout = setTimeout(async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('Mobile Debug: Dashboard - Session recovery check:', session);
-          
-          if (!session) {
-            console.log('Mobile Debug: Dashboard - No session found, redirecting to auth');
-            navigate("/auth");
-          }
-        } catch (error) {
-          console.error('Mobile Debug: Dashboard - Session recovery failed:', error);
-          navigate("/auth");
-        }
-      }, 2000);
-      
-      return () => clearTimeout(mobileAuthTimeout);
-    }
-    
-    // Only redirect if we're done loading and there's no user (desktop behavior)
-    if (!isMobile && !loading && !user) {
-      console.log('Desktop - No user found after loading complete, redirecting to auth');
+    // Handle authentication redirects with mobile awareness
+    if (needsAuth && mobileAuthReady) {
+      console.log('Mobile Debug: Dashboard - Redirecting to auth (no user found)');
       navigate("/auth");
       return;
     }
     
-    if (!user) {
-      console.log('Mobile Debug: Dashboard - No user yet, waiting...');
+    // Don't proceed if mobile auth isn't ready or no user
+    if (!isAuthenticated || !mobileAuthReady) {
+      console.log('Mobile Debug: Dashboard - Waiting for auth/mobile initialization');
       return;
     }
     
@@ -175,20 +165,23 @@ export default function Dashboard() {
     };
     
     // Mobile-specific timeout with longer delay
-    const timeoutDelay = isMobile ? 15000 : 10000;
+    const timeoutDelay = isMobile ? 20000 : 12000;
     const timeoutId = setTimeout(() => {
       console.log('Mobile Debug: fetchUserData timeout after', timeoutDelay, 'ms, setting loading to false');
       setLoading(false);
       
-      // On mobile, show retry option
+      // On mobile, show retry option with better UX
       if (isMobile) {
         toast({
-          title: "Loading taking longer than expected",
-          description: "Tap here to retry loading your recommendations",
+          title: "Still loading...",
+          description: "Your data is taking longer than usual to load",
           action: (
-            <Button variant="outline" size="sm" onClick={() => {
+            <Button variant="outline" size="sm" onClick={async () => {
               setLoading(true);
-              fetchUserData();
+              const retrySuccess = await retryMobileAuth();
+              if (retrySuccess) {
+                fetchUserData();
+              }
             }}>
               Retry
             </Button>
@@ -209,7 +202,7 @@ export default function Dashboard() {
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
       clearTimeout(timeoutId);
     };
-  }, [user, navigate, loading]);
+  }, [user, navigate, loading, isMobile, mobileAuthReady, isAuthenticated, needsAuth, retryMobileAuth]);
 
   // Refresh data when returning to this page
   useEffect(() => {
@@ -280,6 +273,7 @@ export default function Dashboard() {
     }
 
     console.log('Mobile Debug: Fetching fresh user data and recommendations for user:', user.id);
+    console.log('Mobile Debug: Device type:', isMobile ? 'Mobile' : 'Desktop');
 
     try {
       // Fetch user profile
@@ -1233,11 +1227,22 @@ export default function Dashboard() {
   console.log('Dashboard render - Loading:', loading);
   console.log('Dashboard render - Recommendations:', recommendations.length);
   
+  // Mobile-specific loading screen
+  if (mobileLoading || (isMobile && !mobileAuthReady)) {
+    console.log('Mobile Debug: Showing mobile loading screen');
+    return (
+      <MobileLoadingScreen 
+        type="auth"
+        onRetry={canRetry ? retryMobileAuth : undefined}
+        canRetry={canRetry}
+        showRetryButton={!mobileAuthReady}
+      />
+    );
+  }
+  
+  // Standard loading state
   if (loading) {
-    console.log('Mobile Debug: Showing loading state');
-    const userAgent = navigator.userAgent || navigator.vendor;
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    
+    console.log('Mobile Debug: Showing standard loading state');
     return (
       <div className="min-h-screen bg-gradient-page">
         <Header />
@@ -1246,12 +1251,12 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold mb-4">Loading Your Dashboard</h1>
             <p className="text-muted-foreground">Retrieving your saved recommendations...</p>
             
-            {/* Mobile-specific loading message */}
+            {/* Enhanced mobile loading message */}
             {isMobile && (
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg">
                 <div className="flex items-center justify-center space-x-2 mb-3">
                   <RefreshCw className="h-5 w-5 animate-spin text-primary" />
-                  <span className="font-medium">Loading on mobile device...</span>
+                  <span className="font-medium">Mobile device detected...</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   This may take a moment longer on mobile devices
@@ -1259,13 +1264,16 @@ export default function Dashboard() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
                     console.log('Mobile Debug: Manual retry triggered');
                     setLoading(true);
+                    if (canRetry) {
+                      await retryMobileAuth();
+                    }
                     fetchUserData();
                   }}
                 >
-                  Retry if stuck
+                  Retry Connection
                 </Button>
               </div>
             )}

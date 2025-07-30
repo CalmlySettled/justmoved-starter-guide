@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [authRetryAttempts, setAuthRetryAttempts] = useState(0);
+  const [mobileAuthTimeout, setMobileAuthTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Detect mobile devices
   useEffect(() => {
@@ -43,14 +44,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log('Mobile Debug: Auth state changed:', { event, session, isMobile });
         
-        // Clear any pending retries
+        // Clear any pending retries and mobile timeouts
         if (retryTimeout) clearTimeout(retryTimeout);
+        if (mobileAuthTimeout) clearTimeout(mobileAuthTimeout);
         
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Simplified loading state management for all devices
-        setLoading(false);
+        // Mobile-specific session validation
+        if (isMobile && session?.user) {
+          console.log('Mobile Debug: Session validated for mobile user');
+          // Give mobile extra time to fully initialize
+          const mobileDelay = setTimeout(() => {
+            setLoading(false);
+          }, 1000);
+          setMobileAuthTimeout(mobileDelay);
+        } else {
+          setLoading(false);
+        }
       }
     );
 
@@ -87,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       if (retryTimeout) clearTimeout(retryTimeout);
+      if (mobileAuthTimeout) clearTimeout(mobileAuthTimeout);
       subscription.unsubscribe();
     };
   }, [isMobile, authRetryAttempts]);
