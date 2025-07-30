@@ -135,7 +135,7 @@ export default function OnboardingQuiz() {
     setTimeout(() => {
       setCurrentQuestion(currentQuestion + 1);
       setIsTransitioning(false);
-    }, 150);
+    }, 50);
   };
 
   const handlePrevious = () => {
@@ -147,7 +147,7 @@ export default function OnboardingQuiz() {
         setCurrentQuestion(currentQuestion - 1);
       }
       setIsTransitioning(false);
-    }, 150);
+    }, 50);
   };
 
   const handleAddressChange = (value: string) => {
@@ -441,7 +441,7 @@ export default function OnboardingQuiz() {
 
   return (
     <div 
-      className={`min-h-screen relative transition-all duration-500 ${
+      className={`min-h-screen relative transition-all duration-200 ${
         currentQuestion === 2 ? 'bg-background' : ''
       }`}
       style={currentQuestion === 2 ? {} : {
@@ -474,7 +474,7 @@ export default function OnboardingQuiz() {
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-4">
         <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
           <div 
-            className="bg-gradient-hero h-3 rounded-full transition-all duration-500 shadow-glow animate-pulse"
+            className="bg-gradient-hero h-3 rounded-full transition-all duration-200 shadow-glow"
             style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
           />
         </div>
@@ -482,8 +482,8 @@ export default function OnboardingQuiz() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-8">
-        <Card className={`backdrop-blur-md bg-white/95 shadow-2xl border-0 transition-all duration-300 ${
-          isTransitioning ? 'animate-fade-out scale-95' : 'animate-fade-in scale-100'
+        <Card className={`backdrop-blur-md bg-white/95 shadow-2xl border-0 transition-all duration-150 ${
+          isTransitioning ? 'opacity-75' : 'opacity-100'
         }`}>
           <CardHeader className="pb-6">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center leading-tight">
