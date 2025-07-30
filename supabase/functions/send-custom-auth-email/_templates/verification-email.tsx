@@ -52,7 +52,7 @@ export const VerificationEmail = ({
         
         <Section style={buttonContainer}>
           <Link
-            href={`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`}
+            href={`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
             style={button}
           >
             Verify Email Address
@@ -63,7 +63,7 @@ export const VerificationEmail = ({
           Or copy and paste this link into your browser:
         </Text>
         <Text style={linkText}>
-          {`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`}
+          {`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
         </Text>
         
         <Text style={footerText}>
