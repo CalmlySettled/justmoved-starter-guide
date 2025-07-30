@@ -78,7 +78,7 @@ export default function OnboardingQuiz() {
   const [validAddressSelected, setValidAddressSelected] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Check if user just signed up by seeing if they have no existing profile data
   useEffect(() => {
@@ -227,6 +227,11 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
+      console.log('Mobile Debug: handleComplete called with user:', user);
+      console.log('Mobile Debug: user ID:', user?.id);
+      console.log('Mobile Debug: user email:', user?.email);
+      console.log('Mobile Debug: authLoading state:', authLoading);
+      
       // If user is logged in, save to Supabase directly
       if (user) {
         console.log('User is logged in, getting coordinates and saving profile...');
