@@ -121,13 +121,18 @@ export default function Auth() {
             .single();
           
           console.log('Profile data:', profile, 'Error:', profileError);
+          console.log('Profile address:', profile?.address);
+          console.log('Profile priorities:', profile?.priorities);
+          console.log('Profile priorities length:', profile?.priorities?.length);
           
           // If they have profile data, go to dashboard, otherwise onboarding
-          if (profile?.address && profile?.priorities?.length > 0) {
+          if (profile?.address && profile?.priorities && profile?.priorities.length > 0) {
             console.log('User has profile data, navigating to dashboard');
             navigate("/dashboard");
           } else {
             console.log('User has no profile data, navigating to onboarding');
+            console.log('Missing address:', !profile?.address);
+            console.log('Missing priorities:', !profile?.priorities || profile?.priorities.length === 0);
             navigate("/onboarding");
           }
         }
