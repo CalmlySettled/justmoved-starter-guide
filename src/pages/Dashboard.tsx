@@ -74,8 +74,6 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<{[category: string]: string | null}>({});
   const [favoritingRecommendations, setFavoritingRecommendations] = useState<Set<string>>(new Set());
-  const [favoritesSort, setFavoritesSort] = useState<'date' | 'distance' | 'category'>('date');
-  const [favoritesFilter, setFavoritesFilter] = useState<string | null>(null);
   const [filteredRecommendations, setFilteredRecommendations] = useState<{[category: string]: SavedRecommendation[]}>({});
   const [filterLoading, setFilterLoading] = useState<{[category: string]: boolean}>({});
   const [additionalResults, setAdditionalResults] = useState<{[category: string]: number}>({});
@@ -568,49 +566,59 @@ export default function Dashboard() {
     }
   };
 
-  const toggleFavorite = async (rec: SavedRecommendation) => {
-    if (!user) return;
-
-    const key = rec.id;
-    setFavoritingRecommendations(prev => new Set(prev).add(key));
-
+  const toggleFavorite = (rec: SavedRecommendation) => {
     try {
-      const newFavoriteStatus = !rec.is_favorite;
-      const { error } = await supabase
-        .from('user_recommendations')
-        .update({ is_favorite: newFavoriteStatus })
-        .eq('id', rec.id)
-        .eq('user_id', user.id);
-
-      if (error) {
-        throw error;
+      const storedFavorites = localStorage.getItem('favorites');
+      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
+      
+      const businessKey = rec.business_name;
+      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
+      
+      if (existingIndex >= 0) {
+        // Remove from favorites
+        favorites.splice(existingIndex, 1);
+        toast({
+          title: "Removed from favorites",
+          description: `${rec.business_name} has been removed from your favorites.`,
+        });
+      } else {
+        // Add to favorites
+        const favoriteData = {
+          business_name: rec.business_name,
+          business_address: rec.business_address,
+          business_description: rec.business_description,
+          business_phone: rec.business_phone,
+          business_website: rec.business_website,
+          business_image: rec.business_image,
+          business_features: rec.business_features || [],
+          category: rec.category,
+          distance_miles: rec.distance_miles,
+          favorited_at: new Date().toISOString()
+        };
+        
+        favorites.push(favoriteData);
+        toast({
+          title: "Added to favorites",
+          description: `${rec.business_name} has been added to your favorites.`,
+        });
+        
+        // Additional toast with navigation hint
+        setTimeout(() => {
+          toast({
+            title: "Find all your favorites in the dropdown above!",
+            description: "Click 'My Favorites' to see all your saved places",
+            duration: 4000
+          });
+        }, 1000);
       }
-
-      // Update local state
-      setRecommendations(prev => 
-        prev.map(r => 
-          r.id === rec.id 
-            ? { ...r, is_favorite: newFavoriteStatus }
-            : r
-        )
-      );
-
-      toast({
-        title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
-        description: `${rec.business_name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
-      });
+      
+      localStorage.setItem('favorites', JSON.stringify(favorites));
     } catch (error) {
       console.error('Error toggling favorite:', error);
       toast({
         title: "Error updating favorite",
         description: "We couldn't update your favorite. Please try again.",
         variant: "destructive"
-      });
-    } finally {
-      setFavoritingRecommendations(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(key);
-        return newSet;
       });
     }
   };
@@ -964,36 +972,6 @@ export default function Dashboard() {
     }
   };
 
-  // Get favorites and sort/filter them
-  const getFavoritesData = () => {
-    let favorites = recommendations.filter(rec => rec.is_favorite);
-    
-    // Apply category filter
-    if (favoritesFilter) {
-      favorites = favorites.filter(rec => rec.category.toLowerCase() === favoritesFilter.toLowerCase());
-    }
-    
-    // Apply sorting
-    switch (favoritesSort) {
-      case 'distance':
-        favorites.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
-        break;
-      case 'category':
-        favorites.sort((a, b) => a.category.localeCompare(b.category));
-        break;
-      case 'date':
-      default:
-        favorites.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-    }
-    
-    return favorites;
-  };
-
-  const getFavoriteCategories = () => {
-    const categories = [...new Set(recommendations.filter(rec => rec.is_favorite).map(rec => rec.category))];
-    return categories.sort();
-  };
 
   const getUserSummary = () => {
     if (!userProfile) return "Welcome to your new neighborhood! Here's what we recommend for you.";
@@ -1084,151 +1062,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Favorites Section - Interactive Visual Display */}
-        {recommendations.filter(rec => rec.is_favorite).length > 0 && (
-          <section className="mb-12 bg-gradient-section rounded-2xl p-8 shadow-soft">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl">
-                  <Star className="h-6 w-6 text-yellow-600 fill-current" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">My Favorites</h2>
-                  <p className="text-muted-foreground">
-                    {getFavoritesData().length} favorite place{getFavoritesData().length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Favorites Controls */}
-              <div className="flex items-center gap-3">
-                {/* Category Filter */}
-                <Select value={favoritesFilter || 'all'} onValueChange={(value) => setFavoritesFilter(value === 'all' ? null : value)}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {getFavoriteCategories().map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {/* Sort Controls */}
-                <Select value={favoritesSort} onValueChange={(value: 'date' | 'distance' | 'category') => setFavoritesSort(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Recent</SelectItem>
-                    <SelectItem value="distance">Nearest</SelectItem>
-                    <SelectItem value="category">Category</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Clear Filters */}
-                {favoritesFilter && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setFavoritesFilter(null)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Favorites Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {getFavoritesData().map((rec) => {
-                const isFavoriting = favoritingRecommendations.has(rec.id);
-                
-                return (
-                  <Card key={rec.id} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden hover:scale-[1.02]">
-                    {/* Business Image */}
-                    <div className="aspect-[4/3] overflow-hidden relative">
-                      <img 
-                        src={getBusinessImage(rec)}
-                        alt={rec.business_name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => toggleFavorite(rec)}
-                          disabled={isFavoriting}
-                          className="bg-white/90 hover:bg-white text-yellow-500 shadow-lg rounded-full w-8 h-8 p-0"
-                        >
-                          <Star className="h-3 w-3 fill-current" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => deleteRecommendation(rec.id)}
-                          disabled={deleting === rec.id}
-                          className="bg-white/90 hover:bg-white text-destructive shadow-lg rounded-full w-8 h-8 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      
-                      {/* Category Tag */}
-                      <div className="absolute bottom-3 left-3">
-                        <Badge className="bg-white/90 text-foreground hover:bg-white text-xs font-medium">
-                          {getCategoryIcon(rec.category)} {rec.category}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        {/* Business Name */}
-                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                          {rec.business_name}
-                        </h3>
-                        
-                        {/* Address */}
-                        {rec.business_address && (
-                          <a 
-                            href={getGoogleMapsDirectionsUrl(rec.business_address, rec.business_name)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
-                          >
-                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                            <span className="underline-offset-2 group-hover:underline line-clamp-1 text-xs">
-                              {rec.business_address}
-                            </span>
-                          </a>
-                        )}
-                        
-                        {/* Distance & Date */}
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          {rec.distance_miles && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {rec.distance_miles} mi
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(rec.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        
-                        {/* No badges - clean display */}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
         {/* Saved Recommendations */}
         {recommendations.length > 0 ? (
