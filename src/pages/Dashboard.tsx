@@ -103,12 +103,6 @@ export default function Dashboard() {
     
     try {
       await fetchUserData();
-      if (forceRefresh) {
-        toast({
-          title: "Data refreshed",
-          description: "Your recommendations have been updated with the latest information.",
-        });
-      }
     } finally {
       setRefreshing(false);
     }

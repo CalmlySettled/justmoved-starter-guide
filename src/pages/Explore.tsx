@@ -129,11 +129,6 @@ export default function Explore() {
 
             setLocation(locationData);
             await loadPopularPlaces(locationData);
-            
-            toast({
-              title: "Welcome back!",
-              description: `Showing recommendations for ${locationData.city}`,
-            });
           }
         }
       } catch (error) {
@@ -216,11 +211,6 @@ export default function Explore() {
 
       setLocation(locationData);
       await loadPopularPlaces(locationData);
-      
-      toast({
-        title: "Location detected",
-        description: `Found your location${locationData.city ? ` in ${locationData.city}` : ""}`,
-      });
     } catch (error) {
       console.error("Error getting location:", error);
       toast({
@@ -266,11 +256,6 @@ export default function Explore() {
 
       setLocation(locationData);
       await loadPopularPlaces(locationData);
-      
-      toast({
-        title: "Location set",
-        description: `Exploring ${locationData.city}`,
-      });
     } catch (error) {
       console.error("Error geocoding location:", error);
       toast({
