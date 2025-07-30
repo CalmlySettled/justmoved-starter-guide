@@ -1026,12 +1026,25 @@ serve(async (req) => {
 
       const coordinates = { lat: latitude, lng: longitude };
       const recommendations: { [key: string]: Business[] } = {};
+      const globalSeenBusinesses = new Set(); // Global deduplication across all categories
       
       for (const category of categories) {
         console.log(`Exploring category: "${category}"`);
         const businesses = await searchBusinesses(category, coordinates);
-        recommendations[category] = businesses;
-        console.log(`Found ${businesses.length} businesses for "${category}"`);
+        
+        // Filter out businesses we've already seen globally
+        const uniqueBusinesses = businesses.filter(business => {
+          const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
+          if (globalSeenBusinesses.has(businessKey)) {
+            console.log(`→ Skipping duplicate business across categories: ${business.name}`);
+            return false;
+          }
+          globalSeenBusinesses.add(businessKey);
+          return true;
+        });
+        
+        recommendations[category] = uniqueBusinesses;
+        console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
       
       return new Response(JSON.stringify({ recommendations }), {
