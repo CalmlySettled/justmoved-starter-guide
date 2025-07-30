@@ -34,29 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     detectMobile();
   }, []);
 
-  // Mobile-specific session recovery
-  const recoverSession = async () => {
-    if (!isMobile) return;
-    
-    console.log('Mobile Debug: Attempting session recovery...');
-    try {
-      // Force refresh session
-      const { data: { session }, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error('Mobile Debug: Session recovery failed:', error);
-        return;
-      }
-      
-      if (session) {
-        console.log('Mobile Debug: Session recovered successfully');
-        setSession(session);
-        setUser(session.user);
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Mobile Debug: Session recovery error:', error);
-    }
-  };
 
   useEffect(() => {
     let retryTimeout: NodeJS.Timeout;
@@ -72,24 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Mobile-specific handling
-        if (isMobile) {
-          if (event === 'SIGNED_IN' && session) {
-            console.log('Mobile Debug: Sign in detected on mobile');
-            // Give extra time for mobile session to stabilize
-            setTimeout(() => {
-              setLoading(false);
-            }, 1000);
-          } else if (event === 'TOKEN_REFRESHED' && session) {
-            console.log('Mobile Debug: Token refreshed on mobile');
-            setLoading(false);
-          } else if (!session) {
-            console.log('Mobile Debug: No session on mobile, setting loading to false');
-            setLoading(false);
-          }
-        } else {
-          setLoading(false);
-        }
+        // Simplified loading state management for all devices
+        setLoading(false);
       }
     );
 
@@ -114,18 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Mobile-specific session handling
-        if (isMobile) {
-          if (!session && authRetryAttempts < 2) {
-            console.log('Mobile Debug: No session found, attempting recovery...');
-            await recoverSession();
-          } else {
-            console.log('Mobile Debug: Setting loading to false after session check');
-            setTimeout(() => setLoading(false), 500);
-          }
-        } else {
-          setLoading(false);
-        }
+        // Simplified session handling for all devices
+        setLoading(false);
       } catch (error) {
         console.error('Mobile Debug: Session check failed:', error);
         setLoading(false);

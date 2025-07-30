@@ -232,8 +232,35 @@ export default function OnboardingQuiz() {
       console.log('Mobile Debug: user email:', user?.email);
       console.log('Mobile Debug: authLoading state:', authLoading);
       
-      // If user is logged in, save to Supabase directly
-      if (user) {
+      // More robust authentication check - verify user has valid session and can make API calls
+      const isAuthenticated = user && !authLoading;
+      
+      if (isAuthenticated) {
+        console.log('Mobile Debug: User appears authenticated, testing with API call...');
+        
+        // Test if user is actually authenticated by attempting a simple API call
+        try {
+          const { error: testError } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .limit(1);
+          
+          if (testError) {
+            console.log('Mobile Debug: Auth test failed, treating as unauthenticated:', testError);
+            throw new Error('Authentication test failed');
+          }
+          
+          console.log('Mobile Debug: Auth test passed, proceeding with authenticated flow');
+        } catch (authTestError) {
+          console.log('Mobile Debug: Falling back to unauthenticated flow due to auth test failure:', authTestError);
+          // Fall through to unauthenticated flow
+          throw new Error('Auth verification failed');
+        }
+      }
+      
+      // If user is logged in and authenticated, save to Supabase directly
+      if (isAuthenticated) {
         console.log('User is logged in, getting coordinates and saving profile...');
         
         // Get coordinates from address for caching
@@ -313,8 +340,15 @@ export default function OnboardingQuiz() {
         // Navigate to dashboard for logged in users
         navigate("/dashboard");
       } else {
-        // If user is NOT logged in, store quiz data in localStorage and redirect to signup
-        console.log('User not logged in, getting coordinates and storing for later...');
+        throw new Error('User not authenticated');
+      }
+      
+    } catch (error) {
+      console.log('Mobile Debug: Error or unauthenticated, using fallback flow:', error);
+      
+      // Fallback: store quiz data in localStorage and redirect to signup
+      try {
+        console.log('Mobile Debug: Storing quiz data in localStorage and redirecting to auth...');
         
         // Get coordinates for caching
         const coordinates = await getCoordinatesFromAddress(quizData.address);
@@ -339,15 +373,14 @@ export default function OnboardingQuiz() {
         });
         
         navigate("/auth");
+      } catch (fallbackError) {
+        console.error('Mobile Debug: Even fallback failed:', fallbackError);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-    } catch (error) {
-      console.error('Error completing quiz:', error);
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
