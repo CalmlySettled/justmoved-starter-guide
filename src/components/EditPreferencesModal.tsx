@@ -100,7 +100,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
     "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
     "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
     "Parks": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas"],
-    "Faith communities": ["Christian", "Jewish", "Muslim", "Buddhist", "Hindu", "Non-denominational"],
+    "Faith communities": ["Non-denominational", "Catholic", "Jewish", "Muslim", "Buddhist", "Hindu"],
     "Public transit / commute info": ["Bus routes", "Train stations", "Bike lanes", "Park & ride", "Commuter lots"],
     "Green space / trails": ["Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
     "Restaurants / coffee shops": ["Family-friendly", "Date night spots", "Quick casual", "Coffee shops", "Food trucks"],
