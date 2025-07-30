@@ -141,7 +141,15 @@ export default function Dashboard() {
       loadFavorites();
     };
     
-    fetchUserData();
+    // Add timeout protection for mobile
+    const timeoutId = setTimeout(() => {
+      console.log('Mobile Debug: fetchUserData timeout, setting loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+    
+    fetchUserData().finally(() => {
+      clearTimeout(timeoutId);
+    });
     loadFavorites();
     
     // Listen for favorites updates from dropdown
@@ -214,19 +222,27 @@ export default function Dashboard() {
   }, [user]);
 
   const fetchUserData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('Mobile Debug: No user found in fetchUserData');
+      setLoading(false);
+      return;
+    }
 
-    console.log('Fetching fresh user data and recommendations...');
+    console.log('Mobile Debug: Fetching fresh user data and recommendations for user:', user.id);
 
     try {
       // Fetch user profile
+      console.log('Mobile Debug: Querying profiles table...');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
+      console.log('Mobile Debug: Profile query result:', { profileData, profileError });
+
       if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Mobile Debug: Profile error (not 404):', profileError);
         throw profileError;
       }
 
