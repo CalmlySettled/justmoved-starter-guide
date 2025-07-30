@@ -12,6 +12,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
+// Declare gtag function for Google Ads conversion tracking
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
+const gtag = window.gtag;
+
 // Helper function to get coordinates from address
 async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -287,6 +296,15 @@ export default function OnboardingQuiz() {
           }
         } catch (recError) {
           console.error('Error with recommendations:', recError);
+        }
+
+        // Track Google Ads conversion for full onboarding completion
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'conversion', {
+            'send_to': 'AW-CONVERSION_ID/CONVERSION_LABEL', // Replace with your actual conversion ID and label
+            'value': 1.0,
+            'currency': 'USD'
+          });
         }
 
         // Navigate to dashboard for logged in users
