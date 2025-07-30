@@ -423,7 +423,7 @@ export default function OnboardingQuiz() {
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                   {[
                     { option: "Just me", image: "/lovable-uploads/1ef25225-bb29-4bb5-8412-d243c3f03382.png" },
-                    { option: "Partner/spouse", image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop" },
+                    { option: "Partner/spouse", image: "/lovable-uploads/ea53ace5-f492-4dc9-8921-4fcfc81ef61d.png" },
                     { option: "Kids", image: "/lovable-uploads/ed0b00a3-fd88-4104-b572-2dcd3ea54425.png" },
                     { option: "Pets", image: "/lovable-uploads/1e2a30f1-b0ae-4d5d-9f37-81a784f9ae05.png" },
                     { option: "Other (multi-gen family, roommates, etc.)", image: "/lovable-uploads/89feab14-0e28-4cd7-a754-faee6f9fcdc1.png" }
