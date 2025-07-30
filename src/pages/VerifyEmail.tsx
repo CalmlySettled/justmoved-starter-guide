@@ -21,75 +21,82 @@ export default function VerifyEmail() {
   
   useEffect(() => {
     const handleVerification = async () => {
-      console.log('Mobile Debug: VerifyEmail - Starting verification process');
+      console.log('VerifyEmail: Starting verification process');
       
-      // Check if verification was successful by looking for auth changes
-      setTimeout(async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('Mobile Debug: VerifyEmail - Session check:', session);
+      try {
+        // Listen for auth state changes first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('VerifyEmail: Auth state changed:', event, !!session);
           
-            if (session?.user) {
-              console.log('Mobile Debug: VerifyEmail - User verified successfully');
-              setVerificationStatus('success');
-              
-              // Check if there's saved quiz data to process
-              const savedQuizData = localStorage.getItem('onboardingQuizData');
-              console.log('Mobile Debug: VerifyEmail - Saved quiz data found:', !!savedQuizData);
-              
-              if (savedQuizData) {
-                // Mark that user should be redirected to dashboard with quiz processing
-                localStorage.setItem('pendingQuizProcessing', 'true');
-              }
-              
-              // Mobile-specific handling
-              if (isMobile) {
-                console.log('Mobile Debug: VerifyEmail - Mobile redirect with delay');
-                setTimeout(() => {
-                  navigate('/dashboard', { replace: true });
-                }, 2000);
-              } else {
-                // Desktop handling
-                if (window.opener) {
-                  try {
-                    window.opener.postMessage({ type: 'EMAIL_VERIFIED' }, window.location.origin);
-                    window.opener.focus();
-                    setTimeout(() => window.close(), 1000);
-                  } catch (error) {
-                    console.log('Cannot communicate with opener, redirecting normally');
-                    setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
-                  }
-                } else {
-                  setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
-                }
-              }
-          } else {
-            console.log('Mobile Debug: VerifyEmail - No session found, checking URL params');
-            // Check URL parameters for verification tokens
-            const error = searchParams.get('error');
-            const errorDescription = searchParams.get('error_description');
+          if (event === 'SIGNED_IN' && session?.user) {
+            console.log('VerifyEmail: User verified and signed in');
+            setVerificationStatus('success');
             
+            // Check for saved quiz data
+            const savedQuizData = localStorage.getItem('onboardingQuizData');
+            if (savedQuizData) {
+              localStorage.setItem('pendingQuizProcessing', 'true');
+            }
+            
+            // Redirect after short delay
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1500);
+            
+            // Clean up subscription
+            subscription.unsubscribe();
+          }
+        });
+        
+        // Also check for existing session after a brief delay
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('VerifyEmail: Session check result:', !!session);
+          
+          if (session?.user) {
+            console.log('VerifyEmail: User already verified');
+            setVerificationStatus('success');
+            
+            const savedQuizData = localStorage.getItem('onboardingQuizData');
+            if (savedQuizData) {
+              localStorage.setItem('pendingQuizProcessing', 'true');
+            }
+            
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1500);
+          } else {
+            // Check for URL errors
+            const error = searchParams.get('error');
             if (error) {
-              console.error('Mobile Debug: VerifyEmail - URL error:', error, errorDescription);
+              console.error('VerifyEmail: URL error:', error);
               setVerificationStatus('failed');
-              setTimeout(() => navigate('/auth', { replace: true }), 3000);
             } else {
-              // Give more time for mobile auth to process
-              setTimeout(() => {
-                navigate('/dashboard', { replace: true });
-              }, isMobile ? 3000 : 2000);
+              // Still checking - give it more time
+              setTimeout(async () => {
+                const { data: { session: laterSession } } = await supabase.auth.getSession();
+                if (!laterSession?.user) {
+                  console.log('VerifyEmail: No session found after extended wait');
+                  setVerificationStatus('failed');
+                }
+              }, 3000);
             }
           }
-        } catch (error) {
-          console.error('Mobile Debug: VerifyEmail - Error checking session:', error);
-          setVerificationStatus('failed');
-          setTimeout(() => navigate('/auth', { replace: true }), 3000);
-        }
-      }, 1000);
+        }, 1000);
+        
+        // Cleanup function
+        return () => {
+          subscription.unsubscribe();
+        };
+        
+      } catch (error) {
+        console.error('VerifyEmail: Error in verification process:', error);
+        setVerificationStatus('failed');
+      }
     };
 
     handleVerification();
-  }, [navigate, searchParams, isMobile]);
+  }, [navigate, searchParams]);
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
