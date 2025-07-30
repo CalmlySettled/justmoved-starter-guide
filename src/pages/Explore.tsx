@@ -437,7 +437,15 @@ export default function Explore() {
           favorited_at: new Date().toISOString()
         };
         
-        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+        favorites.push(favoriteData);
+        console.log('💾 EXPLORE - Adding to favorites array, new length:', favorites.length);
+        
+        setFavoriteBusinesses(prev => {
+          const newSet = new Set(prev).add(businessKey);
+          console.log('⭐ EXPLORE - Updated favoriteBusinesses set, now has:', Array.from(newSet));
+          return newSet;
+        });
+        
         toast({
           title: "Added to favorites",
           description: `${business.name} has been added to your favorites.`,
