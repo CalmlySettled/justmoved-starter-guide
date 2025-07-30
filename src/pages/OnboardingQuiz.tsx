@@ -227,11 +227,9 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Quiz completion: Starting - ALWAYS redirecting to signup');
+      console.log('Quiz completion: Starting - redirecting to signup');
       
-      // ALWAYS redirect to signup after quiz completion - no exceptions
-      // This is the most reliable way to ensure mobile users get prompted to sign up
-      
+      // Get coordinates and prepare quiz data
       const coordinates = await getCoordinatesFromAddress(quizData.address);
       
       const quizDataForStorage = {
@@ -246,53 +244,28 @@ export default function OnboardingQuiz() {
         longitude: coordinates?.lng || null
       };
       
+      // Save to localStorage for use after signup
       localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
       
-      toast({
-        title: "Quiz Complete!",
-        description: "Please sign up to save your preferences and get personalized recommendations.",
-      });
+      // Show completion state briefly, then redirect
+      setIsComplete(true);
       
-      console.log('Quiz completion: Navigating to /auth');
-      navigate("/auth");
-      
-    } catch (error) {
-      console.error('Mobile Debug: Error in handleComplete:', error);
-      
-      // Always fall back to unauthenticated flow on any error
-      try {
-        console.log('Mobile Debug: Falling back to unauthenticated flow due to error...');
-        
-        const coordinates = await getCoordinatesFromAddress(quizData.address);
-        
-        const quizDataForStorage = {
-          address: quizData.address,
-          priorities: quizData.priorities,
-          household: quizData.household.join(', '),
-          transportation: quizData.transportation,
-          budgetRange: quizData.lifestyle,
-          movingTimeline: quizData.lifeStage,
-          settlingTasks: quizData.tasks,
-          latitude: coordinates?.lat || null,
-          longitude: coordinates?.lng || null
-        };
-        
-        localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
-        
+      // Wait a bit to show the completion screen, then navigate
+      setTimeout(() => {
         toast({
           title: "Quiz Complete!",
           description: "Please sign up to save your preferences and get personalized recommendations.",
         });
-        
         navigate("/auth");
-      } catch (fallbackError) {
-        console.error('Mobile Debug: Even fallback failed:', fallbackError);
-        toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
-          variant: "destructive"
-        });
-      }
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error in handleComplete:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -303,38 +276,18 @@ export default function OnboardingQuiz() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="text-center py-12">
-            <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6" />
+            <CheckCircle className="h-16 w-16 text-primary mx-auto mb-6 animate-pulse" />
             <h1 className="text-3xl font-bold text-foreground mb-4">
-              Welcome to Your New City!
+              Quiz Complete!
             </h1>
             <p className="text-muted-foreground mb-8">
-              Thanks for completing the quiz! We're building your personalized local guide based on your preferences.
+              Redirecting you to sign up so you can save your preferences and get personalized recommendations...
             </p>
-            <Button 
-              onClick={() => {
-                // Save quiz data to localStorage
-                const coordinates = null; // Will be calculated during signup
-                const quizDataForStorage = {
-                  address: quizData.address,
-                  priorities: quizData.priorities,
-                  household: quizData.household.join(', '),
-                  transportation: quizData.transportation,
-                  budgetRange: quizData.lifestyle,
-                  movingTimeline: quizData.lifeStage,
-                  settlingTasks: quizData.tasks,
-                  latitude: coordinates,
-                  longitude: coordinates
-                };
-                localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
-                
-                // ALWAYS redirect to signup
-                navigate("/auth");
-              }}
-              variant="hero" 
-              size="lg"
-            >
-              View Your Personalized Guide
-            </Button>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
           </CardContent>
         </Card>
       </div>
