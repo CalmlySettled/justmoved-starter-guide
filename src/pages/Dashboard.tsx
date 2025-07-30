@@ -82,18 +82,22 @@ export default function Dashboard() {
 
   // Memoized refresh function
   const refreshData = useCallback(async (forceRefresh = false) => {
-    if (!user) return;
+    console.log('🔍 MOBILE DEBUG - Dashboard refreshData called', { user: !!user, forceRefresh });
+    if (!user) {
+      console.log('🔴 MOBILE DEBUG - No user, returning early');
+      return;
+    }
     
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTime.current;
     
     // Only refresh if forced or it's been more than 5 seconds since last fetch
     if (!forceRefresh && timeSinceLastFetch < 5000) {
-      console.log('Skipping refresh - too recent');
+      console.log('🔴 MOBILE DEBUG - Skipping refresh - too recent');
       return;
     }
     
-    console.log('Refreshing Dashboard data...');
+    console.log('🟡 MOBILE DEBUG - Starting Dashboard data refresh...');
     setRefreshing(true);
     lastFetchTime.current = now;
     
@@ -234,12 +238,14 @@ export default function Dashboard() {
 
   const fetchUserData = async () => {
     if (!user) {
-      console.log('Mobile Debug: No user found in fetchUserData');
+      console.log('🔴 MOBILE DEBUG - No user found in fetchUserData');
       setLoading(false);
       return;
     }
 
-    console.log('Mobile Debug: Fetching fresh user data and recommendations for user:', user.id);
+    console.log('🟡 MOBILE DEBUG - Starting fetchUserData for user:', user.id);
+    console.log('🟡 MOBILE DEBUG - User agent:', navigator.userAgent);
+    console.log('🟡 MOBILE DEBUG - Is mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 
     try {
       // Fetch user profile
@@ -304,6 +310,7 @@ export default function Dashboard() {
       });
 
       // Fetch all recommendations including favorites
+      console.log('🟡 MOBILE DEBUG - Fetching recommendations from Supabase...');
       const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
@@ -311,16 +318,15 @@ export default function Dashboard() {
         .order('relevance_score', { ascending: false })
         .order('created_at', { ascending: false });
 
-      console.log('Dashboard - Fetched recommendations:', recData);
-      console.log('Dashboard - Total recommendations count:', recData?.length);
-      console.log('Dashboard - Favorites count:', recData?.filter(r => r.is_favorite).length);
-      console.log('Dashboard - Sample favorites:', recData?.filter(r => r.is_favorite).map(r => ({
-        name: r.business_name,
-        category: r.category,
-        is_favorite: r.is_favorite
-      })));
+      console.log('🔵 MOBILE DEBUG - Recommendations fetch result:', {
+        data: recData,
+        error: recError,
+        totalCount: recData?.length,
+        favoritesCount: recData?.filter(r => r.is_favorite).length
+      });
 
       if (recError) {
+        console.error('🔴 MOBILE DEBUG - Recommendations fetch error:', recError);
         throw recError;
       }
 
@@ -637,15 +643,27 @@ export default function Dashboard() {
         }
       }
 
+      console.log('🟢 MOBILE DEBUG - Setting recommendations in state:', {
+        recDataLength: recData?.length,
+        hasRecData: !!recData,
+        sampleRecs: recData?.slice(0, 3)?.map(r => ({ name: r.business_name, category: r.category }))
+      });
       setRecommendations(recData || []);
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('🔴 MOBILE DEBUG - Error in fetchUserData:', error);
+      console.error('🔴 MOBILE DEBUG - Error details:', {
+        message: error?.message,
+        name: error?.name,
+        userAgent: navigator.userAgent,
+        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      });
       toast({
         title: "Error loading data",
         description: "We couldn't load your recommendations. Please refresh the page.",
         variant: "destructive"
       });
     } finally {
+      console.log('🟡 MOBILE DEBUG - fetchUserData finally block - setting loading to false');
       setLoading(false);
     }
   };
