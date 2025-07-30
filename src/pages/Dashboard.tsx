@@ -1067,7 +1067,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-page">
       <Header />
-      <div className="pt-24 px-4 max-w-5xl mx-auto pb-16">
+      <div className="pt-24 px-4 sm:px-6 max-w-5xl mx-auto pb-16">
         {/* Favorites Dropdown Navigation */}
         <div className="mb-6 flex justify-end">
           <FavoritesDropdown />
