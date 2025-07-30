@@ -58,12 +58,12 @@ export default function Auth() {
                   await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 
-                // Simplified profile creation - no more conflicts with trigger
+                // Use UPSERT instead of INSERT to avoid duplicate key conflicts
                 try {
-                  console.log('Mobile Debug: Creating profile with quiz data...');
+                  console.log('Auth: Creating/updating profile with quiz data...');
                   const { error: profileError } = await supabase
                     .from('profiles')
-                    .insert({
+                    .upsert({
                       user_id: session.user.id,
                       address: quizData.address,
                       priorities: quizData.priorities,
@@ -75,21 +75,24 @@ export default function Auth() {
                       settling_tasks: quizData.settlingTasks || [],
                       latitude: quizData.latitude,
                       longitude: quizData.longitude,
-                      display_name: session.user.user_metadata?.display_name || 'User'
+                      display_name: session.user.user_metadata?.display_name || 'User',
+                      updated_at: new Date().toISOString()
+                    }, {
+                      onConflict: 'user_id'
                     });
 
                   if (profileError) {
-                    console.error('Mobile Debug: Profile creation error:', profileError);
+                    console.error('Auth: Profile upsert error:', profileError);
                     // Store quiz data in user metadata as backup
                     await supabase.auth.updateUser({
                       data: { quizData: quizData }
                     });
-                    console.log('Mobile Debug: Quiz data stored in user metadata as backup');
+                    console.log('Auth: Quiz data stored in user metadata as backup');
                   } else {
-                    console.log('Mobile Debug: Profile created successfully with quiz data');
+                    console.log('Auth: Profile upserted successfully with quiz data');
                   }
                 } catch (error) {
-                  console.error('Mobile Debug: Unexpected error creating profile:', error);
+                  console.error('Auth: Unexpected error upserting profile:', error);
                   // Store quiz data in user metadata as backup
                   await supabase.auth.updateUser({
                     data: { quizData: quizData }
