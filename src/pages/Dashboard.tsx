@@ -146,10 +146,16 @@ export default function Dashboard() {
       loadFavorites();
     };
     
+    
     const timeoutId = setTimeout(() => {
-      console.log('fetchUserData timeout, setting loading to false');
+      console.log('fetchUserData timeout, forcing loading to false');
       setLoading(false);
-    }, 10000);
+      toast({
+        title: "Loading timeout",
+        description: "Data loading took longer than expected. Please try refreshing.",
+        variant: "destructive"
+      });
+    }, 15000); // Increased timeout to 15 seconds
     
     fetchUserData().finally(() => {
       clearTimeout(timeoutId);
@@ -588,8 +594,16 @@ export default function Dashboard() {
               console.log('Successfully generated new recommendations');
               // Add a delay to allow the edge function to save recommendations
               await new Promise(resolve => setTimeout(resolve, 2000));
-              // Refetch the data to show the new recommendations
-              await fetchUserData();
+              // Refetch recommendations instead of recursive call
+              const { data: newRecData } = await supabase
+                .from('user_recommendations')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+              
+              if (newRecData) {
+                setRecommendations(newRecData);
+              }
             }
           } catch (error) {
             console.error('Error calling generate-recommendations function:', error);
@@ -618,6 +632,7 @@ export default function Dashboard() {
               description: `Updated recommendations for your ${userPriorities.length} selected categories.`,
             });
           }
+          setLoading(false);
           return;
         }
       }
@@ -1287,10 +1302,12 @@ export default function Dashboard() {
                   onClick={() => {
                     console.log('Mobile Debug: Manual retry triggered');
                     setLoading(true);
-                    fetchUserData();
+                    setTimeout(() => {
+                      fetchUserData().catch(() => setLoading(false));
+                    }, 100);
                   }}
                 >
-                  Retry if stuck
+                  Retry Loading
                 </Button>
               </div>
             )}
