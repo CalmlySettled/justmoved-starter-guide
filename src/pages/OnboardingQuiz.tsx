@@ -226,43 +226,96 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Quiz completion: Starting - ALWAYS redirecting to signup');
-      
-      // ALWAYS redirect to signup after quiz completion - no exceptions
-      // This is the most reliable way to ensure mobile users get prompted to sign up
+      console.log('Quiz completion: Starting');
+      console.log('User authenticated:', !!user);
       
       const coordinates = await getCoordinatesFromAddress(quizData.address);
       
-      const quizDataForStorage = {
-        address: quizData.address,
-        priorities: quizData.priorities,
-        household: quizData.household.join(', '),
-        transportation: quizData.transportation,
-        budgetRange: quizData.lifestyle,
-        movingTimeline: quizData.lifeStage,
-        settlingTasks: quizData.tasks,
-        latitude: coordinates?.lat || null,
-        longitude: coordinates?.lng || null
-      };
-      
-      localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
-      
-      toast({
-        title: "Quiz Complete!",
-        description: "Please sign up to save your preferences and get personalized recommendations.",
-      });
-      
-      console.log('Quiz completion: Navigating to /auth');
-      navigate("/auth");
-      
-    } catch (error) {
-      console.error('Mobile Debug: Error in handleComplete:', error);
-      
-      // Always fall back to unauthenticated flow on any error
-      try {
-        console.log('Mobile Debug: Falling back to unauthenticated flow due to error...');
+      if (user) {
+        // User is already authenticated - save directly to their profile
+        console.log('Authenticated user completing quiz - saving to profile');
         
-        const coordinates = await getCoordinatesFromAddress(quizData.address);
+        try {
+          // Save to user profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              user_id: user.id,
+              address: quizData.address,
+              household_type: quizData.household.join(', '),
+              priorities: quizData.priorities,
+              priority_preferences: quizData.priorityPreferences,
+              transportation_style: quizData.transportation,
+              budget_preference: quizData.lifestyle,
+              life_stage: quizData.lifeStage,
+              settling_tasks: quizData.tasks,
+              latitude: coordinates?.lat || null,
+              longitude: coordinates?.lng || null,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (profileError) {
+            console.error('Error saving profile:', profileError);
+            throw profileError;
+          }
+
+          console.log('Profile saved successfully');
+
+          // Generate recommendations immediately
+          const quizResponse = {
+            address: quizData.address,
+            householdType: quizData.household.join(', '),
+            priorities: quizData.priorities,
+            priorityPreferences: quizData.priorityPreferences,
+            transportationStyle: quizData.transportation,
+            budgetPreference: quizData.lifestyle,
+            lifeStage: quizData.lifeStage,
+            settlingTasks: quizData.tasks,
+            latitude: coordinates?.lat || null,
+            longitude: coordinates?.lng || null
+          };
+
+          console.log('Generating recommendations for authenticated user');
+          const { data: recsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+            body: { 
+              quizResponse,
+              userId: user.id
+            }
+          });
+
+          if (generateError) {
+            console.error('Error generating recommendations:', generateError);
+            // Don't throw - still redirect to dashboard with toast
+            toast({
+              title: "Profile saved!",
+              description: "There was an issue generating recommendations. Please try refreshing your dashboard.",
+              variant: "destructive"
+            });
+          } else {
+            console.log('Recommendations generated successfully');
+            toast({
+              title: "Profile complete!",
+              description: "Your personalized recommendations are ready on your dashboard.",
+            });
+          }
+
+          // Redirect to dashboard
+          navigate("/dashboard");
+          
+        } catch (error) {
+          console.error('Error saving authenticated user profile:', error);
+          toast({
+            title: "Error saving profile",
+            description: "Please try again or contact support if the issue persists.",
+            variant: "destructive"
+          });
+        }
+        
+      } else {
+        // User not authenticated - use original localStorage flow
+        console.log('Unauthenticated user completing quiz - saving to localStorage');
         
         const quizDataForStorage = {
           address: quizData.address,
@@ -283,15 +336,17 @@ export default function OnboardingQuiz() {
           description: "Please sign up to save your preferences and get personalized recommendations.",
         });
         
+        console.log('Quiz completion: Navigating to /auth');
         navigate("/auth");
-      } catch (fallbackError) {
-        console.error('Mobile Debug: Even fallback failed:', fallbackError);
-        toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
-          variant: "destructive"
-        });
       }
+      
+    } catch (error) {
+      console.error('Error in handleComplete:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
