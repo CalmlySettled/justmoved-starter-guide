@@ -47,88 +47,12 @@ export default function Auth() {
               console.log('Mobile Debug: Parsed quiz data:', quizData);
               
               if (quizData.address && quizData.priorities && quizData.priorities.length > 0) {
-                console.log('Mobile Debug: Valid quiz data found, saving to profile...');
+                console.log('Mobile Debug: Valid quiz data found, setting up for processing on dashboard...');
                 
-                // Mobile-specific: Add delay to ensure user is properly authenticated
-                const userAgent = navigator.userAgent || navigator.vendor;
-                const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+                // Just set the flag for dashboard to process - don't process here to avoid race conditions
+                localStorage.setItem('pendingQuizProcessing', 'true');
+                console.log('Auth: Set pendingQuizProcessing flag for dashboard to handle');
                 
-                if (isMobile) {
-                  console.log('Mobile Debug: Adding auth delay for mobile device');
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-                
-                // Use UPSERT instead of INSERT to avoid duplicate key conflicts
-                try {
-                  console.log('Auth: Creating/updating profile with quiz data...');
-                  const { error: profileError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                      user_id: session.user.id,
-                      address: quizData.address,
-                      priorities: quizData.priorities,
-                      priority_preferences: {},
-                      household_type: quizData.household,
-                      transportation_style: quizData.transportation,
-                      budget_preference: quizData.budgetRange,
-                      life_stage: quizData.movingTimeline,
-                      settling_tasks: quizData.settlingTasks || [],
-                      latitude: quizData.latitude,
-                      longitude: quizData.longitude,
-                      display_name: session.user.user_metadata?.display_name || 'User',
-                      updated_at: new Date().toISOString()
-                    }, {
-                      onConflict: 'user_id'
-                    });
-
-                  if (profileError) {
-                    console.error('Auth: Profile upsert error:', profileError);
-                    // Store quiz data in user metadata as backup
-                    await supabase.auth.updateUser({
-                      data: { quizData: quizData }
-                    });
-                    console.log('Auth: Quiz data stored in user metadata as backup');
-                  } else {
-                    console.log('Auth: Profile upserted successfully with quiz data');
-                  }
-                } catch (error) {
-                  console.error('Auth: Unexpected error upserting profile:', error);
-                  // Store quiz data in user metadata as backup
-                  await supabase.auth.updateUser({
-                    data: { quizData: quizData }
-                  });
-                }
-                
-                // Generate recommendations regardless of profile save status (they can still see them)
-                try {
-                  const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
-                    body: { 
-                      quizResponse: {
-                        address: quizData.address,
-                        householdType: quizData.household,
-                        priorities: quizData.priorities,
-                        priorityPreferences: {},
-                        transportationStyle: quizData.transportation,
-                        budgetPreference: quizData.budgetRange,
-                        lifeStage: quizData.movingTimeline,
-                        settlingTasks: quizData.settlingTasks || [],
-                        latitude: quizData.latitude,
-                        longitude: quizData.longitude
-                      },
-                      userId: session.user.id
-                    }
-                  });
-                  
-                  if (recError) {
-                    console.error('Error generating recommendations:', recError);
-                  } else {
-                    console.log('Recommendations generated successfully');
-                  }
-                } catch (recError) {
-                  console.error('Error calling generate-recommendations function:', recError);
-                }
-                
-                localStorage.removeItem('onboardingQuizData');
                 navigate("/dashboard");
                 return;
               }

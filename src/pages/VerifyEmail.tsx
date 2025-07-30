@@ -32,11 +32,8 @@ export default function VerifyEmail() {
             console.log('VerifyEmail: User verified and signed in');
             setVerificationStatus('success');
             
-            // Check for saved quiz data
-            const savedQuizData = localStorage.getItem('onboardingQuizData');
-            if (savedQuizData) {
-              localStorage.setItem('pendingQuizProcessing', 'true');
-            }
+            // Don't set pendingQuizProcessing flag here - let Auth.tsx handle it
+            // This prevents duplicate processing
             
             // Redirect after short delay
             setTimeout(() => {
@@ -57,10 +54,7 @@ export default function VerifyEmail() {
             console.log('VerifyEmail: User already verified');
             setVerificationStatus('success');
             
-            const savedQuizData = localStorage.getItem('onboardingQuizData');
-            if (savedQuizData) {
-              localStorage.setItem('pendingQuizProcessing', 'true');
-            }
+            // Don't set pendingQuizProcessing flag here - let Auth.tsx handle it
             
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
