@@ -66,37 +66,73 @@ export default function Auth() {
                 while (!profileSaved && profileSaveAttempts < maxRetries) {
                   try {
                     console.log('Mobile Debug: Attempting profile save, attempt', profileSaveAttempts + 1);
-                    const { error } = await supabase
-                      .from('profiles')
-                      .upsert({
-                        user_id: session.user.id,
-                        address: quizData.address,
-                        priorities: quizData.priorities,
-                        priority_preferences: {},
-                        household_type: quizData.household,
-                        transportation_style: quizData.transportation,
-                        budget_preference: quizData.budgetRange,
-                        life_stage: quizData.movingTimeline,
-                        settling_tasks: quizData.settlingTasks || [],
-                        latitude: quizData.latitude,
-                        longitude: quizData.longitude,
-                        display_name: session.user.user_metadata?.display_name || 'User'
-                      }, {
-                        onConflict: 'user_id',
-                        ignoreDuplicates: false
-                      });
                     
-                    if (error) {
-                      console.error('Mobile Debug: Profile save error (attempt', profileSaveAttempts + 1, '):', error);
-                      profileSaveAttempts++;
+                    // First check if profile already exists (from trigger)
+                    const { data: existingProfile } = await supabase
+                      .from('profiles')
+                      .select('user_id')
+                      .eq('user_id', session.user.id)
+                      .maybeSingle();
+                    
+                    if (existingProfile) {
+                      console.log('Mobile Debug: Profile already exists, updating with quiz data');
+                      // Profile exists, just update it
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({
+                          address: quizData.address,
+                          priorities: quizData.priorities,
+                          priority_preferences: {},
+                          household_type: quizData.household,
+                          transportation_style: quizData.transportation,
+                          budget_preference: quizData.budgetRange,
+                          life_stage: quizData.movingTimeline,
+                          settling_tasks: quizData.settlingTasks || [],
+                          latitude: quizData.latitude,
+                          longitude: quizData.longitude
+                        })
+                        .eq('user_id', session.user.id);
                       
-                      if (profileSaveAttempts < maxRetries) {
-                        console.log('Mobile Debug: Retrying profile save in 1 second...');
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                      if (error) {
+                        console.error('Mobile Debug: Profile update error (attempt', profileSaveAttempts + 1, '):', error);
+                        profileSaveAttempts++;
+                        if (profileSaveAttempts < maxRetries) {
+                          await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                      } else {
+                        console.log('Mobile Debug: Profile updated successfully on attempt', profileSaveAttempts + 1);
+                        profileSaved = true;
                       }
                     } else {
-                      console.log('Mobile Debug: Profile saved successfully on attempt', profileSaveAttempts + 1);
-                      profileSaved = true;
+                      console.log('Mobile Debug: No existing profile, creating new one');
+                      // Profile doesn't exist, create it
+                      const { error } = await supabase
+                        .from('profiles')
+                        .insert({
+                          user_id: session.user.id,
+                          address: quizData.address,
+                          priorities: quizData.priorities,
+                          priority_preferences: {},
+                          household_type: quizData.household,
+                          transportation_style: quizData.transportation,
+                          budget_preference: quizData.budgetRange,
+                          life_stage: quizData.movingTimeline,
+                          settling_tasks: quizData.settlingTasks || [],
+                          latitude: quizData.latitude,
+                          longitude: quizData.longitude,
+                          display_name: session.user.user_metadata?.display_name || 'User'
+                        });
+                      
+                      if (error) {
+                        console.error('Mobile Debug: Profile insert error (attempt', profileSaveAttempts + 1, '):', error);
+                        profileSaveAttempts++;
+                        if (profileSaveAttempts < maxRetries) {
+                          await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                      } else {
+                        console.log('Mobile Debug: Profile created successfully on attempt', profileSaveAttempts + 1);
+                        profileSaved = true;
+                      }
                     }
                   } catch (error) {
                     console.error('Mobile Debug: Unexpected error saving profile (attempt', profileSaveAttempts + 1, '):', error);
