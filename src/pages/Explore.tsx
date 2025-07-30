@@ -402,6 +402,7 @@ export default function Explore() {
   };
 
   const toggleFavorite = (business: Business, category: string) => {
+    console.log('🌟 EXPLORE - Attempting to favorite business:', business.name, 'Category:', category);
     try {
       const storedFavorites = localStorage.getItem('favorites');
       const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
