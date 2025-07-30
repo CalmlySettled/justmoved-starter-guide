@@ -227,41 +227,44 @@ export default function OnboardingQuiz() {
     setLoading(true);
     
     try {
-      console.log('Mobile Debug: handleComplete called with user:', user);
-      console.log('Mobile Debug: user ID:', user?.id);
-      console.log('Mobile Debug: user email:', user?.email);
+      console.log('Mobile Debug: handleComplete called');
+      console.log('Mobile Debug: user state:', user);
       console.log('Mobile Debug: authLoading state:', authLoading);
       
-      // More robust authentication check - verify user has valid session and can make API calls
-      const isAuthenticated = user && !authLoading;
+      // ALWAYS default to unauthenticated flow first for quiz completion
+      // Only proceed with authenticated flow if user is definitely logged in
+      let userIsAuthenticated = false;
       
-      if (isAuthenticated) {
-        console.log('Mobile Debug: User appears authenticated, testing with API call...');
+      if (user && !authLoading) {
+        console.log('Mobile Debug: User object exists, testing authentication...');
         
-        // Test if user is actually authenticated by attempting a simple API call
         try {
-          const { error: testError } = await supabase
+          // Test if user is actually authenticated by attempting a simple API call
+          const { data, error: testError } = await supabase
             .from('profiles')
             .select('user_id')
             .eq('user_id', user.id)
             .limit(1);
           
-          if (testError) {
-            console.log('Mobile Debug: Auth test failed, treating as unauthenticated:', testError);
-            throw new Error('Authentication test failed');
+          if (!testError && data !== null) {
+            console.log('Mobile Debug: Auth test passed, user is authenticated');
+            userIsAuthenticated = true;
+          } else {
+            console.log('Mobile Debug: Auth test failed:', testError);
+            userIsAuthenticated = false;
           }
-          
-          console.log('Mobile Debug: Auth test passed, proceeding with authenticated flow');
         } catch (authTestError) {
-          console.log('Mobile Debug: Falling back to unauthenticated flow due to auth test failure:', authTestError);
-          // Fall through to unauthenticated flow
-          throw new Error('Auth verification failed');
+          console.log('Mobile Debug: Auth test exception:', authTestError);
+          userIsAuthenticated = false;
         }
+      } else {
+        console.log('Mobile Debug: No user or still loading, treating as unauthenticated');
+        userIsAuthenticated = false;
       }
       
-      // If user is logged in and authenticated, save to Supabase directly
-      if (isAuthenticated) {
-        console.log('User is logged in, getting coordinates and saving profile...');
+      // If user is definitively authenticated, save directly to Supabase
+      if (userIsAuthenticated) {
+        console.log('Mobile Debug: Processing as authenticated user...');
         
         // Get coordinates from address for caching
         const coordinates = await getCoordinatesFromAddress(quizData.address);
@@ -340,17 +343,41 @@ export default function OnboardingQuiz() {
         // Navigate to dashboard for logged in users
         navigate("/dashboard");
       } else {
-        throw new Error('User not authenticated');
+        // Default flow: store quiz data and redirect to signup
+        console.log('Mobile Debug: Processing as unauthenticated user - redirecting to signup...');
+        
+        // Get coordinates for caching
+        const coordinates = await getCoordinatesFromAddress(quizData.address);
+        
+        const quizDataForStorage = {
+          address: quizData.address,
+          priorities: quizData.priorities,
+          household: quizData.household.join(', '),
+          transportation: quizData.transportation,
+          budgetRange: quizData.lifestyle,
+          movingTimeline: quizData.lifeStage,
+          settlingTasks: quizData.tasks,
+          latitude: coordinates?.lat || null,
+          longitude: coordinates?.lng || null
+        };
+        
+        localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+        
+        toast({
+          title: "Quiz Complete!",
+          description: "Please sign up to save your preferences and get personalized recommendations.",
+        });
+        
+        navigate("/auth");
       }
       
     } catch (error) {
-      console.log('Mobile Debug: Error or unauthenticated, using fallback flow:', error);
+      console.error('Mobile Debug: Error in handleComplete:', error);
       
-      // Fallback: store quiz data in localStorage and redirect to signup
+      // Always fall back to unauthenticated flow on any error
       try {
-        console.log('Mobile Debug: Storing quiz data in localStorage and redirecting to auth...');
+        console.log('Mobile Debug: Falling back to unauthenticated flow due to error...');
         
-        // Get coordinates for caching
         const coordinates = await getCoordinatesFromAddress(quizData.address);
         
         const quizDataForStorage = {
