@@ -543,7 +543,7 @@ export default function Recommendations() {
       return;
     }
 
-    const key = `${category}-${business.name}`;
+    const key = `${category}-${business.name}-${business.address}`;
     setFavoritingRecommendations(prev => new Set(prev).add(key));
 
     try {
@@ -833,8 +833,9 @@ export default function Recommendations() {
                       return filteredBusinesses.map((business, index) => {
                         const badges = getBusinessBadges(business);
                          const saveKey = `${category}-${business.name}`;
+                         const favoriteKey = `${category}-${business.name}-${business.address}`;
                          const isSaving = savingRecommendations.has(saveKey);
-                         const isFavoriting = favoritingRecommendations.has(saveKey);
+                         const isFavoriting = favoritingRecommendations.has(favoriteKey);
                          const businessImage = getBusinessImage(business, category);
                          const hours = business.hours || "Open daily 7am–9pm";
                         
