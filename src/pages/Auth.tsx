@@ -39,6 +39,7 @@ export default function Auth() {
     
     // If this is a password reset link, set up the reset password state
     if (accessToken && refreshToken && type === 'recovery') {
+      console.log('Password reset detected, setting up reset state');
       setIsResetPassword(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
