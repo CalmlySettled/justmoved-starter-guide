@@ -27,6 +27,7 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [resetTokens, setResetTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -39,16 +40,13 @@ export default function Auth() {
     
     // If this is a password reset link, set up the reset password state
     if (accessToken && refreshToken && type === 'recovery') {
-      console.log('Password reset detected, setting up reset state');
+      console.log('Password reset detected, storing tokens and setting reset state');
       setIsResetPassword(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
       
-      // Set the session from the tokens
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
+      // Store tokens temporarily - don't set session until password is reset
+      setResetTokens({ accessToken, refreshToken });
       
       return; // Don't run the rest of the auth check
     }
@@ -362,6 +360,15 @@ export default function Auth() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!resetTokens) {
+      toast({
+        title: "Error",
+        description: "Reset session expired. Please request a new password reset link.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!password || !confirmPassword) {
       toast({
         title: "Missing fields",
@@ -394,6 +401,24 @@ export default function Auth() {
 
     setLoading(true);
     try {
+      // First, set the session with the stored tokens
+      console.log('Setting session with stored tokens for password reset');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: resetTokens.accessToken,
+        refresh_token: resetTokens.refreshToken
+      });
+
+      if (sessionError) {
+        console.error('Failed to set session:', sessionError);
+        toast({
+          title: "Error",
+          description: "Reset session expired. Please request a new password reset link.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Now update the password
       const { error } = await supabase.auth.updateUser({
         password: password
       });
@@ -410,7 +435,10 @@ export default function Auth() {
           description: "Your password has been successfully changed. You're now signed in."
         });
         
-        // User is automatically signed in after password reset
+        // Clear the reset tokens and state
+        setResetTokens(null);
+        setIsResetPassword(false);
+        
         // Navigate to dashboard
         navigate("/dashboard");
       }
