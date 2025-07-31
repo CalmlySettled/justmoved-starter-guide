@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+
+// Create a separate Supabase client that doesn't auto-handle auth URLs
+const resetClient = createClient(
+  "https://ghbnvodnnxgxkiufcael.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm52b2RubnhneGtpdWZjYWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4ODQ4MzEsImV4cCI6MjA2ODQ2MDgzMX0.zxcaTXyNmZO2-YbKiiNeNv1xTfnR2Jp9k-P4JqFgOa0",
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false, // This is key - prevents auto URL processing
+    }
+  }
+);
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -14,22 +27,33 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [validTokens, setValidTokens] = useState(false);
+  const [storedTokens, setStoredTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('ResetPassword page loaded');
+    console.log('Current URL:', window.location.href);
+    console.log('URL search params:', window.location.search);
+    
     // Extract tokens from URL before Supabase can process them
     const urlParams = new URLSearchParams(window.location.search);
     const accessToken = urlParams.get('access_token');
     const refreshToken = urlParams.get('refresh_token');
     const type = urlParams.get('type');
     
+    console.log('Extracted tokens:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+    
     if (accessToken && refreshToken && type === 'recovery') {
-      console.log('Valid reset tokens found');
+      console.log('Valid reset tokens found - setting validTokens to true');
       setValidTokens(true);
+      // Store tokens before clearing URL
+      setStoredTokens({ accessToken, refreshToken });
       
       // Clear the URL to prevent Supabase from auto-processing
+      console.log('Clearing URL parameters');
       window.history.replaceState({}, document.title, window.location.pathname);
+      console.log('URL after clearing:', window.location.href);
     } else {
       console.log('No valid reset tokens found, redirecting to auth');
       navigate('/auth');
@@ -60,29 +84,29 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      // Get the tokens from URL again for the actual reset
-      const urlParams = new URLSearchParams(window.location.search);
-      const accessToken = urlParams.get('access_token');
-      const refreshToken = urlParams.get('refresh_token');
+      console.log('Starting password reset with stored tokens:', !!storedTokens);
       
-      if (!accessToken || !refreshToken) {
-        // If tokens are not in URL anymore, they were cleared, try to get from original URL
-        // This is a fallback - in practice the tokens should still be available
-        throw new Error('Reset tokens not found');
+      if (!storedTokens) {
+        throw new Error('Reset tokens not found - session may have expired');
       }
 
-      // Manually set the session using the tokens
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
+      console.log('Setting session with stored tokens using resetClient');
+      // Use the special reset client that doesn't auto-process URLs
+      const { data: sessionData, error: sessionError } = await resetClient.auth.setSession({
+        access_token: storedTokens.accessToken,
+        refresh_token: storedTokens.refreshToken,
       });
 
+      console.log('Session set result:', { sessionData: !!sessionData, error: sessionError });
+
       if (sessionError) {
+        console.error('Session error:', sessionError);
         throw sessionError;
       }
 
-      // Now update the password
-      const { error: updateError } = await supabase.auth.updateUser({
+      console.log('Updating password');
+      // Now update the password using the same client
+      const { error: updateError } = await resetClient.auth.updateUser({
         password: password
       });
 
