@@ -17,21 +17,45 @@ declare global {
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check URL parameters for password reset
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    const type = urlParams.get('type');
+    
+    // If this is a password reset link, set up the reset password state
+    if (accessToken && refreshToken && type === 'recovery') {
+      setIsResetPassword(true);
+      setIsForgotPassword(false);
+      setIsSignUp(false);
+      
+      // Set the session from the tokens
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      
+      return; // Don't run the rest of the auth check
+    }
+
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !isResetPassword) {
         navigate("/dashboard");
       }
     };
@@ -42,7 +66,7 @@ export default function Auth() {
       async (event, session) => {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
-        if (session) {
+        if (session && !isResetPassword) {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
           console.log('Auth state change - checking for stored quiz data:', storedQuizData);
@@ -96,7 +120,7 @@ export default function Auth() {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isResetPassword]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,6 +358,72 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!password || !confirmPassword) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in both password fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate password strength
+    try {
+      passwordSchema.parse(password);
+    } catch (validationError: any) {
+      toast({
+        title: "Invalid password",
+        description: validationError.errors?.[0]?.message || "Please choose a stronger password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Password updated!",
+          description: "Your password has been successfully changed. You're now signed in."
+        });
+        
+        // User is automatically signed in after password reset
+        // Navigate to dashboard
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update password. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -353,20 +443,92 @@ export default function Auth() {
         <Card className="shadow-elegant border-border/50">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back")}
+              {isResetPassword ? "Set New Password" : (isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back"))}
             </CardTitle>
             <CardDescription>
-              {isForgotPassword 
-                ? "Enter your email to receive a password reset link"
-                : (isSignUp 
-                  ? "Sign up to get personalized neighborhood recommendations" 
-                  : "Sign in to access your personalized recommendations"
+              {isResetPassword 
+                ? "Enter your new password below"
+                : (isForgotPassword 
+                  ? "Enter your email to receive a password reset link"
+                  : (isSignUp 
+                    ? "Sign up to get personalized neighborhood recommendations" 
+                    : "Sign in to access your personalized recommendations"
+                  )
                 )
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isForgotPassword ? (
+            {isResetPassword ? (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  size="mobile"
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? "Updating..." : "Update Password"}
+                </Button>
+              </form>
+            ) : isForgotPassword ? (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -494,7 +656,7 @@ export default function Auth() {
               </div>
             )}
             
-            {!isForgotPassword && (
+            {!isForgotPassword && !isResetPassword && (
               <div className="mt-6 text-center">
                 <button
                   type="button"
