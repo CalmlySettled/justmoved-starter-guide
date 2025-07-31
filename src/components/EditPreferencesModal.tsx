@@ -260,17 +260,17 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <CardTitle className="text-lg">Household</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="flex flex-wrap gap-3">
                   {["Just me", "Partner/spouse", "Kids", "Pets", "Other (multi-gen family, roommates, etc.)"].map((option) => {
                     const isChecked = getHouseholdArray().includes(option);
                     return (
-                      <div key={option} className="flex items-center space-x-3 py-2">
+                      <div key={option} className="flex items-center space-x-2 bg-muted/50 rounded-lg p-3 hover:bg-muted transition-colors">
                         <Checkbox
                           id={`household-${option}`}
                           checked={isChecked}
                           onCheckedChange={(checked) => handleHouseholdChange(option, checked as boolean)}
                         />
-                        <Label htmlFor={`household-${option}`} className="text-sm font-medium cursor-pointer flex-1">{option}</Label>
+                        <Label htmlFor={`household-${option}`} className="text-sm font-medium cursor-pointer">{option}</Label>
                       </div>
                     );
                   })}
@@ -285,7 +285,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <p className="text-sm text-muted-foreground">Choose up to 5 options (Selected: {formData.priorities.length}/5)</p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="flex flex-wrap gap-3">
                   {[
                     "Grocery stores",
                     "Medical care",
@@ -298,14 +298,14 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     "Parks / Trails",
                     "Social events or community groups"
                   ].map((option) => (
-                    <div key={option} className="flex items-center space-x-3 py-2">
+                    <div key={option} className="flex items-center space-x-2 bg-muted/50 rounded-lg p-3 hover:bg-muted transition-colors">
                       <Checkbox
                         id={`priority-${option}`}
                         checked={formData.priorities.includes(option)}
                         onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
                         disabled={!formData.priorities.includes(option) && formData.priorities.length >= 5}
                       />
-                      <Label htmlFor={`priority-${option}`} className="text-sm font-medium cursor-pointer flex-1">{option}</Label>
+                      <Label htmlFor={`priority-${option}`} className="text-sm font-medium cursor-pointer">{option}</Label>
                     </div>
                   ))}
                 </div>
