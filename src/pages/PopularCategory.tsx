@@ -412,85 +412,66 @@ const PopularCategory = () => {
                         </div>
                       )}
                       
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          {business.website ? (
-                            <a 
-                              href={business.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-lg font-semibold hover:text-primary transition-colors flex items-center gap-1 group/link"
-                            >
-                              {business.name}
-                              <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                            </a>
-                          ) : (
-                            <h3 className="text-lg font-semibold">{business.name}</h3>
-                          )}
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleFavorite(business)}
-                            className="p-1 hover:bg-background/80"
-                          >
-                            <Heart 
-                              className={`h-4 w-4 transition-colors ${
-                                favoriteBusinesses.has(business.name)
-                                  ? 'fill-red-500 text-red-500' 
-                                  : 'text-muted-foreground hover:text-red-500'
-                              }`} 
-                            />
-                          </Button>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {business.description}
-                        </p>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <MapPin className="mr-1 h-3 w-3" />
-                            <span className="line-clamp-1">{business.address}</span>
-                            <span className="ml-auto text-xs">
-                              {business.distance_miles?.toFixed(1)} mi
-                            </span>
-                          </div>
-                          
-                          {business.phone && (
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Phone className="mr-1 h-3 w-3" />
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            {business.website ? (
                               <a 
-                                href={`tel:${business.phone}`}
-                                className="hover:text-primary transition-colors"
+                                href={business.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-lg font-semibold hover:text-primary transition-colors flex items-center gap-1 group/link"
                               >
-                                {business.phone}
+                                {business.name}
+                                <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                               </a>
-                            </div>
-                          )}
-                          
-                          {business.rating && (
-                            <div className="flex items-center text-sm">
-                              <Star className="mr-1 h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span>{business.rating.toFixed(1)}</span>
-                            </div>
-                          )}
-                        </div>
+                            ) : (
+                              <h3 className="text-lg font-semibold">{business.name}</h3>
+                            )}
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(business)}
+                              className="p-1 hover:bg-background/80"
+                            >
+                              <Heart 
+                                className={`h-4 w-4 transition-colors ${
+                                  favoriteBusinesses.has(business.name)
+                                    ? 'fill-red-500 text-red-500' 
+                                    : 'text-muted-foreground hover:text-red-500'
+                                }`} 
+                              />
+                            </Button>
+                          </div>
                         
-                        {business.features && business.features.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-1">
-                            {business.features.slice(0, 3).map((feature, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
-                            {business.features.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{business.features.length - 3} more
-                              </Badge>
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <MapPin className="mr-1 h-3 w-3" />
+                              <span className="line-clamp-1">{business.address}</span>
+                              <span className="ml-auto text-xs">
+                                {business.distance_miles?.toFixed(1)} mi
+                              </span>
+                            </div>
+                            
+                            {business.phone && (
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Phone className="mr-1 h-3 w-3" />
+                                <a 
+                                  href={`tel:${business.phone}`}
+                                  className="hover:text-primary transition-colors"
+                                >
+                                  {business.phone}
+                                </a>
+                              </div>
+                            )}
+                            
+                            {business.rating && (
+                              <div className="flex items-center text-sm">
+                                <Star className="mr-1 h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span>{business.rating.toFixed(1)}</span>
+                              </div>
                             )}
                           </div>
-                        )}
                         
                         <div className="mt-4 flex gap-2">
                           <Button 
