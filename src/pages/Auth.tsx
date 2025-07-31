@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Home, Mail } from "lucide-react";
+import { Home, Mail, Eye, EyeOff } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 
 // Declare global gtag function for Google Ads conversion tracking
@@ -16,10 +16,12 @@ declare global {
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const { toast } = useToast();
@@ -290,6 +292,48 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Reset email sent!",
+          description: "Check your email for a password reset link.",
+        });
+        setIsForgotPassword(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send reset email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -309,67 +353,133 @@ export default function Auth() {
         <Card className="shadow-elegant border-border/50">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {isSignUp ? "Create Account" : "Welcome Back"}
+              {isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back")}
             </CardTitle>
             <CardDescription>
-              {isSignUp 
-                ? "Sign up to get personalized neighborhood recommendations" 
-                : "Sign in to access your personalized recommendations"
+              {isForgotPassword 
+                ? "Enter your email to receive a password reset link"
+                : (isSignUp 
+                  ? "Sign up to get personalized neighborhood recommendations" 
+                  : "Sign in to access your personalized recommendations"
+                )
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAuth} className="space-y-4">
-              {isSignUp && (
+            {isForgotPassword ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="displayName"
-                    type="text"
-                    placeholder="Your name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required={isSignUp}
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                size="mobile"
-                className="w-full" 
-                disabled={loading}
-              >
-                {loading ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
-              </Button>
-            </form>
+                
+                <Button 
+                  type="submit" 
+                  size="mobile"
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? "Sending..." : "Send Reset Email"}
+                </Button>
+                
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(false)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                  >
+                    Back to sign in
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleAuth} className="space-y-4">
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Name</Label>
+                    <Input
+                      id="displayName"
+                      type="text"
+                      placeholder="Your name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required={isSignUp}
+                    />
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {!isSignUp && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+                
+                <Button 
+                  type="submit" 
+                  size="mobile"
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
+                </Button>
+              </form>
+            )}
             
-            {showResendButton && isSignUp && (
+            {showResendButton && isSignUp && !isForgotPassword && (
               <div className="mt-4">
                 <Button 
                   variant="outline" 
@@ -384,21 +494,23 @@ export default function Auth() {
               </div>
             )}
             
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setShowResendButton(false);
-                }}
-                className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-              >
-                {isSignUp 
-                  ? "Already have an account? Sign in" 
-                  : "Don't have an account? Sign up"
-                }
-              </button>
-            </div>
+            {!isForgotPassword && (
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setShowResendButton(false);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                >
+                  {isSignUp 
+                    ? "Already have an account? Sign in" 
+                    : "Don't have an account? Sign up"
+                  }
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
