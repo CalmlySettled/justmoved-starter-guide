@@ -27,79 +27,120 @@ export const VerificationEmail = ({
   email_action_type,
   redirect_to,
   userName,
-}: VerificationEmailProps) => (
-  <Html>
-    <Head>
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          function handleVerification() {
-            // Check if this was opened from another tab
-            if (window.opener) {
-              // This was opened in a new tab, focus the original tab and close this one
-              window.opener.focus();
-              window.close();
+}: VerificationEmailProps) => {
+  const isPasswordReset = email_action_type === 'recovery'
+  const verificationUrl = `${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`
+  
+  return (
+    <Html>
+      <Head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            function handleVerification() {
+              // Check if this was opened from another tab
+              if (window.opener) {
+                // This was opened in a new tab, focus the original tab and close this one
+                window.opener.focus();
+                window.close();
+              }
             }
-          }
+            
+            // Run when page loads
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', handleVerification);
+            } else {
+              handleVerification();
+            }
+          `
+        }} />
+      </Head>
+      <Preview>{isPasswordReset ? 'Reset your CalmlySettled password' : 'Verify your email to complete your CalmlySettled registration'}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Section style={header}>
+            <div style={logoContainer}>
+              <div style={logoIcon}>🏠</div>
+              <Text style={logoText}>CalmlySettled</Text>
+            </div>
+          </Section>
           
-          // Run when page loads
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', handleVerification);
-          } else {
-            handleVerification();
-          }
-        `
-      }} />
-    </Head>
-    <Preview>Verify your email to complete your CalmlySettled registration</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Section style={header}>
-          <div style={logoContainer}>
-            <div style={logoIcon}>🏠</div>
-            <Text style={logoText}>CalmlySettled</Text>
-          </div>
-        </Section>
-        
-        <Heading style={h1}>Welcome{userName ? ` ${userName}` : ''}!</Heading>
-        
-        <Text style={text}>
-          Thanks for joining CalmlySettled! We're excited to help you discover the best places in your new neighborhood.
-        </Text>
-        
-        <Text style={text}>
-          To complete your registration and start getting personalized recommendations, please verify your email address by clicking the button below:
-        </Text>
-        
-        <Section style={buttonContainer}>
-          <Link
-            href={`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
-            style={button}
-          >
-            Verify Email Address
-          </Link>
-        </Section>
-        
-        <Text style={smallText}>
-          Or copy and paste this link into your browser:
-        </Text>
-        <Text style={linkText}>
-          {`${supabase_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(`${redirect_to}?verified=true`)}`}
-        </Text>
-        
-        <Text style={footerText}>
-          If you didn't create an account with CalmlySettled, you can safely ignore this email.
-        </Text>
-        
-        <Section style={footer}>
-          <Text style={footerText}>
-            Happy settling,<br />
-            The CalmlySettled Team
-          </Text>
-        </Section>
-      </Container>
-    </Body>
-  </Html>
-)
+          <Heading style={h1}>
+            {isPasswordReset ? 'Reset Your Password' : `Welcome${userName ? ` ${userName}` : ''}!`}
+          </Heading>
+          
+          {isPasswordReset ? (
+            <>
+              <Text style={text}>
+                We received a request to reset your password for your CalmlySettled account.
+              </Text>
+              
+              <Text style={text}>
+                Click the button below to reset your password. This link will expire in 1 hour for security reasons.
+              </Text>
+              
+              <Section style={buttonContainer}>
+                <Link
+                  href={verificationUrl}
+                  style={button}
+                >
+                  Reset Password
+                </Link>
+              </Section>
+              
+              <Text style={smallText}>
+                Or copy and paste this link into your browser:
+              </Text>
+              <Text style={linkText}>
+                {verificationUrl}
+              </Text>
+              
+              <Text style={footerText}>
+                If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={text}>
+                Thanks for joining CalmlySettled! We're excited to help you discover the best places in your new neighborhood.
+              </Text>
+              
+              <Text style={text}>
+                To complete your registration and start getting personalized recommendations, please verify your email address by clicking the button below:
+              </Text>
+              
+              <Section style={buttonContainer}>
+                <Link
+                  href={verificationUrl}
+                  style={button}
+                >
+                  Verify Email Address
+                </Link>
+              </Section>
+              
+              <Text style={smallText}>
+                Or copy and paste this link into your browser:
+              </Text>
+              <Text style={linkText}>
+                {verificationUrl}
+              </Text>
+              
+              <Text style={footerText}>
+                If you didn't create an account with CalmlySettled, you can safely ignore this email.
+              </Text>
+            </>
+          )}
+          
+          <Section style={footer}>
+            <Text style={footerText}>
+              Happy settling,<br />
+              The CalmlySettled Team
+            </Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
 
 export default VerificationEmail
 
