@@ -101,15 +101,17 @@ export function Header() {
                     Dashboard
                   </Link>
                   
-                  <div className="border-t border-border pt-6 space-y-8">
-                    <Link to="/onboarding" onClick={() => setIsOpen(false)}>
-                      <Button variant="default" size="mobile" className="w-full">
-                        Settle Me In
-                      </Button>
-                    </Link>
+                  <div className="border-t border-border pt-6">
+                    <div className="mb-8">
+                      <Link to="/onboarding" onClick={() => setIsOpen(false)}>
+                        <Button variant="default" size="mobile" className="w-full">
+                          Settle Me In
+                        </Button>
+                      </Link>
+                    </div>
                     
                     {user ? (
-                      <>
+                      <div className="space-y-4">
                         <Link to="/profile" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" size="mobile" className="w-full justify-start">
                             <User className="h-4 w-4 mr-2" />
@@ -134,13 +136,15 @@ export function Header() {
                           <LogOut className="h-4 w-4 mr-2" />
                           Sign Out
                         </Button>
-                      </>
+                      </div>
                     ) : (
-                      <Link to="/auth" onClick={() => setIsOpen(false)}>
-                        <Button variant="default" size="mobile" className="w-full">
-                          Sign In
-                        </Button>
-                      </Link>
+                      <div>
+                        <Link to="/auth" onClick={() => setIsOpen(false)}>
+                          <Button variant="default" size="mobile" className="w-full">
+                            Sign In
+                          </Button>
+                        </Link>
+                      </div>
                     )}
                   </div>
                 </div>
