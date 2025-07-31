@@ -560,19 +560,6 @@ export default function Explore() {
                   <MapPin className="mr-2 h-4 w-4" />
                   {location.city}
                 </Badge>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => {
-                    setLocation(null);
-                    setPopularPlaces({});
-                    setSelectedCategory(null);
-                  }}
-                  title="Change location"
-                >
-                  <MapPin className="h-4 w-4" />
-                </Button>
               </div>
             )}
           </div>
