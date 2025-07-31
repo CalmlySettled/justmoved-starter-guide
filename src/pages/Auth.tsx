@@ -15,7 +15,7 @@ declare global {
 }
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [isSignUp, setIsSignUp] = useState(false); // Default to sign in, not sign up
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
