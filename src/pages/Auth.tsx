@@ -32,14 +32,16 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check URL parameters for password reset
+    // Check URL parameters for password reset FIRST
     const urlParams = new URLSearchParams(window.location.search);
     const accessToken = urlParams.get('access_token');
     const refreshToken = urlParams.get('refresh_token');
     const type = urlParams.get('type');
     
+    const isPasswordReset = accessToken && refreshToken && type === 'recovery';
+    
     // If this is a password reset link, set up the reset password state
-    if (accessToken && refreshToken && type === 'recovery') {
+    if (isPasswordReset) {
       console.log('Password reset detected, storing tokens and setting reset state');
       setIsResetPassword(true);
       setIsForgotPassword(false);
@@ -48,24 +50,32 @@ export default function Auth() {
       // Store tokens temporarily - don't set session until password is reset
       setResetTokens({ accessToken, refreshToken });
       
-      return; // Don't run the rest of the auth check
+      // Don't run any other auth checks - just return
+      return;
     }
 
+    // Only run normal auth checks if NOT in password reset mode
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session && !isResetPassword) {
+      if (session) {
         navigate("/dashboard");
       }
     };
     checkUser();
 
-    // Listen for auth changes
+    // Listen for auth changes - but skip if in password reset mode
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
-        if (session && !isResetPassword) {
+        // Skip all navigation if we're in password reset mode
+        if (isPasswordReset) {
+          console.log('Skipping auth navigation - in password reset mode');
+          return;
+        }
+        
+        if (session) {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
           console.log('Auth state change - checking for stored quiz data:', storedQuizData);
@@ -119,7 +129,7 @@ export default function Auth() {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, isResetPassword]);
+  }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
