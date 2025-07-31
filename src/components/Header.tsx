@@ -101,7 +101,7 @@ export function Header() {
                     Dashboard
                   </Link>
                   
-                  <div className="border-t border-border pt-6 space-y-4">
+                  <div className="border-t border-border pt-6 space-y-6">
                     <Link to="/onboarding" onClick={() => setIsOpen(false)}>
                       <Button variant="default" size="mobile" className="w-full">
                         Settle Me In
