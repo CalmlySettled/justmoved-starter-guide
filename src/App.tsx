@@ -20,6 +20,7 @@ import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/AccountSettings";
+import PopularCategory from "./pages/PopularCategory";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const AppContent = () => {
             <Route path="/" element={<Index />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/popular" element={<Popular />} />
+            <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />

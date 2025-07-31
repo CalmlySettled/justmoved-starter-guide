@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,11 +107,8 @@ const spotlightSections = [
 const Popular = () => {
   const { user } = useAuth();
   const routerLocation = useLocation();
+  const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
-  const [recommendations, setRecommendations] = useState<PopularRecommendations>({});
-  const [loading, setLoading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
 
   // Load saved location on component mount
   useEffect(() => {
@@ -193,162 +190,18 @@ const Popular = () => {
       }
     };
 
-    const loadFavorites = () => {
-      try {
-        const storedFavorites = localStorage.getItem('favorites');
-        if (storedFavorites) {
-          const favorites: any[] = JSON.parse(storedFavorites);
-          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
-          setFavoriteBusinesses(favoriteNames);
-        } else {
-          setFavoriteBusinesses(new Set());
-        }
-      } catch (error) {
-        console.error('Error loading favorites:', error);
-      }
-    };
-
-    const handleFavoritesUpdate = () => {
-      console.log('🔥 POPULAR - Received favorites update event');
-      loadFavorites();
-    };
-
     loadLocation();
-    loadFavorites();
-    
-    // Listen for favorites updates from dropdown
-    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
-    
-    return () => {
-      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
-    };
   }, [user]);
-
-  // Reset recommendations when navigating away from the page
-  useEffect(() => {
-    return () => {
-      // Cleanup function that runs when component unmounts
-      setRecommendations({});
-      setActiveCategory(null);
-    };
-  }, [routerLocation.pathname]);
 
   const handleLocationSelect = (selectedLocation: LocationData) => {
     setLocation(selectedLocation);
   };
 
-  const fetchTrendingPlaces = async (category: string, searchTerms: string[]) => {
-    if (!location) {
-      toast.error('Location required to find popular places');
-      return;
-    }
-
-    // Clear previous results and set loading state
-    setRecommendations({});
-    setLoading(true);
-    setActiveCategory(category);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          exploreMode: true,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.recommendations) {
-        // Flatten results from all search terms
-        const allResults: Business[] = [];
-        Object.values(data.recommendations).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
-        });
-        
-        // Sort by distance and take top results
-        const sortedResults = allResults
-          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 12); // Limit to 12 results
-
-        // Set only the current category results (replaces any existing)
-        setRecommendations({
-          [category]: sortedResults
-        });
-        
-        toast.success(`Found ${sortedResults.length} popular ${category.toLowerCase()} near you`);
-      }
-    } catch (error) {
-      console.error('Error fetching trending places:', error);
-      toast.error('Failed to load popular places. Please try again.');
-    } finally {
-      setLoading(false);
-      setActiveCategory(null);
-    }
+  const navigateToCategory = (categoryName: string) => {
+    const urlFriendlyName = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and');
+    navigate(`/popular/${urlFriendlyName}`);
   };
 
-  const getGoogleMapsUrl = (address: string) => {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  };
-
-  const toggleFavorite = (business: Business, category: string) => {
-    console.log('🔥 POPULAR - toggleFavorite called for:', business.name);
-    console.log('🔥 POPULAR - Current localStorage before:', localStorage.getItem('favorites'));
-    
-    try {
-      const storedFavorites = localStorage.getItem('favorites');
-      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
-      
-      const businessKey = business.name;
-      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
-      
-      if (existingIndex >= 0) {
-        // Remove from favorites
-        favorites.splice(existingIndex, 1);
-        setFavoriteBusinesses(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(businessKey);
-          return newSet;
-        });
-        toast.success("Removed from favorites");
-      } else {
-        // Add to favorites
-        const favoriteData = {
-          business_name: business.name,
-          business_address: business.address,
-          business_description: business.description,
-          business_phone: business.phone,
-          business_website: business.website,
-          business_image: business.image_url,
-          business_features: business.features || [],
-          category: category,
-          distance_miles: business.distance_miles,
-          favorited_at: new Date().toISOString()
-        };
-        
-        favorites.push(favoriteData);
-        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
-        toast.success("Added to favorites");
-        
-        // Additional toast with navigation hint
-        setTimeout(() => {
-          toast.success("Find all your favorites in the Dashboard!", {
-            duration: 4000
-          });
-        }, 1000);
-      }
-      
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      console.log('🔥 POPULAR - localStorage after update:', localStorage.getItem('favorites'));
-      
-      // Trigger manual event for same-window updates
-      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast.error("Failed to update favorites");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -389,7 +242,7 @@ const Popular = () => {
                     <Card 
                       key={category.name}
                       className="group cursor-pointer transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 border-border/50"
-                      onClick={() => fetchTrendingPlaces(category.name, category.searchTerms)}
+                      onClick={() => navigateToCategory(category.name)}
                     >
                       <CardContent className="p-6 text-center">
                         <div className={`w-16 h-16 mx-auto mb-4 rounded-full ${category.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
@@ -397,13 +250,6 @@ const Popular = () => {
                         </div>
                         <h3 className="font-semibold mb-2">{category.name}</h3>
                         <p className="text-sm text-muted-foreground">{category.description}</p>
-                        {activeCategory === category.name && (
-                          <div className="mt-4">
-                            <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full animate-pulse w-3/4"></div>
-                            </div>
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -418,7 +264,7 @@ const Popular = () => {
                     <Card 
                       key={section.title}
                       className="group cursor-pointer transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 border-border/50"
-                      onClick={() => fetchTrendingPlaces(section.title, section.searchTerms)}
+                      onClick={() => navigateToCategory(section.title)}
                     >
                       <CardContent className="p-6 text-center">
                         <div className="text-primary mb-4 group-hover:scale-110 transition-transform">
@@ -426,103 +272,13 @@ const Popular = () => {
                         </div>
                         <h3 className="font-semibold mb-2">{section.title}</h3>
                         <p className="text-sm text-muted-foreground">{section.description}</p>
-                        {activeCategory === section.title && (
-                          <div className="mt-4">
-                            <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full animate-pulse w-3/4"></div>
-                            </div>
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               </div>
 
-              {/* Results Section */}
-              {Object.entries(recommendations).map(([category, businesses]) => (
-                <div key={category} className="mb-12">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="text-2xl font-bold">{category}</h2>
-                    <Badge variant="secondary">{businesses.length} places</Badge>
-                  </div>
-                  
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {businesses.map((business) => (
-                      <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                        <CardContent className="p-0">
-                          {business.image_url && (
-                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              {business.website ? (
-                                <a 
-                                  href={business.website} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="font-semibold text-primary hover:underline line-clamp-1"
-                                >
-                                  {business.name}
-                                </a>
-                              ) : (
-                                <h3 className="font-semibold line-clamp-1">{business.name}</h3>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business, category)}
-                                className="h-8 w-8 p-0 hover:bg-primary/10"
-                              >
-                                <Star 
-                                  className="h-4 w-4" 
-                                  fill={favoriteBusinesses.has(business.name) ? "currentColor" : "none"}
-                                />
-                              </Button>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                              <MapPin className="h-3 w-3" />
-                              <span>{business.distance_miles.toFixed(1)} miles away</span>
-                            </div>
-                            
-                            <a 
-                              href={getGoogleMapsUrl(business.address)} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline line-clamp-1 block"
-                            >
-                              {business.address}
-                            </a>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
 
-              {loading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <Card key={i}>
-                      <CardContent className="p-4">
-                        <Skeleton className="h-4 w-3/4 mb-2" />
-                        <Skeleton className="h-3 w-full mb-2" />
-                        <Skeleton className="h-3 w-2/3" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </>
           ) : user ? (
             <div className="text-center py-16">
