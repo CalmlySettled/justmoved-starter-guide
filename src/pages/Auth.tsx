@@ -32,29 +32,6 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check URL parameters for password reset FIRST
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-    const type = urlParams.get('type');
-    
-    const isPasswordReset = accessToken && refreshToken && type === 'recovery';
-    
-    // If this is a password reset link, set up the reset password state
-    if (isPasswordReset) {
-      console.log('Password reset detected, storing tokens and setting reset state');
-      setIsResetPassword(true);
-      setIsForgotPassword(false);
-      setIsSignUp(false);
-      
-      // Store tokens temporarily - don't set session until password is reset
-      setResetTokens({ accessToken, refreshToken });
-      
-      // Don't run any other auth checks - just return
-      return;
-    }
-
-    // Only run normal auth checks if NOT in password reset mode
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,16 +41,10 @@ export default function Auth() {
     };
     checkUser();
 
-    // Listen for auth changes - but skip if in password reset mode
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change event:', event, 'Session:', !!session);
-        
-        // Skip all navigation if we're in password reset mode
-        if (isPasswordReset) {
-          console.log('Skipping auth navigation - in password reset mode');
-          return;
-        }
         
         if (session) {
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
@@ -340,7 +311,7 @@ export default function Auth() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
