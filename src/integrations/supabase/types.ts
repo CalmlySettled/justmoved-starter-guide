@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      recommendations_cache: {
+        Row: {
+          cache_key: string
+          categories: string[]
+          created_at: string
+          expires_at: string
+          id: string
+          preferences: Json
+          recommendations: Json
+          user_coordinates: unknown
+        }
+        Insert: {
+          cache_key: string
+          categories: string[]
+          created_at?: string
+          expires_at?: string
+          id?: string
+          preferences?: Json
+          recommendations: Json
+          user_coordinates: unknown
+        }
+        Update: {
+          cache_key?: string
+          categories?: string[]
+          created_at?: string
+          expires_at?: string
+          id?: string
+          preferences?: Json
+          recommendations?: Json
+          user_coordinates?: unknown
+        }
+        Relationships: []
+      }
       user_recommendations: {
         Row: {
           business_address: string | null
@@ -142,7 +175,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
