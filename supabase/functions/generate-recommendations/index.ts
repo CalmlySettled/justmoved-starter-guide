@@ -187,9 +187,14 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     return false;
   }
   
-  // Must have a reasonable rating count (indicates consumer traffic) - but be less strict
-  if (place.user_ratings_total !== undefined && place.user_ratings_total < 3) {
-    console.log(`→ Excluding business with very low review count: ${place.name} (${place.user_ratings_total} reviews)`);
+  // For veterinary care and certain service categories, be more lenient with review count requirements
+  const leniencyCategories = ['Veterinary care', 'Mental health services', 'DMV / Government services'];
+  const isLeniencyCategory = leniencyCategories.some(cat => category.includes(cat));
+  
+  // Must have a reasonable rating count (indicates consumer traffic) - but be less strict for certain categories
+  const minReviewCount = isLeniencyCategory ? 1 : 3;
+  if (place.user_ratings_total !== undefined && place.user_ratings_total < minReviewCount) {
+    console.log(`→ Excluding business with very low review count: ${place.name} (${place.user_ratings_total} reviews, min required: ${minReviewCount})`);
     return false;
   }
   
