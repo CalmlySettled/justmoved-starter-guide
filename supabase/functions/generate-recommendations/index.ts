@@ -1138,6 +1138,28 @@ async function getCachedRecommendations(
   }
 }
 
+// ✅ CRITICAL: Generate effective categories that include sub-preferences for accurate caching
+function generateEffectiveCategoriesForCache(priorities: string[], priorityPreferences: Record<string, string[]> = {}): string[] {
+  const effectiveCategories: string[] = [];
+  
+  for (const priority of priorities) {
+    const subPrefs = priorityPreferences[priority];
+    
+    if (subPrefs && subPrefs.length > 0) {
+      // Include sub-preferences in cache key to ensure unique caching
+      for (const subPref of subPrefs) {
+        effectiveCategories.push(`${priority}-${subPref}`);
+      }
+    } else {
+      // No sub-preferences, use main category
+      effectiveCategories.push(priority);
+    }
+  }
+  
+  console.log('Generated effective categories for cache:', effectiveCategories);
+  return effectiveCategories.sort(); // Sort for consistent cache keys
+}
+
 // COST-OPTIMIZED: Save recommendations to cache
 async function cacheRecommendations(
   supabase: any,
@@ -1326,16 +1348,19 @@ serve(async (req) => {
     const cachePreferences = {
       householdType: quizResponse.householdType,
       priorities: quizResponse.priorities,
-      priorityPreferences: quizResponse.priorityPreferences,
+      priorityPreferences: quizResponse.priorityPreferences || quizResponse.priority_preferences || {},
       transportationStyle: quizResponse.transportationStyle,
       budgetPreference: quizResponse.budgetPreference,
       lifeStage: quizResponse.lifeStage
     };
     
+    // ✅ CRITICAL: Include sub-preferences in cache lookup
+    const effectiveCategories = generateEffectiveCategoriesForCache(quizResponse.priorities, cachePreferences.priorityPreferences);
+    
     const cachedRecommendations = await getCachedRecommendations(
       supabase, 
       coordinates, 
-      quizResponse.priorities || [], 
+      effectiveCategories, // Use effective categories that include sub-preferences
       cachePreferences
     );
     
@@ -1361,7 +1386,7 @@ serve(async (req) => {
       await cacheRecommendations(
         supabase,
         coordinates,
-        quizResponse.priorities || [],
+        effectiveCategories, // Use same effective categories for caching
         cachePreferences,
         recommendations
       );
