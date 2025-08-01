@@ -354,7 +354,19 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                           </div>
                         )}
                       </div>
-                    ))}
+                     ))}
+                    
+                    {/* Coming soon message for enhanced filtering */}
+                    <div className="mt-6 p-4 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/30">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          🚀 Enhanced filtering coming soon!
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          These preferences will soon power advanced filtering by specialty, rating, distance and more
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
