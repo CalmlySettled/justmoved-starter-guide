@@ -260,11 +260,11 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <CardTitle className="text-lg">Household</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {["Just me", "Partner/spouse", "Kids", "Pets", "Other (multi-gen family, roommates, etc.)"].map((option) => {
                     const isChecked = getHouseholdArray().includes(option);
                     return (
-                      <div key={option} className="flex items-center space-x-2 bg-muted/30 rounded p-2 hover:bg-muted/50 transition-colors">
+                      <div key={option} className="flex items-center space-x-2">
                         <Checkbox
                           id={`household-${option}`}
                           checked={isChecked}
@@ -285,7 +285,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <p className="text-sm text-muted-foreground">Choose up to 5 options (Selected: {formData.priorities.length}/5)</p>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {[
                     "Grocery stores",
                     "Medical care",
@@ -298,7 +298,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     "Parks / Trails",
                     "Social events or community groups"
                   ].map((option) => (
-                    <div key={option} className="flex items-center space-x-2 bg-muted/30 rounded p-2 hover:bg-muted/50 transition-colors">
+                    <div key={option} className="flex items-center space-x-2">
                       <Checkbox
                         id={`priority-${option}`}
                         checked={formData.priorities.includes(option)}
@@ -326,7 +326,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     {formData.priorities.map((category) => (
                       <div key={category} className="p-4 border rounded-lg bg-background/50">
                         <h4 className="font-semibold text-primary mb-3">{category}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="flex flex-wrap gap-4">
                           {subPreferenceOptions[category]?.map((preference) => (
                             <div key={preference} className="flex items-center space-x-2">
                               <Checkbox
@@ -336,7 +336,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                               />
                               <Label 
                                 htmlFor={`${category}-${preference}`} 
-                                className="text-sm font-medium cursor-pointer"
+                                className="text-sm cursor-pointer"
                               >
                                 {preference}
                               </Label>
