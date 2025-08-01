@@ -1494,7 +1494,17 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Filters removed for cleaner UX */}
+                {/* Advanced filtering coming soon */}
+                <div className="mb-6">
+                  <div className="p-4 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/30">
+                    <div className="flex items-center justify-center gap-3 text-muted-foreground">
+                      <SortAsc className="h-5 w-5" />
+                      <span className="text-sm font-medium">
+                        🚀 Advanced filtering options coming soon! Filter by specialty, rating, distance and more.
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="grid gap-6 md:grid-cols-2">
                   {categoryRecs.map((rec) => {
