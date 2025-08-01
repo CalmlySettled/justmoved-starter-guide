@@ -260,17 +260,18 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <CardTitle className="text-lg">Household</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-4">
+                <div className="space-y-4">
                   {["Just me", "Partner/spouse", "Kids", "Pets", "Other (multi-gen family, roommates, etc.)"].map((option) => {
                     const isChecked = getHouseholdArray().includes(option);
                     return (
-                      <div key={option} className="flex items-center space-x-2">
+                      <div key={option} className="flex items-center space-x-3">
                         <Checkbox
                           id={`household-${option}`}
                           checked={isChecked}
                           onCheckedChange={(checked) => handleHouseholdChange(option, checked as boolean)}
+                          className="min-h-[24px] min-w-[24px]"
                         />
-                        <Label htmlFor={`household-${option}`} className="text-sm cursor-pointer">{option}</Label>
+                        <Label htmlFor={`household-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
                       </div>
                     );
                   })}
@@ -285,7 +286,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <p className="text-sm text-muted-foreground">Choose up to 5 options (Selected: {formData.priorities.length}/5)</p>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-4">
+                <div className="space-y-4">
                   {[
                     "Grocery stores",
                     "Medical care",
@@ -298,14 +299,15 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     "Parks / Trails",
                     "Social events or community groups"
                   ].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
+                    <div key={option} className="flex items-center space-x-3">
                       <Checkbox
                         id={`priority-${option}`}
                         checked={formData.priorities.includes(option)}
                         onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
                         disabled={!formData.priorities.includes(option) && formData.priorities.length >= 5}
+                        className="min-h-[24px] min-w-[24px]"
                       />
-                      <Label htmlFor={`priority-${option}`} className="text-sm cursor-pointer">{option}</Label>
+                      <Label htmlFor={`priority-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
                     </div>
                   ))}
                 </div>
@@ -326,17 +328,18 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     {formData.priorities.map((category) => (
                       <div key={category} className="p-4 border rounded-lg bg-background/50">
                         <h4 className="font-semibold text-primary mb-3">{category}</h4>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {subPreferenceOptions[category]?.map((preference) => (
-                            <div key={preference} className="flex items-center space-x-2">
+                            <div key={preference} className="flex items-center space-x-3 py-2">
                               <Checkbox
                                 id={`${category}-${preference}`}
                                 checked={((formData.priority_preferences || {})[category] || []).includes(preference)}
                                 onCheckedChange={(checked) => handleSubPreferenceChange(category, preference, checked as boolean)}
+                                className="min-h-[20px] min-w-[20px]"
                               />
                               <Label 
                                 htmlFor={`${category}-${preference}`} 
-                                className="text-sm cursor-pointer"
+                                className="text-sm font-medium cursor-pointer flex-1 py-1"
                               >
                                 {preference}
                               </Label>
