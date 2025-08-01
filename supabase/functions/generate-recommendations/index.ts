@@ -1107,7 +1107,7 @@ async function cacheRecommendations(
         recommendations: recommendations,
         categories: categories,
         preferences: preferences,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
       });
     
     if (!error) {
