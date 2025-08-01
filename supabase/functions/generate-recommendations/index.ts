@@ -350,8 +350,8 @@ async function searchGooglePlaces(
         let website = '';
         let phone = '';
         
-        // COST REDUCTION: Only fetch photos for highly rated businesses (4.0+)
-        if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 4.0) {
+        // COST REDUCTION: Only fetch photos for businesses with decent ratings (3.5+)
+        if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 3.5) {
           const photoReference = place.photos[0].photo_reference;
           imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
           console.log(`→ Fetching photo for high-rated business: ${place.name}`);
@@ -359,8 +359,8 @@ async function searchGooglePlaces(
           console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
-        // COST REDUCTION: Only fetch place details for top-rated businesses (4.2+ rating)
-        if (place.place_id && (place.rating || 0) >= 4.2) {
+        // COST REDUCTION: Only fetch place details for businesses with good ratings (3.8+)
+        if (place.place_id && (place.rating || 0) >= 3.8) {
           try {
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
             const detailsResponse = await fetch(detailsUrl);
