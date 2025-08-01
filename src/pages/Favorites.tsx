@@ -87,6 +87,9 @@ export default function Favorites() {
 
   const loadFavorites = async () => {
     try {
+      console.log('🔍 Loading favorites for user:', user?.id);
+      console.log('🔍 Full user object:', user);
+      
       const { data, error } = await supabase
         .from('user_recommendations')
         .select('*')
@@ -94,6 +97,8 @@ export default function Favorites() {
         .eq('is_favorite', true)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 Query result:', { data, error, userIdFilter: user?.id });
+      
       if (error) throw error;
       setFavorites(data || []);
     } catch (error) {
