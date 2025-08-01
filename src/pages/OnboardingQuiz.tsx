@@ -50,6 +50,7 @@ interface QuizData {
   address: string;
   household: string[];
   priorities: string[];
+  specificCategories: string[]; // New field for mock question #4
   transportation: string;
   lifestyle: string;
   lifeStage: string;
@@ -60,6 +61,7 @@ const initialData: QuizData = {
   address: "",
   household: [],
   priorities: [],
+  specificCategories: [], // New field for mock question #4
   transportation: "",
   lifestyle: "",
   lifeStage: "",
@@ -96,9 +98,9 @@ export default function OnboardingQuiz() {
     checkUserStatus();
   }, [user]);
 
-  const totalQuestions = 6; // Reduced from 7 due to removing customization step
+  const totalQuestions = 7; // Added mock question #4 for testing grouped categories
 
-  // Get background image for current question (updated for 6 questions)
+  // Get background image for current question (updated for 7 questions)
   const getBackgroundImage = (questionNum: number) => {
     switch (questionNum) {
       case 1: // Address - neighborhood/cityscape
@@ -107,11 +109,13 @@ export default function OnboardingQuiz() {
         return "/lovable-uploads/03da8b85-f799-4bcc-9d63-c91a0b6663a3.png";
       case 3: // Priorities - vibrant community
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
-      case 4: // Transportation - urban movement
+      case 4: // Mock question - specific categories
+        return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=800&fit=crop";
+      case 5: // Transportation - urban movement
         return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
-      case 5: // Lifestyle - relaxed scene
+      case 6: // Lifestyle - relaxed scene
         return "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1200&h=800&fit=crop";
-      case 6: // Life stage - starry aspirational
+      case 7: // Life stage - starry aspirational
         return "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=1200&h=800&fit=crop";
       default:
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
@@ -175,14 +179,23 @@ export default function OnboardingQuiz() {
   };
 
 
+  const handleSpecificCategoriesChange = (value: string, checked: boolean) => {
+    if (checked && quizData.specificCategories.length < 8) {
+      setQuizData({ ...quizData, specificCategories: [...quizData.specificCategories, value] });
+    } else if (!checked) {
+      setQuizData({ ...quizData, specificCategories: quizData.specificCategories.filter(item => item !== value) });
+    }
+  };
+
   const canProceed = () => {
     switch (currentQuestion) {
       case 1: return quizData.address.trim() !== "" && validAddressSelected;
       case 2: return quizData.household.length > 0;
       case 3: return quizData.priorities.length > 0;
-      case 4: return quizData.transportation !== "";
-      case 5: return quizData.lifestyle !== "";
-      case 6: return quizData.lifeStage !== "";
+      case 4: return quizData.specificCategories.length > 0; // Mock question #4
+      case 5: return quizData.transportation !== "";
+      case 6: return quizData.lifestyle !== "";
+      case 7: return quizData.lifeStage !== "";
       default: return false;
     }
   };
@@ -452,15 +465,19 @@ export default function OnboardingQuiz() {
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
-              {currentQuestion === 4 && "How do you typically get around?"}
-              {currentQuestion === 5 && "Which best describes your vibe?"}
-              {currentQuestion === 6 && "Which stage of life best fits you right now?"}
+              {currentQuestion === 4 && "🧪 MOCK: Which specific categories interest you?"}
+              {currentQuestion === 5 && "How do you typically get around?"}
+              {currentQuestion === 6 && "Which best describes your vibe?"}
+              {currentQuestion === 7 && "Which stage of life best fits you right now?"}
             </CardTitle>
             {currentQuestion === 2 && (
               <p className="text-muted-foreground text-center">Choose all that apply</p>
             )}
             {currentQuestion === 3 && (
               <p className="text-muted-foreground">Choose up to 5 options</p>
+            )}
+            {currentQuestion === 4 && (
+              <p className="text-muted-foreground">Choose up to 8 specific categories. Selected: {quizData.specificCategories.length}/8</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
@@ -549,8 +566,113 @@ export default function OnboardingQuiz() {
               </div>
             )}
 
-            {/* Question 4: Transportation Style */}
+            {/* MOCK Question 4: Specific Categories (Grouped) */}
             {currentQuestion === 4 && (
+              <div className="space-y-8">
+                <div className="text-center text-sm text-orange-600 bg-orange-50 p-3 rounded-lg border border-orange-200">
+                  🧪 <strong>MOCK PREVIEW</strong> - This is a visual test of the new grouped category approach
+                </div>
+                
+                {/* Food & Dining Group */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🍽️ Food & Dining</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                    {[
+                      "Grocery stores", 
+                      "Coffee shops", 
+                      "Restaurants", 
+                      "Food delivery"
+                    ].map((option) => (
+                      <div key={option} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={option}
+                          checked={quizData.specificCategories.includes(option)}
+                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
+                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          className="min-h-[20px] min-w-[20px]"
+                        />
+                        <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Health & Wellness Group */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">⚕️ Health & Wellness</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                    {[
+                      "Pharmacies", 
+                      "Urgent care", 
+                      "Dental offices", 
+                      "Fitness centers"
+                    ].map((option) => (
+                      <div key={option} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={option}
+                          checked={quizData.specificCategories.includes(option)}
+                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
+                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          className="min-h-[20px] min-w-[20px]"
+                        />
+                        <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Services & Essentials Group */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🏛️ Services & Essentials</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                    {[
+                      "Banks", 
+                      "Post office", 
+                      "DMV services", 
+                      "Auto repair"
+                    ].map((option) => (
+                      <div key={option} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={option}
+                          checked={quizData.specificCategories.includes(option)}
+                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
+                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          className="min-h-[20px] min-w-[20px]"
+                        />
+                        <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recreation & Community Group */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🎯 Recreation & Community</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                    {[
+                      "Parks & trails", 
+                      "Libraries", 
+                      "Community centers", 
+                      "Entertainment venues"
+                    ].map((option) => (
+                      <div key={option} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={option}
+                          checked={quizData.specificCategories.includes(option)}
+                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
+                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          className="min-h-[20px] min-w-[20px]"
+                        />
+                        <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Question 5: Transportation Style */}
+            {currentQuestion === 5 && (
               <RadioGroup value={quizData.transportation} onValueChange={(value) => setQuizData({...quizData, transportation: value})}>
                 {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
                   <div key={option} className="flex items-center space-x-3 py-1.5">
@@ -561,8 +683,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 5: Budget/Lifestyle Preference */}
-            {currentQuestion === 5 && (
+            {/* Question 6: Budget/Lifestyle Preference */}
+            {currentQuestion === 6 && (
               <RadioGroup value={quizData.lifestyle} onValueChange={(value) => setQuizData({...quizData, lifestyle: value})}>
                 {[
                   "I want affordable & practical options",
@@ -577,8 +699,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 6: Stage of Life */}
-            {currentQuestion === 6 && (
+            {/* Question 7: Stage of Life */}
+            {currentQuestion === 7 && (
               <RadioGroup value={quizData.lifeStage} onValueChange={(value) => setQuizData({...quizData, lifeStage: value})}>
                 {[
                   "Young professional",
