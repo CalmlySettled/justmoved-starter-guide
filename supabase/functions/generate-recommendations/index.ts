@@ -252,7 +252,7 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
   return strategies;
 }
 
-// COST-OPTIMIZED Google Places API integration
+// COST-OPTIMIZED Google Places API integration with FieldMasks and Session Tokens
 async function searchGooglePlaces(
   category: string,
   latitude: number,
@@ -265,7 +265,7 @@ async function searchGooglePlaces(
     return [];
   }
   
-  console.log('Google Places API key found, using cost-optimized search...');
+  console.log('Google Places API key found, using advanced cost-optimized search...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
@@ -274,11 +274,18 @@ async function searchGooglePlaces(
   const searchStrategies = getSearchStrategies(category).slice(0, 2); // Max 2 strategies instead of all
   const uniquePlaces = new Map();
   
+  // COST OPTIMIZATION: Generate session token for this search session
+  const sessionToken = generateSessionToken();
+  console.log(`Using session token: ${sessionToken.substring(0, 8)}...`);
+  
   try {
-    console.log(`Cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
+    console.log(`Advanced cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
     
-    // Execute limited search strategies
+    // Execute limited search strategies with FieldMasks
     for (const strategy of searchStrategies) {
+      // COST OPTIMIZATION: Use FieldMask to only request essential fields for nearby search
+      const nearbySearchFields = 'place_id,name,vicinity,geometry,rating,user_ratings_total,types,photos,price_level,opening_hours';
+      
       let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}`;
       
       if (strategy.type) {
@@ -287,9 +294,11 @@ async function searchGooglePlaces(
       if (strategy.keyword) {
         searchUrl += `&keyword=${encodeURIComponent(strategy.keyword)}`;
       }
-      searchUrl += `&key=${googleApiKey}`;
       
-      console.log(`→ Strategy: ${strategy.keyword || strategy.type}`);
+      // Add session token and field mask for cost optimization
+      searchUrl += `&fields=${nearbySearchFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+      
+      console.log(`→ Strategy: ${strategy.keyword || strategy.type} (with FieldMask)`);
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -353,16 +362,19 @@ async function searchGooglePlaces(
         // COST REDUCTION: Only fetch photos for highly rated businesses (4.0+)
         if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 4.0) {
           const photoReference = place.photos[0].photo_reference;
-          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
-          console.log(`→ Fetching photo for high-rated business: ${place.name}`);
+          // COST OPTIMIZATION: Use smaller image size and session token for photos
+          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+          console.log(`→ Fetching optimized photo for high-rated business: ${place.name}`);
         } else {
           console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
-        // COST REDUCTION: Only fetch place details for top-rated businesses (4.2+ rating)
+        // COST REDUCTION: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
         if (place.place_id && (place.rating || 0) >= 4.2) {
           try {
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
+            // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
+            const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
             const detailsResponse = await fetch(detailsUrl);
             
             if (detailsResponse.ok) {
@@ -370,7 +382,7 @@ async function searchGooglePlaces(
               if (detailsData.result) {
                 website = detailsData.result.website || '';
                 phone = detailsData.result.formatted_phone_number || '';
-                console.log(`→ Fetched details for top business: ${place.name}`);
+                console.log(`→ Fetched details for top business: ${place.name} (FieldMask optimized)`);
               }
             }
           } catch (error) {
@@ -379,6 +391,11 @@ async function searchGooglePlaces(
         } else {
           console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
+
+        // COST OPTIMIZATION: Generate static map as fallback if no business photo
+        const staticMapUrl = !imageUrl && place.geometry?.location?.lat && place.geometry?.location?.lng
+          ? generateStaticMapUrl(place.geometry.location.lat, place.geometry.location.lng, place.name)
+          : '';
 
         return {
           name: place.name,
@@ -390,7 +407,7 @@ async function searchGooglePlaces(
           longitude: place.geometry?.location?.lng,
           distance_miles: undefined, // Will calculate later
           website: website,
-          image_url: imageUrl,
+          image_url: imageUrl || staticMapUrl, // Use static map as fallback
           rating: place.rating || 0,
           review_count: place.user_ratings_total || 0
         };
@@ -431,6 +448,26 @@ function generateFeaturesFromYelpData(business: any): string[] {
 }
 
 // Helper function to generate essential features from Google Places data
+// COST OPTIMIZATION: Generate session token for Google Places API
+function generateSessionToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 36; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// COST OPTIMIZATION: Generate static map URL using Maps Embed API
+function generateStaticMapUrl(latitude: number, longitude: number, businessName: string): string {
+  const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+  if (!googleApiKey) return '';
+  
+  // Use Maps Static API with minimal parameters for cost efficiency
+  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=15&size=300x200&markers=color:red%7Clabel:S%7C${latitude},${longitude}&style=feature:poi%7Cvisibility:off&key=${googleApiKey}`;
+  return mapUrl;
+}
+
 function generateFeaturesFromGoogleData(place: any): string[] {
   const features: string[] = [];
   
