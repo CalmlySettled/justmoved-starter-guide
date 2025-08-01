@@ -1154,7 +1154,7 @@ serve(async (req) => {
     
     const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
     
-    // Handle explore mode requests
+    // Handle explore mode requests with caching
     if (exploreMode) {
       if (!latitude || !longitude || !categories) {
         return new Response(JSON.stringify({ error: 'Explore mode requires latitude, longitude, and categories' }), {
@@ -1164,6 +1164,31 @@ serve(async (req) => {
       }
 
       const coordinates = { lat: latitude, lng: longitude };
+      
+      // Create cache key for explore requests based on location and categories
+      const cacheKey = `explore_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
+      
+      // Check for cached explore results (24 hour cache for explore)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (cachedData) {
+        console.log('✅ Returning cached explore recommendations');
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
       const recommendations: { [key: string]: Business[] } = {};
       const globalSeenBusinesses = new Set(); // Global deduplication across all categories
       
@@ -1185,6 +1210,15 @@ serve(async (req) => {
         recommendations[category] = uniqueBusinesses;
         console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
+
+      // Cache explore results for 24 hours
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          recommendations: recommendations,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        });
       
       return new Response(JSON.stringify({ recommendations }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
