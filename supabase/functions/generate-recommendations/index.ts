@@ -1057,6 +1057,67 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   }
 }
 
+// COST-OPTIMIZED: Check cache before expensive API calls
+async function getCachedRecommendations(
+  supabase: any,
+  coordinates: { lat: number; lng: number },
+  categories: string[],
+  preferences: any
+): Promise<any[] | null> {
+  // Create cache key from location and preferences
+  const cacheKey = `${Math.round(coordinates.lat * 1000)}_${Math.round(coordinates.lng * 1000)}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  
+  try {
+    const { data, error } = await supabase
+      .from('recommendations_cache')
+      .select('recommendations')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+    
+    if (data && !error) {
+      console.log(`💰 CACHE HIT: Found cached recommendations for key: ${cacheKey}`);
+      return data.recommendations;
+    }
+    
+    console.log(`Cache miss for key: ${cacheKey}`);
+    return null;
+  } catch (error) {
+    console.log('Cache lookup failed:', error);
+    return null;
+  }
+}
+
+// COST-OPTIMIZED: Save recommendations to cache
+async function cacheRecommendations(
+  supabase: any,
+  coordinates: { lat: number; lng: number },
+  categories: string[],
+  preferences: any,
+  recommendations: any[]
+): Promise<void> {
+  const cacheKey = `${Math.round(coordinates.lat * 1000)}_${Math.round(coordinates.lng * 1000)}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  
+  try {
+    const { error } = await supabase
+      .from('recommendations_cache')
+      .upsert({
+        cache_key: cacheKey,
+        user_coordinates: `(${coordinates.lat},${coordinates.lng})`,
+        recommendations: recommendations,
+        categories: categories,
+        preferences: preferences,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+      });
+    
+    if (!error) {
+      console.log(`💰 CACHED: Saved recommendations for future use (key: ${cacheKey})`);
+    }
+  } catch (error) {
+    console.log('Failed to cache recommendations:', error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -1144,15 +1205,16 @@ serve(async (req) => {
       });
     }
 
+    // Initialize Supabase client for caching
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Get coordinates - try cached first, then convert address
     let coordinates: { lat: number; lng: number } | null = null;
     
     // Check if we have cached coordinates from profile
     if (userId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
       const { data: profile } = await supabase
         .from('profiles')
         .select('latitude, longitude')
@@ -1174,10 +1236,50 @@ serve(async (req) => {
       console.log(`Converted address to coordinates: ${coordinates.lat}, ${coordinates.lng}`);
     }
 
-    // Generate recommendations based on user priorities
+    // COST OPTIMIZATION: Check cache before expensive API calls
+    const cachePreferences = {
+      householdType: quizResponse.householdType,
+      priorities: quizResponse.priorities,
+      priorityPreferences: quizResponse.priorityPreferences,
+      transportationStyle: quizResponse.transportationStyle,
+      budgetPreference: quizResponse.budgetPreference,
+      lifeStage: quizResponse.lifeStage
+    };
+    
+    const cachedRecommendations = await getCachedRecommendations(
+      supabase, 
+      coordinates, 
+      quizResponse.priorities || [], 
+      cachePreferences
+    );
+    
+    if (cachedRecommendations) {
+      console.log('💰 RETURNING CACHED RECOMMENDATIONS - NO API COSTS!');
+      return new Response(JSON.stringify({
+        success: true,
+        fromCache: true,
+        recommendations: cachedRecommendations
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Generate recommendations based on user priorities (only if not cached)
+    console.log('💸 Generating NEW recommendations - API costs will be incurred');
     const recommendations = await generateRecommendations(quizResponse, coordinates);
 
     console.log('Generated recommendations categories:', Object.keys(recommendations));
+
+    // COST OPTIMIZATION: Cache the generated recommendations to avoid future API costs
+    if (coordinates && recommendations && Object.keys(recommendations).length > 0) {
+      await cacheRecommendations(
+        supabase,
+        coordinates,
+        quizResponse.priorities || [],
+        cachePreferences,
+        recommendations
+      );
+    }
 
     // Save recommendations to database if userId is provided
     if (userId && Object.keys(recommendations).length > 0) {
@@ -1194,7 +1296,11 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ recommendations }),
+      JSON.stringify({ 
+        recommendations,
+        fromCache: false,
+        costOptimized: true 
+      }),
       {
         status: 200,
         headers: {
