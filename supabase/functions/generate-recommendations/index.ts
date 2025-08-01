@@ -350,17 +350,17 @@ async function searchGooglePlaces(
         let website = '';
         let phone = '';
         
-        // COST REDUCTION: Only fetch photos for businesses with decent ratings (3.5+)
-        if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 3.5) {
+        // Fetch photos for all businesses with available photos
+        if (place.photos && place.photos.length > 0) {
           const photoReference = place.photos[0].photo_reference;
           imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
-          console.log(`→ Fetching photo for high-rated business: ${place.name}`);
+          console.log(`→ Fetching photo for business: ${place.name}`);
         } else {
-          console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
+          console.log(`→ No photo available for: ${place.name}`);
         }
 
-        // COST REDUCTION: Only fetch place details for businesses with good ratings (3.8+)
-        if (place.place_id && (place.rating || 0) >= 3.8) {
+        // Fetch website and phone details for all businesses  
+        if (place.place_id) {
           try {
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
             const detailsResponse = await fetch(detailsUrl);
@@ -370,14 +370,12 @@ async function searchGooglePlaces(
               if (detailsData.result) {
                 website = detailsData.result.website || '';
                 phone = detailsData.result.formatted_phone_number || '';
-                console.log(`→ Fetched details for top business: ${place.name}`);
+                console.log(`→ Fetched details for business: ${place.name}`);
               }
             }
           } catch (error) {
             console.log(`→ Could not fetch details for: ${place.name}`);
           }
-        } else {
-          console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
         return {
