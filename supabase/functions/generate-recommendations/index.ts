@@ -252,7 +252,7 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
   return strategies;
 }
 
-// Google Places API integration (enhanced with dynamic radius and multiple search strategies)
+// COST-OPTIMIZED Google Places API integration
 async function searchGooglePlaces(
   category: string,
   latitude: number,
@@ -265,19 +265,19 @@ async function searchGooglePlaces(
     return [];
   }
   
-  console.log('Google Places API key found, testing API...');
+  console.log('Google Places API key found, using cost-optimized search...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
   
-  // Define multiple search strategies for different categories
-  const searchStrategies = getSearchStrategies(category);
-  const uniquePlaces = new Map(); // Use Map for better deduplication
+  // COST REDUCTION: Use only PRIMARY search strategy per category to reduce API calls
+  const searchStrategies = getSearchStrategies(category).slice(0, 2); // Max 2 strategies instead of all
+  const uniquePlaces = new Map();
   
   try {
-    console.log(`Searching Google Places for category "${category}" at coordinates ${latitude}, ${longitude} with ${radius}m radius`);
+    console.log(`Cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
     
-    // Execute multiple search strategies
+    // Execute limited search strategies
     for (const strategy of searchStrategies) {
       let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}`;
       
@@ -299,22 +299,12 @@ async function searchGooglePlaces(
 
       if (!response.ok) {
         console.error('Google Places API error:', response.status, response.statusText);
-        console.error('Request URL:', searchUrl.replace(googleApiKey, 'API_KEY_HIDDEN'));
-        
-        // Try to get error details from response
-        try {
-          const errorData = await response.text();
-          console.error('API Error Response:', errorData);
-        } catch (e) {
-          console.error('Could not read error response');
-        }
         continue;
       }
 
       const data = await response.json();
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
       
-      // Log API response status for debugging
       if (data.status && data.status !== 'OK') {
         console.error(`Google Places API returned status: ${data.status}`);
         if (data.error_message) {
@@ -334,69 +324,80 @@ async function searchGooglePlaces(
 
     // Convert Map values to array
     const uniqueResults = Array.from(uniquePlaces.values());
-    console.log(`Combined ${uniqueResults.length} unique businesses from all strategies`);
+    console.log(`Combined ${uniqueResults.length} unique businesses from cost-optimized search`);
 
     if (uniqueResults.length === 0) {
       return [];
     }
 
-    // Filter and convert Google Places results to Business objects with photos and details
+    // COST REDUCTION: Filter and limit to top businesses before expensive API calls
+    const topBusinesses = uniqueResults
+      .filter((place: any) => isRetailConsumerBusiness(place, category))
+      .sort((a: any, b: any) => {
+        // Sort by rating first, then review count
+        const ratingDiff = (b.rating || 0) - (a.rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+      })
+      .slice(0, 15); // REDUCED from 30 to 15 businesses
+
+    console.log(`Processing top ${topBusinesses.length} businesses to minimize API costs`);
+
+    // Process businesses with cost-optimized photo and details strategy
     const businesses = await Promise.all(
-      uniqueResults
-        .filter((place: any) => isRetailConsumerBusiness(place, category))
-        .slice(0, 30) // Increased results from multiple strategies
-        .map(async (place: any) => {
-          // Use Google's photo API if available, otherwise no image
-          let imageUrl = '';
-          let website = '';
-          let phone = '';
-          
-          if (place.photos && place.photos.length > 0) {
-            const photoReference = place.photos[0].photo_reference;
-            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
-            console.log(`→ Using Google photo for: ${place.name}`);
-          } else {
-            console.log(`→ No image available for: ${place.name}`);
-          }
+      topBusinesses.map(async (place: any) => {
+        let imageUrl = '';
+        let website = '';
+        let phone = '';
+        
+        // COST REDUCTION: Only fetch photos for highly rated businesses (4.0+)
+        if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 4.0) {
+          const photoReference = place.photos[0].photo_reference;
+          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`;
+          console.log(`→ Fetching photo for high-rated business: ${place.name}`);
+        } else {
+          console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
+        }
 
-          // Fetch place details for website and phone
-          if (place.place_id) {
-            try {
-              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
-              const detailsResponse = await fetch(detailsUrl);
-              
-              if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                if (detailsData.result) {
-                  website = detailsData.result.website || '';
-                  phone = detailsData.result.formatted_phone_number || '';
-                  if (website) {
-                    console.log(`→ Found website for ${place.name}: ${website}`);
-                  }
-                }
+        // COST REDUCTION: Only fetch place details for top-rated businesses (4.2+ rating)
+        if (place.place_id && (place.rating || 0) >= 4.2) {
+          try {
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${googleApiKey}`;
+            const detailsResponse = await fetch(detailsUrl);
+            
+            if (detailsResponse.ok) {
+              const detailsData = await detailsResponse.json();
+              if (detailsData.result) {
+                website = detailsData.result.website || '';
+                phone = detailsData.result.formatted_phone_number || '';
+                console.log(`→ Fetched details for top business: ${place.name}`);
               }
-            } catch (error) {
-              console.log(`→ Could not fetch details for: ${place.name}`);
             }
+          } catch (error) {
+            console.log(`→ Could not fetch details for: ${place.name}`);
           }
+        } else {
+          console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
+        }
 
-          return {
-            name: place.name,
-            address: place.vicinity || '',
-            description: place.types?.join(', ') || '',
-            phone: phone,
-            features: generateFeaturesFromGoogleData(place),
-            latitude: place.geometry?.location?.lat,
-            longitude: place.geometry?.location?.lng,
-            distance_miles: undefined, // Will calculate later
-            website: website,
-            image_url: imageUrl,
-            rating: place.rating || 0,
-            review_count: place.user_ratings_total || 0
-          };
-        })
+        return {
+          name: place.name,
+          address: place.vicinity || '',
+          description: place.types?.join(', ') || '',
+          phone: phone,
+          features: generateFeaturesFromGoogleData(place),
+          latitude: place.geometry?.location?.lat,
+          longitude: place.geometry?.location?.lng,
+          distance_miles: undefined, // Will calculate later
+          website: website,
+          image_url: imageUrl,
+          rating: place.rating || 0,
+          review_count: place.user_ratings_total || 0
+        };
+      })
     );
 
+    console.log(`Cost-optimized search completed: ${businesses.length} businesses processed`);
     return businesses.filter(b => b.name && b.address);
 
   } catch (error) {
