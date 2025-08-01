@@ -226,6 +226,13 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'drug stores' },
       { type: 'pharmacy' }
     );
+  } else if (category.includes('Bakeries')) {
+    strategies.push(
+      { keyword: 'bakeries' },
+      { keyword: 'bakery' },
+      { keyword: 'bread shops' },
+      { type: 'bakery' }
+    );
   } else if (category.includes('Medical care')) {
     strategies.push(
       { keyword: 'medical clinics' },

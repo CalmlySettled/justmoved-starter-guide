@@ -541,7 +541,8 @@ export default function OnboardingQuiz() {
                     {[
                       "Grocery stores", 
                       "Coffee shops", 
-                      "Restaurants"
+                      "Restaurants",
+                      "Bakeries"
                     ].map((option) => (
                       <div key={option} className="flex items-center space-x-3">
                         <Checkbox
