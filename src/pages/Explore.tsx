@@ -630,33 +630,34 @@ export default function Explore() {
                       {categoryResults.map((business, index) => (
                         <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
                           {/* Business Image */}
-                          <div className="aspect-video overflow-hidden">
-                            {business.image_url && (
+                          <div className="aspect-video overflow-hidden bg-muted">
+                            {business.image_url ? (
                               <img 
                                 src={business.image_url} 
                                 alt={business.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                                <MapPin className="h-12 w-12 text-muted-foreground/40" />
+                              </div>
                             )}
                           </div>
                           
                           <CardHeader className="pb-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                {business.website ? (
-                                  <a 
-                                    href={business.website.startsWith('http') ? business.website : `https://${business.website}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
-                                  >
-                                    {business.name}
-                                  </a>
-                                ) : (
-                                  <CardTitle className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all cursor-pointer">
-                                    {business.name}
-                                  </CardTitle>
-                                )}
+                                <a 
+                                  href={business.website ? 
+                                    (business.website.startsWith('http') ? business.website : `https://${business.website}`) : 
+                                    getGoogleMapsDirectionsUrl(business.address, business.name)
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
+                                >
+                                  {business.name}
+                                </a>
                                 <div className="flex items-center gap-2 mt-1">
                                   {business.distance_miles && (
                                     <>
