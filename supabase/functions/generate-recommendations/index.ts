@@ -16,7 +16,6 @@ interface QuizResponse {
   householdType: string;
   priorities: string[];
   priorityPreferences?: Record<string, string[]>;
-  priority_preferences?: Record<string, string[]>; // Alternative naming from database
   transportationStyle: string;
   budgetPreference: string;
   lifeStage: string;
@@ -1138,28 +1137,6 @@ async function getCachedRecommendations(
   }
 }
 
-// ✅ CRITICAL: Generate effective categories that include sub-preferences for accurate caching
-function generateEffectiveCategoriesForCache(priorities: string[], priorityPreferences: Record<string, string[]> = {}): string[] {
-  const effectiveCategories: string[] = [];
-  
-  for (const priority of priorities) {
-    const subPrefs = priorityPreferences[priority];
-    
-    if (subPrefs && subPrefs.length > 0) {
-      // Include sub-preferences in cache key to ensure unique caching
-      for (const subPref of subPrefs) {
-        effectiveCategories.push(`${priority}-${subPref}`);
-      }
-    } else {
-      // No sub-preferences, use main category
-      effectiveCategories.push(priority);
-    }
-  }
-  
-  console.log('Generated effective categories for cache:', effectiveCategories);
-  return effectiveCategories.sort(); // Sort for consistent cache keys
-}
-
 // COST-OPTIMIZED: Save recommendations to cache
 async function cacheRecommendations(
   supabase: any,
@@ -1348,19 +1325,16 @@ serve(async (req) => {
     const cachePreferences = {
       householdType: quizResponse.householdType,
       priorities: quizResponse.priorities,
-      priorityPreferences: quizResponse.priorityPreferences || quizResponse.priority_preferences || {},
+      priorityPreferences: quizResponse.priorityPreferences,
       transportationStyle: quizResponse.transportationStyle,
       budgetPreference: quizResponse.budgetPreference,
       lifeStage: quizResponse.lifeStage
     };
     
-    // ✅ CRITICAL: Include sub-preferences in cache lookup
-    const effectiveCategories = generateEffectiveCategoriesForCache(quizResponse.priorities, cachePreferences.priorityPreferences);
-    
     const cachedRecommendations = await getCachedRecommendations(
       supabase, 
       coordinates, 
-      effectiveCategories, // Use effective categories that include sub-preferences
+      quizResponse.priorities || [], 
       cachePreferences
     );
     
@@ -1386,7 +1360,7 @@ serve(async (req) => {
       await cacheRecommendations(
         supabase,
         coordinates,
-        effectiveCategories, // Use same effective categories for caching
+        quizResponse.priorities || [],
         cachePreferences,
         recommendations
       );
@@ -1516,98 +1490,22 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
   
-  // Enhanced priority mapping that considers sub-preferences
+  // Map user priorities to search terms that work with APIs
   const priorityMap: { [key: string]: string } = {
     "grocery stores": "grocery stores",
     "grocery": "grocery stores", 
     "food": "grocery stores",
     "shopping": "grocery stores",
-    // ✅ Grocery sub-preferences
-    "organic options": "organic grocery stores",
-    "budget-friendly": "discount grocery stores",
-    "international foods": "international grocery markets",
-    "24/7 availability": "24 hour grocery stores",
-    "local produce": "farmers markets local grocery",
-    
     "medical care": "medical health",
     "medical": "medical health",
-    "healthcare": "medical health", 
+    "healthcare": "medical health",
     "doctors": "medical health",
     "clinics": "medical health",
-    // ✅ Medical sub-preferences  
-    "pediatrician": "pediatricians",
-    "obgyn": "obgyn gynecologists",
-    "family physician": "family doctors",
-    "urgent care": "urgent care centers",
-    "dental care": "dentists dental care",
-    "mental health": "mental health therapists counselors",
-    
     "pharmacy": "pharmacy",
-    // ✅ Pharmacy sub-preferences
-    "drive-thru": "drive thru pharmacy",
-    "compounding": "compounding pharmacy",
-    "vaccinations": "pharmacy vaccinations",
-    "health screenings": "pharmacy health screenings",
-    
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
     "gym": "fitness gyms", 
     "exercise": "fitness gyms",
-    // ✅ Fitness sub-preferences
-    "gym/weightlifting": "gyms weightlifting fitness centers",
-    "yoga/pilates": "yoga pilates studios",
-    "swimming": "swimming pools aquatic centers",
-    "group classes": "fitness classes group training",
-    "outdoor activities": "outdoor fitness bootcamp",
-    
-    // ✅ DMV/Government sub-preferences  
-    "dmv office": "dmv motor vehicle department",
-    "post office": "post office usps",
-    "library": "public libraries",
-    "city hall": "city hall municipal building",
-    "voting locations": "voting polls election offices",
-    
-    // ✅ Faith communities sub-preferences
-    "non-denominational": "non denominational churches",
-    "catholic": "catholic churches",
-    "jewish": "synagogues jewish temples",
-    "muslim": "mosques islamic centers", 
-    "buddhist": "buddhist temples meditation centers",
-    "hindu": "hindu temples",
-    
-    // ✅ Public transit sub-preferences
-    "bus routes": "bus stations transit centers",
-    "train stations": "train stations railway",
-    "bike lanes": "bike paths cycling routes",
-    "park & ride": "park and ride commuter lots",
-    "commuter lots": "commuter parking transit",
-    
-    // ✅ Parks/Trails sub-preferences
-    "playgrounds": "playgrounds parks",
-    "dog parks": "dog parks pet areas",
-    "sports fields": "sports fields athletic complexes",
-    "walking trails": "walking trails paths",
-    "picnic areas": "picnic areas parks",
-    "hiking trails": "hiking trails nature paths",
-    "bike paths": "bike paths cycling trails",
-    "nature preserves": "nature preserves wildlife areas",
-    "scenic walks": "scenic walking paths",
-    "bird watching": "bird watching nature areas",
-    
-    // ✅ Restaurant sub-preferences
-    "family-friendly": "family restaurants kid friendly dining",
-    "date night spots": "romantic restaurants fine dining",
-    "quick casual": "fast casual restaurants quick service",
-    "coffee shops": "coffee shops cafes",
-    "food trucks": "food trucks mobile dining",
-    
-    // ✅ Social events sub-preferences
-    "family activities": "family activities community centers",
-    "young professionals": "young professional groups networking",
-    "hobby groups": "hobby clubs special interest groups",
-    "sports leagues": "sports leagues athletic clubs",
-    "volunteer opportunities": "volunteer organizations nonprofits",
-    
     "health": "fitness gyms",
     "schools": "schools education",
     "school": "schools education",
@@ -1680,60 +1578,26 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
-    // ✅ NEW: Check if user has specific sub-preferences for this priority
-    const subPreferences = quizResponse.priorityPreferences?.[priority] || quizResponse.priority_preferences?.[priority];
-    
-    if (subPreferences && subPreferences.length > 0) {
-      console.log(`→ Found ${subPreferences.length} sub-preferences for "${priority}":`, subPreferences);
-      
-      // Search for each specific sub-preference instead of the generic category
-      for (const subPref of subPreferences) {
-        const subPrefLower = subPref.toLowerCase();
-        console.log(`  → Processing sub-preference: "${subPref}"`);
-        
-        // Try to find a specific search term for this sub-preference
-        let searchTerm = priorityMap[subPrefLower];
-        if (!searchTerm) {
-          // If no specific mapping, use the sub-preference directly as search term
-          searchTerm = subPref.toLowerCase();
-        }
-        
-        console.log(`  → Using search term: "${searchTerm}" for sub-preference: "${subPref}"`);
+    // Check for direct matches or partial matches
+    let foundMatch = false;
+    for (const [key, searchTerm] of Object.entries(priorityMap)) {
+      if (priorityLower.includes(key) || key.includes(priorityLower)) {
+        console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
+        foundMatch = true;
         
         const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`  → Found ${businesses.length} businesses for "${subPref}"`);
+        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
         
         if (businesses.length > 0) {
-          // Use the sub-preference as the key instead of the main priority
-          recommendations[`${priority} - ${subPref}`] = businesses;
-          console.log(`  → Added ${businesses.length} businesses for "${priority} - ${subPref}"`);
+          recommendations[priority] = businesses;
+          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
         }
+        break;
       }
-    } else {
-      // No sub-preferences, use the generic search as before
-      console.log(`→ No sub-preferences found for "${priority}", using generic search`);
-      
-      // Check for direct matches or partial matches
-      let foundMatch = false;
-      for (const [key, searchTerm] of Object.entries(priorityMap)) {
-        if (priorityLower.includes(key) || key.includes(priorityLower)) {
-          console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
-          foundMatch = true;
-          
-          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-          console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
-          
-          if (businesses.length > 0) {
-            recommendations[priority] = businesses;
-            console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
-          }
-          break;
-        }
-      }
-      
-      if (!foundMatch) {
-        console.log(`No match found for priority: "${priority}"`);
-      }
+    }
+    
+    if (!foundMatch) {
+      console.log(`No match found for priority: "${priority}"`);
     }
   }
 
