@@ -1194,18 +1194,19 @@ export default function Dashboard() {
       return;
     }
     
-    // Apply filter using the edge function
-    if (!user) return;
+    // Apply filter using the new edge function
+    if (!user || !userProfile?.address) return;
     
     setFilterLoading(prev => ({ ...prev, [category]: true }));
     
     try {
       const { data, error } = await supabase.functions.invoke('filter-recommendations', {
         body: {
-          userId: user.id,
           category,
-          filters: [filter],
-          sortBy: 'relevance'
+          filter,
+          location: userProfile.address,
+          radius: 10000,
+          userId: user.id
         }
       });
       
@@ -1213,20 +1214,50 @@ export default function Dashboard() {
         throw error;
       }
       
+      // The new function returns data in format: { "Category - Subcategory": [businesses] }
+      const subCategoryName = Object.keys(data)[0]; // e.g., "Medical care - Dental care"
+      const businesses = data[subCategoryName] || [];
+      
+      // Convert businesses to our recommendation format
+      const filteredRecs = businesses.map((business: any) => ({
+        id: `filtered_${business.place_id}`,
+        user_id: user.id,
+        business_name: business.name,
+        business_address: business.address,
+        business_description: business.description,
+        business_phone: business.phone,
+        business_website: business.website,
+        business_features: business.features,
+        business_rating: business.rating,
+        business_review_count: business.review_count,
+        business_hours: business.hours,
+        business_image: business.image,
+        category: subCategoryName, // Use the sub-category name
+        created_at: new Date().toISOString(),
+        is_favorite: false,
+        distance_miles: null
+      }));
+      
       setFilteredRecommendations(prev => ({
         ...prev,
-        [category]: data.recommendations || []
+        [category]: filteredRecs
       }));
       
       setAdditionalResults(prev => ({
         ...prev,
-        [category]: data.additionalResults || 0
+        [category]: filteredRecs.length
       }));
       
-      if (data.additionalResults > 0) {
+      if (filteredRecs.length > 0) {
         toast({
           title: "Filter Applied",
-          description: `Found ${data.totalCount} ${filter.toLowerCase()} options, showing ${data.additionalResults} additional results.`,
+          description: `Found ${filteredRecs.length} ${filter.toLowerCase()} options in your area.`,
+        });
+      } else {
+        toast({
+          title: "No Results",
+          description: `No ${filter.toLowerCase()} options found in your area. Try expanding your search radius.`,
+          variant: "destructive"
         });
       }
       

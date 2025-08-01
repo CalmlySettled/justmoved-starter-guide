@@ -1571,33 +1571,107 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "atm": "banks financial"
   };
 
+  // Sub-preference search terms mapping
+  const getSubPreferenceSearchTerms = (category: string, subPreference: string): string[] => {
+    const subPrefMap: Record<string, Record<string, string[]>> = {
+      "Medical care": {
+        "dental care": ["dentist", "dental office", "dental clinic"],
+        "vision care": ["optometrist", "eye doctor", "vision center"],
+        "urgent care": ["urgent care", "walk-in clinic", "immediate care"],
+        "specialty care": ["specialist", "medical specialist", "specialty clinic"],
+        "mental health": ["therapist", "counselor", "mental health clinic"],
+        "pharmacy": ["pharmacy", "drugstore", "prescription"]
+      },
+      "Parks and recreation": {
+        "dog parks": ["dog park", "pet park", "off-leash park"],
+        "playgrounds": ["playground", "children's park", "family park"],
+        "hiking trails": ["hiking trail", "nature trail", "walking trail"],
+        "sports facilities": ["sports complex", "recreation center", "gym"],
+        "community centers": ["community center", "recreation center"]
+      },
+      "Grocery stores": {
+        "organic": ["organic grocery", "natural foods", "health food store"],
+        "international": ["international grocery", "ethnic market", "specialty foods"],
+        "specialty": ["specialty grocery", "gourmet market", "artisan foods"],
+        "bulk": ["bulk foods", "warehouse store", "wholesale grocery"]
+      },
+      "Restaurants": {
+        "family-friendly": ["family restaurant", "kid-friendly restaurant"],
+        "fine dining": ["fine dining", "upscale restaurant", "gourmet restaurant"],
+        "fast casual": ["fast casual", "quick service restaurant"],
+        "takeout": ["takeout restaurant", "delivery restaurant"],
+        "dietary restrictions": ["gluten-free restaurant", "vegan restaurant", "allergen-friendly"]
+      }
+    };
+    
+    return subPrefMap[category]?.[subPreference] || [subPreference];
+  };
+
   console.log('User priorities received:', quizResponse.priorities);
+  console.log('User priority preferences received:', quizResponse.priorityPreferences);
 
   // For each user priority, search for real businesses using APIs
   for (const priority of quizResponse.priorities) {
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
-    // Check for direct matches or partial matches
-    let foundMatch = false;
-    for (const [key, searchTerm] of Object.entries(priorityMap)) {
-      if (priorityLower.includes(key) || key.includes(priorityLower)) {
-        console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
-        foundMatch = true;
-        
-        const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
-        
-        if (businesses.length > 0) {
-          recommendations[priority] = businesses;
-          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
-        }
-        break;
-      }
-    }
+    // Check if user has specific sub-preferences for this priority
+    const subPreferences = quizResponse.priorityPreferences?.[priority] || [];
     
-    if (!foundMatch) {
-      console.log(`No match found for priority: "${priority}"`);
+    if (subPreferences.length > 0) {
+      console.log(`Found sub-preferences for "${priority}": ${subPreferences.join(', ')}`);
+      
+      // Generate specific searches for each sub-preference
+      for (const subPref of subPreferences) {
+        const subCategoryName = `${priority} - ${subPref.charAt(0).toUpperCase() + subPref.slice(1)}`;
+        console.log(`Processing sub-preference: "${subCategoryName}"`);
+        
+        // Get specific search terms for this sub-preference
+        const specificSearchTerms = getSubPreferenceSearchTerms(priority, subPref);
+        
+        for (const searchTerm of specificSearchTerms) {
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+          console.log(`Found ${businesses.length} businesses for sub-preference "${subPref}" with search term "${searchTerm}"`);
+          
+          if (businesses.length > 0) {
+            if (!recommendations[subCategoryName]) {
+              recommendations[subCategoryName] = [];
+            }
+            recommendations[subCategoryName].push(...businesses);
+          }
+        }
+        
+        // Remove duplicates within the sub-category
+        if (recommendations[subCategoryName]) {
+          const uniqueBusinesses = recommendations[subCategoryName].filter((business, index, arr) => 
+            index === arr.findIndex(b => b.name === business.name && b.address === business.address)
+          );
+          recommendations[subCategoryName] = uniqueBusinesses.slice(0, 10); // Limit to 10 results
+        }
+      }
+    } else {
+      // No sub-preferences, do general search for the priority
+      // Check for direct matches or partial matches
+      let foundMatch = false;
+      for (const [key, searchTerm] of Object.entries(priorityMap)) {
+        if (priorityLower.includes(key) || key.includes(priorityLower)) {
+          console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
+          foundMatch = true;
+          
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+          console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
+          
+          if (businesses.length > 0) {
+            recommendations[priority] = businesses;
+            console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
+          }
+          break;
+        }
+      }
+      
+      if (!foundMatch) {
+        console.log(`No match found for priority: "${priority}"`);
+      }
     }
   }
 
