@@ -50,7 +50,6 @@ interface QuizData {
   address: string;
   household: string[];
   priorities: string[];
-  priorityPreferences: Record<string, string[]>;
   transportation: string;
   lifestyle: string;
   lifeStage: string;
@@ -61,7 +60,6 @@ const initialData: QuizData = {
   address: "",
   household: [],
   priorities: [],
-  priorityPreferences: {},
   transportation: "",
   lifestyle: "",
   lifeStage: "",
@@ -98,9 +96,9 @@ export default function OnboardingQuiz() {
     checkUserStatus();
   }, [user]);
 
-  const totalQuestions = 7;
+  const totalQuestions = 6; // Reduced from 7 due to removing customization step
 
-  // Get background image for current question
+  // Get background image for current question (updated for 6 questions)
   const getBackgroundImage = (questionNum: number) => {
     switch (questionNum) {
       case 1: // Address - neighborhood/cityscape
@@ -109,13 +107,11 @@ export default function OnboardingQuiz() {
         return "/lovable-uploads/03da8b85-f799-4bcc-9d63-c91a0b6663a3.png";
       case 3: // Priorities - vibrant community
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
-      case 4: // Customize - personalization
-        return "https://images.unsplash.com/photo-1556155092-490a1ba16284?w=1200&h=800&fit=crop";
-      case 5: // Transportation - urban movement
+      case 4: // Transportation - urban movement
         return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
-      case 6: // Lifestyle - relaxed scene
+      case 5: // Lifestyle - relaxed scene
         return "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1200&h=800&fit=crop";
-      case 7: // Life stage - starry aspirational
+      case 6: // Life stage - starry aspirational
         return "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=1200&h=800&fit=crop";
       default:
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
@@ -178,48 +174,15 @@ export default function OnboardingQuiz() {
     }
   };
 
-  // Define sub-preferences for each main category
-  const subPreferenceOptions: Record<string, string[]> = {
-    "Grocery stores": ["Organic options", "Budget-friendly", "International foods", "24/7 availability", "Local produce"],
-    "Medical care": ["Pediatrician", "OBGYN", "Family physician", "Urgent care", "Dental care", "Mental health"],
-    "Pharmacy": ["24/7 availability", "Insurance accepted", "Drive-thru", "Compounding", "Vaccinations", "Health screenings"],
-    "Fitness options": ["Gym/weightlifting", "Yoga/pilates", "Swimming", "Group classes", "Outdoor activities"],
-    "DMV / Government services": ["DMV office", "Post office", "Library", "City hall", "Voting locations"],
-    "Faith communities": ["Non-denominational", "Catholic", "Jewish", "Muslim", "Buddhist", "Hindu"],
-    "Public transit / commute info": ["Bus routes", "Train stations", "Bike lanes", "Park & ride", "Commuter lots"],
-    "Parks / Trails": ["Playgrounds", "Dog parks", "Sports fields", "Walking trails", "Picnic areas", "Hiking trails", "Bike paths", "Nature preserves", "Scenic walks", "Bird watching"],
-    "Restaurants / coffee shops": ["Family-friendly", "Date night spots", "Quick casual", "Coffee shops", "Food trucks"],
-    "Social events or community groups": ["Family activities", "Young professionals", "Hobby groups", "Sports leagues", "Volunteer opportunities"]
-  };
-
-  const handleSubPreferenceChange = (category: string, preference: string, checked: boolean) => {
-    const currentPrefs = quizData.priorityPreferences[category] || [];
-    let newPrefs;
-    
-    if (checked) {
-      newPrefs = [...currentPrefs, preference];
-    } else {
-      newPrefs = currentPrefs.filter(p => p !== preference);
-    }
-    
-    setQuizData({
-      ...quizData,
-      priorityPreferences: {
-        ...quizData.priorityPreferences,
-        [category]: newPrefs
-      }
-    });
-  };
 
   const canProceed = () => {
     switch (currentQuestion) {
       case 1: return quizData.address.trim() !== "" && validAddressSelected;
       case 2: return quizData.household.length > 0;
       case 3: return quizData.priorities.length > 0;
-      case 4: return true; // Optional customization step
-      case 5: return quizData.transportation !== "";
-      case 6: return quizData.lifestyle !== "";
-      case 7: return quizData.lifeStage !== "";
+      case 4: return quizData.transportation !== "";
+      case 5: return quizData.lifestyle !== "";
+      case 6: return quizData.lifeStage !== "";
       default: return false;
     }
   };
@@ -250,7 +213,7 @@ export default function OnboardingQuiz() {
              address: String(quizData.address || ''),
              household_type: Array.isArray(quizData.household) ? quizData.household.join(', ') : String(quizData.household || ''),
              priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
-             priority_preferences: quizData.priorityPreferences || {},
+             priority_preferences: {},
              transportation_style: String(quizData.transportation || ''),
              budget_preference: String(quizData.lifestyle || ''),
              life_stage: String(quizData.lifeStage || ''),
@@ -313,7 +276,6 @@ export default function OnboardingQuiz() {
             address: quizData.address,
             householdType: quizData.household.join(', '),
             priorities: quizData.priorities,
-            priorityPreferences: quizData.priorityPreferences,
             transportationStyle: quizData.transportation,
             budgetPreference: quizData.lifestyle,
             lifeStage: quizData.lifeStage,
@@ -490,10 +452,9 @@ export default function OnboardingQuiz() {
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
-              {currentQuestion === 4 && "Let's personalize your selections"}
-              {currentQuestion === 5 && "How do you typically get around?"}
-              {currentQuestion === 6 && "Which best describes your vibe?"}
-              {currentQuestion === 7 && "Which stage of life best fits you right now?"}
+              {currentQuestion === 4 && "How do you typically get around?"}
+              {currentQuestion === 5 && "Which best describes your vibe?"}
+              {currentQuestion === 6 && "Which stage of life best fits you right now?"}
             </CardTitle>
             {currentQuestion === 2 && (
               <p className="text-muted-foreground text-center">Choose all that apply</p>
@@ -588,57 +549,8 @@ export default function OnboardingQuiz() {
               </div>
             )}
 
-            {/* Question 4: Customize Selections */}
+            {/* Question 4: Transportation Style */}
             {currentQuestion === 4 && (
-              <div className="space-y-6">
-                {quizData.priorities.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      No categories selected yet. Go back to select your priorities first.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-muted-foreground text-center mb-6">
-                      Customize your selected categories to get more relevant recommendations. This step is optional - skip if you prefer general results.
-                    </p>
-                    {quizData.priorities.map((category) => (
-                      <Card key={category} className="p-4 bg-background/50 border border-primary/20">
-                        <h3 className="font-semibold text-lg mb-3 text-primary">{category}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                           {subPreferenceOptions[category]?.map((preference) => (
-                            <div key={preference} className="flex items-center space-x-3 py-2">
-                              <Checkbox
-                                id={`${category}-${preference}`}
-                                checked={(quizData.priorityPreferences[category] || []).includes(preference)}
-                                onCheckedChange={(checked) => handleSubPreferenceChange(category, preference, checked as boolean)}
-                                className="min-h-[20px] min-w-[20px]"
-                              />
-                              <Label 
-                                htmlFor={`${category}-${preference}`} 
-                                className="text-sm font-medium cursor-pointer flex-1 py-1"
-                              >
-                                {preference}
-                              </Label>
-                            </div>
-                          )) || (
-                            <p className="text-muted-foreground text-sm">No specific options available for this category.</p>
-                          )}
-                        </div>
-                        {(quizData.priorityPreferences[category]?.length || 0) > 0 && (
-                          <div className="mt-3 text-xs text-muted-foreground">
-                            {quizData.priorityPreferences[category]?.length} preferences selected
-                          </div>
-                        )}
-                      </Card>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Question 5: Transportation Style */}
-            {currentQuestion === 5 && (
               <RadioGroup value={quizData.transportation} onValueChange={(value) => setQuizData({...quizData, transportation: value})}>
                 {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
                   <div key={option} className="flex items-center space-x-3 py-1.5">
@@ -649,8 +561,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 6: Budget/Lifestyle Preference */}
-            {currentQuestion === 6 && (
+            {/* Question 5: Budget/Lifestyle Preference */}
+            {currentQuestion === 5 && (
               <RadioGroup value={quizData.lifestyle} onValueChange={(value) => setQuizData({...quizData, lifestyle: value})}>
                 {[
                   "I want affordable & practical options",
@@ -665,8 +577,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 7: Stage of Life */}
-            {currentQuestion === 7 && (
+            {/* Question 6: Stage of Life */}
+            {currentQuestion === 6 && (
               <RadioGroup value={quizData.lifeStage} onValueChange={(value) => setQuizData({...quizData, lifeStage: value})}>
                 {[
                   "Young professional",
@@ -683,6 +595,7 @@ export default function OnboardingQuiz() {
                 ))}
               </RadioGroup>
             )}
+
 
 
             {/* Navigation Buttons */}
