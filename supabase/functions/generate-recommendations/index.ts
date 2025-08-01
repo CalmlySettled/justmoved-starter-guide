@@ -1161,6 +1161,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize Supabase client at the very beginning
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
     // Rate limiting check
     const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
@@ -1276,10 +1281,7 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Supabase client for caching
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Supabase client already initialized at the beginning of the function
 
     // Get coordinates - try cached first, then convert address
     let coordinates: { lat: number; lng: number } | null = null;
