@@ -199,7 +199,7 @@ const Profile = () => {
           console.error('Error clearing old recommendations:', deleteError);
         }
 
-        // Generate new recommendations for the new address
+        // ✅ COST PROTECTION: Pass userId to enable server-side caching
         try {
           const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
             body: {
@@ -211,7 +211,7 @@ const Profile = () => {
                 budgetRange: profileData.budget_preference,
                 movingTimeline: profileData.life_stage
               },
-              userId: user.id
+              userId: user.id  // CRITICAL: This enables server-side caching!
             }
           });
 

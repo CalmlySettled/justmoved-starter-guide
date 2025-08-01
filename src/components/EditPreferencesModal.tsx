@@ -167,7 +167,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
 
       if (error) throw error;
 
-      // Trigger recommendation regeneration with updated preferences
+      // ✅ COST PROTECTION: Pass userId to enable server-side caching
       try {
         const { error: recommendationError } = await supabase.functions.invoke('generate-recommendations', {
           body: {
@@ -181,7 +181,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
               settling_tasks: formData.settling_tasks,
               priority_preferences: formData.priority_preferences || {}
             },
-            userId: user.id
+            userId: user.id  // CRITICAL: This enables server-side caching!
           }
         });
         

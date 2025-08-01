@@ -80,10 +80,11 @@ export default function Recommendations() {
         return;
       }
       
+      // ✅ COST PROTECTION: Always pass userId to enable caching
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: { 
           quizResponse: quizData,
-          userId: user.id 
+          userId: user.id  // CRITICAL: This enables server-side caching!
         }
       });
 

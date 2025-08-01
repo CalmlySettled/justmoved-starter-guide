@@ -116,8 +116,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
 
     setLoading(true);
     try {
-      // Generate recommendations for new categories only, but include all priorities in the request
-      // so the edge function knows the user has existing priorities and doesn't add defaults
+      // ✅ COST PROTECTION: Pass userId to enable server-side caching
       const { data: recommendations, error: recError } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           quizResponse: {
@@ -127,15 +126,17 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
             transportationStyle: userProfile.transportation_style,
             budgetPreference: userProfile.budget_preference,
             lifeStage: userProfile.life_stage,
-            settlingTasks: userProfile.settling_tasks,
-            existingPriorities: currentPriorities // Add this so edge function knows user has existing priorities
-          }
+            settlingTasks: userProfile.settling_tasks
+            // Note: latitude/longitude will be resolved from address in edge function
+          },
+          userId: user.id  // CRITICAL: This enables server-side caching!
         }
       });
 
       if (recError) {
         throw recError;
       }
+
 
       if (recommendations?.recommendations) {
         // Save new recommendations to user_recommendations table (append, don't replace)
