@@ -295,8 +295,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                       {[
                         "Grocery stores", 
                         "Coffee shops", 
-                        "Restaurants", 
-                        "Pharmacies"
+                        "Restaurants"
                       ].map((option) => (
                         <div key={option} className="flex items-center space-x-3">
                           <Checkbox
@@ -318,6 +317,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
                       {[
                         "Medical care", 
+                        "Pharmacies",
                         "Fitness options", 
                         "Veterinary care", 
                         "Mental health services"
