@@ -271,12 +271,32 @@ export default function Explore() {
   // Load popular places for the location
   const loadPopularPlaces = async (locationData: LocationData) => {
     try {
+      const sampleCategories = ["restaurants", "coffee shops", "parks recreation"];
+      
+      // First, try to get cached recommendations
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', sampleCategories)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log('Using cached data for explore popular places');
+        setPopularPlaces(cachedData.recommendations as any);
+        return;
+      }
+
+      console.log('No cache found, making fresh API call for explore popular places');
+      
+      // Fallback to fresh API call if no cache
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           exploreMode: true,
           latitude: locationData.latitude,
           longitude: locationData.longitude,
-          categories: ["restaurants", "coffee shops", "parks recreation"] // Sample popular categories
+          categories: sampleCategories
         }
       });
 

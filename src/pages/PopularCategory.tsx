@@ -222,6 +222,43 @@ const PopularCategory = () => {
     try {
       const searchTerms = categoryConfig.searchTerms;
       
+      // First, try to get cached recommendations
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log('Using cached data for popular category');
+        
+        // Extract businesses from cached data that match our search terms
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 12);
+
+          setBusinesses(sortedResults);
+          toast.success(`Found ${sortedResults.length} popular places`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log('No cache found, making fresh API call for popular category');
+      
+      // Fallback to fresh API call if no cache
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           exploreMode: true,
