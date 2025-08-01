@@ -257,7 +257,9 @@ async function searchGooglePlaces(
   category: string,
   latitude: number,
   longitude: number,
-  customRadius?: number
+  customRadius?: number,
+  exploreMode: boolean = false,
+  userCoordinates?: { lat: number; lng: number }
 ): Promise<Business[]> {
   const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!googleApiKey) {
@@ -343,10 +345,20 @@ async function searchGooglePlaces(
     const topBusinesses = uniqueResults
       .filter((place: any) => isRetailConsumerBusiness(place, category))
       .sort((a: any, b: any) => {
-        // Sort by rating first, then review count
-        const ratingDiff = (b.rating || 0) - (a.rating || 0);
-        if (ratingDiff !== 0) return ratingDiff;
-        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+        // For explore mode, prioritize distance over ratings for essential needs
+        if (exploreMode) {
+          // Calculate distance for sorting (we'll do proper calculation later)
+          const distanceA = calculateDistance(userCoordinates.lat, userCoordinates.lng, 
+            a.geometry?.location?.lat || 0, a.geometry?.location?.lng || 0);
+          const distanceB = calculateDistance(userCoordinates.lat, userCoordinates.lng, 
+            b.geometry?.location?.lat || 0, b.geometry?.location?.lng || 0);
+          return distanceA - distanceB;
+        } else {
+          // For popular mode, sort by rating first, then review count
+          const ratingDiff = (b.rating || 0) - (a.rating || 0);
+          if (ratingDiff !== 0) return ratingDiff;
+          return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+        }
       })
       .slice(0, 15); // REDUCED from 30 to 15 businesses
 
@@ -563,7 +575,7 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
 }
 
 // Enhanced business search with cached coordinates and dynamic radius
-async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse): Promise<Business[]> {
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
   // Use dynamic radius based on location
@@ -571,7 +583,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
   // Use only Google Places API with dynamic radius
-  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius);
+  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
   console.log(`Google Places found ${businesses.length} businesses`);
   
   // Apply deduplication to remove same-name businesses within 5 miles
@@ -1236,7 +1248,7 @@ serve(async (req) => {
       
       for (const category of categories) {
         console.log(`Exploring category: "${category}"`);
-        const businesses = await searchBusinesses(category, coordinates);
+        const businesses = await searchBusinesses(category, coordinates, undefined, true);
         
         // Filter out businesses we've already seen globally
         const uniqueBusinesses = businesses.filter(business => {
