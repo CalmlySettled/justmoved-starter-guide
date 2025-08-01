@@ -47,6 +47,7 @@ interface SavedRecommendation {
   relevance_score?: number;
   is_displayed?: boolean;
   filter_metadata?: any;
+  subCategory?: string; // ✅ Add sub-category support for UI display
 }
 
 interface UserProfile {
@@ -1083,25 +1084,36 @@ export default function Dashboard() {
     }
     
     // Fallback to category-based placeholder images
-    switch (category.toLowerCase()) {
+    // ✅ Handle sub-categories by extracting parent category
+    const baseCategory = category.includes(' - ') ? category.split(' - ')[0].toLowerCase() : category.toLowerCase();
+    
+    switch (baseCategory) {
       case 'grocery stores':
         return "/lovable-uploads/f8f75b8b-1f7f-457f-a75e-b4ca2d363cf6.png";
       case 'fitness options':
         return "https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?w=400&h=200&fit=crop";
       case 'faith communities':
         return "https://images.unsplash.com/photo-1473177104440-ffee2f376098?w=400&h=200&fit=crop";
+      case 'medical care':
+        return "https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?w=400&h=200&fit=crop";
       default:
         return "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=200&fit=crop";
     }
   };
 
-  // Helper function to check if priority matches category
+  // Helper function to check if priority matches category (including sub-categories)
   const priorityMatchesCategory = (priority: string, category: string) => {
     const priorityLower = priority.toLowerCase();
     const categoryLower = category.toLowerCase();
     
     // Direct matches
     if (priorityLower === categoryLower) return true;
+    
+    // ✅ CRITICAL: Handle sub-category matches (e.g., "Medical care - Dental care" should match "Medical care")
+    if (categoryLower.includes(' - ')) {
+      const [parentCategory] = categoryLower.split(' - ');
+      if (priorityLower === parentCategory.trim()) return true;
+    }
     
     // Partial matches for common variations
     if (priorityLower.includes('grocery') && categoryLower.includes('grocery')) return true;
@@ -1123,9 +1135,19 @@ export default function Dashboard() {
     : recommendations;
 
   const groupedRecommendations = priorityFilteredRecommendations.reduce((groups, rec) => {
-    const category = rec.category;
-    if (!groups[category]) {
-      groups[category] = [];
+    let category = rec.category;
+    
+    // ✅ CRITICAL: Group sub-categories under their parent category for better UI organization
+    let displayCategory = category;
+    if (category.includes(' - ')) {
+      const [parentCategory, subCategory] = category.split(' - ');
+      displayCategory = parentCategory.trim();
+      // Keep track of sub-category info for display
+      rec.subCategory = subCategory.trim();
+    }
+    
+    if (!groups[displayCategory]) {
+      groups[displayCategory] = [];
     }
     
     // Use filtered recommendations if available, otherwise use original displayed recommendations
@@ -1134,7 +1156,7 @@ export default function Dashboard() {
       return groups;
     } else if (!activeCategoryFilter[category]) {
       // Only add recommendations that are marked as displayed (original 6)
-      groups[category].push(rec);
+      groups[displayCategory].push(rec);
     }
     
     return groups;
@@ -1427,6 +1449,22 @@ export default function Dashboard() {
                     <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                       {category.charAt(0).toUpperCase() + category.slice(1)}
                     </h2>
+                    {/* ✅ Show sub-category info if any recommendations have sub-categories */}
+                    {(() => {
+                      const subCategories = [...new Set(categoryRecs.filter(rec => rec.subCategory).map(rec => rec.subCategory))];
+                      if (subCategories.length > 0) {
+                        return (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {subCategories.map(subCat => (
+                              <span key={subCat} className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
+                                {subCat}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <p className="text-muted-foreground mt-1">
                       Your recommendations
                       {additionalResults[category] > 0 && (
