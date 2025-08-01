@@ -1083,7 +1083,10 @@ export default function Dashboard() {
     }
     
     // Fallback to category-based placeholder images
-    switch (category.toLowerCase()) {
+    // ✅ FIX: For sub-categories, use the parent category for fallback images
+    const categoryForFallback = category.includes(' - ') ? category.split(' - ')[0].toLowerCase() : category.toLowerCase();
+    
+    switch (categoryForFallback) {
       case 'grocery stores':
         return "/lovable-uploads/f8f75b8b-1f7f-457f-a75e-b4ca2d363cf6.png";
       case 'fitness options':
@@ -1103,6 +1106,12 @@ export default function Dashboard() {
     // Direct matches
     if (priorityLower === categoryLower) return true;
     
+    // ✅ SUB-CATEGORY MATCHING: Handle "Medical care - Dental care" matching "Medical care"
+    if (categoryLower.includes(' - ')) {
+      const parentCategory = categoryLower.split(' - ')[0];
+      if (priorityLower === parentCategory) return true;
+    }
+    
     // Partial matches for common variations
     if (priorityLower.includes('grocery') && categoryLower.includes('grocery')) return true;
     if (priorityLower.includes('fitness') && categoryLower.includes('fitness')) return true;
@@ -1116,6 +1125,14 @@ export default function Dashboard() {
     if (priorityLower.includes('social') && categoryLower.includes('social')) return true;
     
     return false;
+  };
+
+  // Extract sub-category name for display
+  const getSubCategoryName = (category: string): string | null => {
+    if (category.includes(' - ')) {
+      return category.split(' - ')[1];
+    }
+    return null;
   };
 
   const priorityFilteredRecommendations = activeFilter 
@@ -1423,10 +1440,18 @@ export default function Dashboard() {
                   <div className="p-3 bg-primary/10 rounded-2xl">
                     <span className="text-2xl">{getCategoryIcon(category)}</span>
                   </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </h2>
+                      {/* Show active sub-preferences for this category */}
+                      {userProfile?.priority_preferences?.[category]?.map((subPref) => (
+                        <Badge key={subPref} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                          {subPref}
+                        </Badge>
+                      ))}
+                    </div>
                     <p className="text-muted-foreground mt-1">
                       Your recommendations
                       {additionalResults[category] > 0 && (
@@ -1471,21 +1496,30 @@ export default function Dashboard() {
                                     {rec.business_name}
                                   </CardTitle>
                                 )}
-                              <div className="flex items-center gap-2 mt-1">
-                                {rec.distance_miles && (
-                                  <>
-                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-xs text-muted-foreground font-medium">
-                                      {rec.distance_miles} miles away
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">•</span>
-                                  </>
-                                )}
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">
-                                  Saved {new Date(rec.created_at).toLocaleDateString()}
-                                </span>
-                              </div>
+                               <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                 {/* Show sub-category badge if this is a specific recommendation */}
+                                 {getSubCategoryName(rec.category) && (
+                                   <>
+                                     <Badge variant="secondary" className="text-xs bg-accent/10 text-accent-foreground">
+                                       {getSubCategoryName(rec.category)}
+                                     </Badge>
+                                     <span className="text-xs text-muted-foreground">•</span>
+                                   </>
+                                 )}
+                                 {rec.distance_miles && (
+                                   <>
+                                     <MapPin className="h-3 w-3 text-muted-foreground" />
+                                     <span className="text-xs text-muted-foreground font-medium">
+                                       {rec.distance_miles} miles away
+                                     </span>
+                                     <span className="text-xs text-muted-foreground">•</span>
+                                   </>
+                                 )}
+                                 <Calendar className="h-3 w-3 text-muted-foreground" />
+                                 <span className="text-xs text-muted-foreground">
+                                   Saved {new Date(rec.created_at).toLocaleDateString()}
+                                 </span>
+                               </div>
                             </div>
                             <div className="flex gap-2">
                               <Button
