@@ -254,8 +254,11 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
     strategies.push(
       { keyword: 'veterinary clinics' },
       { keyword: 'animal hospitals' },
-      { keyword: 'pet care' },
-      { type: 'veterinary_care' }
+      { keyword: 'veterinarian' },
+      { keyword: 'vet clinic' },
+      { keyword: 'pet hospital' },
+      { type: 'veterinary_care' },
+      { type: 'hospital' }
     );
   } else if (category.includes('Mental health services')) {
     strategies.push(
