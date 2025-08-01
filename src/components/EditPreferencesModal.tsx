@@ -369,11 +369,12 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <RadioGroup 
                   value={formData.transportation_style} 
                   onValueChange={(value) => setFormData({...formData, transportation_style: value})}
+                  className="space-y-4"
                 >
                   {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option} id={`transport-${option}`} />
-                      <Label htmlFor={`transport-${option}`} className="text-sm">{option}</Label>
+                    <div key={option} className="flex items-center space-x-3">
+                      <RadioGroupItem value={option} id={`transport-${option}`} className="min-h-[24px] min-w-[24px]" />
+                      <Label htmlFor={`transport-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
                     </div>
                   ))}
                 </RadioGroup>
@@ -389,11 +390,12 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <RadioGroup 
                   value={formData.budget_preference} 
                   onValueChange={(value) => setFormData({...formData, budget_preference: value})}
+                  className="space-y-4"
                 >
                   {["Budget-conscious", "A mix of both", "Quality over price"].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option} id={`budget-${option}`} />
-                      <Label htmlFor={`budget-${option}`} className="text-sm">{option}</Label>
+                    <div key={option} className="flex items-center space-x-3">
+                      <RadioGroupItem value={option} id={`budget-${option}`} className="min-h-[24px] min-w-[24px]" />
+                      <Label htmlFor={`budget-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
                     </div>
                   ))}
                 </RadioGroup>
@@ -409,11 +411,12 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                 <RadioGroup 
                   value={formData.life_stage} 
                   onValueChange={(value) => setFormData({...formData, life_stage: value})}
+                  className="space-y-4"
                 >
                   {["Working professional", "Couple / newly married", "Family with young kids", "Family with teens", "Empty nester", "Retired", "Student"].map((option) => (
-                    <div key={option} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option} id={`life-${option}`} />
-                      <Label htmlFor={`life-${option}`} className="text-sm">{option}</Label>
+                    <div key={option} className="flex items-center space-x-3">
+                      <RadioGroupItem value={option} id={`life-${option}`} className="min-h-[24px] min-w-[24px]" />
+                      <Label htmlFor={`life-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
                     </div>
                   ))}
                 </RadioGroup>
