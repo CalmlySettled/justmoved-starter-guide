@@ -1497,23 +1497,92 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "grocery": "grocery stores", 
     "food": "grocery stores",
     "shopping": "grocery stores",
+    // ✅ Grocery sub-preferences
+    "organic options": "organic grocery stores",
+    "budget-friendly": "discount grocery stores",
+    "international foods": "international grocery markets",
+    "24/7 availability": "24 hour grocery stores",
+    "local produce": "farmers markets local grocery",
+    
     "medical care": "medical health",
     "medical": "medical health",
     "healthcare": "medical health", 
     "doctors": "medical health",
     "clinics": "medical health",
-    // ✅ NEW: Specific medical sub-preferences
+    // ✅ Medical sub-preferences  
     "pediatrician": "pediatricians",
-    "obgyn": "obgyn",
+    "obgyn": "obgyn gynecologists",
     "family physician": "family doctors",
     "urgent care": "urgent care centers",
     "dental care": "dentists dental care",
-    "mental health": "mental health therapists",
+    "mental health": "mental health therapists counselors",
+    
     "pharmacy": "pharmacy",
+    // ✅ Pharmacy sub-preferences
+    "drive-thru": "drive thru pharmacy",
+    "compounding": "compounding pharmacy",
+    "vaccinations": "pharmacy vaccinations",
+    "health screenings": "pharmacy health screenings",
+    
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
     "gym": "fitness gyms", 
     "exercise": "fitness gyms",
+    // ✅ Fitness sub-preferences
+    "gym/weightlifting": "gyms weightlifting fitness centers",
+    "yoga/pilates": "yoga pilates studios",
+    "swimming": "swimming pools aquatic centers",
+    "group classes": "fitness classes group training",
+    "outdoor activities": "outdoor fitness bootcamp",
+    
+    // ✅ DMV/Government sub-preferences  
+    "dmv office": "dmv motor vehicle department",
+    "post office": "post office usps",
+    "library": "public libraries",
+    "city hall": "city hall municipal building",
+    "voting locations": "voting polls election offices",
+    
+    // ✅ Faith communities sub-preferences
+    "non-denominational": "non denominational churches",
+    "catholic": "catholic churches",
+    "jewish": "synagogues jewish temples",
+    "muslim": "mosques islamic centers", 
+    "buddhist": "buddhist temples meditation centers",
+    "hindu": "hindu temples",
+    
+    // ✅ Public transit sub-preferences
+    "bus routes": "bus stations transit centers",
+    "train stations": "train stations railway",
+    "bike lanes": "bike paths cycling routes",
+    "park & ride": "park and ride commuter lots",
+    "commuter lots": "commuter parking transit",
+    
+    // ✅ Parks/Trails sub-preferences
+    "playgrounds": "playgrounds parks",
+    "dog parks": "dog parks pet areas",
+    "sports fields": "sports fields athletic complexes",
+    "walking trails": "walking trails paths",
+    "picnic areas": "picnic areas parks",
+    "hiking trails": "hiking trails nature paths",
+    "bike paths": "bike paths cycling trails",
+    "nature preserves": "nature preserves wildlife areas",
+    "scenic walks": "scenic walking paths",
+    "bird watching": "bird watching nature areas",
+    
+    // ✅ Restaurant sub-preferences
+    "family-friendly": "family restaurants kid friendly dining",
+    "date night spots": "romantic restaurants fine dining",
+    "quick casual": "fast casual restaurants quick service",
+    "coffee shops": "coffee shops cafes",
+    "food trucks": "food trucks mobile dining",
+    
+    // ✅ Social events sub-preferences
+    "family activities": "family activities community centers",
+    "young professionals": "young professional groups networking",
+    "hobby groups": "hobby clubs special interest groups",
+    "sports leagues": "sports leagues athletic clubs",
+    "volunteer opportunities": "volunteer organizations nonprofits",
+    
     "health": "fitness gyms",
     "schools": "schools education",
     "school": "schools education",
