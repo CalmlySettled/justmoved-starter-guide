@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.0e1b202b5ee942fc85134387071e2a07',
+  appId: 'com.calmlysettled.justmoved',
   appName: 'justmoved-starter-guide',
   webDir: 'dist',
   server: {
