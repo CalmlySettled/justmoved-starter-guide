@@ -314,58 +314,24 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
               </CardContent>
             </Card>
 
-            {/* Sub-Preferences - Only show if priorities are selected */}
+            {/* Sub-Preferences temporarily disabled - Coming soon */}
             {formData.priorities.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Customize Your Preferences</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Fine-tune your selected categories for more personalized recommendations
-                  </p>
+                  <CardTitle className="text-lg">Advanced Preferences</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    {formData.priorities.map((category) => (
-                      <div key={category} className="p-4 border rounded-lg bg-background/50">
-                        <h4 className="font-semibold text-primary mb-3">{category}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {subPreferenceOptions[category]?.map((preference) => (
-                            <div key={preference} className="flex items-center space-x-3 py-2">
-                              <Checkbox
-                                id={`${category}-${preference}`}
-                                checked={((formData.priority_preferences || {})[category] || []).includes(preference)}
-                                onCheckedChange={(checked) => handleSubPreferenceChange(category, preference, checked as boolean)}
-                                className="min-h-[20px] min-w-[20px]"
-                              />
-                              <Label 
-                                htmlFor={`${category}-${preference}`} 
-                                className="text-sm font-medium cursor-pointer flex-1 py-1"
-                              >
-                                {preference}
-                              </Label>
-                            </div>
-                          )) || (
-                            <p className="text-muted-foreground text-sm">No specific options available for this category.</p>
-                          )}
-                        </div>
-                        {((formData.priority_preferences || {})[category]?.length || 0) > 0 && (
-                          <div className="mt-3 text-xs text-muted-foreground">
-                            {(formData.priority_preferences || {})[category]?.length} preferences selected
-                          </div>
-                        )}
-                      </div>
-                     ))}
-                    
-                    {/* Coming soon message for enhanced filtering */}
-                    <div className="mt-6 p-4 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/30">
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">
-                          🚀 Enhanced filtering coming soon!
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          These preferences will soon power advanced filtering by specialty, rating, distance and more
-                        </p>
-                      </div>
+                  <div className="p-6 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/30">
+                    <div className="text-center space-y-2">
+                      <p className="text-base font-medium text-muted-foreground">
+                        🚀 Advanced preference customization coming soon!
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Soon you'll be able to fine-tune your selected categories with specific preferences like "Family-friendly restaurants", "24/7 pharmacies", "Outdoor fitness options" and more.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        For now, we'll use your main category selections to find the best recommendations in your area.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
