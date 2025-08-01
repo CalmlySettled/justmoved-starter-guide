@@ -16,6 +16,7 @@ interface QuizResponse {
   householdType: string;
   priorities: string[];
   priorityPreferences?: Record<string, string[]>;
+  priority_preferences?: Record<string, string[]>; // Alternative naming from database
   transportationStyle: string;
   budgetPreference: string;
   lifeStage: string;
@@ -1490,7 +1491,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
 async function generateRecommendations(quizResponse: QuizResponse, coordinates: { lat: number; lng: number }) {
   const recommendations: { [key: string]: Business[] } = {};
   
-  // Map user priorities to search terms that work with APIs
+  // Enhanced priority mapping that considers sub-preferences
   const priorityMap: { [key: string]: string } = {
     "grocery stores": "grocery stores",
     "grocery": "grocery stores", 
@@ -1498,9 +1499,16 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "shopping": "grocery stores",
     "medical care": "medical health",
     "medical": "medical health",
-    "healthcare": "medical health",
+    "healthcare": "medical health", 
     "doctors": "medical health",
     "clinics": "medical health",
+    // ✅ NEW: Specific medical sub-preferences
+    "pediatrician": "pediatricians",
+    "obgyn": "obgyn",
+    "family physician": "family doctors",
+    "urgent care": "urgent care centers",
+    "dental care": "dentists dental care",
+    "mental health": "mental health therapists",
     "pharmacy": "pharmacy",
     "fitness options": "fitness gyms",
     "fitness": "fitness gyms",
@@ -1578,26 +1586,60 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     const priorityLower = priority.toLowerCase();
     console.log(`Processing priority: "${priority}"`);
     
-    // Check for direct matches or partial matches
-    let foundMatch = false;
-    for (const [key, searchTerm] of Object.entries(priorityMap)) {
-      if (priorityLower.includes(key) || key.includes(priorityLower)) {
-        console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
-        foundMatch = true;
+    // ✅ NEW: Check if user has specific sub-preferences for this priority
+    const subPreferences = quizResponse.priorityPreferences?.[priority] || quizResponse.priority_preferences?.[priority];
+    
+    if (subPreferences && subPreferences.length > 0) {
+      console.log(`→ Found ${subPreferences.length} sub-preferences for "${priority}":`, subPreferences);
+      
+      // Search for each specific sub-preference instead of the generic category
+      for (const subPref of subPreferences) {
+        const subPrefLower = subPref.toLowerCase();
+        console.log(`  → Processing sub-preference: "${subPref}"`);
+        
+        // Try to find a specific search term for this sub-preference
+        let searchTerm = priorityMap[subPrefLower];
+        if (!searchTerm) {
+          // If no specific mapping, use the sub-preference directly as search term
+          searchTerm = subPref.toLowerCase();
+        }
+        
+        console.log(`  → Using search term: "${searchTerm}" for sub-preference: "${subPref}"`);
         
         const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
-        console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
+        console.log(`  → Found ${businesses.length} businesses for "${subPref}"`);
         
         if (businesses.length > 0) {
-          recommendations[priority] = businesses;
-          console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
+          // Use the sub-preference as the key instead of the main priority
+          recommendations[`${priority} - ${subPref}`] = businesses;
+          console.log(`  → Added ${businesses.length} businesses for "${priority} - ${subPref}"`);
         }
-        break;
       }
-    }
-    
-    if (!foundMatch) {
-      console.log(`No match found for priority: "${priority}"`);
+    } else {
+      // No sub-preferences, use the generic search as before
+      console.log(`→ No sub-preferences found for "${priority}", using generic search`);
+      
+      // Check for direct matches or partial matches
+      let foundMatch = false;
+      for (const [key, searchTerm] of Object.entries(priorityMap)) {
+        if (priorityLower.includes(key) || key.includes(priorityLower)) {
+          console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
+          foundMatch = true;
+          
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+          console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
+          
+          if (businesses.length > 0) {
+            recommendations[priority] = businesses;
+            console.log(`Added ${businesses.length} businesses to recommendations for "${priority}"`);
+          }
+          break;
+        }
+      }
+      
+      if (!foundMatch) {
+        console.log(`No match found for priority: "${priority}"`);
+      }
     }
   }
 
