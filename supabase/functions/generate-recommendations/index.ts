@@ -121,7 +121,7 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
   const typesString = types.join(' ').toLowerCase();
   
   // Exclude obvious B2B/wholesale businesses for grocery category
-  if (category.includes('grocery')) {
+  if (category.includes('Grocery stores')) {
     // Exclude wholesale distributors, suppliers, and B2B operations
     const excludeKeywords = [
       'wholesale', 'distributor', 'distribution', 'supplier', 'supply',
@@ -200,18 +200,33 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
 function getSearchStrategies(category: string): Array<{ keyword?: string; type?: string }> {
   const strategies = [];
   
-  if (category.includes('grocery')) {
+  if (category.includes('Grocery stores')) {
     strategies.push(
       { keyword: 'grocery stores' },
       { keyword: 'supermarkets' },
       { keyword: 'food markets' },
-      { keyword: 'supermarket' },
-      { keyword: 'grocery' },
-      { keyword: 'food store' },
       { type: 'grocery_or_supermarket' },
       { type: 'supermarket' }
     );
-  } else if (category.includes('medical')) {
+  } else if (category.includes('Coffee shops')) {
+    strategies.push(
+      { keyword: 'coffee shops' },
+      { keyword: 'cafes' },
+      { type: 'cafe' }
+    );
+  } else if (category.includes('Restaurants')) {
+    strategies.push(
+      { keyword: 'restaurants' },
+      { keyword: 'dining' },
+      { type: 'restaurant' }
+    );
+  } else if (category.includes('Pharmacies')) {
+    strategies.push(
+      { keyword: 'pharmacies' },
+      { keyword: 'drug stores' },
+      { type: 'pharmacy' }
+    );
+  } else if (category.includes('Medical care')) {
     strategies.push(
       { keyword: 'medical clinics' },
       { keyword: 'doctors offices' },
@@ -220,7 +235,7 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { type: 'doctor' },
       { type: 'hospital' }
     );
-  } else if (category.includes('fitness')) {
+  } else if (category.includes('Fitness options')) {
     strategies.push(
       { keyword: 'fitness gyms' },
       { keyword: 'health clubs' },
@@ -228,21 +243,80 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'pilates studios' },
       { type: 'gym' }
     );
-  } else if (category.includes('restaurants') || category.includes('cafes')) {
+  } else if (category.includes('Veterinary care')) {
     strategies.push(
-      { keyword: 'restaurants' },
-      { keyword: 'coffee shops' },
-      { keyword: 'cafes' },
-      { type: 'restaurant' },
-      { type: 'cafe' }
+      { keyword: 'veterinary clinics' },
+      { keyword: 'animal hospitals' },
+      { keyword: 'pet care' },
+      { type: 'veterinary_care' }
     );
-  } else if (category.includes('hardware')) {
+  } else if (category.includes('Mental health services')) {
+    strategies.push(
+      { keyword: 'mental health services' },
+      { keyword: 'therapy' },
+      { keyword: 'counseling' },
+      { type: 'doctor' }
+    );
+  } else if (category.includes('DMV / Government services')) {
+    strategies.push(
+      { keyword: 'DMV' },
+      { keyword: 'government services' },
+      { keyword: 'city hall' },
+      { type: 'local_government_office' }
+    );
+  } else if (category.includes('Public transit / commute info')) {
+    strategies.push(
+      { keyword: 'public transportation' },
+      { keyword: 'bus stations' },
+      { keyword: 'train stations' },
+      { type: 'transit_station' },
+      { type: 'bus_station' }
+    );
+  } else if (category.includes('Hardware stores')) {
     strategies.push(
       { keyword: 'hardware stores' },
       { keyword: 'home improvement stores' },
       { keyword: 'building supplies' },
       { type: 'hardware_store' },
       { type: 'home_goods_store' }
+    );
+  } else if (category.includes('Banking / Financial')) {
+    strategies.push(
+      { keyword: 'banks' },
+      { keyword: 'credit unions' },
+      { keyword: 'financial services' },
+      { type: 'bank' },
+      { type: 'atm' }
+    );
+  } else if (category.includes('Parks / Trails')) {
+    strategies.push(
+      { keyword: 'parks' },
+      { keyword: 'trails' },
+      { keyword: 'recreation areas' },
+      { type: 'park' }
+    );
+  } else if (category.includes('Faith communities')) {
+    strategies.push(
+      { keyword: 'churches' },
+      { keyword: 'temples' },
+      { keyword: 'faith communities' },
+      { type: 'church' },
+      { type: 'place_of_worship' }
+    );
+  } else if (category.includes('Social events / community groups')) {
+    strategies.push(
+      { keyword: 'community centers' },
+      { keyword: 'social clubs' },
+      { keyword: 'event venues' },
+      { type: 'community_center' }
+    );
+  } else if (category.includes('Libraries / Education')) {
+    strategies.push(
+      { keyword: 'libraries' },
+      { keyword: 'education centers' },
+      { keyword: 'schools' },
+      { type: 'library' },
+      { type: 'school' }
     );
   } else {
     // Default single strategy for other categories

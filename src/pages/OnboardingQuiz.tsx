@@ -98,7 +98,7 @@ export default function OnboardingQuiz() {
     checkUserStatus();
   }, [user]);
 
-  const totalQuestions = 7; // Added mock question #4 for testing grouped categories
+  const totalQuestions = 6; // Updated for grouped categories
 
   // Get background image for current question (updated for 7 questions)
   const getBackgroundImage = (questionNum: number) => {
@@ -109,13 +109,11 @@ export default function OnboardingQuiz() {
         return "/lovable-uploads/03da8b85-f799-4bcc-9d63-c91a0b6663a3.png";
       case 3: // Priorities - vibrant community
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
-      case 4: // Mock question - specific categories
-        return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=800&fit=crop";
-      case 5: // Transportation - urban movement
+      case 4: // Transportation - urban movement
         return "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop";
-      case 6: // Lifestyle - relaxed scene
+      case 5: // Lifestyle - relaxed scene
         return "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1200&h=800&fit=crop";
-      case 7: // Life stage - starry aspirational
+      case 6: // Life stage - starry aspirational
         return "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=1200&h=800&fit=crop";
       default:
         return "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1200&h=800&fit=crop";
@@ -163,7 +161,7 @@ export default function OnboardingQuiz() {
   };
 
   const handlePrioritiesChange = (value: string, checked: boolean) => {
-    if (checked && quizData.priorities.length < 5) {
+    if (checked && quizData.priorities.length < 8) {
       setQuizData({ ...quizData, priorities: [...quizData.priorities, value] });
     } else if (!checked) {
       setQuizData({ ...quizData, priorities: quizData.priorities.filter(item => item !== value) });
@@ -192,10 +190,9 @@ export default function OnboardingQuiz() {
       case 1: return quizData.address.trim() !== "" && validAddressSelected;
       case 2: return quizData.household.length > 0;
       case 3: return quizData.priorities.length > 0;
-      case 4: return quizData.specificCategories.length > 0; // Mock question #4
-      case 5: return quizData.transportation !== "";
-      case 6: return quizData.lifestyle !== "";
-      case 7: return quizData.lifeStage !== "";
+      case 4: return quizData.transportation !== "";
+      case 5: return quizData.lifestyle !== "";
+      case 6: return quizData.lifeStage !== "";
       default: return false;
     }
   };
@@ -465,19 +462,15 @@ export default function OnboardingQuiz() {
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && "Who did you move with?"}
               {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
-              {currentQuestion === 4 && "🧪 MOCK: Which specific categories interest you?"}
-              {currentQuestion === 5 && "How do you typically get around?"}
-              {currentQuestion === 6 && "Which best describes your vibe?"}
-              {currentQuestion === 7 && "Which stage of life best fits you right now?"}
+              {currentQuestion === 4 && "How do you typically get around?"}
+              {currentQuestion === 5 && "Which best describes your vibe?"}
+              {currentQuestion === 6 && "Which stage of life best fits you right now?"}
             </CardTitle>
             {currentQuestion === 2 && (
               <p className="text-muted-foreground text-center">Choose all that apply</p>
             )}
             {currentQuestion === 3 && (
-              <p className="text-muted-foreground">Choose up to 5 options</p>
-            )}
-            {currentQuestion === 4 && (
-              <p className="text-muted-foreground">Choose up to 8 specific categories. Selected: {quizData.specificCategories.length}/8</p>
+              <p className="text-muted-foreground">Choose up to 8 options</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
@@ -534,43 +527,11 @@ export default function OnboardingQuiz() {
               </div>
             )}
 
-            {/* Question 3: Daily Life Priorities */}
+            {/* Question 3: Specific Categories (Grouped) */}
             {currentQuestion === 3 && (
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4">
-                  Selected: {quizData.priorities.length}/5
-                </div>
-                {[
-                  "Grocery stores",
-                  "Medical care",
-                  "Pharmacy", 
-                  "DMV / Government services",
-                  "Public transit / commute info",
-                  "Restaurants / coffee shops",
-                  "Fitness options",
-                  "Faith communities",
-                  "Parks / Trails",
-                  "Social events or community groups"
-                ].map((option) => (
-                  <div key={option} className="flex items-center space-x-3">
-                    <Checkbox
-                      id={option}
-                      checked={quizData.priorities.includes(option)}
-                      onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
-                      disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 5}
-                      className="min-h-[24px] min-w-[24px]"
-                    />
-                    <Label htmlFor={option} className="text-base cursor-pointer flex-1">{option}</Label>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* MOCK Question 4: Specific Categories (Grouped) */}
-            {currentQuestion === 4 && (
               <div className="space-y-8">
-                <div className="text-center text-sm text-orange-600 bg-orange-50 p-3 rounded-lg border border-orange-200">
-                  🧪 <strong>MOCK PREVIEW</strong> - This is a visual test of the new grouped category approach
+                <div className="text-sm text-muted-foreground mb-4">
+                  Selected: {quizData.priorities.length}/8
                 </div>
                 
                 {/* Food & Dining Group */}
@@ -581,14 +542,14 @@ export default function OnboardingQuiz() {
                       "Grocery stores", 
                       "Coffee shops", 
                       "Restaurants", 
-                      "Food delivery"
+                      "Pharmacies"
                     ].map((option) => (
                       <div key={option} className="flex items-center space-x-3">
                         <Checkbox
                           id={option}
-                          checked={quizData.specificCategories.includes(option)}
-                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
-                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          checked={quizData.priorities.includes(option)}
+                          onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                          disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 8}
                           className="min-h-[20px] min-w-[20px]"
                         />
                         <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
@@ -602,17 +563,17 @@ export default function OnboardingQuiz() {
                   <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">⚕️ Health & Wellness</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
                     {[
-                      "Pharmacies", 
-                      "Urgent care", 
-                      "Dental offices", 
-                      "Fitness centers"
+                      "Medical care", 
+                      "Fitness options", 
+                      "Veterinary care", 
+                      "Mental health services"
                     ].map((option) => (
                       <div key={option} className="flex items-center space-x-3">
                         <Checkbox
                           id={option}
-                          checked={quizData.specificCategories.includes(option)}
-                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
-                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          checked={quizData.priorities.includes(option)}
+                          onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                          disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 8}
                           className="min-h-[20px] min-w-[20px]"
                         />
                         <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
@@ -626,17 +587,17 @@ export default function OnboardingQuiz() {
                   <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🏛️ Services & Essentials</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
                     {[
-                      "Banks", 
-                      "Post office", 
-                      "DMV services", 
-                      "Auto repair"
+                      "DMV / Government services", 
+                      "Public transit / commute info", 
+                      "Hardware stores", 
+                      "Banking / Financial"
                     ].map((option) => (
                       <div key={option} className="flex items-center space-x-3">
                         <Checkbox
                           id={option}
-                          checked={quizData.specificCategories.includes(option)}
-                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
-                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          checked={quizData.priorities.includes(option)}
+                          onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                          disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 8}
                           className="min-h-[20px] min-w-[20px]"
                         />
                         <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
@@ -650,17 +611,17 @@ export default function OnboardingQuiz() {
                   <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🎯 Recreation & Community</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
                     {[
-                      "Parks & trails", 
-                      "Libraries", 
-                      "Community centers", 
-                      "Entertainment venues"
+                      "Parks / Trails", 
+                      "Faith communities", 
+                      "Social events / community groups", 
+                      "Libraries / Education"
                     ].map((option) => (
                       <div key={option} className="flex items-center space-x-3">
                         <Checkbox
                           id={option}
-                          checked={quizData.specificCategories.includes(option)}
-                          onCheckedChange={(checked) => handleSpecificCategoriesChange(option, checked as boolean)}
-                          disabled={!quizData.specificCategories.includes(option) && quizData.specificCategories.length >= 8}
+                          checked={quizData.priorities.includes(option)}
+                          onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                          disabled={!quizData.priorities.includes(option) && quizData.priorities.length >= 8}
                           className="min-h-[20px] min-w-[20px]"
                         />
                         <Label htmlFor={option} className="text-sm cursor-pointer flex-1">{option}</Label>
@@ -671,8 +632,8 @@ export default function OnboardingQuiz() {
               </div>
             )}
 
-            {/* Question 5: Transportation Style */}
-            {currentQuestion === 5 && (
+            {/* Question 4: Transportation Style */}
+            {currentQuestion === 4 && (
               <RadioGroup value={quizData.transportation} onValueChange={(value) => setQuizData({...quizData, transportation: value})}>
                 {["Car", "Public transit", "Bike / walk", "Rideshare only"].map((option) => (
                   <div key={option} className="flex items-center space-x-3 py-1.5">
@@ -683,8 +644,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 6: Budget/Lifestyle Preference */}
-            {currentQuestion === 6 && (
+            {/* Question 5: Budget/Lifestyle Preference */}
+            {currentQuestion === 5 && (
               <RadioGroup value={quizData.lifestyle} onValueChange={(value) => setQuizData({...quizData, lifestyle: value})}>
                 {[
                   "I want affordable & practical options",
@@ -699,8 +660,8 @@ export default function OnboardingQuiz() {
               </RadioGroup>
             )}
 
-            {/* Question 7: Stage of Life */}
-            {currentQuestion === 7 && (
+            {/* Question 6: Stage of Life */}
+            {currentQuestion === 6 && (
               <RadioGroup value={quizData.lifeStage} onValueChange={(value) => setQuizData({...quizData, lifeStage: value})}>
                 {[
                   "Young professional",

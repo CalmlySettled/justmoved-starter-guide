@@ -64,7 +64,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
   }, [userProfile]);
 
   const handlePrioritiesChange = (value: string, checked: boolean) => {
-    if (checked && formData.priorities.length < 5) {
+    if (checked && formData.priorities.length < 8) {
       setFormData({ ...formData, priorities: [...formData.priorities, value] });
     } else if (!checked) {
       setFormData({ ...formData, priorities: formData.priorities.filter(item => item !== value) });
@@ -283,33 +283,107 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Priorities</CardTitle>
-                <p className="text-sm text-muted-foreground">Choose up to 5 options (Selected: {formData.priorities.length}/5)</p>
+                <p className="text-sm text-muted-foreground">Choose up to 8 options (Selected: {formData.priorities.length}/8)</p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    "Grocery stores",
-                    "Medical care",
-                    "Pharmacy", 
-                    "DMV / Government services",
-                    "Public transit / commute info",
-                    "Restaurants / coffee shops",
-                    "Fitness options",
-                    "Faith communities",
-                    "Parks / Trails",
-                    "Social events or community groups"
-                  ].map((option) => (
-                    <div key={option} className="flex items-center space-x-3">
-                      <Checkbox
-                        id={`priority-${option}`}
-                        checked={formData.priorities.includes(option)}
-                        onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
-                        disabled={!formData.priorities.includes(option) && formData.priorities.length >= 5}
-                        className="min-h-[24px] min-w-[24px]"
-                      />
-                      <Label htmlFor={`priority-${option}`} className="text-base cursor-pointer flex-1">{option}</Label>
+                <div className="space-y-8">
+                  
+                  {/* Food & Dining Group */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🍽️ Food & Dining</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                      {[
+                        "Grocery stores", 
+                        "Coffee shops", 
+                        "Restaurants", 
+                        "Pharmacies"
+                      ].map((option) => (
+                        <div key={option} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`priority-${option}`}
+                            checked={formData.priorities.includes(option)}
+                            onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                            disabled={!formData.priorities.includes(option) && formData.priorities.length >= 8}
+                            className="min-h-[20px] min-w-[20px]"
+                          />
+                          <Label htmlFor={`priority-${option}`} className="text-sm cursor-pointer flex-1">{option}</Label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Health & Wellness Group */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">⚕️ Health & Wellness</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                      {[
+                        "Medical care", 
+                        "Fitness options", 
+                        "Veterinary care", 
+                        "Mental health services"
+                      ].map((option) => (
+                        <div key={option} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`priority-${option}`}
+                            checked={formData.priorities.includes(option)}
+                            onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                            disabled={!formData.priorities.includes(option) && formData.priorities.length >= 8}
+                            className="min-h-[20px] min-w-[20px]"
+                          />
+                          <Label htmlFor={`priority-${option}`} className="text-sm cursor-pointer flex-1">{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Services & Essentials Group */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🏛️ Services & Essentials</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                      {[
+                        "DMV / Government services", 
+                        "Public transit / commute info", 
+                        "Hardware stores", 
+                        "Banking / Financial"
+                      ].map((option) => (
+                        <div key={option} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`priority-${option}`}
+                            checked={formData.priorities.includes(option)}
+                            onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                            disabled={!formData.priorities.includes(option) && formData.priorities.length >= 8}
+                            className="min-h-[20px] min-w-[20px]"
+                          />
+                          <Label htmlFor={`priority-${option}`} className="text-sm cursor-pointer flex-1">{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Recreation & Community Group */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">🎯 Recreation & Community</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                      {[
+                        "Parks / Trails", 
+                        "Faith communities", 
+                        "Social events / community groups", 
+                        "Libraries / Education"
+                      ].map((option) => (
+                        <div key={option} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`priority-${option}`}
+                            checked={formData.priorities.includes(option)}
+                            onCheckedChange={(checked) => handlePrioritiesChange(option, checked as boolean)}
+                            disabled={!formData.priorities.includes(option) && formData.priorities.length >= 8}
+                            className="min-h-[20px] min-w-[20px]"
+                          />
+                          <Label htmlFor={`priority-${option}`} className="text-sm cursor-pointer flex-1">{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
                 </div>
               </CardContent>
             </Card>
