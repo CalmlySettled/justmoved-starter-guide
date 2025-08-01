@@ -318,7 +318,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
                       {[
                         "Medical care", 
-                        "Pharmacies",
+                        "Pharmacy",
                         "Fitness options", 
                         "Veterinary care", 
                         "Mental health services"
