@@ -283,14 +283,14 @@ export default function Explore() {
         .single();
 
       if (!cacheError && cachedData?.recommendations) {
-        console.log('Using cached data for explore popular places');
+        console.log('✅ Using cached data for explore popular places - NO API COST!');
         setPopularPlaces(cachedData.recommendations as any);
         return;
       }
 
-      console.log('No cache found, making fresh API call for explore popular places');
+      console.log('❌ No valid cache found, making fresh API call for explore popular places');
       
-      // Fallback to fresh API call if no cache
+      // Only make API call if no cache found
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           exploreMode: true,
@@ -328,6 +328,22 @@ export default function Explore() {
     setIsLoadingCategory(true);
     
     try {
+      // Check cache first for single category
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', [category.searchTerm])
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]) {
+        console.log('✅ Using cached data for category:', category.searchTerm, '- NO API COST!');
+        setCategoryResults(cachedData.recommendations[category.searchTerm]);
+        return;
+      }
+
+      console.log('❌ No cache for category:', category.searchTerm, '- making API call');
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           exploreMode: true,
@@ -370,16 +386,33 @@ export default function Explore() {
     console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          exploreMode: true,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: categoriesToSearch
-        }
-      });
+      // Check cache first for themed pack categories
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', categoriesToSearch)
+        .limit(1)
+        .single();
 
-      if (error) throw error;
+      let data: any;
+      if (!cacheError && cachedData?.recommendations) {
+        console.log('✅ Using cached data for themed pack - NO API COST!');
+        data = { recommendations: cachedData.recommendations };
+      } else {
+        console.log('❌ No cache for themed pack - making API call');
+        const response = await supabase.functions.invoke('generate-recommendations', {
+          body: {
+            exploreMode: true,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            categories: categoriesToSearch
+          }
+        });
+
+        if (response.error) throw response.error;
+        data = response.data;
+      }
       
       // If searching for a specific category, show only those results
       if (specificCategory) {
