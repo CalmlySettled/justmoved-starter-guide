@@ -168,8 +168,9 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
       if (error) throw error;
 
       // ✅ COST PROTECTION: Pass userId to enable server-side caching
+      console.log('🔄 Generating recommendations with new preferences...');
       try {
-        const { error: recommendationError } = await supabase.functions.invoke('generate-recommendations', {
+        const { data: regenData, error: recommendationError } = await supabase.functions.invoke('generate-recommendations', {
           body: {
             quizResponse: {
               address: sanitizedAddress,
@@ -186,23 +187,30 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
         });
         
         if (recommendationError) {
-          console.error('Error generating recommendations:', recommendationError);
+          console.error('❌ Error generating recommendations:', recommendationError);
           // Don't throw here - preferences were saved successfully
+        } else {
+          console.log('✅ Recommendations generated successfully:', regenData);
         }
       } catch (recommendationError) {
-        console.error('Failed to regenerate recommendations:', recommendationError);
+        console.error('❌ Failed to regenerate recommendations:', recommendationError);
         // Don't throw here - preferences were saved successfully
       }
 
       await logSecurityEvent('Preferences updated', { userId: user.id });
 
       toast({
-        title: "Preferences Updated",
+        title: "Preferences Updated", 
         description: "Your preferences have been updated and new recommendations are being generated.",
       });
 
       setOpen(false);
-      onProfileUpdate();
+      
+      // Wait a moment for recommendations to be saved, then refresh Dashboard
+      setTimeout(() => {
+        console.log('🔄 Triggering Dashboard refresh...');
+        onProfileUpdate();
+      }, 2000);
     } catch (error) {
       console.error('Error updating preferences:', error);
       await logSecurityEvent('Preferences update failed', { 
