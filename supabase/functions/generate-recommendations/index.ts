@@ -1503,15 +1503,21 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
   try {
-    // First, delete existing recommendations for this user to avoid conflicts
+    // Only delete existing recommendations for the categories being regenerated
+    const categoriesToUpdate = Object.keys(recommendations);
+    console.log(`Deleting existing recommendations for categories: ${categoriesToUpdate.join(', ')}`);
+    
     const { error: deleteError } = await supabase
       .from('user_recommendations')
       .delete()
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .in('category', categoriesToUpdate);
     
     if (deleteError) {
-      console.error('Error deleting existing recommendations:', deleteError);
+      console.error('Error deleting existing recommendations for categories:', deleteError);
       // Don't throw - continue with insertion
+    } else {
+      console.log(`✅ Successfully removed old recommendations for categories: ${categoriesToUpdate.join(', ')}`);
     }
     
     const recommendationsToInsert = [];
