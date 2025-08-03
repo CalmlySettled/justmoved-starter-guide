@@ -295,32 +295,24 @@ export default function Explore() {
       const result = await cachedApiCall(
         cacheKey,
         async () => {
-          const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-            body: {
-              quizResponse: {
-                address: locationData.city || `${locationData.latitude}, ${locationData.longitude}`,
-                householdType: 'Individual',
-                priorities: ['Restaurants', 'Coffee shops', 'Grocery stores', 'Pharmacies'],
-                transportationStyle: 'Car',
-                budgetPreference: 'Mid-range',
-                lifeStage: 'Exploring',
-                settlingTasks: [],
-                latitude: optimizedLocation.lat,
-                longitude: optimizedLocation.lng
-              },
-              exploreMode: true,
-              userId: user?.id
-            }
-          });
-
-          if (error) {
-            throw error;
+        const { data, error } = await supabase.functions.invoke('filter-recommendations', {
+          body: {
+            category: 'restaurants',
+            filter: 'popular local spots',
+            location: locationData.city || `${locationData.latitude}, ${locationData.longitude}`,
+            radius: 10000,
+            userId: user?.id
           }
+        });
 
-          return data;
-        },
-        20 * 60 * 1000 // 20 minute cache for popular places
-      );
+        if (error) {
+          throw error;
+        }
+
+        return data;
+      },
+      20 * 60 * 1000 // 20 minute cache for popular places
+    );
 
       console.log('✅ Popular places loaded:', result);
       setPopularPlaces(result?.recommendations || {});
@@ -438,12 +430,13 @@ export default function Explore() {
         data = { recommendations: cachedData.recommendations };
       } else {
         console.log('❌ No cache for themed pack - making API call');
-        const response = await supabase.functions.invoke('generate-recommendations', {
+        const response = await supabase.functions.invoke('filter-recommendations', {
           body: {
-            exploreMode: true,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            categories: categoriesToSearch
+            category: categoriesToSearch[0] || 'restaurants',
+            filter: categoriesToSearch.join(' '),
+            location: `${location.latitude}, ${location.longitude}`,
+            radius: 10000,
+            userId: user?.id
           }
         });
 
@@ -458,7 +451,7 @@ export default function Explore() {
       } else {
         // Flatten results from all categories in the pack
         const allResults: Business[] = [];
-        Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
+        Object.values(data || {}).forEach((businesses: Business[]) => {
           allResults.push(...businesses);
         });
         // Sort by distance
