@@ -259,22 +259,21 @@ const PopularCategory = () => {
       console.log('No cache found, making fresh API call for popular category');
       
       // Fallback to fresh API call if no cache
-      const { data, error } = await supabase.functions.invoke('filter-recommendations', {
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
-          category: searchTerms[0] || 'restaurants',
-          filter: searchTerms.join(' '),
-          location: `${location.latitude}, ${location.longitude}`,
-          radius: 10000,
-          userId: user?.id
+          popularMode: true,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
         }
       });
 
       if (error) throw error;
 
-      if (data) {
+      if (data?.recommendations) {
         // Flatten results from all search terms
         const allResults: Business[] = [];
-        Object.values(data).forEach((businesses: Business[]) => {
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
           allResults.push(...businesses);
         });
         

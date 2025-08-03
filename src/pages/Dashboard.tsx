@@ -8,12 +8,10 @@ import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { apiCache, cachedApiCall, rateLimiter } from "@/lib/apiOptimization";
 import { Header } from "@/components/Header";
 import { FavoritesDropdown } from "@/components/FavoritesDropdown";
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
-import { ApiQuotaAlert } from "@/components/ApiQuotaAlert";
 import { 
   Home, 
   MapPin, 
