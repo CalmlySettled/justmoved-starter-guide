@@ -44,11 +44,6 @@ export function HeroSection() {
           </p>
         </div>
         
-        <div className="mt-12 text-white/80">
-          <p className="text-sm">
-            Free to start
-          </p>
-        </div>
       </div>
     </section>
   );
