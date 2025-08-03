@@ -577,7 +577,7 @@ export default function Explore() {
                 <p className="text-sm text-muted-foreground text-center">
                   {user 
                     ? "We couldn't find your saved address. Please enter your location to explore nearby places."
-                    : "Enter your location to discover nearby essentials and local businesses"
+                    : "Enter your address or zip code for the most accurate nearby results"
                   }
                 </p>
                 
