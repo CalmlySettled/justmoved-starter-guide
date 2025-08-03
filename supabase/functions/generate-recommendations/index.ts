@@ -863,53 +863,55 @@ function getLocationInfo(coordinates: { lat: number; lng: number }): { state: st
   return { state, region };
 }
 
-// Enhanced relevance scoring with improved distance weighting and user preference matching
-function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
+// Enhanced relevance scoring with different weights for popular vs dashboard/explore modes
+function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse, scoringMode: 'rating-heavy' | 'distance-heavy' = 'distance-heavy'): number {
   let score = 0;
   
-  // ENHANCED: Distance gets significantly more weight (50 max points vs 25 before)
-  // This prioritizes proximity while still considering quality
+  // Distance scoring varies by mode
+  const maxDistanceScore = scoringMode === 'rating-heavy' ? 25 : 50;
+  const maxRatingScore = 35; // Always 35 for both modes
+  
   if (business.distance_miles && userPreferences) {
     let distanceWeight = 0;
     
-    // Adjust distance scoring based on transportation style with higher max points
+    // Adjust distance scoring based on transportation style and mode
     if (userPreferences.transportationStyle === 'Bike / walk') {
-      // Walkers/bikers prefer very close locations - MAX 50 points for distance
-      distanceWeight = business.distance_miles <= 0.5 ? 50 : 
-                      business.distance_miles <= 1 ? 40 :
-                      business.distance_miles <= 2 ? 25 :
-                      business.distance_miles <= 3 ? 15 :
-                      Math.max(0, 10 - (business.distance_miles * 2));
+      // Walkers/bikers prefer very close locations
+      distanceWeight = business.distance_miles <= 0.5 ? maxDistanceScore : 
+                      business.distance_miles <= 1 ? maxDistanceScore * 0.8 :
+                      business.distance_miles <= 2 ? maxDistanceScore * 0.5 :
+                      business.distance_miles <= 3 ? maxDistanceScore * 0.3 :
+                      Math.max(0, maxDistanceScore * 0.2 - (business.distance_miles * 2));
     } else if (userPreferences.transportationStyle === 'Public transit') {
-      // Transit users prefer reasonable walking distance from stops - MAX 50 points
-      distanceWeight = business.distance_miles <= 1 ? 50 :
-                      business.distance_miles <= 3 ? 40 :
-                      business.distance_miles <= 5 ? 30 :
-                      business.distance_miles <= 8 ? 20 :
-                      Math.max(0, 15 - business.distance_miles);
+      // Transit users prefer reasonable walking distance from stops
+      distanceWeight = business.distance_miles <= 1 ? maxDistanceScore :
+                      business.distance_miles <= 3 ? maxDistanceScore * 0.8 :
+                      business.distance_miles <= 5 ? maxDistanceScore * 0.6 :
+                      business.distance_miles <= 8 ? maxDistanceScore * 0.4 :
+                      Math.max(0, maxDistanceScore * 0.3 - business.distance_miles);
     } else {
-      // Car users and rideshare are more flexible with distance - MAX 50 points  
-      distanceWeight = business.distance_miles <= 2 ? 50 :
-                      business.distance_miles <= 5 ? 40 :
-                      business.distance_miles <= 10 ? 30 :
-                      business.distance_miles <= 15 ? 20 :
-                      Math.max(0, 20 - business.distance_miles);
+      // Car users and rideshare are more flexible with distance
+      distanceWeight = business.distance_miles <= 2 ? maxDistanceScore :
+                      business.distance_miles <= 5 ? maxDistanceScore * 0.8 :
+                      business.distance_miles <= 10 ? maxDistanceScore * 0.6 :
+                      business.distance_miles <= 15 ? maxDistanceScore * 0.4 :
+                      Math.max(0, maxDistanceScore * 0.4 - business.distance_miles);
     }
     
     score += distanceWeight;
   } else if (business.distance_miles) {
-    // Default distance scoring if no transportation preference - MAX 50 points
-    const distanceWeight = business.distance_miles <= 1 ? 50 : 
-                          business.distance_miles <= 3 ? 40 - (business.distance_miles * 3) : 
-                          business.distance_miles <= 5 ? 30 - (business.distance_miles * 2) : 
-                          business.distance_miles <= 10 ? 20 - business.distance_miles :
-                          Math.max(0, 15 - business.distance_miles);
+    // Default distance scoring if no transportation preference
+    const distanceWeight = business.distance_miles <= 1 ? maxDistanceScore : 
+                          business.distance_miles <= 3 ? maxDistanceScore * 0.8 - (business.distance_miles * 3) : 
+                          business.distance_miles <= 5 ? maxDistanceScore * 0.6 - (business.distance_miles * 2) : 
+                          business.distance_miles <= 10 ? maxDistanceScore * 0.4 - business.distance_miles :
+                          Math.max(0, maxDistanceScore * 0.3 - business.distance_miles);
     score += distanceWeight;
   }
 
-  // Base score from rating (reduced from 35 to 25 points to balance with enhanced distance scoring)
+  // Rating scoring (always 35 max points for both modes)
   if (business.rating) {
-    score += (business.rating / 5) * 25;
+    score += (business.rating / 5) * maxRatingScore;
   }
   
   // Review count bonus (more reviews = more reliable, max 10 points)
@@ -1300,9 +1302,9 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
-    const { quizResponse, dynamicFilter, exploreMode, latitude, longitude, categories, userId } = requestBody;
+    const { quizResponse, dynamicFilter, exploreMode, popularMode, latitude, longitude, categories, userId } = requestBody;
     
-    // Handle explore mode requests with caching
+    // Handle explore mode requests with caching (distance-based sorting)
     if (exploreMode) {
       if (!latitude || !longitude || !categories) {
         return new Response(JSON.stringify({ error: 'Explore mode requires latitude, longitude, and categories' }), {
@@ -1360,6 +1362,77 @@ serve(async (req) => {
       }
 
       // Cache explore results for 24 hours
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          recommendations: recommendations,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        });
+      
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Handle popular mode requests with caching (rating-based sorting)
+    if (popularMode) {
+      if (!latitude || !longitude || !categories) {
+        return new Response(JSON.stringify({ error: 'Popular mode requires latitude, longitude, and categories' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const coordinates = { lat: latitude, lng: longitude };
+      
+      // Create cache key for popular requests based on location and categories
+      const cacheKey = `popular_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
+      
+      // Check for cached popular results (24 hour cache for popular)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (cachedData) {
+        console.log('✅ Returning cached popular recommendations');
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      const recommendations: { [key: string]: Business[] } = {};
+      const globalSeenBusinesses = new Set(); // Global deduplication across all categories
+      
+      for (const category of categories) {
+        console.log(`Finding popular businesses for category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates, undefined, false); // false = rating-based sorting
+        
+        // Filter out businesses we've already seen globally
+        const uniqueBusinesses = businesses.filter(business => {
+          const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
+          if (globalSeenBusinesses.has(businessKey)) {
+            console.log(`→ Skipping duplicate business across categories: ${business.name}`);
+            return false;
+          }
+          globalSeenBusinesses.add(businessKey);
+          return true;
+        });
+        
+        recommendations[category] = uniqueBusinesses;
+        console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
+      }
+
+      // Cache popular results for 24 hours
       await supabase
         .from('recommendations_cache')
         .insert({
@@ -1464,7 +1537,7 @@ serve(async (req) => {
     if (userId && Object.keys(recommendations).length > 0) {
       console.log(`Saving recommendations to database for user: ${userId}`);
       try {
-        await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
+        await saveRecommendationsToDatabase(userId, recommendations, quizResponse, false);
         console.log('Successfully saved recommendations to database');
       } catch (saveError) {
         console.error('Failed to save recommendations to database:', saveError);
@@ -1501,7 +1574,7 @@ serve(async (req) => {
 });
 
 // Enhanced function to save recommendations with relevance scores
-async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse) {
+async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse, isPopularMode: boolean = false) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   
@@ -1542,7 +1615,10 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
         }
         seenBusinesses.add(businessKey);
         
-        const relevanceScore = calculateRelevanceScore(business, category, userPreferences);
+        // Use passed-in mode to determine scoring
+        const scoringMode = isPopularMode ? 'rating-heavy' : 'distance-heavy';
+        
+        const relevanceScore = calculateRelevanceScore(business, category, userPreferences, scoringMode);
         const filterMetadata = generateFilterMetadata(business, category);
         
         recommendationsToInsert.push({

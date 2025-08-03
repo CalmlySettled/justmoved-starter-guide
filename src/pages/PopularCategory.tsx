@@ -261,7 +261,7 @@ const PopularCategory = () => {
       // Fallback to fresh API call if no cache
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
-          exploreMode: true,
+          popularMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms
