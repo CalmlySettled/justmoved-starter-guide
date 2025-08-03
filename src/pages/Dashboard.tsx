@@ -37,9 +37,32 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  const loadFavorites = () => {
-    const savedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    setFavorites(savedFavorites);
+  const loadFavorites = async () => {
+    if (!user) return;
+    
+    try {
+      // Load favorites from Supabase user_recommendations table
+      const { data: supabaseFavorites, error } = await supabase
+        .from('user_recommendations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_favorite', true);
+
+      if (error) {
+        console.error('Error loading Supabase favorites:', error);
+        // Fallback to localStorage if Supabase fails
+        const savedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        setFavorites(savedFavorites);
+      } else {
+        // Set favorites from Supabase
+        setFavorites(supabaseFavorites || []);
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      // Fallback to localStorage
+      const savedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      setFavorites(savedFavorites);
+    }
   };
 
   const fetchUserProfile = async () => {

@@ -52,9 +52,44 @@ export default function Auth() {
           console.log('Auth state change - signup context:', signupContext);
           
           if (signupContext === 'favoriting') {
-            // User signed up after favoriting items - redirect to dashboard
+            // User signed up after favoriting items - migrate localStorage favorites to user account
             localStorage.removeItem('signupContext');
-            console.log('User signed up from favorites modal - redirecting to dashboard');
+            console.log('User signed up from favorites modal - migrating favorites and redirecting to dashboard');
+            
+            // Migrate localStorage favorites to user account
+            setTimeout(async () => {
+              try {
+                const storedFavorites = localStorage.getItem('favorites');
+                if (storedFavorites) {
+                  const favorites = JSON.parse(storedFavorites);
+                  console.log('Migrating favorites to user account:', favorites);
+                  
+                  // Save each favorite to user_recommendations table
+                  for (const favorite of favorites) {
+                    await supabase.from('user_recommendations').upsert({
+                      user_id: session.user.id,
+                      business_name: favorite.business_name,
+                      business_address: favorite.business_address,
+                      business_phone: favorite.business_phone || null,
+                      business_website: favorite.business_website || null,
+                      business_description: favorite.business_description || null,
+                      business_features: favorite.business_features || [],
+                      business_latitude: favorite.business_latitude || null,
+                      business_longitude: favorite.business_longitude || null,
+                      distance_miles: favorite.distance_miles || null,
+                      category: favorite.category,
+                      is_favorite: true,
+                      relevance_score: 1.0
+                    });
+                  }
+                  
+                  console.log('Successfully migrated favorites to user account');
+                }
+              } catch (error) {
+                console.error('Error migrating favorites:', error);
+              }
+            }, 0);
+            
             navigate("/dashboard");
             return;
           }
