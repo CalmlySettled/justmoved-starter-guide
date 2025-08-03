@@ -1927,3 +1927,75 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
 
   return recommendations;
 }
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const requestBody = await req.json();
+    console.log('📥 Received request body:', JSON.stringify(requestBody, null, 2));
+    
+    const { quizResponse, userId }: { quizResponse: QuizResponse; userId?: string } = requestBody;
+
+    if (!quizResponse) {
+      console.error('Missing quizResponse in request body');
+      return new Response(JSON.stringify({ error: 'Missing quiz response data' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Enhanced rate limiting and quota checks
+    if (userId) {
+      const userKey = `user_${userId}`;
+      const now = Date.now();
+      const userRequests = rateLimiter.get(userKey) || [];
+      
+      // Remove old requests
+      const recentRequests = userRequests.filter((time: number) => now - time < RATE_WINDOW);
+      
+      if (recentRequests.length >= RATE_LIMIT) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Check daily API quota
+      if (!checkUserQuota(userId)) {
+        return new Response(JSON.stringify({ error: 'Daily API quota exceeded' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      recentRequests.push(now);
+      rateLimiter.set(userKey, recentRequests);
+    }
+
+    console.log('🎯 Processing quiz response for user:', userId);
+    
+    const recommendations = await generateRecommendations(quizResponse);
+    console.log('📋 Generated recommendations:', Object.keys(recommendations));
+
+    // Save recommendations to database if user ID provided
+    if (userId && Object.keys(recommendations).length > 0) {
+      await saveRecommendationsToDatabase(userId, recommendations, quizResponse);
+      incrementUserQuota(userId);
+    }
+
+    return new Response(JSON.stringify({ recommendations }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('💥 Error in generate-recommendations:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
