@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Camera, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -74,6 +75,7 @@ export default function Explore() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [popularPlaces, setPopularPlaces] = useState<ExploreRecommendations>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedThemedPack, setSelectedThemedPack] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -381,6 +383,7 @@ export default function Explore() {
 
     const categoriesToSearch = specificCategory ? [specificCategory] : pack.categories;
     setSelectedCategory(specificCategory || pack.title);
+    setSelectedThemedPack(specificCategory ? null : pack.title);
     setIsLoadingCategory(true);
     
     console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
@@ -682,19 +685,15 @@ export default function Explore() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                       {categoryResults.map((business, index) => (
                         <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
-                          {/* Business Image */}
-                          <div className="aspect-video overflow-hidden bg-muted">
-                            {business.image_url ? (
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                                <MapPin className="h-12 w-12 text-muted-foreground/40" />
-                              </div>
-                            )}
+                           {/* Business Image */}
+                           <div className="aspect-video overflow-hidden bg-muted">
+                             <ImageWithFallback
+                               src={business.image_url || ''}
+                               alt={business.name}
+                               businessName={business.name}
+                               category={selectedThemedPack || selectedCategory || ''}
+                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                             />
                           </div>
                           
                           <CardHeader className="pb-4">

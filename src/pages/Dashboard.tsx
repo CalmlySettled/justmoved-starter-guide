@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -1516,14 +1517,16 @@ export default function Dashboard() {
                     const isFavoriting = favoritingRecommendations.has(rec.id);
                     return (
                       <Card key={rec.id} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
-                        {/* Business Image */}
-                        <div className="aspect-video overflow-hidden">
-                           <img 
-                            src={getBusinessImage(rec)}
-                            alt={rec.business_name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
+                         {/* Business Image */}
+                         <div className="aspect-video overflow-hidden">
+                            <ImageWithFallback
+                             src={getBusinessImage(rec)}
+                             alt={rec.business_name}
+                             businessName={rec.business_name}
+                             category={rec.category}
+                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                           />
+                         </div>
                         
                         <CardHeader className="pb-4">
                           <div className="flex items-start justify-between">
