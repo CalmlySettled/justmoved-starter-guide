@@ -10,7 +10,7 @@ export function CTASection() {
           Ready to Make Your Move Seamless?
         </h2>
         <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Join thousands of successful movers who've discovered their perfect new city with CalmlySettled
+          Get started for free and discover your perfect new city with CalmlySettled
         </p>
         
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
