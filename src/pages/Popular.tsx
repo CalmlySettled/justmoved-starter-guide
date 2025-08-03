@@ -289,15 +289,15 @@ const Popular = () => {
               </p>
             </div>
           ) : (
-            // Non-authenticated users can browse with location prompt
+            // Non-authenticated users see sign up prompt
             <div className="text-center py-16">
               <div className="max-w-lg mx-auto space-y-6 p-8 bg-muted/50 rounded-lg border">
                 <TrendingUp className="h-16 w-16 text-primary mx-auto" />
                 <h2 className="text-3xl font-bold">Discover What's Popular</h2>
                 <p className="text-muted-foreground">
-                  See trending places, hot spots, and local favorites. Set your location to get started!
+                  Take our quick quiz to explore trending places, hot spots, and local favorites in your area
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 my-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 my-8 opacity-60">
                   {trendingCategories.slice(0, 6).map((category) => (
                     <div key={category.name} className="text-center">
                       <div className={`w-12 h-12 mx-auto mb-2 rounded-full ${category.color} flex items-center justify-center text-lg`}>
@@ -308,24 +308,15 @@ const Popular = () => {
                   ))}
                 </div>
                 <Button 
-                  onClick={() => navigate('/explore')}
+                  onClick={() => window.location.href = '/onboarding'}
                   size="lg"
                   className="mt-6"
                 >
-                  Explore Places Near You
+                  Take the Quiz to Discover Popular Places
                 </Button>
-                <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Want personalized recommendations based on your lifestyle?
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/auth')}
-                    className="w-full"
-                  >
-                    Sign Up Free
-                  </Button>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Already completed the quiz? <button onClick={() => window.location.href = '/auth'} className="text-primary hover:underline">Sign in</button>
+                </p>
               </div>
             </div>
           )}
