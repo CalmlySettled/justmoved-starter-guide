@@ -46,7 +46,7 @@ export function HeroSection() {
         
         <div className="mt-12 text-white/80">
           <p className="text-sm">
-            Join thousands of successful movers • Free to start
+            Free to start
           </p>
         </div>
       </div>
