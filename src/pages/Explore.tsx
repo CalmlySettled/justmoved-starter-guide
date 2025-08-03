@@ -547,75 +547,56 @@ export default function Explore() {
               </div>
             ) : !location ? (
               <div className="max-w-md mx-auto space-y-4">
-                {user ? (
-                  // Authenticated users get full functionality
-                  <>
-                    <Button 
-                      onClick={getCurrentLocation}
-                      disabled={isLoadingLocation}
-                      className="w-full"
-                      size="lg"
-                    >
-                      <MapPin className="mr-2 h-5 w-5" />
-                      {isLoadingLocation ? "Getting location..." : "Use my current location"}
-                    </Button>
-                    
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter city or zip code"
-                        value={manualLocation}
-                        onChange={(e) => setManualLocation(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
-                      />
-                      <Button 
-                        onClick={handleManualLocation}
-                        disabled={isLoadingLocation || !manualLocation.trim()}
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground text-center">
-                      We couldn't find your saved address. Please enter your location to explore nearby places.
+                {/* Location Input - Available to All Users */}
+                <Button 
+                  onClick={getCurrentLocation}
+                  disabled={isLoadingLocation}
+                  className="w-full"
+                  size="lg"
+                >
+                  <MapPin className="mr-2 h-5 w-5" />
+                  {isLoadingLocation ? "Getting location..." : "Use my current location"}
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter city or zip code"
+                    value={manualLocation}
+                    onChange={(e) => setManualLocation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
+                    disabled={isLoadingLocation}
+                  />
+                  <Button 
+                    onClick={handleManualLocation}
+                    disabled={isLoadingLocation || !manualLocation.trim()}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <p className="text-sm text-muted-foreground text-center">
+                  {user 
+                    ? "We couldn't find your saved address. Please enter your location to explore nearby places."
+                    : "Enter your location to discover nearby essentials and local businesses"
+                  }
+                </p>
+                
+                {/* Progressive Engagement for Non-Authenticated Users */}
+                {!user && (
+                  <div className="text-center space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20 mt-4">
+                    <p className="text-sm font-medium text-primary">Want personalized recommendations?</p>
+                    <p className="text-xs text-muted-foreground">
+                      Sign up to save favorites and get tailored suggestions for your lifestyle
                     </p>
-                  </>
-                ) : (
-                  // Non-authenticated users see disabled inputs with sign up prompt
-                  <>
                     <Button 
-                      disabled
-                      className="w-full opacity-50 cursor-not-allowed"
-                      size="lg"
+                      variant="outline"
+                      onClick={() => window.location.href = '/auth'}
+                      size="sm"
+                      className="mt-2"
                     >
-                      <MapPin className="mr-2 h-5 w-5" />
-                      Use my current location
+                      Sign Up Free
                     </Button>
-                    
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter city or zip code"
-                        disabled
-                        className="opacity-50"
-                      />
-                      <Button disabled className="opacity-50">
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                      <p className="text-sm font-medium">Take the quiz to explore your area</p>
-                      <p className="text-xs text-muted-foreground">
-                        Complete our quick quiz to find nearby essentials and save your favorites
-                      </p>
-                      <Button 
-                        onClick={() => window.location.href = '/onboarding'}
-                        size="sm"
-                        className="mt-2"
-                      >
-                        Take the Quiz
-                      </Button>
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
             ) : (
