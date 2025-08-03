@@ -728,6 +728,26 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
+  // Apply relevance scoring and sort by score (highest first)
+  if (userPreferences && filteredBusinesses.length > 0) {
+    // Use distance-heavy scoring for Dashboard recommendations
+    const scoringMode = exploreMode ? 'distance-heavy' : 'distance-heavy'; // Dashboard always uses distance-heavy
+    console.log(`Applying ${scoringMode} relevance scoring to ${filteredBusinesses.length} businesses`);
+    
+    // Calculate relevance score for each business
+    filteredBusinesses.forEach(business => {
+      business.relevance_score = calculateRelevanceScore(business, category, userPreferences, scoringMode);
+    });
+    
+    // Sort by relevance score (highest first)
+    filteredBusinesses.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+    
+    console.log(`Top 5 businesses by relevance score:`);
+    filteredBusinesses.slice(0, 5).forEach((business, index) => {
+      console.log(`${index + 1}. ${business.name} - Score: ${business.relevance_score}, Distance: ${business.distance_miles}mi`);
+    });
+  }
+  
   // Return more results for the two-tier system (up to 40 for better variety)
   return filteredBusinesses.slice(0, 40);
 }
