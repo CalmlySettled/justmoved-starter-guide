@@ -579,7 +579,9 @@ export default function Dashboard() {
               transportation_style: profileData.transportation_style || 'car',
               budget_preference: profileData.budget_preference || 'mid_range',
               life_stage: profileData.life_stage || 'working_professional',
-              settling_tasks: profileData.settling_tasks || []
+              settling_tasks: profileData.settling_tasks || [],
+              latitude: profileData.latitude,
+              longitude: profileData.longitude
             };
 
             const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
