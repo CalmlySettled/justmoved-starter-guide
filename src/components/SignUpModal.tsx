@@ -12,6 +12,8 @@ export const SignUpModal = ({ open, onOpenChange }: SignUpModalProps) => {
   const navigate = useNavigate();
 
   const handleSignUp = () => {
+    // Set context that user is signing up specifically to save favorites
+    localStorage.setItem('signupContext', 'favoriting');
     navigate("/auth");
     onOpenChange(false);
   };

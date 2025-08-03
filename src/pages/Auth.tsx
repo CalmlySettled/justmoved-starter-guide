@@ -47,6 +47,18 @@ export default function Auth() {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
         if (session) {
+          // Check signup context first
+          const signupContext = localStorage.getItem('signupContext');
+          console.log('Auth state change - signup context:', signupContext);
+          
+          if (signupContext === 'favoriting') {
+            // User signed up after favoriting items - redirect to dashboard
+            localStorage.removeItem('signupContext');
+            console.log('User signed up from favorites modal - redirecting to dashboard');
+            navigate("/dashboard");
+            return;
+          }
+          
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
           console.log('Auth state change - checking for stored quiz data:', storedQuizData);
@@ -83,17 +95,17 @@ export default function Auth() {
             
             console.log('Mobile Debug: Profile data:', profile, 'Error:', profileError);
             
-            // If they have profile data, go to dashboard, otherwise onboarding
+            // If they have profile data, go to dashboard, otherwise explore for new users
             if (profile?.address && profile?.priorities && profile?.priorities.length > 0) {
               console.log('Mobile Debug: User has profile data, navigating to dashboard');
               navigate("/dashboard");
             } else {
-              console.log('Mobile Debug: User has no profile data, navigating to onboarding');
-              navigate("/onboarding");
+              console.log('Mobile Debug: New user with no profile data, navigating to explore');
+              navigate("/explore");
             }
           } catch (error) {
             console.error('Mobile Debug: Error checking profile:', error);
-            navigate("/onboarding");
+            navigate("/explore");
           }
         }
       }
