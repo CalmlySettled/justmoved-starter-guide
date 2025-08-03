@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { apiCache, cachedApiCall, rateLimiter, optimizeLocationPrecision } from "@/lib/apiOptimization";
 
 interface LocationData {
   latitude: number;
@@ -270,52 +271,70 @@ export default function Explore() {
     }
   };
 
-  // Load popular places for the location
+  // Load popular places for the location with cost optimization
   const loadPopularPlaces = async (locationData: LocationData) => {
-    try {
-      const sampleCategories = ["restaurants", "coffee shops", "parks recreation"];
-      
-      // First, try to get cached recommendations
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', sampleCategories)
-        .limit(1)
-        .single();
-
-      if (!cacheError && cachedData?.recommendations) {
-        console.log('✅ Using cached data for explore popular places - NO API COST!');
-        setPopularPlaces(cachedData.recommendations as any);
-        return;
-      }
-
-      console.log('❌ No valid cache found, making fresh API call for explore popular places');
-      
-      // Only make API call if no cache found
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          exploreMode: true,
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
-          categories: sampleCategories
-        }
-      });
-
-      if (error) throw error;
-      
-      setPopularPlaces(data.recommendations || {});
-    } catch (error) {
-      console.error("Error loading popular places:", error);
+    // Check rate limit before making API call
+    if (user?.id && !rateLimiter.canMakeRequest(user.id)) {
       toast({
-        title: "Error loading recommendations",
-        description: "Please try again later",
-        variant: "destructive",
+        title: "Too many requests",
+        description: "Please wait a moment before loading more places.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      console.log('📍 Loading popular places for location:', locationData);
+      
+      // Optimize location precision for better cache hits
+      const optimizedLocation = optimizeLocationPrecision(locationData.latitude, locationData.longitude);
+      
+      // Generate cache key
+      const cacheKey = `popular_places_${optimizedLocation.lat}_${optimizedLocation.lng}`;
+      
+      const result = await cachedApiCall(
+        cacheKey,
+        async () => {
+          const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+            body: {
+              quizResponse: {
+                address: locationData.city || `${locationData.latitude}, ${locationData.longitude}`,
+                householdType: 'Individual',
+                priorities: ['Restaurants', 'Coffee shops', 'Grocery stores', 'Pharmacies'],
+                transportationStyle: 'Car',
+                budgetPreference: 'Mid-range',
+                lifeStage: 'Exploring',
+                settlingTasks: [],
+                latitude: optimizedLocation.lat,
+                longitude: optimizedLocation.lng
+              },
+              exploreMode: true,
+              userId: user?.id
+            }
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          return data;
+        },
+        20 * 60 * 1000 // 20 minute cache for popular places
+      );
+
+      console.log('✅ Popular places loaded:', result);
+      setPopularPlaces(result?.recommendations || {});
+    } catch (error) {
+      console.error('Error in loadPopularPlaces:', error);
+      toast({
+        title: "Error loading places",
+        description: "Failed to load popular places. Please try again.",
+        variant: "destructive"
       });
     }
   };
 
-  // Handle category selection
+  // Handle category selection with cost optimization
   const handleCategoryClick = async (category: { searchTerm: string; name: string }) => {
     if (!location) {
       toast({
@@ -326,38 +345,53 @@ export default function Explore() {
       return;
     }
 
+    // Check rate limit before making API call
+    if (user?.id && !rateLimiter.canMakeRequest(user.id)) {
+      toast({
+        title: "Too many requests",
+        description: "Please wait a moment before searching more categories.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSelectedCategory(category.name);
     setIsLoadingCategory(true);
     
     try {
-      // Check cache first for single category
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', [category.searchTerm])
-        .limit(1)
-        .single();
-
-      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]) {
-        console.log('✅ Using cached data for category:', category.searchTerm, '- NO API COST!');
-        setCategoryResults(cachedData.recommendations[category.searchTerm]);
-        return;
-      }
-
-      console.log('❌ No cache for category:', category.searchTerm, '- making API call');
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          exploreMode: true,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: [category.searchTerm]
-        }
-      });
-
-      if (error) throw error;
+      console.log(`🔍 Searching for ${category.name} category`);
       
-      setCategoryResults(data.recommendations?.[category.searchTerm] || []);
+      // Optimize location precision for better cache hits
+      const optimizedLocation = optimizeLocationPrecision(location.latitude, location.longitude, 8);
+      
+      // Generate cache key
+      const locationKey = apiCache.generateLocationKey(optimizedLocation.lat, optimizedLocation.lng, 8000);
+      const cacheKey = apiCache.generateCategoryKey(category.searchTerm, locationKey);
+      
+      const result = await cachedApiCall(
+        cacheKey,
+        async () => {
+          const { data, error } = await supabase.functions.invoke('filter-recommendations', {
+            body: {
+              category: category.searchTerm,
+              filter: category.searchTerm,
+              location: `${optimizedLocation.lat}, ${optimizedLocation.lng}`,
+              radius: 8000,
+              userId: user?.id
+            }
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          return data;
+        },
+        15 * 60 * 1000 // 15 minute cache for category searches
+      );
+
+      console.log(`✅ Found ${result?.businesses?.length || 0} businesses for ${category.name}`);
+      setCategoryResults(result?.businesses || []);
     } catch (error) {
       console.error("Error loading category results:", error);
       toast({

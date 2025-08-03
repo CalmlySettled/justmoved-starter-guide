@@ -67,35 +67,52 @@ const getFilterSearchTerms = (category: string, filter: string): string[] => {
   return searchMap[category]?.[filter] || [filter];
 };
 
+// Generate session token for cost optimization
+function generateSessionToken(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
 const searchGooglePlaces = async (searchTerms: string[], location: string, radius: number = 10000): Promise<Business[]> => {
   const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!apiKey) {
     throw new Error('Google Places API key not configured');
   }
 
+  // COST OPTIMIZATION: Generate session token
+  const sessionToken = generateSessionToken();
+  console.log(`Using session token for cost optimization: ${sessionToken.substring(0, 8)}...`);
+
   const businesses: Business[] = [];
   
+  // COST OPTIMIZATION: Use FieldMask to only request essential fields
+  const nearbySearchFields = 'place_id,name,vicinity,geometry,rating,user_ratings_total,types,photos,price_level,opening_hours';
+
   for (const term of searchTerms) {
     try {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${location}`)}&radius=${radius}&key=${apiKey}`;
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${location}`)}&radius=${radius}&fields=${nearbySearchFields}&sessiontoken=${sessionToken}&key=${apiKey}`;
       
       const response = await fetch(searchUrl);
       const data = await response.json();
       
       if (data.results) {
-        for (const place of data.results.slice(0, 10)) {
+        for (const place of data.results.slice(0, 8)) { // COST REDUCTION: Reduced from 10 to 8
+          // COST OPTIMIZATION: Only get photos for highly rated businesses
+          let imageUrl = '';
+          if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 4.0) {
+            const photoReference = place.photos[0].photo_reference;
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${apiKey}`;
+          }
+
           const business: Business = {
             place_id: place.place_id,
             name: place.name,
-            address: place.formatted_address || '',
+            address: place.formatted_address || place.vicinity || '',
             description: `${place.types?.join(', ') || ''} - ${place.name}`,
             rating: place.rating,
             features: place.types || [],
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
-            image: place.photos?.[0] ? 
-              `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}` : 
-              undefined
+            image: imageUrl
           };
           
           // Avoid duplicates
@@ -109,7 +126,7 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
     }
   }
   
-  return businesses.slice(0, 20); // Limit results
+  return businesses.slice(0, 15); // COST REDUCTION: Reduced from 20 to 15
 };
 
 const getCachedResults = async (supabase: any, cacheKey: string): Promise<Business[] | null> => {

@@ -6,10 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Rate limiting setup
+// Enhanced rate limiting and cost monitoring
 const rateLimiter = new Map();
 const RATE_LIMIT = 20; // requests per window
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
+const API_QUOTA_TRACKER = new Map(); // Track API usage per user
+const DAILY_QUOTA_LIMIT = 100; // per user per day
 
 interface QuizResponse {
   address: string;
@@ -341,86 +343,112 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
   return strategies;
 }
 
-// COST-OPTIMIZED Google Places API integration with FieldMasks and Session Tokens
-async function searchGooglePlaces(
-  category: string,
+// Generate session token for cost optimization
+function generateSessionToken(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+// Check user API quota
+function checkUserQuota(userId: string): boolean {
+  const today = new Date().toDateString();
+  const userKey = `${userId}-${today}`;
+  const currentUsage = API_QUOTA_TRACKER.get(userKey) || 0;
+  return currentUsage < DAILY_QUOTA_LIMIT;
+}
+
+// Increment user API usage
+function incrementUserQuota(userId: string) {
+  const today = new Date().toDateString();
+  const userKey = `${userId}-${today}`;
+  const currentUsage = API_QUOTA_TRACKER.get(userKey) || 0;
+  API_QUOTA_TRACKER.set(userKey, currentUsage + 1);
+}
+
+// COST-OPTIMIZED Google Places API integration with FieldMasks, Session Tokens, and Batch Requests
+async function searchGooglePlacesBatch(
+  categories: string[],
   latitude: number,
   longitude: number,
   customRadius?: number,
   exploreMode: boolean = false,
-  userCoordinates?: { lat: number; lng: number }
-): Promise<Business[]> {
+  userCoordinates?: { lat: number; lng: number },
+  sessionToken?: string
+): Promise<{[category: string]: Business[]}> {
   const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!googleApiKey) {
     console.log('Google Places API key not found, skipping Google search');
-    return [];
+    return {};
   }
   
-  console.log('Google Places API key found, using advanced cost-optimized search...');
+  console.log('Google Places API key found, using batch cost-optimized search...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
   
-  // COST REDUCTION: Use only PRIMARY search strategy per category to reduce API calls
-  const searchStrategies = getSearchStrategies(category).slice(0, 2); // Max 2 strategies instead of all
-  const uniquePlaces = new Map();
+  // Use provided session token or generate new one
+  const searchSessionToken = sessionToken || generateSessionToken();
+  console.log(`Using session token: ${searchSessionToken.substring(0, 8)}...`);
   
-  // COST OPTIMIZATION: Generate session token for this search session
-  const sessionToken = generateSessionToken();
-  console.log(`Using session token: ${sessionToken.substring(0, 8)}...`);
+  const results: {[category: string]: Business[]} = {};
   
-  try {
-    console.log(`Advanced cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
-    
-    // Execute limited search strategies with FieldMasks
-    for (const strategy of searchStrategies) {
-      // COST OPTIMIZATION: Use FieldMask to only request essential fields for nearby search
-      const nearbySearchFields = 'place_id,name,vicinity,geometry,rating,user_ratings_total,types,photos,price_level,opening_hours';
+  // Process categories in batch with optimized API calls
+  for (const category of categories) {
+    try {
+      console.log(`Advanced cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
       
-      let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}`;
+      // COST REDUCTION: Use only PRIMARY search strategy per category to reduce API calls
+      const searchStrategies = getSearchStrategies(category).slice(0, 1); // Use only 1 strategy for batch
+      const uniquePlaces = new Map();
       
-      if (strategy.type) {
-        searchUrl += `&type=${strategy.type}`;
-      }
-      if (strategy.keyword) {
-        searchUrl += `&keyword=${encodeURIComponent(strategy.keyword)}`;
-      }
-      
-      // Add session token and field mask for cost optimization
-      searchUrl += `&fields=${nearbySearchFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-      
-      console.log(`→ Strategy: ${strategy.keyword || strategy.type} (with FieldMask)`);
-      
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'CalmlySettled/1.0'
+      // Execute search strategies with FieldMasks
+      for (const strategy of searchStrategies) {
+        // COST OPTIMIZATION: Use FieldMask to only request essential fields for nearby search
+        const nearbySearchFields = 'place_id,name,vicinity,geometry,rating,user_ratings_total,types,photos,price_level,opening_hours';
+        
+        let searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}`;
+        
+        if (strategy.type) {
+          searchUrl += `&type=${strategy.type}`;
         }
-      });
-
-      if (!response.ok) {
-        console.error('Google Places API error:', response.status, response.statusText);
-        continue;
-      }
-
-      const data = await response.json();
-      console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
-      
-      if (data.status && data.status !== 'OK') {
-        console.error(`Google Places API returned status: ${data.status}`);
-        if (data.error_message) {
-          console.error(`Error message: ${data.error_message}`);
+        if (strategy.keyword) {
+          searchUrl += `&keyword=${encodeURIComponent(strategy.keyword)}`;
         }
-      }
-
-      // Add unique results using place_id as key to avoid duplicates
-      if (data.results) {
-        data.results.forEach(place => {
-          if (place.place_id && !uniquePlaces.has(place.place_id)) {
-            uniquePlaces.set(place.place_id, place);
+        
+        // Add session token and field mask for cost optimization
+        searchUrl += `&fields=${nearbySearchFields}&sessiontoken=${searchSessionToken}&key=${googleApiKey}`;
+        
+        console.log(`→ Strategy: ${strategy.keyword || strategy.type} (with FieldMask)`);
+        
+        const response = await fetch(searchUrl, {
+          headers: {
+            'User-Agent': 'CalmlySettled/1.0'
           }
         });
+
+        if (!response.ok) {
+          console.error('Google Places API error:', response.status, response.statusText);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
+        
+        if (data.status && data.status !== 'OK') {
+          console.error(`Google Places API returned status: ${data.status}`);
+          if (data.error_message) {
+            console.error(`Error message: ${data.error_message}`);
+          }
+        }
+
+        // Add unique results using place_id as key to avoid duplicates
+        if (data.results) {
+          data.results.forEach(place => {
+            if (place.place_id && !uniquePlaces.has(place.place_id)) {
+              uniquePlaces.set(place.place_id, place);
+            }
+          });
+        }
       }
-    }
 
     // Convert Map values to array
     const uniqueResults = Array.from(uniquePlaces.values());
