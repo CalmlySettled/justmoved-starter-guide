@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { SignUpModal } from "@/components/SignUpModal";
 
 interface LocationData {
   latitude: number;
@@ -80,6 +81,7 @@ export default function Explore() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -443,6 +445,12 @@ export default function Explore() {
   };
 
   const toggleFavorite = (business: Business, category: string) => {
+    // Check if user is authenticated
+    if (!user) {
+      setShowSignUpModal(true);
+      return;
+    }
+
     console.log('🌟 EXPLORE - Attempting to favorite business:', business.name, 'Category:', category);
     try {
       const storedFavorites = localStorage.getItem('favorites');
@@ -760,6 +768,11 @@ export default function Explore() {
           )}
         </div>
       </main>
+      
+      <SignUpModal 
+        open={showSignUpModal} 
+        onOpenChange={setShowSignUpModal} 
+      />
     </div>
   );
 }
