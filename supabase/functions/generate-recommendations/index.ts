@@ -867,44 +867,49 @@ function getLocationInfo(coordinates: { lat: number; lng: number }): { state: st
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse): number {
   let score = 0;
   
-  // Base score from rating (0-5 scale, normalized to 0-35 points to make room for preference bonuses)
-  if (business.rating) {
-    score += (business.rating / 5) * 35;
-  }
-  
-  // Enhanced distance scoring with transportation-based adjustments
+  // ENHANCED: Distance gets significantly more weight (50 max points vs 25 before)
+  // This prioritizes proximity while still considering quality
   if (business.distance_miles && userPreferences) {
     let distanceWeight = 0;
     
-    // Adjust distance scoring based on transportation style
+    // Adjust distance scoring based on transportation style with higher max points
     if (userPreferences.transportationStyle === 'Bike / walk') {
-      // Walkers/bikers prefer very close locations
-      distanceWeight = business.distance_miles <= 0.5 ? 25 : 
-                      business.distance_miles <= 1 ? 20 :
-                      business.distance_miles <= 2 ? 10 :
-                      Math.max(0, 5 - business.distance_miles);
+      // Walkers/bikers prefer very close locations - MAX 50 points for distance
+      distanceWeight = business.distance_miles <= 0.5 ? 50 : 
+                      business.distance_miles <= 1 ? 40 :
+                      business.distance_miles <= 2 ? 25 :
+                      business.distance_miles <= 3 ? 15 :
+                      Math.max(0, 10 - (business.distance_miles * 2));
     } else if (userPreferences.transportationStyle === 'Public transit') {
-      // Transit users prefer reasonable walking distance from stops
-      distanceWeight = business.distance_miles <= 1 ? 25 :
-                      business.distance_miles <= 3 ? 20 :
-                      business.distance_miles <= 5 ? 15 :
-                      Math.max(0, 8 - business.distance_miles);
+      // Transit users prefer reasonable walking distance from stops - MAX 50 points
+      distanceWeight = business.distance_miles <= 1 ? 50 :
+                      business.distance_miles <= 3 ? 40 :
+                      business.distance_miles <= 5 ? 30 :
+                      business.distance_miles <= 8 ? 20 :
+                      Math.max(0, 15 - business.distance_miles);
     } else {
-      // Car users and rideshare are more flexible with distance
-      distanceWeight = business.distance_miles <= 2 ? 25 :
-                      business.distance_miles <= 5 ? 20 :
-                      business.distance_miles <= 10 ? 15 :
-                      Math.max(0, 10 - business.distance_miles);
+      // Car users and rideshare are more flexible with distance - MAX 50 points  
+      distanceWeight = business.distance_miles <= 2 ? 50 :
+                      business.distance_miles <= 5 ? 40 :
+                      business.distance_miles <= 10 ? 30 :
+                      business.distance_miles <= 15 ? 20 :
+                      Math.max(0, 20 - business.distance_miles);
     }
     
     score += distanceWeight;
   } else if (business.distance_miles) {
-    // Default distance scoring if no transportation preference
-    const distanceWeight = business.distance_miles <= 1 ? 25 : 
-                          business.distance_miles <= 3 ? 20 - (business.distance_miles * 2) : 
-                          business.distance_miles <= 5 ? 15 - business.distance_miles : 
-                          Math.max(0, 8 - business.distance_miles);
+    // Default distance scoring if no transportation preference - MAX 50 points
+    const distanceWeight = business.distance_miles <= 1 ? 50 : 
+                          business.distance_miles <= 3 ? 40 - (business.distance_miles * 3) : 
+                          business.distance_miles <= 5 ? 30 - (business.distance_miles * 2) : 
+                          business.distance_miles <= 10 ? 20 - business.distance_miles :
+                          Math.max(0, 15 - business.distance_miles);
     score += distanceWeight;
+  }
+
+  // Base score from rating (reduced from 35 to 25 points to balance with enhanced distance scoring)
+  if (business.rating) {
+    score += (business.rating / 5) * 25;
   }
   
   // Review count bonus (more reviews = more reliable, max 10 points)

@@ -21,6 +21,7 @@ export type Database = {
           budget_preference: string | null
           created_at: string
           display_name: string | null
+          distance_priority: boolean | null
           household_type: string | null
           id: string
           latitude: number | null
@@ -39,6 +40,7 @@ export type Database = {
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
+          distance_priority?: boolean | null
           household_type?: string | null
           id?: string
           latitude?: number | null
@@ -57,6 +59,7 @@ export type Database = {
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
+          distance_priority?: boolean | null
           household_type?: string | null
           id?: string
           latitude?: number | null

@@ -305,10 +305,15 @@ export default function Dashboard() {
 
       // Fetch all recommendations including favorites
       console.log('🟡 MOBILE DEBUG - Fetching recommendations from Supabase...');
+      
+      // Check user's distance priority preference
+      const shouldPrioritizeDistance = profileData?.distance_priority !== false;
+      
       const { data: recData, error: recError } = await supabase
         .from('user_recommendations')
         .select('*')
         .eq('user_id', user.id)
+        .order(shouldPrioritizeDistance ? 'distance_miles' : 'relevance_score', { ascending: shouldPrioritizeDistance ? true : false })
         .order('relevance_score', { ascending: false })
         .order('created_at', { ascending: false });
 

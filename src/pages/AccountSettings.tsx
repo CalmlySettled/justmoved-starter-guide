@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Shield, Bell, Download, Trash2, Eye, Mail } from "lucide-react";
+import { Shield, Bell, Download, Trash2, Eye, Mail, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AccountSettings = () => {
   const { user } = useAuth();
@@ -17,7 +18,9 @@ const AccountSettings = () => {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [notificationFrequency, setNotificationFrequency] = useState("weekly");
   const [locationSharing, setLocationSharing] = useState(true);
+  const [distancePriority, setDistancePriority] = useState(true);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleChangePassword = async () => {
     setIsChangingPassword(true);
@@ -42,6 +45,57 @@ const AccountSettings = () => {
   const handleDeleteAccount = async () => {
     // This would show a confirmation dialog first
     toast.error("Account deletion requires confirmation - feature coming soon");
+  };
+
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('distance_priority')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error fetching user preferences:', error);
+          return;
+        }
+        
+        if (data) {
+          setDistancePriority(data.distance_priority ?? true);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+    
+    fetchUserPreferences();
+  }, [user]);
+
+  const handleDistancePriorityChange = async (enabled: boolean) => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ distance_priority: enabled })
+        .eq('user_id', user.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setDistancePriority(enabled);
+      toast.success(enabled ? "Distance priority enabled" : "Rating priority enabled");
+    } catch (error) {
+      console.error('Error updating distance priority:', error);
+      toast.error("Failed to update preference");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -121,6 +175,37 @@ const AccountSettings = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Two-factor authentication coming soon
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recommendation Preferences Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MapPin className="h-5 w-5" />
+                <span>Recommendation Preferences</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Prioritize Closest Distance</p>
+                    <p className="text-sm text-muted-foreground">Show nearest businesses first, or prioritize highest-rated businesses</p>
+                  </div>
+                  <Switch
+                    checked={distancePriority}
+                    onCheckedChange={handleDistancePriorityChange}
+                    disabled={isSaving}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {distancePriority 
+                    ? "✓ Showing closest businesses first" 
+                    : "✓ Showing highest-rated businesses first"
+                  }
                 </p>
               </div>
             </CardContent>
