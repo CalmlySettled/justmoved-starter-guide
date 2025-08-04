@@ -739,43 +739,6 @@ export default function Recommendations() {
                 You're a couple with a car and a flexible budget — here's what we've found for your grocery, fitness, and lifestyle needs in 06002.
               </p>
               
-              {/* AI Insights Section */}
-              {user && (
-                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Brain className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800">AI-Powered Insights</h3>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                      Smart Engine Active
-                    </Badge>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-start gap-2">
-                      <TrendingUp className="h-4 w-4 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-gray-800">Collaborative Filtering</p>
-                        <p className="text-gray-600">Based on similar users' favorites</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Clock className="h-4 w-4 text-orange-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-gray-800">Temporal Intelligence</p>
-                        <p className="text-gray-600">Trending places in your area</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Star className="h-4 w-4 text-purple-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-gray-800">Cross-Category Patterns</p>
-                        <p className="text-gray-600">Matches your preference style</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

@@ -23,6 +23,7 @@ import Profile from "./pages/Profile";
 import AccountSettings from "./pages/AccountSettings";
 import PopularCategory from "./pages/PopularCategory";
 import ResetPassword from "./pages/ResetPassword";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/account-settings" element={<AccountSettings />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/admin/ai-dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
         </Routes>
