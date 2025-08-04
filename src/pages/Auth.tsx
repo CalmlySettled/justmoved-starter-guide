@@ -9,10 +9,6 @@ import { useNavigate } from "react-router-dom";
 import { Home, Mail, Eye, EyeOff } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 
-// Declare global gtag function for Google Ads conversion tracking
-declare global {
-  function gtag(...args: any[]): void;
-}
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false); // Default to sign in, not sign up
@@ -180,10 +176,6 @@ export default function Auth() {
           });
           setShowResendButton(true);
           
-          // Track Google Ads conversion for signup
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'conversion', {'send_to': 'AW-17410195791/Q2gnCPfp_fsaEM-C6u1A'});
-          }
         } else {
           // User was created and auto-confirmed
           toast({
@@ -191,10 +183,6 @@ export default function Auth() {
             description: "Welcome! You're now signed in."
           });
           
-          // Track Google Ads conversion for signup
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'conversion', {'send_to': 'AW-17410195791/Q2gnCPfp_fsaEM-C6u1A'});
-          }
         }
       } else {
         // Sign in validation

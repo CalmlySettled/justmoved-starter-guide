@@ -12,14 +12,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
-// Declare gtag function for Google Ads conversion tracking
-declare global {
-  interface Window {
-    gtag?: (...args: any[]) => void;
-  }
-}
-
-const gtag = window.gtag;
 
 // Helper function to get coordinates from address
 async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
