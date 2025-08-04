@@ -12,6 +12,7 @@ import { Header } from "@/components/Header";
 import { FavoritesDropdown } from "@/components/FavoritesDropdown";
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
+import { ProfileCompletionCard } from "@/components/ProfileCompletionCard";
 import { 
   Home, 
   MapPin, 
@@ -1443,6 +1444,22 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Profile Completion Card */}
+        {userProfile && (
+          <div className="mb-8">
+            <ProfileCompletionCard 
+              userProfile={userProfile} 
+              onEnhanceProfile={() => {
+                // This will trigger the EditPreferencesModal
+                const editButton = document.querySelector('[data-testid="edit-preferences-trigger"]') as HTMLButtonElement;
+                if (editButton) {
+                  editButton.click();
+                }
+              }} 
+            />
+          </div>
+        )}
 
 
         {/* Saved Recommendations */}

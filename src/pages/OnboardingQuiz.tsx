@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Home, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { Home, ArrowLeft, ArrowRight, CheckCircle, Clock, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,26 +42,28 @@ interface QuizData {
   address: string;
   household: string[];
   priorities: string[];
-  specificCategories: string[]; // New field for mock question #4
+  specificCategories: string[];
   transportation: string;
   lifestyle: string;
   lifeStage: string;
   tasks: string[];
+  isQuickStart?: boolean;
 }
 
 const initialData: QuizData = {
   address: "",
   household: [],
   priorities: [],
-  specificCategories: [], // New field for mock question #4
+  specificCategories: [],
   transportation: "",
   lifestyle: "",
   lifeStage: "",
-  tasks: []
+  tasks: [],
+  isQuickStart: false
 };
 
 export default function OnboardingQuiz() {
-  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [currentQuestion, setCurrentQuestion] = useState(0); // Start with mode selection
   const [quizData, setQuizData] = useState<QuizData>(initialData);
   const [isComplete, setIsComplete] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -90,7 +92,7 @@ export default function OnboardingQuiz() {
     checkUserStatus();
   }, [user]);
 
-  const totalQuestions = 6; // Updated for grouped categories
+  const totalQuestions = quizData.isQuickStart ? 3 : 6; // 3 for quick start, 6 for complete // Updated for grouped categories
 
   // Get background image for current question (updated for 7 questions)
   const getBackgroundImage = (questionNum: number) => {
@@ -179,9 +181,18 @@ export default function OnboardingQuiz() {
 
   const canProceed = () => {
     switch (currentQuestion) {
+      case 0: return true; // Mode selection
       case 1: return quizData.address.trim() !== "" && validAddressSelected;
-      case 2: return quizData.household.length > 0;
-      case 3: return quizData.priorities.length > 0;
+      case 2: 
+        if (quizData.isQuickStart) {
+          return quizData.priorities.length >= 2; // Require at least 2 priorities for quick start
+        }
+        return quizData.household.length > 0;
+      case 3: 
+        if (quizData.isQuickStart) {
+          return true; // Quick start is complete
+        }
+        return quizData.priorities.length > 0;
       case 4: return quizData.transportation !== "";
       case 5: return quizData.lifestyle !== "";
       case 6: return quizData.lifeStage !== "";
@@ -209,21 +220,23 @@ export default function OnboardingQuiz() {
          try {
            console.log('🟡 MOBILE QUIZ DEBUG - Building profile data...');
            
-           // Mobile-specific: Ensure all data is properly serialized
-           const profileData = {
-             user_id: user.id,
-             address: String(quizData.address || ''),
-             household_type: Array.isArray(quizData.household) ? quizData.household.join(', ') : String(quizData.household || ''),
-             priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
-             priority_preferences: {},
-             transportation_style: String(quizData.transportation || ''),
-             budget_preference: String(quizData.lifestyle || ''),
-             life_stage: String(quizData.lifeStage || ''),
-             settling_tasks: Array.isArray(quizData.tasks) ? quizData.tasks : [],
-             latitude: coordinates?.lat || null,
-             longitude: coordinates?.lng || null,
-             updated_at: new Date().toISOString(),
-           };
+            // Mobile-specific: Ensure all data is properly serialized
+            // Use smart defaults for quick start users
+            const profileData = {
+              user_id: user.id,
+              address: String(quizData.address || ''),
+              household_type: Array.isArray(quizData.household) ? quizData.household.join(', ') : 
+                             quizData.isQuickStart ? 'Not specified' : String(quizData.household || ''),
+              priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
+              priority_preferences: {},
+              transportation_style: String(quizData.transportation || (quizData.isQuickStart ? 'Flexible' : '')),
+              budget_preference: String(quizData.lifestyle || (quizData.isQuickStart ? 'Moderate' : '')),
+              life_stage: String(quizData.lifeStage || (quizData.isQuickStart ? 'Getting settled' : '')),
+              settling_tasks: Array.isArray(quizData.tasks) ? quizData.tasks : [],
+              latitude: coordinates?.lat || null,
+              longitude: coordinates?.lng || null,
+              updated_at: new Date().toISOString(),
+            };
            
            console.log('🟡 MOBILE QUIZ DEBUG - Profile data prepared:', profileData);
            console.log('🟡 MOBILE QUIZ DEBUG - Address length:', profileData.address.length);
@@ -273,14 +286,14 @@ export default function OnboardingQuiz() {
 
            console.log('🟢 MOBILE QUIZ DEBUG - Profile saved successfully:', profileResult);
 
-          // Generate recommendations immediately
+          // Generate recommendations immediately with smart defaults
           const quizResponse = {
             address: quizData.address,
-            householdType: quizData.household.join(', '),
+            householdType: quizData.household.length > 0 ? quizData.household.join(', ') : 'Not specified',
             priorities: quizData.priorities,
-            transportationStyle: quizData.transportation,
-            budgetPreference: quizData.lifestyle,
-            lifeStage: quizData.lifeStage,
+            transportationStyle: quizData.transportation || 'Flexible',
+            budgetPreference: quizData.lifestyle || 'Moderate',
+            lifeStage: quizData.lifeStage || 'Getting settled',
             settlingTasks: quizData.tasks,
             latitude: coordinates?.lat || null,
             longitude: coordinates?.lng || null
@@ -374,18 +387,19 @@ export default function OnboardingQuiz() {
             </p>
             <Button 
               onClick={() => {
-                // Save quiz data to localStorage
+                // Save quiz data to localStorage with smart defaults
                 const coordinates = null; // Will be calculated during signup
                 const quizDataForStorage = {
                   address: quizData.address,
                   priorities: quizData.priorities,
-                  household: quizData.household.join(', '),
-                  transportation: quizData.transportation,
-                  budgetRange: quizData.lifestyle,
-                  movingTimeline: quizData.lifeStage,
+                  household: quizData.household.length > 0 ? quizData.household.join(', ') : 'Not specified',
+                  transportation: quizData.transportation || 'Flexible',
+                  budgetRange: quizData.lifestyle || 'Moderate',
+                  movingTimeline: quizData.lifeStage || 'Getting settled',
                   settlingTasks: quizData.tasks,
                   latitude: coordinates,
-                  longitude: coordinates
+                  longitude: coordinates,
+                  isQuickStart: quizData.isQuickStart
                 };
                 localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
                 
@@ -428,21 +442,25 @@ export default function OnboardingQuiz() {
             <span className="text-2xl font-bold text-white">CalmlySettled</span>
           </Link>
           
-          <div className="text-sm text-white/80 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
-            Question {currentQuestion} of {totalQuestions}
-          </div>
+          {currentQuestion > 0 && (
+            <div className="text-sm text-white/80 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+              {quizData.isQuickStart ? 'Quick Start ' : ''}Question {currentQuestion} of {totalQuestions}
+            </div>
+          )}
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-4">
-        <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
-          <div 
-            className="bg-gradient-hero h-3 rounded-full transition-all duration-200 shadow-glow"
-            style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
-          />
+      {currentQuestion > 0 && (
+        <div className="relative z-10 max-w-4xl mx-auto px-6 py-4">
+          <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
+            <div 
+              className="bg-gradient-hero h-3 rounded-full transition-all duration-200 shadow-glow"
+              style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-8">
@@ -451,21 +469,73 @@ export default function OnboardingQuiz() {
         }`}>
           <CardHeader className="pb-6">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center leading-tight">
+              {currentQuestion === 0 && "How would you like to get started?"}
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
-              {currentQuestion === 2 && "Who did you move with?"}
-              {currentQuestion === 3 && "What are the most important things you're looking for right now?"}
+              {currentQuestion === 2 && (quizData.isQuickStart ? "What are you looking for most?" : "Who did you move with?")}
+              {currentQuestion === 3 && (quizData.isQuickStart ? "Perfect! Let's create your guide." : "What are the most important things you're looking for right now?")}
               {currentQuestion === 4 && "How do you typically get around?"}
               {currentQuestion === 5 && "Which best describes your vibe?"}
               {currentQuestion === 6 && "Which stage of life best fits you right now?"}
             </CardTitle>
-            {currentQuestion === 2 && (
+            {currentQuestion === 0 && (
+              <p className="text-muted-foreground text-center">Choose your preferred onboarding experience</p>
+            )}
+            {currentQuestion === 2 && !quizData.isQuickStart && (
               <p className="text-muted-foreground text-center">Choose all that apply</p>
             )}
-            {currentQuestion === 3 && (
+            {currentQuestion === 2 && quizData.isQuickStart && (
+              <p className="text-muted-foreground text-center">Select at least 2 priorities</p>
+            )}
+            {currentQuestion === 3 && !quizData.isQuickStart && (
               <p className="text-muted-foreground">Choose up to 8 options</p>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
+            
+            {/* Question 0: Mode Selection */}
+            {currentQuestion === 0 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg p-6 ${
+                      quizData.isQuickStart === true ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'
+                    }`}
+                    onClick={() => setQuizData({ ...quizData, isQuickStart: true })}
+                  >
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto bg-gradient-hero rounded-full flex items-center justify-center">
+                        <Clock className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold">Quick Start</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Get started in 2 minutes with just your address and main priorities. 
+                        You can enhance your profile later.
+                      </p>
+                      <div className="text-xs text-primary font-medium">~2 minutes</div>
+                    </div>
+                  </Card>
+                  
+                  <Card 
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg p-6 ${
+                      quizData.isQuickStart === false ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'
+                    }`}
+                    onClick={() => setQuizData({ ...quizData, isQuickStart: false })}
+                  >
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto bg-gradient-subtle rounded-full flex items-center justify-center">
+                        <Star className="h-8 w-8 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-semibold">Complete Setup</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Take the full quiz for the most personalized recommendations 
+                        based on your lifestyle and preferences.
+                      </p>
+                      <div className="text-xs text-primary font-medium">~5 minutes</div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
             
             {/* Question 1: Address */}
             {currentQuestion === 1 && (
@@ -478,8 +548,39 @@ export default function OnboardingQuiz() {
               />
             )}
 
-            {/* Question 2: Household Type */}
-            {currentQuestion === 2 && (
+            {/* Question 2: Quick Start Priorities OR Household Type */}
+            {currentQuestion === 2 && quizData.isQuickStart && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    "Grocery stores", "Coffee shops", "Restaurants", "Healthcare",
+                    "Fitness centers", "Schools", "Shopping", "Entertainment"
+                  ].map((option) => (
+                    <div 
+                      key={option} 
+                      className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
+                        quizData.priorities.includes(option) 
+                          ? 'bg-primary/10 border-primary' 
+                          : 'hover:bg-muted/50 border-border'
+                      }`}
+                      onClick={() => handlePrioritiesChange(option, !quizData.priorities.includes(option))}
+                    >
+                      <Checkbox
+                        checked={quizData.priorities.includes(option)}
+                        className="min-h-[20px] min-w-[20px]"
+                      />
+                      <Label className="text-sm cursor-pointer flex-1">{option}</Label>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground text-center">
+                  Selected: {quizData.priorities.length} (minimum 2 required)
+                </div>
+              </div>
+            )}
+            
+            {/* Question 2: Household Type (Complete Setup) */}
+            {currentQuestion === 2 && !quizData.isQuickStart && (
               <div className="space-y-8">
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
                   {[
@@ -519,8 +620,29 @@ export default function OnboardingQuiz() {
               </div>
             )}
 
-            {/* Question 3: Specific Categories (Grouped) */}
-            {currentQuestion === 3 && (
+            {/* Question 3: Quick Start Completion OR Specific Categories */}
+            {currentQuestion === 3 && quizData.isQuickStart && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 mx-auto bg-gradient-hero rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle className="h-10 w-10 text-white" />
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">You're all set!</h3>
+                  <p className="text-muted-foreground">
+                    We'll create your personalized guide based on your location and priorities. 
+                    You can always refine your preferences later from your dashboard.
+                  </p>
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-medium">Your selections:</p>
+                    <p className="text-sm text-muted-foreground">📍 {quizData.address}</p>
+                    <p className="text-sm text-muted-foreground">✨ {quizData.priorities.join(', ')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Question 3: Specific Categories (Complete Setup) */}
+            {currentQuestion === 3 && !quizData.isQuickStart && (
               <div className="space-y-8">
                 <div className="text-sm text-muted-foreground mb-4">
                   Selected: {quizData.priorities.length}/8
@@ -680,7 +802,7 @@ export default function OnboardingQuiz() {
                 variant="outline"
                 size="mobile"
                 onClick={handlePrevious}
-                disabled={currentQuestion === 1}
+                disabled={currentQuestion === 0}
                 className="min-w-[120px]"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />

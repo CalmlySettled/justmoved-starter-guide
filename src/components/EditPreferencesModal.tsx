@@ -231,7 +231,11 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          data-testid="edit-preferences-trigger"
+        >
           <Settings className="h-4 w-4" />
           Edit My Preferences
         </Button>
