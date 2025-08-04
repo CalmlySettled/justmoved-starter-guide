@@ -508,10 +508,10 @@ export default function OnboardingQuiz() {
                       </div>
                       <h3 className="text-lg font-semibold">Quick Start</h3>
                       <p className="text-sm text-muted-foreground">
-                        Get started in 2 minutes with just your address and main priorities. 
+                        Get started in 30 seconds with just your address and main priorities. 
                         You can enhance your profile later.
                       </p>
-                      <div className="text-xs text-primary font-medium">~2 minutes</div>
+                      <div className="text-xs text-primary font-medium">~30 seconds</div>
                     </div>
                   </Card>
                   
@@ -530,7 +530,7 @@ export default function OnboardingQuiz() {
                         Take the full quiz for the most personalized recommendations 
                         based on your lifestyle and preferences.
                       </p>
-                      <div className="text-xs text-primary font-medium">~5 minutes</div>
+                      <div className="text-xs text-primary font-medium">~2 minutes</div>
                     </div>
                   </Card>
                 </div>
