@@ -3,7 +3,7 @@ import { MapPin, UserCheck, Calendar, Heart } from "lucide-react";
 const steps = [
   {
     icon: UserCheck,
-    title: "Take Our Quiz",
+    title: "Settle In",
     description: "Tell us about your priorities and location - get started in just 30 seconds or take our full quiz for maximum personalization."
   },
   {
