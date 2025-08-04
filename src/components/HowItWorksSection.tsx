@@ -4,7 +4,7 @@ const steps = [
   {
     icon: UserCheck,
     title: "Take Our Quiz",
-    description: "Tell us about your lifestyle, family, and what matters most to you in your new city."
+    description: "Tell us about your priorities and location - get started in just 30 seconds or take our full quiz for maximum personalization."
   },
   {
     icon: MapPin,
