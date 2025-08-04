@@ -352,10 +352,19 @@ export default function OnboardingQuiz() {
           movingTimeline: quizData.lifeStage,
           settlingTasks: quizData.tasks,
           latitude: coordinates?.lat || null,
-          longitude: coordinates?.lng || null
+          longitude: coordinates?.lng || null,
+          isQuickStart: quizData.isQuickStart,
+          timestamp: Date.now() // Add timestamp for validation
         };
         
+        console.log('🟡 QUIZ - Saving quiz data to localStorage:', quizDataForStorage);
         localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+        
+        // Also save a backup in case the first one gets corrupted
+        localStorage.setItem('onboardingQuizDataBackup', JSON.stringify(quizDataForStorage));
+        
+        // Set a flag to indicate quiz completion for auth flow
+        localStorage.setItem('quizCompleted', 'true');
         
         // Set completion state to show the welcome screen with signup button
         setIsComplete(true);
@@ -399,9 +408,18 @@ export default function OnboardingQuiz() {
                   settlingTasks: quizData.tasks,
                   latitude: coordinates,
                   longitude: coordinates,
-                  isQuickStart: quizData.isQuickStart
+                  isQuickStart: quizData.isQuickStart,
+                  timestamp: Date.now() // Add timestamp for validation
                 };
+                
+                console.log('🟡 QUIZ COMPLETION - Saving quiz data to localStorage:', quizDataForStorage);
                 localStorage.setItem('onboardingQuizData', JSON.stringify(quizDataForStorage));
+                
+                // Also save a backup in case the first one gets corrupted
+                localStorage.setItem('onboardingQuizDataBackup', JSON.stringify(quizDataForStorage));
+                
+                // Set a flag to indicate quiz completion for auth flow
+                localStorage.setItem('quizCompleted', 'true');
                 
                 // ALWAYS redirect to signup
                 navigate("/auth");

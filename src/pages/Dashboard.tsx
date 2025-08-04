@@ -28,7 +28,8 @@ import {
   Car,
   DollarSign,
   SortAsc,
-  X
+  X,
+  AlertCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -337,12 +338,24 @@ export default function Dashboard() {
         
         // Check if there's saved quiz data from the signup flow
         const savedQuizData = localStorage.getItem('onboardingQuizData');
+        const backupQuizData = localStorage.getItem('onboardingQuizDataBackup');
         const pendingQuizProcessing = localStorage.getItem('pendingQuizProcessing');
+        const quizCompleted = localStorage.getItem('quizCompleted');
         
-        if (savedQuizData && pendingQuizProcessing) {
-          console.log('Found saved quiz data after signup, processing it...');
+        console.log('🔍 DASHBOARD - Quiz data recovery check:', {
+          hasSavedQuizData: !!savedQuizData,
+          hasBackupQuizData: !!backupQuizData,
+          pendingQuizProcessing,
+          quizCompleted
+        });
+        
+        // Try primary data first, then backup
+        const quizDataToProcess = savedQuizData || backupQuizData;
+        
+        if (quizDataToProcess && (pendingQuizProcessing || quizCompleted)) {
+          console.log('🟡 DASHBOARD - Found saved quiz data after signup, processing it...');
           try {
-            const quizData = JSON.parse(savedQuizData);
+            const quizData = JSON.parse(quizDataToProcess);
             
             // Save the quiz data to user profile
             const { error: profileError } = await supabase
@@ -404,7 +417,7 @@ export default function Dashboard() {
                 // Don't clean up quiz data if there was an error
                 localStorage.setItem('failedQuizProcessing', JSON.stringify(quizData));
               } else {
-                console.log('Successfully generated recommendations from saved quiz data');
+                console.log('🟢 DASHBOARD - Successfully generated recommendations from saved quiz data');
                 toast({
                   title: "Welcome! Your recommendations are ready",
                   description: "We've generated personalized recommendations based on your quiz responses.",
@@ -412,7 +425,10 @@ export default function Dashboard() {
                 
                 // Only clean up quiz data if recommendations were successfully generated
                 localStorage.removeItem('onboardingQuizData');
+                localStorage.removeItem('onboardingQuizDataBackup');
                 localStorage.removeItem('pendingQuizProcessing');
+                localStorage.removeItem('quizCompleted');
+                localStorage.removeItem('quizDataSource');
               }
               
               setGeneratingRecommendations(false);
@@ -439,11 +455,21 @@ export default function Dashboard() {
               setLoading(false);
               return;
             }
-          } catch (error) {
-            console.error('Error processing saved quiz data:', error);
-            localStorage.removeItem('onboardingQuizData');
-            localStorage.removeItem('pendingQuizProcessing');
-          }
+            } catch (error) {
+              console.error('🔴 DASHBOARD - Error processing saved quiz data:', error);
+              // Don't immediately clear data - keep for potential recovery
+              localStorage.setItem('failedQuizProcessing', JSON.stringify({
+                error: error.message,
+                timestamp: Date.now(),
+                quizData: quizDataToProcess
+              }));
+              
+              toast({
+                title: "Quiz Processing Error",
+                description: "There was an issue processing your quiz data. Your responses are saved and we'll try again.",
+                variant: "destructive"
+              });
+            }
         }
         
         // Check if user has incomplete profile (signed up without taking quiz)
@@ -1444,6 +1470,68 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Quiz Data Recovery Card */}
+        {localStorage.getItem('failedQuizProcessing') && (
+          <div className="mb-8">
+            <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800">
+              <CardHeader>
+                <CardTitle className="text-orange-800 dark:text-orange-200 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Quiz Data Recovery
+                </CardTitle>
+                <CardDescription className="text-orange-700 dark:text-orange-300">
+                  We found your quiz responses from signup, but there was an issue processing them. You can retry or complete your profile manually.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={async () => {
+                      const failedData = localStorage.getItem('failedQuizProcessing');
+                      if (failedData) {
+                        try {
+                          const { quizData } = JSON.parse(failedData);
+                          const parsedQuizData = JSON.parse(quizData);
+                          
+                          // Retry processing
+                          localStorage.setItem('onboardingQuizData', quizData);
+                          localStorage.setItem('pendingQuizProcessing', 'true');
+                          localStorage.removeItem('failedQuizProcessing');
+                          
+                          // Refresh to trigger processing
+                          window.location.reload();
+                        } catch (error) {
+                          console.error('Error retrying quiz processing:', error);
+                          toast({
+                            title: "Retry Failed",
+                            description: "Please complete your profile manually using the edit preferences button.",
+                            variant: "destructive"
+                          });
+                        }
+                      }
+                    }}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Retry Processing
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      localStorage.removeItem('failedQuizProcessing');
+                      window.location.reload();
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Clear & Complete Manually
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Profile Completion Card */}
         {userProfile && (

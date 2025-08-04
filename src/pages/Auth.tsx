@@ -29,6 +29,109 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Helper function to clear quiz data from localStorage
+  const clearQuizData = () => {
+    console.log('🟡 AUTH - Clearing quiz data from localStorage');
+    localStorage.removeItem('onboardingQuizData');
+    localStorage.removeItem('onboardingQuizDataBackup');
+    localStorage.removeItem('quizCompleted');
+    localStorage.removeItem('pendingQuizProcessing');
+    localStorage.removeItem('quizDataSource');
+  };
+
+  // Helper function to process quiz data after authentication
+  const processQuizDataAfterAuth = async (userId: string, quizData: any) => {
+    console.log('🟡 AUTH - Processing quiz data after auth for user:', userId);
+    
+    try {
+      // Get coordinates for address if not already available
+      let coordinates = { lat: quizData.latitude, lng: quizData.longitude };
+      
+      if (!coordinates.lat && quizData.address) {
+        console.log('🟡 AUTH - Getting coordinates for address:', quizData.address);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(quizData.address)}&limit=1`, {
+          headers: { 'User-Agent': 'CalmlySettled/1.0' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            coordinates = {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon)
+            };
+          }
+        }
+      }
+
+      // Save profile data
+      const profileData = {
+        user_id: userId,
+        address: String(quizData.address || ''),
+        household_type: String(quizData.household || 'Not specified'),
+        priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
+        priority_preferences: {},
+        transportation_style: String(quizData.transportation || 'Flexible'),
+        budget_preference: String(quizData.budgetRange || 'Moderate'),
+        life_stage: String(quizData.movingTimeline || 'Getting settled'),
+        settling_tasks: Array.isArray(quizData.settlingTasks) ? quizData.settlingTasks : [],
+        latitude: coordinates?.lat || null,
+        longitude: coordinates?.lng || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('🟡 AUTH - Saving profile data:', profileData);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'user_id' });
+
+      if (profileError) {
+        console.error('🔴 AUTH - Profile save error:', profileError);
+        throw profileError;
+      }
+
+      // Generate recommendations
+      const quizResponse = {
+        address: quizData.address,
+        householdType: quizData.household,
+        priorities: quizData.priorities,
+        transportationStyle: quizData.transportation || 'Flexible',
+        budgetPreference: quizData.budgetRange || 'Moderate',
+        lifeStage: quizData.movingTimeline || 'Getting settled',
+        settlingTasks: quizData.settlingTasks || [],
+        latitude: coordinates?.lat || null,
+        longitude: coordinates?.lng || null
+      };
+
+      console.log('🟡 AUTH - Generating recommendations:', quizResponse);
+      const { error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+        body: { quizResponse, userId }
+      });
+
+      if (generateError) {
+        console.error('🔴 AUTH - Recommendations generation error:', generateError);
+      } else {
+        console.log('🟢 AUTH - Recommendations generated successfully');
+        
+        // Clear quiz data after successful processing
+        clearQuizData();
+        
+        toast({
+          title: "Welcome! Your recommendations are ready",
+          description: "We've generated personalized recommendations based on your quiz responses.",
+        });
+      }
+    } catch (error) {
+      console.error('🔴 AUTH - Error processing quiz data:', error);
+      
+      toast({
+        title: "Profile Processing",
+        description: "Your profile was saved but there was an issue generating recommendations. Please refresh your dashboard.",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
@@ -45,28 +148,54 @@ export default function Auth() {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
         if (session) {
+          console.log('🟡 AUTH - Session detected, checking for quiz data...');
+          
           // Check if there's completed quiz data in localStorage (user took quiz before signup)
           const storedQuizData = localStorage.getItem('onboardingQuizData');
-          console.log('Auth state change - checking for stored quiz data:', storedQuizData);
-          console.log('Session user ID:', session?.user?.id);
+          const quizCompleted = localStorage.getItem('quizCompleted');
+          const backupQuizData = localStorage.getItem('onboardingQuizDataBackup');
           
-          if (storedQuizData) {
+          console.log('🟡 AUTH - Quiz data check:', { 
+            hasStoredQuizData: !!storedQuizData, 
+            quizCompleted,
+            hasBackupData: !!backupQuizData
+          });
+          
+          // Try to recover quiz data if available (primary or backup)
+          const quizDataToProcess = storedQuizData || backupQuizData;
+          
+          if (quizDataToProcess && quizCompleted) {
             try {
-              const quizData = JSON.parse(storedQuizData);
-              console.log('Mobile Debug: Parsed quiz data:', quizData);
+              const quizData = JSON.parse(quizDataToProcess);
+              console.log('🟡 AUTH - Parsed quiz data:', quizData);
               
-              if (quizData.address && quizData.priorities && quizData.priorities.length > 0) {
-                console.log('Mobile Debug: Valid quiz data found, setting up for processing on dashboard...');
+              // Validate quiz data has required fields
+              const isValidQuizData = quizData.address && 
+                                   quizData.priorities && 
+                                   Array.isArray(quizData.priorities) && 
+                                   quizData.priorities.length > 0;
+              
+              if (isValidQuizData) {
+                console.log('🟢 AUTH - Valid quiz data found, processing after auth...');
                 
-                // Just set the flag for dashboard to process - don't process here to avoid race conditions
+                // Set processing flags for dashboard to handle
                 localStorage.setItem('pendingQuizProcessing', 'true');
-                console.log('Auth: Set pendingQuizProcessing flag for dashboard to handle');
+                localStorage.setItem('quizDataSource', storedQuizData ? 'primary' : 'backup');
+                
+                // Process quiz data immediately to avoid race conditions
+                setTimeout(async () => {
+                  await processQuizDataAfterAuth(session.user.id, quizData);
+                }, 1000);
                 
                 navigate("/dashboard");
                 return;
+              } else {
+                console.log('🔴 AUTH - Invalid quiz data structure, clearing localStorage');
+                clearQuizData();
               }
             } catch (error) {
-              console.error('Error parsing stored quiz data:', error);
+              console.error('🔴 AUTH - Error parsing quiz data:', error);
+              clearQuizData();
             }
           }
           
@@ -427,6 +556,12 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Check if user has quiz data to preserve it through OAuth flow
+      const hasQuizData = localStorage.getItem('onboardingQuizData') || localStorage.getItem('quizCompleted');
+      
+      console.log('🟡 AUTH - Google OAuth initiated, has quiz data:', !!hasQuizData);
+      
+      // Always redirect to dashboard - quiz processing will happen there
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
