@@ -11,6 +11,9 @@ const rateLimiter = new Map();
 const RATE_LIMIT = 20; // requests per window
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
 
+// AI Recommendation System Configuration
+const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations for A/B testing
+
 interface QuizResponse {
   address: string;
   householdType: string;
@@ -21,6 +24,7 @@ interface QuizResponse {
   lifeStage: string;
   settlingTasks: string[];
   existingPriorities?: string[]; // Add this to track existing priorities
+  userId?: string; // Add userId for AI personalization
 }
 
 interface Business {
@@ -37,6 +41,17 @@ interface Business {
   image_url?: string;
   rating?: number;
   review_count?: number;
+  ai_relevance_score?: number;
+  ai_scores?: {
+    budget_match?: number;
+    location_preference?: number;
+    feature_alignment?: number;
+    household_fit?: number;
+    lifestyle_match?: number;
+    priority_alignment?: number;
+    transportation_compatibility?: number;
+    overall_relevance?: number;
+  };
 }
 
 // Removed hardcoded brand logos - using pure API + category fallback system
@@ -1538,7 +1553,10 @@ serve(async (req) => {
 
     // Generate recommendations based on user priorities (only if not cached)
     console.log('💸 Generating NEW recommendations - API costs will be incurred');
-    const recommendations = await generateRecommendations(quizResponse, coordinates);
+    
+    // Add userId to quizResponse for AI personalization
+    const enhancedQuizResponse = { ...quizResponse, userId };
+    const recommendations = await generateRecommendations(enhancedQuizResponse, coordinates);
 
     console.log('Generated recommendations categories:', Object.keys(recommendations));
 
@@ -1593,11 +1611,19 @@ serve(async (req) => {
   }
 });
 
-// AI ENHANCEMENT: Determine recommendation engine type
+// AI ENHANCEMENT: Determine recommendation engine type (A/B testing)
 function determineRecommendationEngine(userId: string): 'ai' | 'standard' {
-  // Simple A/B testing: AI for even user IDs, standard for odd
-  const hash = userId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-  return hash % 2 === 0 ? 'ai' : 'standard';
+  // Use hash of user ID to consistently assign users to test groups
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Use absolute value and modulo to get consistent assignment
+  const normalizedHash = Math.abs(hash) / Math.pow(2, 31);
+  return normalizedHash < AI_RECOMMENDATION_PERCENTAGE ? 'ai' : 'standard';
 }
 
 // AI ENHANCEMENT: Calculate collaborative filtering score
@@ -1752,6 +1778,264 @@ async function calculateCrossCategoryScore(
   }
 }
 
+// AI Recommendation System Functions
+
+// Calculate detailed AI scores for a business based on user preferences
+function calculateDetailedAIScores(business: Business, category: string, userPreferences?: QuizResponse) {
+  if (!userPreferences) {
+    return {
+      budget_match: 0,
+      location_preference: 0,
+      feature_alignment: 0,
+      household_fit: 0,
+      lifestyle_match: 0,
+      priority_alignment: 0,
+      transportation_compatibility: 0,
+      overall_relevance: 0
+    };
+  }
+
+  const scores = {
+    budget_match: calculateBudgetMatchScore(business, userPreferences.budgetPreference),
+    location_preference: calculateLocationPreferenceScore(business, userPreferences),
+    feature_alignment: calculateFeatureAlignmentScore(business, category, userPreferences),
+    household_fit: calculateHouseholdFitScore(business, userPreferences.householdType),
+    lifestyle_match: calculateLifestyleMatchScore(business, userPreferences.lifeStage),
+    priority_alignment: calculatePriorityAlignmentScore(business, category, userPreferences.priorities),
+    transportation_compatibility: calculateTransportationScore(business, userPreferences.transportationStyle),
+    overall_relevance: 0
+  };
+
+  // Calculate overall relevance as weighted average
+  scores.overall_relevance = (
+    scores.budget_match * 0.2 +
+    scores.location_preference * 0.15 +
+    scores.feature_alignment * 0.2 +
+    scores.household_fit * 0.1 +
+    scores.lifestyle_match * 0.1 +
+    scores.priority_alignment * 0.15 +
+    scores.transportation_compatibility * 0.1
+  );
+
+  return scores;
+}
+
+// Budget matching logic
+function calculateBudgetMatchScore(business: Business, budgetPreference: string): number {
+  const businessName = business.name.toLowerCase();
+  const features = business.features?.join(' ').toLowerCase() || '';
+  
+  switch (budgetPreference) {
+    case 'budget-conscious':
+      // Prefer discount stores, budget brands, value options
+      if (businessName.includes('discount') || businessName.includes('dollar') || 
+          businessName.includes('budget') || businessName.includes('value') ||
+          businessName.includes('walmart') || businessName.includes('aldi')) {
+        return 0.9;
+      }
+      if (features.includes('affordable') || features.includes('discount')) {
+        return 0.7;
+      }
+      return 0.5;
+      
+    case 'mid-range':
+      // Prefer mainstream brands, avoid extreme budget or luxury
+      if (businessName.includes('premium') || businessName.includes('luxury') ||
+          businessName.includes('discount') || businessName.includes('dollar')) {
+        return 0.4;
+      }
+      return 0.8;
+      
+    case 'premium':
+      // Prefer upscale, premium, organic, specialty options
+      if (businessName.includes('premium') || businessName.includes('luxury') ||
+          businessName.includes('organic') || businessName.includes('gourmet') ||
+          features.includes('premium') || features.includes('organic')) {
+        return 0.9;
+      }
+      return 0.6;
+      
+    default:
+      return 0.5;
+  }
+}
+
+// Location preference scoring based on distance
+function calculateLocationPreferenceScore(business: Business, userPreferences: QuizResponse): number {
+  if (!business.distance_miles) return 0.5;
+  
+  // Score based on distance - closer is better
+  if (business.distance_miles <= 1) return 1.0;
+  if (business.distance_miles <= 3) return 0.8;
+  if (business.distance_miles <= 5) return 0.6;
+  if (business.distance_miles <= 10) return 0.4;
+  return 0.2;
+}
+
+// Feature alignment with user priorities
+function calculateFeatureAlignmentScore(business: Business, category: string, userPreferences: QuizResponse): number {
+  const features = business.features?.join(' ').toLowerCase() || '';
+  const priorities = userPreferences.priorities.map(p => p.toLowerCase());
+  
+  let score = 0.5; // Base score
+  
+  // Check for specific feature matches based on priorities
+  if (priorities.includes('fitness') || priorities.includes('health')) {
+    if (features.includes('fitness') || features.includes('gym') || features.includes('health')) {
+      score += 0.3;
+    }
+  }
+  
+  if (priorities.includes('family') || userPreferences.householdType === 'family-with-children') {
+    if (features.includes('family') || features.includes('kid') || features.includes('child')) {
+      score += 0.3;
+    }
+  }
+  
+  if (priorities.includes('organic') || priorities.includes('healthy')) {
+    if (features.includes('organic') || features.includes('natural') || features.includes('healthy')) {
+      score += 0.3;
+    }
+  }
+  
+  return Math.min(score, 1.0);
+}
+
+// Household type matching
+function calculateHouseholdFitScore(business: Business, householdType: string): number {
+  const businessName = business.name.toLowerCase();
+  const features = business.features?.join(' ').toLowerCase() || '';
+  
+  switch (householdType) {
+    case 'single':
+      // Prefer convenient, single-serving options
+      if (features.includes('convenient') || features.includes('quick') ||
+          businessName.includes('express') || businessName.includes('quick')) {
+        return 0.8;
+      }
+      return 0.6;
+      
+    case 'couple':
+      // Neutral preference
+      return 0.7;
+      
+    case 'family-with-children':
+      // Prefer family-friendly options
+      if (features.includes('family') || features.includes('kid') ||
+          features.includes('child') || features.includes('playground')) {
+        return 0.9;
+      }
+      return 0.6;
+      
+    case 'roommates':
+      // Prefer cost-effective, bulk options
+      if (features.includes('bulk') || features.includes('wholesale') ||
+          businessName.includes('costco') || businessName.includes('sam')) {
+        return 0.8;
+      }
+      return 0.6;
+      
+    default:
+      return 0.5;
+  }
+}
+
+// Life stage matching
+function calculateLifestyleMatchScore(business: Business, lifeStage: string): number {
+  const businessName = business.name.toLowerCase();
+  const features = business.features?.join(' ').toLowerCase() || '';
+  
+  switch (lifeStage) {
+    case 'young-professional':
+      // Prefer convenient, trendy, networking options
+      if (features.includes('convenient') || features.includes('trendy') ||
+          features.includes('networking') || businessName.includes('co-working')) {
+        return 0.8;
+      }
+      return 0.6;
+      
+    case 'growing-family':
+      // Prefer family-oriented, practical options
+      if (features.includes('family') || features.includes('practical') ||
+          features.includes('kid') || features.includes('child')) {
+        return 0.9;
+      }
+      return 0.6;
+      
+    case 'empty-nester':
+      // Prefer quality, leisure, community options
+      if (features.includes('quality') || features.includes('leisure') ||
+          features.includes('community') || features.includes('senior')) {
+        return 0.8;
+      }
+      return 0.6;
+      
+    case 'retiree':
+      // Prefer accessible, community, value options
+      if (features.includes('accessible') || features.includes('community') ||
+          features.includes('senior') || features.includes('discount')) {
+        return 0.8;
+      }
+      return 0.6;
+      
+    default:
+      return 0.5;
+  }
+}
+
+// Priority alignment scoring
+function calculatePriorityAlignmentScore(business: Business, category: string, priorities: string[]): number {
+  const categoryLower = category.toLowerCase();
+  const prioritiesLower = priorities.map(p => p.toLowerCase());
+  
+  // Direct category-priority matches
+  for (const priority of prioritiesLower) {
+    if (categoryLower.includes(priority) || priority.includes(categoryLower.split(' ')[0])) {
+      return 0.9;
+    }
+  }
+  
+  return 0.5;
+}
+
+// Transportation compatibility
+function calculateTransportationScore(business: Business, transportationStyle: string): number {
+  const features = business.features?.join(' ').toLowerCase() || '';
+  
+  switch (transportationStyle) {
+    case 'walking':
+      // Prefer very close businesses
+      if (business.distance_miles && business.distance_miles <= 1) {
+        return 0.9;
+      }
+      return business.distance_miles && business.distance_miles <= 3 ? 0.6 : 0.3;
+      
+    case 'biking':
+      // Prefer businesses within biking distance
+      if (business.distance_miles && business.distance_miles <= 5) {
+        return 0.8;
+      }
+      return 0.4;
+      
+    case 'public-transit':
+      // Prefer businesses near transit, or within reasonable distance
+      if (features.includes('transit') || features.includes('bus') || features.includes('train')) {
+        return 0.9;
+      }
+      return business.distance_miles && business.distance_miles <= 10 ? 0.7 : 0.4;
+      
+    case 'driving':
+      // Distance less important, parking more important
+      if (features.includes('parking') || features.includes('drive')) {
+        return 0.8;
+      }
+      return 0.7;
+      
+    default:
+      return 0.5;
+  }
+}
+
 // Enhanced function to save recommendations with relevance scores
 async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse, isPopularMode: boolean = false) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -1823,6 +2107,9 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
         
         const filterMetadata = generateFilterMetadata(business, category);
         
+        // Calculate detailed AI scores for this business
+        const aiScores = calculateDetailedAIScores(business, category, userPreferences);
+        
         recommendationsToInsert.push({
           user_id: userId,
           category: category,
@@ -1842,6 +2129,14 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           filter_metadata: filterMetadata,
           recommendation_engine: recommendationEngine,
           ai_scores: {
+            budget_match: aiScores.budget_match,
+            location_preference: aiScores.location_preference,
+            feature_alignment: aiScores.feature_alignment,
+            household_fit: aiScores.household_fit,
+            lifestyle_match: aiScores.lifestyle_match,
+            priority_alignment: aiScores.priority_alignment,
+            transportation_compatibility: aiScores.transportation_compatibility,
+            overall_relevance: aiScores.overall_relevance,
             collaborative: collaborativeScore,
             temporal: temporalScore,
             crossCategory: crossCategoryScore,
@@ -2085,6 +2380,46 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     }
   } else if (quizResponse.existingPriorities && quizResponse.existingPriorities.length > 0) {
     console.log(`User has existing priorities: ${quizResponse.existingPriorities.join(', ')}, not adding defaults`);
+  }
+
+  // Apply AI-powered ranking if this is an AI user
+  const userId = quizResponse.userId;
+  if (!userId) {
+    console.log('No userId provided, using standard recommendations');
+    return recommendations;
+  }
+  
+  const recommendationEngine = determineRecommendationEngine(userId);
+  
+  if (recommendationEngine === 'ai') {
+    console.log('Applying AI-powered ranking to recommendations');
+    
+    // Sort each category's businesses by AI relevance scores
+    for (const [category, businesses] of Object.entries(recommendations)) {
+      // Calculate AI scores for each business
+      for (const business of businesses) {
+        const aiScores = calculateDetailedAIScores(business, category, quizResponse);
+        business.ai_relevance_score = aiScores.overall_relevance;
+        business.ai_scores = aiScores;
+      }
+      
+      // Sort by AI relevance score (descending) with distance as tiebreaker
+      businesses.sort((a, b) => {
+        const scoreA = a.ai_relevance_score || 0;
+        const scoreB = b.ai_relevance_score || 0;
+        
+        if (Math.abs(scoreA - scoreB) > 0.05) { // Significant score difference
+          return scoreB - scoreA; // Higher score first
+        }
+        
+        // Tie-breaker: prefer closer businesses
+        return (a.distance_miles || 999) - (b.distance_miles || 999);
+      });
+      
+      console.log(`AI-ranked businesses in ${category}:`, businesses.slice(0, 3).map(b => 
+        `${b.name} (AI: ${(b.ai_relevance_score || 0).toFixed(2)}, Dist: ${b.distance_miles}mi)`
+      ));
+    }
   }
 
   return recommendations;
