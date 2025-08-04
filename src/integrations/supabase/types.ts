@@ -109,6 +109,7 @@ export type Database = {
       }
       user_recommendations: {
         Row: {
+          ai_scores: Json | null
           business_address: string | null
           business_description: string | null
           business_features: string[] | null
@@ -123,13 +124,16 @@ export type Database = {
           distance_miles: number | null
           filter_metadata: Json | null
           id: string
+          interaction_count: number | null
           is_displayed: boolean | null
           is_favorite: boolean
+          recommendation_engine: string | null
           relevance_score: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          ai_scores?: Json | null
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
@@ -144,13 +148,16 @@ export type Database = {
           distance_miles?: number | null
           filter_metadata?: Json | null
           id?: string
+          interaction_count?: number | null
           is_displayed?: boolean | null
           is_favorite?: boolean
+          recommendation_engine?: string | null
           relevance_score?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          ai_scores?: Json | null
           business_address?: string | null
           business_description?: string | null
           business_features?: string[] | null
@@ -165,8 +172,10 @@ export type Database = {
           distance_miles?: number | null
           filter_metadata?: Json | null
           id?: string
+          interaction_count?: number | null
           is_displayed?: boolean | null
           is_favorite?: boolean
+          recommendation_engine?: string | null
           relevance_score?: number | null
           updated_at?: string
           user_id?: string

@@ -1593,6 +1593,165 @@ serve(async (req) => {
   }
 });
 
+// AI ENHANCEMENT: Determine recommendation engine type
+function determineRecommendationEngine(userId: string): 'ai' | 'standard' {
+  // Simple A/B testing: AI for even user IDs, standard for odd
+  const hash = userId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  return hash % 2 === 0 ? 'ai' : 'standard';
+}
+
+// AI ENHANCEMENT: Calculate collaborative filtering score
+async function calculateCollaborativeScore(
+  supabase: any,
+  userId: string,
+  business: Business,
+  category: string
+): Promise<number> {
+  try {
+    // Get users who favorited similar businesses in this category
+    const { data: similarUsers } = await supabase
+      .from('user_recommendations')
+      .select('user_id')
+      .eq('category', category)
+      .eq('is_favorite', true)
+      .neq('user_id', userId)
+      .limit(100);
+
+    if (!similarUsers || similarUsers.length === 0) return 0;
+
+    // Get current user's favorites to find overlap
+    const { data: userFavorites } = await supabase
+      .from('user_recommendations')
+      .select('business_name')
+      .eq('user_id', userId)
+      .eq('is_favorite', true);
+
+    if (!userFavorites || userFavorites.length === 0) return 0;
+
+    const userFavoriteNames = new Set(userFavorites.map(f => f.business_name.toLowerCase()));
+    let collaborativeScore = 0;
+    let matchCount = 0;
+
+    // Check each similar user for overlapping favorites
+    for (const user of similarUsers.slice(0, 20)) { // Limit for performance
+      const { data: otherUserFavorites } = await supabase
+        .from('user_recommendations')
+        .select('business_name')
+        .eq('user_id', user.user_id)
+        .eq('is_favorite', true)
+        .limit(10);
+
+      if (otherUserFavorites) {
+        const overlap = otherUserFavorites.filter(fav => 
+          userFavoriteNames.has(fav.business_name.toLowerCase())
+        ).length;
+        
+        if (overlap > 0) {
+          matchCount++;
+          collaborativeScore += overlap / Math.max(userFavorites.length, otherUserFavorites.length);
+        }
+      }
+    }
+
+    return matchCount > 0 ? (collaborativeScore / matchCount) * 0.3 : 0; // Max 0.3 boost
+  } catch (error) {
+    console.error('Error calculating collaborative score:', error);
+    return 0;
+  }
+}
+
+// AI ENHANCEMENT: Calculate temporal intelligence score
+async function calculateTemporalScore(
+  supabase: any,
+  userId: string,
+  business: Business,
+  category: string
+): Promise<number> {
+  try {
+    // Get user's account age
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('created_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (!profile) return 0;
+
+    const accountAge = (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    
+    // Boost newer, highly-rated businesses for new users (< 30 days)
+    if (accountAge < 30 && business.rating && business.rating >= 4.5) {
+      return 0.2; // 0.2 boost for new users seeing high-quality businesses
+    }
+    
+    // Boost businesses with recent high activity for established users
+    if (accountAge >= 30) {
+      const { data: recentActivity } = await supabase
+        .from('user_recommendations')
+        .select('id')
+        .eq('business_name', business.name)
+        .eq('category', category)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .limit(5);
+
+      if (recentActivity && recentActivity.length >= 3) {
+        return 0.15; // 0.15 boost for trending businesses
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    console.error('Error calculating temporal score:', error);
+    return 0;
+  }
+}
+
+// AI ENHANCEMENT: Calculate cross-category intelligence score
+async function calculateCrossCategoryScore(
+  supabase: any,
+  userId: string,
+  business: Business,
+  currentCategory: string
+): Promise<number> {
+  try {
+    // Get user's preferences across all categories
+    const { data: userPrefs } = await supabase
+      .from('user_recommendations')
+      .select('category, business_features, is_favorite')
+      .eq('user_id', userId)
+      .eq('is_favorite', true);
+
+    if (!userPrefs || userPrefs.length === 0) return 0;
+
+    // Find patterns in user's cross-category preferences
+    const preferredFeatures = new Set();
+    const categoryCount = new Map();
+
+    userPrefs.forEach(pref => {
+      categoryCount.set(pref.category, (categoryCount.get(pref.category) || 0) + 1);
+      if (pref.business_features) {
+        pref.business_features.forEach((feature: string) => preferredFeatures.add(feature.toLowerCase()));
+      }
+    });
+
+    // Calculate score based on business features matching user's cross-category patterns
+    if (business.features) {
+      const matchingFeatures = business.features.filter(feature => 
+        preferredFeatures.has(feature.toLowerCase())
+      ).length;
+      
+      if (matchingFeatures > 0) {
+        return Math.min(matchingFeatures * 0.05, 0.25); // Max 0.25 boost
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    console.error('Error calculating cross-category score:', error);
+    return 0;
+  }
+}
+
 // Enhanced function to save recommendations with relevance scores
 async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse, isPopularMode: boolean = false) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -1621,9 +1780,15 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
     const recommendationsToInsert = [];
     const seenBusinesses = new Set(); // Track unique businesses globally across all categories
     
-    // Convert recommendations to database format with relevance scores
+    // Determine recommendation engine type for this user
+    const recommendationEngine = determineRecommendationEngine(userId);
+    console.log(`Using ${recommendationEngine} recommendation engine for user ${userId}`);
+    
+    // Convert recommendations to database format with AI-enhanced relevance scores
     for (const [category, businesses] of Object.entries(recommendations)) {
-      businesses.forEach((business, index) => {
+      for (let index = 0; index < businesses.length; index++) {
+        const business = businesses[index];
+        
         // Create a unique key for this business GLOBALLY (not per category)
         // Use name + address to identify truly unique businesses
         const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
@@ -1631,14 +1796,31 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
         // Skip if we've already seen this exact business anywhere
         if (seenBusinesses.has(businessKey)) {
           console.log(`→ Skipping duplicate business: ${business.name} (already exists in another category)`);
-          return;
+          continue;
         }
         seenBusinesses.add(businessKey);
         
-        // Use passed-in mode to determine scoring
+        // Calculate base relevance score
         const scoringMode = isPopularMode ? 'rating-heavy' : 'distance-heavy';
+        let relevanceScore = calculateRelevanceScore(business, category, userPreferences, scoringMode);
         
-        const relevanceScore = calculateRelevanceScore(business, category, userPreferences, scoringMode);
+        // Calculate AI scores if using AI engine
+        let collaborativeScore = 0;
+        let temporalScore = 0;
+        let crossCategoryScore = 0;
+        
+        if (recommendationEngine === 'ai') {
+          collaborativeScore = await calculateCollaborativeScore(supabase, userId, business, category);
+          temporalScore = await calculateTemporalScore(supabase, userId, business, category);
+          crossCategoryScore = await calculateCrossCategoryScore(supabase, userId, business, category);
+          
+          // Apply AI boosts to relevance score
+          relevanceScore += collaborativeScore + temporalScore + crossCategoryScore;
+          relevanceScore = Math.min(relevanceScore, 10.0); // Cap at 10.0
+          
+          console.log(`AI scores for ${business.name}: collaborative=${collaborativeScore.toFixed(3)}, temporal=${temporalScore.toFixed(3)}, crossCategory=${crossCategoryScore.toFixed(3)}`);
+        }
+        
         const filterMetadata = generateFilterMetadata(business, category);
         
         recommendationsToInsert.push({
@@ -1657,9 +1839,17 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           is_favorite: false,
           relevance_score: relevanceScore,
           is_displayed: index < 6, // Only first 6 are displayed by default
-          filter_metadata: filterMetadata
+          filter_metadata: filterMetadata,
+          recommendation_engine: recommendationEngine,
+          ai_scores: {
+            collaborative: collaborativeScore,
+            temporal: temporalScore,
+            crossCategory: crossCategoryScore,
+            finalScore: relevanceScore
+          },
+          interaction_count: 0
         });
-      });
+      }
     }
     
     if (recommendationsToInsert.length > 0) {
