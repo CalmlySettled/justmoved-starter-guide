@@ -874,30 +874,77 @@ function generateFeaturesFromGoogleData(place: any): string[] {
   return features;
 }
 
-// Function to deduplicate businesses by name within 5 miles, keeping closest
+// Helper function to normalize business names for better matching
+function normalizeBusinessName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    // Remove common suffixes/prefixes that vary between APIs
+    .replace(/\b(pharmacy|store|inc|llc|corp|corporation|company|co\.|ltd)\b/g, '')
+    // Remove extra whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Helper function to check if two business names are similar
+function areBusinessNamesSimilar(name1: string, name2: string): boolean {
+  const normalized1 = normalizeBusinessName(name1);
+  const normalized2 = normalizeBusinessName(name2);
+  
+  // Direct match after normalization
+  if (normalized1 === normalized2) return true;
+  
+  // Check if one is a substring of the other (e.g., "CVS" vs "CVS Pharmacy")
+  if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Enhanced function to deduplicate businesses by name and location
 function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates: { lat: number; lng: number }): Business[] {
+  // First pass: Group by exact normalized names
   const businessGroups = new Map<string, Business[]>();
   
-  // Group businesses by name (case-insensitive)
   businesses.forEach(business => {
-    const normalizedName = business.name.toLowerCase().trim();
+    const normalizedName = normalizeBusinessName(business.name);
     if (!businessGroups.has(normalizedName)) {
       businessGroups.set(normalizedName, []);
     }
     businessGroups.get(normalizedName)!.push(business);
   });
   
+  // Second pass: Merge groups with similar names
+  const groupKeys = Array.from(businessGroups.keys());
+  for (let i = 0; i < groupKeys.length; i++) {
+    for (let j = i + 1; j < groupKeys.length; j++) {
+      const key1 = groupKeys[i];
+      const key2 = groupKeys[j];
+      
+      if (businessGroups.has(key1) && businessGroups.has(key2) && areBusinessNamesSimilar(key1, key2)) {
+        // Merge the groups
+        const group1 = businessGroups.get(key1)!;
+        const group2 = businessGroups.get(key2)!;
+        businessGroups.set(key1, [...group1, ...group2]);
+        businessGroups.delete(key2);
+        // Update groupKeys array
+        groupKeys.splice(j, 1);
+        j--; // Adjust index after removal
+      }
+    }
+  }
+  
   const deduplicatedBusinesses: Business[] = [];
   
-  // For each business name group, keep only locations that are >5 miles apart
+  // For each business group, apply location-based deduplication
   businessGroups.forEach((locations, businessName) => {
     if (locations.length === 1) {
-      // Only one location, keep it
       deduplicatedBusinesses.push(locations[0]);
       return;
     }
     
-    // Sort by distance from user (closest first)
+    // Calculate distances from user for sorting
     locations.forEach(business => {
       if (business.latitude && business.longitude) {
         business.distance_miles = calculateDistance(
@@ -909,23 +956,41 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
       }
     });
     
+    // Sort by distance from user (closest first)
     locations.sort((a, b) => (a.distance_miles || 999) - (b.distance_miles || 999));
     
-    // Keep the closest location and any others that are >5 miles away from each other
+    // Apply aggressive coordinate-based deduplication for very close locations (0.1 miles = ~500 feet)
     const keptLocations: Business[] = [];
     
     for (const location of locations) {
       if (!location.latitude || !location.longitude) {
-        continue; // Skip locations without coordinates
+        continue;
       }
       
-      // Check if this location is >5 miles from all kept locations
+      // Check if this location is very close to any kept location (same building/plaza)
+      const veryClose = keptLocations.some(kept => {
+        if (!kept.latitude || !kept.longitude) return false;
+        const distance = calculateDistance(
+          location.latitude!,
+          location.longitude!,
+          kept.latitude,
+          kept.longitude
+        );
+        return distance <= 0.1; // 0.1 miles = ~500 feet (same building/plaza)
+      });
+      
+      if (veryClose) {
+        console.log(`→ Filtering out duplicate ${location.name} at ${location.address} (same location as existing entry)`);
+        continue;
+      }
+      
+      // For remaining locations, use 5-mile rule for different locations of same business
       const tooClose = keptLocations.some(kept => {
         if (!kept.latitude || !kept.longitude) return false;
         const distance = calculateDistance(
-          location.latitude!, 
-          location.longitude!, 
-          kept.latitude, 
+          location.latitude!,
+          location.longitude!,
+          kept.latitude,
           kept.longitude
         );
         return distance <= 5;
@@ -933,9 +998,9 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
       
       if (!tooClose) {
         keptLocations.push(location);
-        console.log(`→ Keeping ${businessName} at ${location.address} (${location.distance_miles}mi from user)`);
+        console.log(`→ Keeping ${location.name} at ${location.address} (${location.distance_miles?.toFixed(1)}mi from user)`);
       } else {
-        console.log(`→ Filtering out duplicate ${businessName} at ${location.address} (too close to existing location)`);
+        console.log(`→ Filtering out duplicate ${location.name} at ${location.address} (too close to existing location)`);
       }
     }
     
