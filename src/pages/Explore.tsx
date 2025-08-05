@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { useBatchRequests } from "@/hooks/useBatchRequests";
 
 interface LocationData {
   latitude: number;
@@ -84,6 +85,7 @@ export default function Explore() {
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   
   const { user } = useAuth();
+  const { batchInvoke } = useBatchRequests();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -293,7 +295,7 @@ export default function Explore() {
       console.log('❌ No valid cache found, making fresh API call for explore popular places');
       
       // Only make API call if no cache found
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+      const data = await batchInvoke('generate-recommendations', {
         body: {
           exploreMode: true,
           latitude: locationData.latitude,
@@ -301,8 +303,6 @@ export default function Explore() {
           categories: sampleCategories
         }
       });
-
-      if (error) throw error;
       
       setPopularPlaces(data.recommendations || {});
     } catch (error) {
@@ -346,7 +346,7 @@ export default function Explore() {
       }
 
       console.log('❌ No cache for category:', category.searchTerm, '- making API call');
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+      const data = await batchInvoke('generate-recommendations', {
         body: {
           exploreMode: true,
           latitude: location.latitude,
@@ -354,8 +354,6 @@ export default function Explore() {
           categories: [category.searchTerm]
         }
       });
-
-      if (error) throw error;
       
       setCategoryResults(data.recommendations?.[category.searchTerm] || []);
     } catch (error) {
@@ -404,7 +402,7 @@ export default function Explore() {
         data = { recommendations: cachedData.recommendations };
       } else {
         console.log('❌ No cache for themed pack - making API call');
-        const response = await supabase.functions.invoke('generate-recommendations', {
+        data = await batchInvoke('generate-recommendations', {
           body: {
             exploreMode: true,
             latitude: location.latitude,
@@ -412,9 +410,6 @@ export default function Explore() {
             categories: categoriesToSearch
           }
         });
-
-        if (response.error) throw response.error;
-        data = response.data;
       }
       
       // If searching for a specific category, show only those results

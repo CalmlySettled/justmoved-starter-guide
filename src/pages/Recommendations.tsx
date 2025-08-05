@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Home, MapPin, Phone, Star, ArrowLeft, Heart, Clock, Award, Users, Bookmark, ExternalLink, Navigation, Filter, X, Brain, TrendingUp } from "lucide-react";
@@ -43,6 +44,7 @@ export default function Recommendations() {
   const navigate = useNavigate();
   
   const { user } = useAuth();
+  const { batchInvoke } = useBatchRequests();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);
   const [quizResponse, setQuizResponse] = useState<QuizResponse | null>(null);
@@ -82,16 +84,12 @@ export default function Recommendations() {
       }
       
       // ✅ COST PROTECTION: Always pass userId to enable caching
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+      const data = await batchInvoke('generate-recommendations', {
         body: { 
           quizResponse: quizData,
           userId: user.id  // CRITICAL: This enables server-side caching!
         }
       });
-
-      if (error) {
-        throw error;
-      }
 
       setRecommendations(data.recommendations);
     } catch (error: any) {
@@ -364,13 +362,13 @@ export default function Recommendations() {
     try {
       setLoading(true);
       
-      // Get coordinates securely from server-side geocoding
-      const { data: geocodeData } = await supabase.functions.invoke('geocode-address', {
+      // Get coordinates securely from server-side geocoding  
+      const geocodeData = await batchInvoke('geocode-address', {
         body: { address: quizResponse.zipCode }
       });
       const coordinates = geocodeData?.coordinates || { lat: 41.8394397, lng: -72.7516033 };
       
-      const { data: filterData, error } = await supabase.functions.invoke('generate-recommendations', {
+      const filterData = await batchInvoke('generate-recommendations', {
         body: { 
           quizResponse,
           dynamicFilter: {
@@ -380,8 +378,6 @@ export default function Recommendations() {
           }
         }
       });
-
-      if (error) throw error;
 
       // Merge the filtered results with existing recommendations
       setRecommendations(prev => {

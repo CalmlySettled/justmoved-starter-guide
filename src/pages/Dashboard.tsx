@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 
@@ -69,6 +70,7 @@ export default function Dashboard() {
   const location = useLocation();
   
   const { user, loading: authLoading } = useAuth();
+  const { batchInvoke } = useBatchRequests();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -408,12 +410,13 @@ export default function Dashboard() {
               };
 
               console.log('CALLING GENERATE-RECOMMENDATIONS with quiz data:', quizResponse);
-              const { data: newRecsData, error: generateError } = await supabase.functions.invoke('generate-recommendations', {
+              const newRecsData = await batchInvoke('generate-recommendations', {
                 body: { 
                   quizResponse,
                   userId: user.id
                 }
               });
+              const generateError = null;
 
               console.log('GENERATE-RECOMMENDATIONS RESPONSE:', { newRecsData, generateError });
 
