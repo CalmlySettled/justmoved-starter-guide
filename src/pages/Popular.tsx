@@ -110,46 +110,49 @@ const Popular = () => {
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
 
-  // Load saved location on component mount
+  // Load saved location on component mount - only for authenticated users
   useEffect(() => {
     const loadLocation = async () => {
-      if (user) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('address')
-            .eq('user_id', user.id)
-            .single();
+      // Only proceed if user is authenticated
+      if (!user) {
+        return;
+      }
 
-          if (profile?.address) {
-            // Geocode the saved address to get coordinates and city
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
-              {
-                headers: {
-                  'User-Agent': 'CalmlySettled/1.0'
-                }
-              }
-            );
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('address')
+          .eq('user_id', user.id)
+          .single();
 
-            if (response.ok) {
-              const data = await response.json();
-              if (data.length > 0) {
-                setLocation({
-                  latitude: parseFloat(data[0].lat),
-                  longitude: parseFloat(data[0].lon),
-                  city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
-                });
-                return;
+        if (profile?.address) {
+          // Geocode the saved address to get coordinates and city
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+            {
+              headers: {
+                'User-Agent': 'CalmlySettled/1.0'
               }
             }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.length > 0) {
+              setLocation({
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+                city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
+              });
+              return;
+            }
           }
-        } catch (error) {
-          console.error('Error loading saved location:', error);
         }
+      } catch (error) {
+        console.error('Error loading saved location:', error);
       }
       
-      // If no saved location, try to get current location
+      // If no saved location, try to get current location (only for authenticated users)
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
