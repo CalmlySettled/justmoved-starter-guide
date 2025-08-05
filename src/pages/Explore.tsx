@@ -523,98 +523,89 @@ export default function Explore() {
       
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          {/* Header Section */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Explore Nearby Essentials
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Find everything you need to settle into your new community
-            </p>
 
-            {/* Location Section */}
-            {isLoadingProfile ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading your location...</p>
-              </div>
-            ) : !location ? (
-              <div className="max-w-md mx-auto space-y-4">
-                {user ? (
-                  // Authenticated users get full functionality
-                  <>
+          {/* Location Section */}
+          {isLoadingProfile ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading your location...</p>
+            </div>
+          ) : !location ? (
+            <div className="max-w-md mx-auto space-y-4">
+              {user ? (
+                // Authenticated users get full functionality
+                <>
+                  <Button 
+                    onClick={getCurrentLocation}
+                    disabled={isLoadingLocation}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <MapPin className="mr-2 h-5 w-5" />
+                    {isLoadingLocation ? "Getting location..." : "Use my current location"}
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter city or zip code"
+                      value={manualLocation}
+                      onChange={(e) => setManualLocation(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
+                    />
                     <Button 
-                      onClick={getCurrentLocation}
-                      disabled={isLoadingLocation}
-                      className="w-full"
-                      size="lg"
+                      onClick={handleManualLocation}
+                      disabled={isLoadingLocation || !manualLocation.trim()}
                     >
-                      <MapPin className="mr-2 h-5 w-5" />
-                      {isLoadingLocation ? "Getting location..." : "Use my current location"}
+                      <Search className="h-4 w-4" />
                     </Button>
-                    
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter city or zip code"
-                        value={manualLocation}
-                        onChange={(e) => setManualLocation(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
-                      />
-                      <Button 
-                        onClick={handleManualLocation}
-                        disabled={isLoadingLocation || !manualLocation.trim()}
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground text-center">
-                      We couldn't find your saved address. Please enter your location to explore nearby places.
-                    </p>
-                  </>
-                ) : (
-                  // Non-authenticated users see disabled inputs with sign up prompt
-                  <>
-                    <Button 
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground text-center">
+                    We couldn't find your saved address. Please enter your location to explore nearby places.
+                  </p>
+                </>
+              ) : (
+                // Non-authenticated users see disabled inputs with sign up prompt
+                <>
+                  <Button 
+                    disabled
+                    className="w-full opacity-50 cursor-not-allowed"
+                    size="lg"
+                  >
+                    <MapPin className="mr-2 h-5 w-5" />
+                    Use my current location
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter city or zip code"
                       disabled
-                      className="w-full opacity-50 cursor-not-allowed"
-                      size="lg"
-                    >
-                      <MapPin className="mr-2 h-5 w-5" />
-                      Use my current location
+                      className="opacity-50"
+                    />
+                    <Button disabled className="opacity-50">
+                      <Search className="h-4 w-4" />
                     </Button>
-                    
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter city or zip code"
-                        disabled
-                        className="opacity-50"
-                      />
-                      <Button disabled className="opacity-50">
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                      <p className="text-sm font-medium">Take the quiz to explore your area</p>
-                      <p className="text-xs text-muted-foreground">
-                        Complete our quick quiz to find nearby essentials and save your favorites
-                      </p>
-                      <Button 
-                        onClick={() => window.location.href = '/onboarding'}
-                        size="sm"
-                        className="mt-2"
-                      >
-                        Take the Quiz
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4"></div>
-            )}
-          </div>
+                  </div>
+                  
+                  <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm font-medium">Take the quiz to explore your area</p>
+                    <p className="text-xs text-muted-foreground">
+                      Complete our quick quiz to find nearby essentials and save your favorites
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/onboarding'}
+                      size="sm"
+                      className="mt-2"
+                    >
+                      Take the Quiz
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4"></div>
+          )}
 
           {/* Content Sections */}
           {location && (
@@ -622,7 +613,7 @@ export default function Explore() {
 
               {/* Just Moved Collections */}
               <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Just Moved Collections</h2>
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-center">Just Moved Collections</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                   {themedPacks.map((pack) => (
                     <Card 
