@@ -14,6 +14,40 @@ const RATE_WINDOW = 60000; // 1 minute in milliseconds
 // AI Recommendation System Configuration
 const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations for A/B testing
 
+// API Cost Tracking
+interface APIUsageStats {
+  yelpCalls: number;
+  googleCalls: number;
+  totalSearches: number;
+  estimatedCost: number;
+}
+
+let apiUsageStats: APIUsageStats = {
+  yelpCalls: 0,
+  googleCalls: 0,
+  totalSearches: 0,
+  estimatedCost: 0
+};
+
+function trackAPIUsage(api: 'yelp' | 'google', callCount: number = 1) {
+  if (api === 'yelp') {
+    apiUsageStats.yelpCalls += callCount;
+    apiUsageStats.estimatedCost += callCount * 0.01413; // Yelp cost per call
+  } else {
+    apiUsageStats.googleCalls += callCount;
+    apiUsageStats.estimatedCost += callCount * 0.025; // Average Google Places cost
+  }
+  apiUsageStats.totalSearches += 1;
+  
+  // Log cost savings every 10 searches
+  if (apiUsageStats.totalSearches % 10 === 0) {
+    const hybridCost = apiUsageStats.estimatedCost;
+    const googleOnlyCost = (apiUsageStats.yelpCalls + apiUsageStats.googleCalls) * 0.025;
+    const savings = googleOnlyCost - hybridCost;
+    console.log(`API Cost Update: Hybrid: $${hybridCost.toFixed(4)}, Google-only: $${googleOnlyCost.toFixed(4)}, Savings: $${savings.toFixed(4)}`);
+  }
+}
+
 interface QuizResponse {
   address: string;
   householdType: string;
@@ -125,6 +159,212 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 
   // Suburban and rural areas get larger radius for better coverage
   return 8000; // 8km for suburban/rural areas
+}
+
+// API initialization
+const googleMapsApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+const yelpApiKey = Deno.env.get('YELP_API_KEY');
+
+// API routing logic: determine which API to use for each category
+function shouldUseYelpPrimary(category: string): boolean {
+  const yelpPrimaryCategories = [
+    'Restaurants', 'Coffee shops', 'Bakeries', 'Grocery stores', 
+    'Shopping', 'Beauty', 'Salon', 'Spa', 'Retail', 'Entertainment',
+    'Fitness options', 'Bars', 'Nightlife'
+  ];
+  return yelpPrimaryCategories.some(cat => category.includes(cat));
+}
+
+// Yelp API integration
+async function searchYelp(
+  category: string,
+  latitude: number,
+  longitude: number,
+  radius: number = 8000,
+  limit: number = 15
+): Promise<Business[]> {
+  if (!yelpApiKey) {
+    console.log('Yelp API key not found, skipping Yelp search');
+    return [];
+  }
+
+  console.log(`Searching Yelp for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
+
+  // Map categories to Yelp search terms
+  const yelpSearchTerms = getYelpSearchTerms(category);
+  const businesses: Business[] = [];
+
+  try {
+    for (const searchTerm of yelpSearchTerms.slice(0, 2)) { // Limit to 2 search terms
+      const searchUrl = `https://api.yelp.com/v3/businesses/search`;
+      const params = new URLSearchParams({
+        term: searchTerm,
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+        radius: Math.min(radius, 40000).toString(), // Yelp max radius is 40km
+        limit: limit.toString(),
+        sort_by: 'best_match'
+      });
+
+      console.log(`→ Yelp search: ${searchTerm}`);
+      trackAPIUsage('yelp'); // Track Yelp API call
+
+      const response = await fetch(`${searchUrl}?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${yelpApiKey}`,
+          'User-Agent': 'CalmlySettled/1.0'
+        }
+      });
+
+      if (!response.ok) {
+        console.error(`Yelp API error: ${response.status} ${response.statusText}`);
+        continue;
+      }
+
+      const data = await response.json();
+      console.log(`→ Yelp returned ${data.businesses?.length || 0} businesses`);
+
+      if (data.businesses) {
+        for (const business of data.businesses) {
+          // Convert Yelp business to our Business interface
+          const convertedBusiness = convertYelpToBusiness(business, latitude, longitude);
+          if (convertedBusiness && isQualityYelpBusiness(business)) {
+            businesses.push(convertedBusiness);
+          }
+        }
+      }
+    }
+
+    // Remove duplicates based on name and address
+    const uniqueBusinesses = deduplicateBusinesses(businesses);
+    console.log(`Yelp search completed: ${uniqueBusinesses.length} unique businesses`);
+    
+    return uniqueBusinesses;
+  } catch (error) {
+    console.error('Error searching Yelp:', error);
+    return [];
+  }
+}
+
+// Map categories to Yelp search terms
+function getYelpSearchTerms(category: string): string[] {
+  if (category.includes('Restaurants')) {
+    return ['restaurants', 'dining', 'food'];
+  } else if (category.includes('Coffee shops')) {
+    return ['coffee', 'cafe', 'coffee shops'];
+  } else if (category.includes('Grocery stores')) {
+    return ['grocery', 'supermarket', 'food market'];
+  } else if (category.includes('Bakeries')) {
+    return ['bakery', 'bakeries', 'bread'];
+  } else if (category.includes('Fitness options')) {
+    return ['gym', 'fitness', 'yoga'];
+  } else if (category.includes('Beauty')) {
+    return ['beauty salon', 'hair salon', 'spa'];
+  } else if (category.includes('Bars')) {
+    return ['bars', 'pubs', 'nightlife'];
+  } else {
+    return [category.toLowerCase()];
+  }
+}
+
+// Convert Yelp business data to our Business interface
+function convertYelpToBusiness(yelpBusiness: any, userLat: number, userLng: number): Business | null {
+  if (!yelpBusiness.name || !yelpBusiness.location) {
+    return null;
+  }
+
+  const distance = calculateDistance(
+    userLat, userLng,
+    yelpBusiness.coordinates?.latitude || 0,
+    yelpBusiness.coordinates?.longitude || 0
+  );
+
+  // Extract features from Yelp data
+  const features: string[] = [];
+  if (yelpBusiness.price) features.push(`Price: ${yelpBusiness.price}`);
+  if (yelpBusiness.is_closed === false) features.push('Open');
+  if (yelpBusiness.transactions?.includes('delivery')) features.push('Delivery');
+  if (yelpBusiness.transactions?.includes('pickup')) features.push('Pickup');
+  if (yelpBusiness.categories) {
+    yelpBusiness.categories.forEach((cat: any) => {
+      if (cat.title) features.push(cat.title);
+    });
+  }
+
+  return {
+    name: yelpBusiness.name,
+    address: yelpBusiness.location.display_address?.join(', ') || '',
+    description: `${yelpBusiness.rating} stars • ${yelpBusiness.review_count} reviews`,
+    phone: yelpBusiness.phone || '',
+    features,
+    website: yelpBusiness.url || '',
+    latitude: yelpBusiness.coordinates?.latitude,
+    longitude: yelpBusiness.coordinates?.longitude,
+    distance_miles: distance,
+    image_url: yelpBusiness.image_url || '',
+    rating: yelpBusiness.rating,
+    review_count: yelpBusiness.review_count
+  };
+}
+
+// Check if a Yelp business meets quality standards
+function isQualityYelpBusiness(business: any): boolean {
+  // Must have minimum rating and review count
+  if (!business.rating || business.rating < 3.5) return false;
+  if (!business.review_count || business.review_count < 5) return false;
+  
+  // Must not be permanently closed
+  if (business.is_closed === true) return false;
+  
+  return true;
+}
+
+// Deduplicate businesses by name and address
+function deduplicateBusinesses(businesses: Business[]): Business[] {
+  const seen = new Set<string>();
+  return businesses.filter(business => {
+    const key = `${business.name.toLowerCase()}-${business.address.toLowerCase()}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+// Cross-API deduplication: check if businesses from different APIs are the same
+function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Business[]): Business[] {
+  const allBusinesses = [...yelpBusinesses];
+  const yelpNames = new Set(yelpBusinesses.map(b => b.name.toLowerCase()));
+  
+  for (const googleBusiness of googleBusinesses) {
+    const nameMatch = yelpNames.has(googleBusiness.name.toLowerCase());
+    
+    if (!nameMatch) {
+      // Check for address similarity (within 0.1 miles)
+      const isDuplicate = yelpBusinesses.some(yelpBusiness => {
+        if (!yelpBusiness.latitude || !yelpBusiness.longitude || 
+            !googleBusiness.latitude || !googleBusiness.longitude) {
+          return false;
+        }
+        const distance = calculateDistance(
+          yelpBusiness.latitude, yelpBusiness.longitude,
+          googleBusiness.latitude, googleBusiness.longitude
+        );
+        return distance < 0.1; // Within 0.1 miles = likely same business
+      });
+      
+      if (!isDuplicate) {
+        allBusinesses.push(googleBusiness);
+      } else {
+        console.log(`→ Skipping duplicate business across APIs: ${googleBusiness.name}`);
+      }
+    } else {
+      console.log(`→ Skipping duplicate business across APIs: ${googleBusiness.name}`);
+    }
+  }
+  
+  return allBusinesses;
 }
 
 // Google Places API integration
@@ -405,6 +645,7 @@ async function searchGooglePlaces(
       searchUrl += `&fields=${nearbySearchFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
       
       console.log(`→ Strategy: ${strategy.keyword || strategy.type} (with FieldMask)`);
+      trackAPIUsage('google'); // Track Google Places API call
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -678,7 +919,7 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
   return deduplicatedBusinesses;
 }
 
-// Enhanced business search with cached coordinates and dynamic radius
+// Enhanced business search with hybrid Yelp + Google Places approach
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
@@ -686,9 +927,32 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   const optimalRadius = getOptimalRadius(coordinates);
   console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
-  // Use only Google Places API with dynamic radius
-  let businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
-  console.log(`Google Places found ${businesses.length} businesses`);
+  let businesses: Business[] = [];
+  
+  // Smart API routing: Use Yelp for consumer businesses, Google for civic/institutional
+  if (shouldUseYelpPrimary(category)) {
+    console.log(`Using Yelp as primary for consumer category: "${category}"`);
+    
+    // Search Yelp first
+    const yelpBusinesses = await searchYelp(category, coordinates.lat, coordinates.lng, optimalRadius, 15);
+    console.log(`Yelp found ${yelpBusinesses.length} businesses`);
+    
+    // If Yelp results are insufficient, supplement with Google Places
+    if (yelpBusinesses.length < 8) {
+      console.log(`Supplementing with Google Places (Yelp returned ${yelpBusinesses.length} businesses)`);
+      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+      console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
+      
+      // Deduplicate across APIs and combine
+      businesses = deduplicateAcrossAPIs(yelpBusinesses, googleBusinesses);
+    } else {
+      businesses = yelpBusinesses;
+    }
+  } else {
+    console.log(`Using Google Places as primary for civic/institutional category: "${category}"`);
+    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+    console.log(`Google Places found ${businesses.length} businesses`);
+  }
   
   // Apply deduplication to remove same-name businesses within 5 miles
   if (businesses.length > 0) {
@@ -898,13 +1162,19 @@ function getLocationInfo(coordinates: { lat: number; lng: number }): { state: st
   return { state, region };
 }
 
-// Enhanced relevance scoring with different weights for popular vs dashboard/explore modes
+// Enhanced relevance scoring with Yelp budget matching and detailed categories
 function calculateRelevanceScore(business: Business, category: string, userPreferences?: QuizResponse, scoringMode: 'rating-heavy' | 'distance-heavy' = 'distance-heavy'): number {
   let score = 0;
   
   // Distance scoring varies by mode
   const maxDistanceScore = scoringMode === 'rating-heavy' ? 25 : 50;
   const maxRatingScore = 35; // Always 35 for both modes
+  
+  // Enhanced budget matching using Yelp price levels (max 15 points)
+  if (userPreferences?.budgetPreference && business.features) {
+    const budgetBonus = calculateBudgetMatch(business, userPreferences.budgetPreference);
+    score += budgetBonus;
+  }
   
   if (business.distance_miles && userPreferences) {
     let distanceWeight = 0;
@@ -961,6 +1231,37 @@ function calculateRelevanceScore(business: Business, category: string, userPrefe
   }
   
   return Math.round(score * 10) / 10; // Round to 1 decimal place
+}
+
+// Enhanced budget matching using Yelp price data
+function calculateBudgetMatch(business: Business, budgetPreference: string): number {
+  if (!business.features) return 0;
+  
+  // Extract price level from Yelp features (e.g., "Price: $$")
+  const priceFeature = business.features.find(feature => feature.startsWith('Price: '));
+  if (!priceFeature) return 0;
+  
+  const priceLevel = priceFeature.replace('Price: ', '');
+  
+  // Map user budget preference to expected price levels
+  const budgetToPriceMap: Record<string, string[]> = {
+    'Budget-conscious': ['$'],
+    'Moderate': ['$', '$$'],
+    'Higher-end': ['$$', '$$$'],
+    'Luxury': ['$$$', '$$$$']
+  };
+  
+  const expectedPriceLevels = budgetToPriceMap[budgetPreference] || ['$', '$$'];
+  
+  if (expectedPriceLevels.includes(priceLevel)) {
+    return 15; // Perfect budget match
+  } else if (budgetPreference === 'Moderate' && (priceLevel === '$$$')) {
+    return 8; // Acceptable stretch for moderate budget
+  } else if (budgetPreference === 'Budget-conscious' && priceLevel === '$$') {
+    return 5; // Slight stretch for budget-conscious
+  }
+  
+  return 0; // No budget match
 }
 
 // Calculate bonus points based on user preferences
