@@ -560,13 +560,13 @@ export default function Explore() {
 
           {/* Sign up CTA for unauthenticated users - moved to top */}
           {!user && (
-            <div className="text-center mb-16 p-8 bg-gradient-section rounded-2xl shadow-soft">
-              <p className="text-lg text-muted-foreground mb-4">
+            <div className="text-center mb-8 p-4 bg-gradient-section rounded-lg shadow-soft">
+              <p className="text-sm text-muted-foreground mb-3">
                 Get started to find your nearby essentials
               </p>
               <Button 
                 onClick={() => window.location.href = '/onboarding'}
-                size="lg"
+                size="sm"
                 className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
               >
                 Get Started
