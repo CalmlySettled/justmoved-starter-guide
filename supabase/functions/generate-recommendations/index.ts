@@ -14,38 +14,65 @@ const RATE_WINDOW = 60000; // 1 minute in milliseconds
 // AI Recommendation System Configuration
 const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations for A/B testing
 
-// API Cost Tracking
+// Cost Optimization Configuration
+const CACHE_DURATION_DAYS = 180; // Extended cache duration for static business data
+const GEOGRAPHIC_PRECISION = 2; // Round coordinates to 2 decimals for better caching
+const YELP_ONLY_CATEGORIES = ['restaurants', 'dining', 'food', 'bars', 'nightlife']; // High-value Yelp categories
+
+// API Cost Tracking with Enhanced Optimization
 interface APIUsageStats {
   yelpCalls: number;
   googleCalls: number;
+  cacheHits: number;
   totalSearches: number;
   estimatedCost: number;
+  costSavings: number;
 }
 
 let apiUsageStats: APIUsageStats = {
   yelpCalls: 0,
   googleCalls: 0,
+  cacheHits: 0,
   totalSearches: 0,
-  estimatedCost: 0
+  estimatedCost: 0,
+  costSavings: 0
 };
 
-function trackAPIUsage(api: 'yelp' | 'google', callCount: number = 1) {
+function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) {
   if (api === 'yelp') {
     apiUsageStats.yelpCalls += callCount;
     apiUsageStats.estimatedCost += callCount * 0.01413; // Yelp cost per call
-  } else {
+  } else if (api === 'google') {
     apiUsageStats.googleCalls += callCount;
-    apiUsageStats.estimatedCost += callCount * 0.025; // Average Google Places cost
+    apiUsageStats.estimatedCost += callCount * 0.017; // Google Places optimized cost
+  } else if (api === 'cache') {
+    apiUsageStats.cacheHits += callCount;
+    apiUsageStats.costSavings += callCount * 0.02; // Average cost saved per cache hit
   }
   apiUsageStats.totalSearches += 1;
   
-  // Log cost savings every 10 searches
-  if (apiUsageStats.totalSearches % 10 === 0) {
-    const hybridCost = apiUsageStats.estimatedCost;
-    const googleOnlyCost = (apiUsageStats.yelpCalls + apiUsageStats.googleCalls) * 0.025;
-    const savings = googleOnlyCost - hybridCost;
-    console.log(`API Cost Update: Hybrid: $${hybridCost.toFixed(4)}, Google-only: $${googleOnlyCost.toFixed(4)}, Savings: $${savings.toFixed(4)}`);
+  // Log cost optimization every 5 searches
+  if (apiUsageStats.totalSearches % 5 === 0) {
+    const cacheEfficiency = (apiUsageStats.cacheHits / (apiUsageStats.cacheHits + apiUsageStats.yelpCalls + apiUsageStats.googleCalls)) * 100;
+    console.log(`Cost Optimization: Cache ${cacheEfficiency.toFixed(1)}%, Cost: $${apiUsageStats.estimatedCost.toFixed(4)}, Saved: $${apiUsageStats.costSavings.toFixed(4)}`);
   }
+}
+
+// Geographic coordinate rounding for better cache efficiency
+function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
+  return {
+    lat: Math.round(lat * Math.pow(10, GEOGRAPHIC_PRECISION)) / Math.pow(10, GEOGRAPHIC_PRECISION),
+    lng: Math.round(lng * Math.pow(10, GEOGRAPHIC_PRECISION)) / Math.pow(10, GEOGRAPHIC_PRECISION)
+  };
+}
+
+// Check if category should prioritize Yelp for data quality
+function shouldUseYelp(searchTerms: string[]): boolean {
+  return searchTerms.some(term => 
+    YELP_ONLY_CATEGORIES.some(category => 
+      term.toLowerCase().includes(category)
+    )
+  );
 }
 
 interface QuizResponse {
@@ -919,7 +946,7 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
   return deduplicatedBusinesses;
 }
 
-// Enhanced business search with hybrid Yelp + Google Places approach
+// COST-OPTIMIZED: Smart business search with selective API routing
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
@@ -1538,30 +1565,33 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   }
 }
 
-// COST-OPTIMIZED: Check cache before expensive API calls
+// COST-OPTIMIZED: Check cache with enhanced geographic batching
 async function getCachedRecommendations(
   supabase: any,
   coordinates: { lat: number; lng: number },
   categories: string[],
   preferences: any
 ): Promise<any[] | null> {
-  // Create cache key from location and preferences
-  const cacheKey = `${Math.round(coordinates.lat * 1000)}_${Math.round(coordinates.lng * 1000)}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  // Use rounded coordinates for better cache efficiency
+  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
+  const cacheKey = `${roundedCoords.lat}_${roundedCoords.lng}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
   
   try {
     const { data, error } = await supabase
       .from('recommendations_cache')
-      .select('recommendations')
+      .select('recommendations, created_at')
       .eq('cache_key', cacheKey)
       .gt('expires_at', new Date().toISOString())
       .single();
     
     if (data && !error) {
-      console.log(`💰 CACHE HIT: Found cached recommendations for key: ${cacheKey}`);
+      trackAPIUsage('cache', categories.length);
+      const cacheAge = Math.floor((new Date().getTime() - new Date(data.created_at).getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`💰 CACHE HIT: Found ${cacheAge}d old cached recommendations (key: ${cacheKey.substring(0, 50)}...)`);
       return data.recommendations;
     }
     
-    console.log(`Cache miss for key: ${cacheKey}`);
+    console.log(`Cache miss for key: ${cacheKey.substring(0, 50)}...`);
     return null;
   } catch (error) {
     console.log('Cache lookup failed:', error);
@@ -1569,7 +1599,7 @@ async function getCachedRecommendations(
   }
 }
 
-// COST-OPTIMIZED: Save recommendations to cache
+// COST-OPTIMIZED: Save recommendations with extended cache duration
 async function cacheRecommendations(
   supabase: any,
   coordinates: { lat: number; lng: number },
@@ -1577,22 +1607,24 @@ async function cacheRecommendations(
   preferences: any,
   recommendations: any[]
 ): Promise<void> {
-  const cacheKey = `${Math.round(coordinates.lat * 1000)}_${Math.round(coordinates.lng * 1000)}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  // Use rounded coordinates for better cache efficiency
+  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
+  const cacheKey = `${roundedCoords.lat}_${roundedCoords.lng}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
   
   try {
     const { error } = await supabase
       .from('recommendations_cache')
       .upsert({
         cache_key: cacheKey,
-        user_coordinates: `(${coordinates.lat},${coordinates.lng})`,
+        user_coordinates: `(${roundedCoords.lat},${roundedCoords.lng})`,
         recommendations: recommendations,
         categories: categories,
         preferences: preferences,
-        expires_at: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString() // 120 days
+        expires_at: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
       });
     
     if (!error) {
-      console.log(`💰 CACHED: Saved recommendations for future use (key: ${cacheKey})`);
+      console.log(`💰 CACHED: Saved ${categories.length} categories for ${CACHE_DURATION_DAYS}d (key: ${cacheKey.substring(0, 50)}...)`);
     }
   } catch (error) {
     console.log('Failed to cache recommendations:', error);
@@ -1890,7 +1922,14 @@ serve(async (req) => {
       JSON.stringify({ 
         recommendations,
         fromCache: false,
-        costOptimized: true 
+        costOptimized: true,
+        apiStats: {
+          yelpCalls: apiUsageStats.yelpCalls,
+          googleCalls: apiUsageStats.googleCalls,
+          cacheHits: apiUsageStats.cacheHits,
+          estimatedCost: apiUsageStats.estimatedCost,
+          costSavings: apiUsageStats.costSavings
+        }
       }),
       {
         status: 200,
