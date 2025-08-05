@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'justmoved-starter-guide',
   webDir: 'dist',
   server: {
-    url: 'https://0e1b202b-5ee9-42fc-8513-4387071e2a07.lovableproject.com?forceHideBadge=true',
+    url: 'https://calmlysettled.com',
     cleartext: true
   },
   plugins: {
