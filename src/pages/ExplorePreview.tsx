@@ -93,6 +93,16 @@ export default function ExplorePreview() {
   const { user } = useAuth();
   const { batchInvoke } = useBatchRequests();
 
+  // Auto-load preview for unauthenticated users
+  useEffect(() => {
+    if (!user && !location) {
+      // Set default location for preview mode
+      const defaultLocation = { latitude: 40.7128, longitude: -74.0060, city: 'New York' };
+      setLocation(defaultLocation);
+      loadPopularPlaces(defaultLocation);
+    }
+  }, [user]);
+
   // Get user's current location
   const getCurrentLocation = () => {
     setIsLoadingLocation(true);
@@ -324,8 +334,8 @@ export default function ExplorePreview() {
           </p>
         </div>
 
-        {/* Location Input Section */}
-        {!location && (
+        {/* Location Input Section - only show for authenticated users without location */}
+        {user && !location && (
           <div className="bg-muted/50 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4">Where are you exploring?</h2>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -354,6 +364,22 @@ export default function ExplorePreview() {
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Preview Mode Header for unauthenticated users */}
+        {!user && location && (
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6 mb-8 text-center">
+            <h2 className="text-xl font-semibold mb-2">Preview Mode</h2>
+            <p className="text-muted-foreground mb-4">
+              See what {location.city} has to offer. Sign up to unlock personalized recommendations.
+            </p>
+            <Button onClick={() => {
+              setSignupContext(`Sign up to get personalized recommendations for ${location.city}`);
+              setShowSignupModal(true);
+            }}>
+              Sign Up for Full Access
+            </Button>
           </div>
         )}
 
