@@ -607,50 +607,81 @@ export default function Explore() {
             <div className="space-y-4"></div>
           )}
 
-          {/* Content Sections */}
-          {location && (
-            <>
+          {/* Just Moved Collections - Show for all users */}
+          <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-center">Just Moved Collections</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              {themedPacks.map((pack) => (
+                <Card 
+                  key={pack.title}
+                  className={`bg-gradient-card shadow-card transition-all duration-300 border-0 ${
+                    user 
+                      ? "cursor-pointer hover:shadow-card-hover hover:scale-105" 
+                      : "opacity-75 cursor-not-allowed"
+                  }`}
+                  onClick={() => {
+                    if (user) {
+                      handleThemedPackClick(pack);
+                    } else {
+                      window.location.href = '/onboarding';
+                    }
+                  }}
+                >
+                  <CardHeader>
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
+                        <pack.icon className="h-8 w-8 text-white" />
+                      </div>
+                      <CardTitle className="text-xl">{pack.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                   <CardContent>
+                     <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
+                     <div className="flex flex-wrap gap-2 justify-center">
+                       {pack.categories.map((category, index) => (
+                         <Badge 
+                           key={index} 
+                           variant="outline" 
+                           className={`text-xs transition-colors ${
+                             user 
+                               ? "cursor-pointer hover:bg-muted" 
+                               : "cursor-not-allowed"
+                           }`}
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             if (user) {
+                               handleThemedPackClick(pack, category);
+                             } else {
+                               window.location.href = '/onboarding';
+                             }
+                           }}
+                         >
+                           {category.charAt(0).toUpperCase() + category.slice(1)}
+                         </Badge>
+                       ))}
+                     </div>
+                   </CardContent>
+                </Card>
+              ))}
+            </div>
+            {!user && (
+              <div className="text-center mt-6">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Sign up to explore these collections and discover local businesses
+                </p>
+                <Button 
+                  onClick={() => window.location.href = '/onboarding'}
+                  className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
+                >
+                  Get Started
+                </Button>
+              </div>
+            )}
+          </section>
 
-              {/* Just Moved Collections */}
-              <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-                <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-center">Just Moved Collections</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-                  {themedPacks.map((pack) => (
-                    <Card 
-                      key={pack.title}
-                      className="cursor-pointer bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0"
-                      onClick={() => handleThemedPackClick(pack)}
-                    >
-                      <CardHeader>
-                        <div className="text-center">
-                          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
-                            <pack.icon className="h-8 w-8 text-white" />
-                          </div>
-                          <CardTitle className="text-xl">{pack.title}</CardTitle>
-                        </div>
-                      </CardHeader>
-                       <CardContent>
-                         <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
-                         <div className="flex flex-wrap gap-2 justify-center">
-                           {pack.categories.map((category, index) => (
-                             <Badge 
-                               key={index} 
-                               variant="outline" 
-                               className="text-xs cursor-pointer hover:bg-muted transition-colors"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleThemedPackClick(pack, category);
-                               }}
-                             >
-                               {category.charAt(0).toUpperCase() + category.slice(1)}
-                             </Badge>
-                           ))}
-                         </div>
-                       </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </section>
+          {/* Content Sections for authenticated users with location */}
+          {location && user && (
+            <>
 
 
               {/* Category Results */}
