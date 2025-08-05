@@ -7,11 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu } from "lucide-react";
+import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
+import { HeaderFavoritesDropdown } from "@/components/HeaderFavoritesDropdown";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -110,7 +111,7 @@ export function Header() {
                       </Link>
                     </div>
                     
-                    {user ? (
+                     {user ? (
                       <div className="space-y-4">
                         <Link to="/profile" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" size="mobile" className="w-full justify-start">
@@ -118,6 +119,9 @@ export function Header() {
                             Profile
                           </Button>
                         </Link>
+                        <div className="w-full">
+                          <HeaderFavoritesDropdown />
+                        </div>
                         <Link to="/account-settings" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" size="mobile" className="w-full justify-start">
                             <Settings className="h-4 w-4 mr-2" />
@@ -177,6 +181,9 @@ export function Header() {
                           <User className="h-4 w-4 mr-2" />
                           Profile
                         </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <HeaderFavoritesDropdown />
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/account-settings" className="flex items-center">
