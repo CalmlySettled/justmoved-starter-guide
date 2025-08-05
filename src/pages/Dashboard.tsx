@@ -1444,37 +1444,6 @@ export default function Dashboard() {
       <Header />
       <div className="pt-24 px-4 sm:px-6 max-w-5xl mx-auto pb-16">
         
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            Your Neighborhood Dashboard
-          </h1>
-          
-          <div className="max-w-2xl mx-auto mb-8">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              {getUserSummary()}
-              {generatingRecommendations && (
-                <span className="block mt-2 text-primary animate-pulse">
-                  Generating new recommendations...
-                </span>
-              )}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-4 justify-center">
-            <EditPreferencesModal userProfile={userProfile} onProfileUpdate={fetchUserData} />
-            <Button 
-              onClick={() => refreshData(true)}
-              disabled={loading || refreshing}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-60 hover:opacity-100"
-              title="Refresh recommendations"
-            >
-              <RefreshCw className={`h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-        </div>
 
         {/* Quiz Data Recovery Card */}
         {localStorage.getItem('failedQuizProcessing') && (
