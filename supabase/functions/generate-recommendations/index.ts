@@ -1681,7 +1681,7 @@ async function cacheRecommendations(
       .from('recommendations_cache')
       .upsert({
         cache_key: cacheKey,
-        user_coordinates: `(${roundedCoords.lat},${roundedCoords.lng})`,
+        user_coordinates: `POINT(${roundedCoords.lng} ${roundedCoords.lat})`,
         recommendations: recommendations,
         categories: categories,
         preferences: preferences,
