@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
+import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 
 interface LocationData {
   latitude: number;
@@ -80,6 +81,7 @@ export default function Explore() {
   const [selectedThemedPack, setSelectedThemedPack] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
@@ -328,6 +330,7 @@ export default function Explore() {
 
     setSelectedCategory(category.name);
     setIsLoadingCategory(true);
+    setIsModalOpen(true);
     
     try {
       // Check cache first for single category
@@ -383,6 +386,7 @@ export default function Explore() {
     setSelectedCategory(specificCategory || pack.title);
     setSelectedThemedPack(specificCategory ? null : pack.title);
     setIsLoadingCategory(true);
+    setIsModalOpen(true);
     
     console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
     
@@ -684,97 +688,21 @@ export default function Explore() {
             <>
 
 
-              {/* Category Results */}
-              {selectedCategory && (
-                <section>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
-                    <Button variant="outline" onClick={() => setSelectedCategory(null)}>
-                      Clear
-                    </Button>
-                  </div>
-                  
-                  {isLoadingCategory ? (
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                      <p className="mt-4 text-muted-foreground">Loading recommendations...</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                      {categoryResults.map((business, index) => (
-                        <Card key={index} className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden">
-                           {/* Business Image */}
-                           <div className="aspect-video overflow-hidden bg-muted">
-                             <ImageWithFallback
-                               src={business.image_url || ''}
-                               alt={business.name}
-                               businessName={business.name}
-                               category={selectedThemedPack || selectedCategory || ''}
-                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             />
-                          </div>
-                          
-                          <CardHeader className="pb-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <a 
-                                  href={business.website ? 
-                                    (business.website.startsWith('http') ? business.website : `https://${business.website}`) : 
-                                    getGoogleMapsDirectionsUrl(business.address, business.name)
-                                  }
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
-                                >
-                                  {business.name}
-                                </a>
-                                <div className="flex items-center gap-2 mt-1">
-                                  {business.distance_miles && (
-                                    <>
-                                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground font-medium">
-                                        {business.distance_miles} miles away
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="h-10 w-10 p-0 hover:bg-primary/10 min-h-[44px] min-w-[44px]"
-                              >
-                                <Star 
-                                  className="h-5 w-5" 
-                                  fill={favoriteBusinesses.has(business.name) ? "currentColor" : "none"}
-                                />
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          
-                          <CardContent className="space-y-4">
-                            {business.address && (
-                              <a 
-                                href={getGoogleMapsDirectionsUrl(business.address, business.name)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
-                              >
-                                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                                <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
-                                  {business.address}
-                                </span>
-                              </a>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
+              {/* Category Results Modal */}
+              <CategoryResultsModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                  setIsModalOpen(false);
+                  setSelectedCategory(null);
+                  setSelectedThemedPack(null);
+                }}
+                categoryName={selectedCategory || ''}
+                businesses={categoryResults}
+                isLoading={isLoadingCategory}
+                favoriteBusinesses={favoriteBusinesses}
+                favoritingBusinesses={favoritingBusinesses}
+                onToggleFavorite={toggleFavorite}
+              />
             </>
           )}
           
