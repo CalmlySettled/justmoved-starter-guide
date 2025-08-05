@@ -79,6 +79,7 @@ export default function Explore() {
   const [selectedThemedPack, setSelectedThemedPack] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   
   const { user } = useAuth();
@@ -89,8 +90,57 @@ export default function Explore() {
     return `https://www.google.com/maps/search/?api=1&query=${query}`;
   };
 
-  // Load favorites on mount
+  // Load user's profile address on mount
   useEffect(() => {
+    const loadUserLocation = async () => {
+      if (!user) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !profile?.address) {
+          console.log('No profile address found, user will need to enter location manually');
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        // Geocode the stored address to get coordinates
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+          {
+            headers: {
+              'User-Agent': 'CalmlySettled/1.0'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.length > 0) {
+            const locationData: LocationData = {
+              latitude: parseFloat(data[0].lat),
+              longitude: parseFloat(data[0].lon),
+              city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address.split(',')[0],
+            };
+
+            setLocation(locationData);
+            await loadPopularPlaces(locationData);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user location:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
     const loadFavorites = () => {
       try {
         const storedFavorites = localStorage.getItem('favorites');
@@ -111,6 +161,7 @@ export default function Explore() {
       loadFavorites();
     };
 
+    loadUserLocation();
     loadFavorites();
     
     // Listen for favorites updates from dropdown
@@ -119,7 +170,7 @@ export default function Explore() {
     return () => {
       window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
     };
-  }, []);
+  }, [user]);
 
   // Get user's current location
   const getCurrentLocation = async () => {
@@ -474,7 +525,12 @@ export default function Explore() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
           {/* Location Section */}
-          {!location ? (
+          {isLoadingProfile ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading your location...</p>
+            </div>
+          ) : !location ? (
             <div className="max-w-md mx-auto space-y-4">
               {user ? (
                 // Authenticated users get full functionality
