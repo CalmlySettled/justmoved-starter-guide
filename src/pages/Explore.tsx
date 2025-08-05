@@ -562,7 +562,7 @@ export default function Explore() {
           {!user && (
             <div className="text-center mb-16 p-8 bg-gradient-section rounded-2xl shadow-soft">
               <p className="text-lg text-muted-foreground mb-4">
-                Sign up to explore these collections and discover local businesses
+                Get started to find your nearby essentials
               </p>
               <Button 
                 onClick={() => window.location.href = '/onboarding'}
