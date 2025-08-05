@@ -220,9 +220,6 @@ const Popular = () => {
                 Popular Near You
               </h1>
             </div>
-            <p className="text-xl text-muted-foreground mb-8">
-              Discover what's trending and where locals love to go
-            </p>
 
           </div>
 
