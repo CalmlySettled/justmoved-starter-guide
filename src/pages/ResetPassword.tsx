@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+
 import { Eye, EyeOff } from "lucide-react";
 
 // Create a separate Supabase client that doesn't auto-handle auth URLs
@@ -29,7 +29,7 @@ const ResetPassword = () => {
   const [validTokens, setValidTokens] = useState(false);
   const [storedTokens, setStoredTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     console.log('ResetPassword page loaded');
@@ -64,20 +64,12 @@ const ResetPassword = () => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
+      // Toast notification removed per user request
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Error", 
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      });
+      // Toast notification removed per user request
       return;
     }
 
@@ -114,21 +106,14 @@ const ResetPassword = () => {
         throw updateError;
       }
 
-      toast({
-        title: "Success",
-        description: "Your password has been reset successfully!",
-      });
+      // Toast notification removed per user request
 
       // Redirect to dashboard
       navigate("/dashboard");
       
     } catch (error: any) {
       console.error('Password reset error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reset password. Please try again.",
-        variant: "destructive",
-      });
+      // Toast notification removed per user request
     } finally {
       setLoading(false);
     }

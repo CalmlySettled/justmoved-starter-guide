@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -40,7 +40,7 @@ interface QuizResponse {
 export default function Recommendations() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(true);

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { useToast } from "@/hooks/use-toast";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -66,7 +66,7 @@ interface UserProfile {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
+  
   const { user, loading: authLoading } = useAuth();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);

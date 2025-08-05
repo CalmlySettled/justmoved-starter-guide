@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Home, ArrowLeft, ArrowRight, CheckCircle, Clock, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
@@ -71,7 +71,7 @@ export default function OnboardingQuiz() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [validAddressSelected, setValidAddressSelected] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const { user, loading: authLoading } = useAuth();
 
   // Check if user just signed up by seeing if they have no existing profile data

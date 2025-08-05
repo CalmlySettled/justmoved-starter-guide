@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Star, ExternalLink, Phone, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
 
 interface FavoriteBusiness {
   id: string;
@@ -24,7 +24,7 @@ export default function Favorites() {
   const [favorites, setFavorites] = useState<FavoriteBusiness[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
+  
 
   const getBusinessTagline = (business: FavoriteBusiness) => {
     // Generate clean taglines based on category
@@ -103,11 +103,7 @@ export default function Favorites() {
       setFavorites(data || []);
     } catch (error) {
       console.error('Error loading favorites:', error);
-      toast({
-        title: "Error loading favorites",
-        description: "Please try again later",
-        variant: "destructive",
-      });
+      // Toast notification removed per user request
     } finally {
       setIsLoading(false);
     }
@@ -123,17 +119,10 @@ export default function Favorites() {
       if (error) throw error;
 
       setFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
-      toast({
-        title: "Removed from favorites",
-        description: `${businessName} has been removed from your favorites.`,
-      });
+      // Toast notification removed per user request
     } catch (error) {
       console.error('Error removing favorite:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove from favorites",
-        variant: "destructive",
-      });
+      // Toast notification removed per user request
     }
   };
 

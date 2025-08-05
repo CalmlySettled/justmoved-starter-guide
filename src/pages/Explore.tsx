@@ -1,3 +1,4 @@
+import { toast } from "@/utils/notificationRemover";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Camera, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -80,7 +81,7 @@ export default function Explore() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
+  
   const { user } = useAuth();
 
   // Helper function to create Google Maps search URL

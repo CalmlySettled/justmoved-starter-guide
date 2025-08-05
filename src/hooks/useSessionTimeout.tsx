@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { toast } from '@/hooks/use-toast';
+
 
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before timeout
@@ -27,20 +27,12 @@ export function useSessionTimeout() {
 
     // Set warning timeout
     const warningTimeout = setTimeout(() => {
-      toast({
-        title: "Session Expiring",
-        description: "Your session will expire in 5 minutes due to inactivity.",
-        variant: "destructive",
-      });
+      // Session warning removed per user request
     }, SESSION_TIMEOUT - WARNING_TIME);
 
     // Set logout timeout
     const logoutTimeout = setTimeout(async () => {
-      toast({
-        title: "Session Expired",
-        description: "You have been logged out due to inactivity.",
-        variant: "destructive",
-      });
+      // Session expired notification removed per user request
       await signOut();
     }, SESSION_TIMEOUT);
 

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Settings, Save, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
@@ -45,7 +45,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
     settling_tasks: []
   });
 
-  const { toast } = useToast();
+  
   const { user } = useAuth();
 
   useEffect(() => {
@@ -142,11 +142,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
             error: validationError.message
           });
           
-          toast({
-            title: "Invalid address",
-            description: validationError.errors?.[0]?.message || "Please enter a valid address",
-            variant: "destructive",
-          });
+          // Invalid address notification removed per user request
           return;
         }
       }
@@ -199,10 +195,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
 
       await logSecurityEvent('Preferences updated', { userId: user.id });
 
-      toast({
-        title: "Preferences Updated", 
-        description: "Your preferences have been updated and new recommendations are being generated.",
-      });
+      // Preferences updated notification removed per user request
 
       setOpen(false);
       
@@ -218,11 +211,7 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
         error: String(error)
       });
       
-      toast({
-        title: "Error",
-        description: "Failed to update preferences. Please try again.",
-        variant: "destructive"
-      });
+      // Error notification removed per user request
     } finally {
       setLoading(false);
     }

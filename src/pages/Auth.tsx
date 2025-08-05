@@ -1,9 +1,10 @@
+import { toast } from "@/utils/notificationRemover";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Home, Mail, Eye, EyeOff } from "lucide-react";
@@ -26,7 +27,7 @@ export default function Auth() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resetTokens, setResetTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { toast } = useToast();
+  
   const navigate = useNavigate();
 
   // Helper function to clear quiz data from localStorage

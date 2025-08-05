@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Sparkles, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,7 +31,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [previewCategories, setPreviewCategories] = useState<string[]>([]);
 
-  const { toast } = useToast();
+  
   const { user } = useAuth();
 
   const allCategories = [
@@ -95,19 +95,12 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
         // Don't throw here - profile update was successful
       }
 
-      toast({
-        title: "Category Removed",
-        description: `${categoryToRemove} has been removed from your preferences.`,
-      });
+      // Category removed notification removed per user request
 
       onNewRecommendations(); // Refresh the dashboard
     } catch (error) {
       console.error('Error removing category:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove category. Please try again.",
-        variant: "destructive"
-      });
+      // Error notification removed per user request
     }
   };
 
@@ -181,10 +174,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
           // Don't throw here - recommendations were saved successfully
         }
 
-        toast({
-          title: "New Recommendations Added!",
-          description: `We've added recommendations for ${selectedCategories.length} new ${selectedCategories.length === 1 ? 'category' : 'categories'}.`,
-        });
+        // New recommendations notification removed per user request
 
         setOpen(false);
         setSelectedCategories([]);
@@ -193,11 +183,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
       }
     } catch (error) {
       console.error('Error adding new categories:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate new recommendations. Please try again.",
-        variant: "destructive"
-      });
+      // Error notification removed per user request
     } finally {
       setLoading(false);
     }
