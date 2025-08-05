@@ -558,54 +558,53 @@ export default function Explore() {
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
+          {/* Sign up CTA for unauthenticated users - moved to top */}
+          {!user && (
+            <div className="text-center mb-16 p-8 bg-gradient-section rounded-2xl shadow-soft">
+              <p className="text-lg text-muted-foreground mb-4">
+                Sign up to explore these collections and discover local businesses
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/onboarding'}
+                size="lg"
+                className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
+              >
+                Get Started
+              </Button>
+            </div>
+          )}
+
           {/* Location Section */}
-          {!isLoadingProfile && !location ? (
-            <div className="max-w-md mx-auto space-y-4">
-              {user ? (
-                // Authenticated users get full functionality
-                <>
-                  <Button 
-                    onClick={getCurrentLocation}
-                    disabled={isLoadingLocation}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <MapPin className="mr-2 h-5 w-5" />
-                    {isLoadingLocation ? "Getting location..." : "Use my current location"}
-                  </Button>
-                  
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter city or zip code"
-                      value={manualLocation}
-                      onChange={(e) => setManualLocation(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
-                    />
-                    <Button 
-                      onClick={handleManualLocation}
-                      disabled={isLoadingLocation || !manualLocation.trim()}
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground text-center">
-                    We couldn't find your saved address. Please enter your location to explore nearby places.
-                  </p>
-                </>
-              ) : (
-                // Non-authenticated users see only the quiz prompt
-                <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                  <p className="text-sm font-medium">Sign up to explore your area</p>
-                  <Button 
-                    onClick={() => window.location.href = '/onboarding'}
-                    size="sm"
-                    className="mt-2 bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
-                  >
-                    Sign up
-                  </Button>
-                </div>
-              )}
+          {!isLoadingProfile && !location && user ? (
+            <div className="max-w-md mx-auto space-y-4 mb-16">
+              <Button 
+                onClick={getCurrentLocation}
+                disabled={isLoadingLocation}
+                className="w-full"
+                size="lg"
+              >
+                <MapPin className="mr-2 h-5 w-5" />
+                {isLoadingLocation ? "Getting location..." : "Use my current location"}
+              </Button>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter city or zip code"
+                  value={manualLocation}
+                  onChange={(e) => setManualLocation(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleManualLocation()}
+                />
+                <Button 
+                  onClick={handleManualLocation}
+                  disabled={isLoadingLocation || !manualLocation.trim()}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <p className="text-sm text-muted-foreground text-center">
+                We couldn't find your saved address. Please enter your location to explore nearby places.
+              </p>
             </div>
           ) : (
             <div className="space-y-4"></div>
@@ -668,19 +667,6 @@ export default function Explore() {
                 </Card>
               ))}
             </div>
-            {!user && (
-              <div className="text-center mt-6">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Sign up to explore these collections and discover local businesses
-                </p>
-                <Button 
-                  onClick={() => window.location.href = '/onboarding'}
-                  className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
-                >
-                  Get Started
-                </Button>
-              </div>
-            )}
           </section>
 
           {/* Content Sections for authenticated users with location */}
