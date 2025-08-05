@@ -386,8 +386,8 @@ export default function ExplorePreview() {
         {/* Just Moved Collections */}
         {location && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6">Just Moved Collections</h2>
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <h2 className="text-2xl font-bold mb-6 text-center">Just Moved Collections</h2>
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {themedPacks.map((pack) => (
                 <Card 
                   key={pack.title}
@@ -396,19 +396,19 @@ export default function ExplorePreview() {
                   }`}
                   onClick={() => handleThemedPackSelect(pack)}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-2xl">
+                  <CardContent className="p-8">
+                    <div className="flex items-start gap-6 mb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
                         {pack.icon}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{pack.title}</h3>
-                        <p className="text-sm text-muted-foreground">{pack.description}</p>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-xl mb-2">{pack.title}</h3>
+                        <p className="text-muted-foreground leading-relaxed">{pack.description}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {pack.categories.map((category) => (
-                        <Badge key={category} variant="secondary" className="text-xs">
+                        <Badge key={category} variant="secondary" className="text-sm py-1 px-3">
                           {category}
                         </Badge>
                       ))}
