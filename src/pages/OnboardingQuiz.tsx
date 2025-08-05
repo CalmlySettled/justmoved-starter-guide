@@ -134,6 +134,12 @@ export default function OnboardingQuiz() {
   const handlePrevious = () => {
     if (isTransitioning) return;
     
+    if (currentQuestion === 0) {
+      // Exit to home page from mode selection screen
+      navigate("/");
+      return;
+    }
+    
     setIsTransitioning(true);
     setTimeout(() => {
       if (currentQuestion > 1) {
@@ -821,11 +827,10 @@ export default function OnboardingQuiz() {
                 variant="outline"
                 size="mobile"
                 onClick={handlePrevious}
-                disabled={currentQuestion === 0}
                 className="min-w-[120px]"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Previous
+                {currentQuestion === 0 ? "Exit" : "Previous"}
               </Button>
               
               <Button
