@@ -801,14 +801,13 @@ export default function OnboardingQuiz() {
             <div className="flex justify-between pt-8 gap-4">
               <Button
                 variant="outline"
-                size="mobile"
                 onClick={handlePrevious}
-                className="min-w-[120px]"
+                className="min-w-[100px]"
               >
                 {currentQuestion === 0 || currentQuestion === 1 ? (
-                  <Home className="h-4 w-4 mr-2" />
+                  <Home className="h-3 w-3 mr-2" />
                 ) : (
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-3 w-3 mr-2" />
                 )}
                 {currentQuestion === 0 || currentQuestion === 1 ? "Return Home" : "Previous"}
               </Button>
@@ -817,11 +816,10 @@ export default function OnboardingQuiz() {
                 onClick={handleNext}
                 disabled={!canProceed()}
                 variant={currentQuestion === totalQuestions ? "hero" : "default"}
-                size="mobile"
-                className="min-w-[120px]"
+                className="min-w-[100px]"
               >
                 {currentQuestion === totalQuestions ? "Complete Quiz" : "Next"}
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-3 w-3 ml-2" />
               </Button>
             </div>
           </CardContent>
