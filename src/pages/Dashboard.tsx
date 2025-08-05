@@ -128,16 +128,26 @@ export default function Dashboard() {
       return;
     }
     
-    const loadFavorites = () => {
+    const loadFavorites = async () => {
+      if (!user) {
+        setFavoriteBusinessNames(new Set());
+        return;
+      }
+      
       try {
-        const storedFavorites = localStorage.getItem('favorites');
-        if (storedFavorites) {
-          const favorites: any[] = JSON.parse(storedFavorites);
-          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
-          setFavoriteBusinessNames(favoriteNames);
-        } else {
-          setFavoriteBusinessNames(new Set());
+        const { data: favorites, error } = await supabase
+          .from('user_recommendations')
+          .select('business_name')
+          .eq('user_id', user.id)
+          .eq('is_favorite', true);
+
+        if (error) {
+          console.error('Error loading favorites:', error);
+          return;
         }
+
+        const favoriteNames = new Set(favorites?.map(fav => fav.business_name) || []);
+        setFavoriteBusinessNames(favoriteNames);
       } catch (error) {
         console.error('Error loading favorites:', error);
       }
@@ -860,57 +870,52 @@ export default function Dashboard() {
     }
   };
 
-  const toggleFavorite = (rec: SavedRecommendation) => {
+  const toggleFavorite = async (rec: SavedRecommendation) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to favorite businesses.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const storedFavorites = localStorage.getItem('favorites');
-      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
-      
-      const businessKey = rec.business_name;
-      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
-      
-      if (existingIndex >= 0) {
-        // Remove from favorites
-        favorites.splice(existingIndex, 1);
-        toast({
-          title: "Removed from favorites",
-          description: `${rec.business_name} has been removed from your favorites.`,
-        });
-      } else {
-        // Add to favorites
-        const favoriteData = {
-          business_name: rec.business_name,
-          business_address: rec.business_address,
-          business_description: rec.business_description,
-          business_phone: rec.business_phone,
-          business_website: rec.business_website,
-          business_image: rec.business_image,
-          business_features: rec.business_features || [],
-          category: rec.category,
-          distance_miles: rec.distance_miles,
-          favorited_at: new Date().toISOString()
-        };
-        
-        favorites.push(favoriteData);
-        toast({
-          title: "Added to favorites",
-          description: `${rec.business_name} has been added to your favorites.`,
-        });
-        
-        // Additional toast with navigation hint
-        setTimeout(() => {
-          toast({
-            title: "Find all your favorites in the dropdown above!",
-            description: "Click 'My Favorites' to see all your saved places",
-            duration: 4000
-          });
-        }, 1000);
+      // Update the favorite status in the database
+      const { error } = await supabase
+        .from('user_recommendations')
+        .update({ is_favorite: !rec.is_favorite })
+        .eq('id', rec.id);
+
+      if (error) {
+        throw error;
       }
-      
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      
-      // Trigger manual event for same-window updates
-      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
-    } catch (error) {
+
+      // Update local state
+      setRecommendations(prev => 
+        prev.map(r => 
+          r.id === rec.id 
+            ? { ...r, is_favorite: !r.is_favorite }
+            : r
+        )
+      );
+
+      // Update favorites list
+      setFavoriteBusinessNames(prev => {
+        const newSet = new Set(prev);
+        if (!rec.is_favorite) {
+          newSet.add(rec.business_name);
+        } else {
+          newSet.delete(rec.business_name);
+        }
+        return newSet;
+      });
+
+      toast({
+        title: !rec.is_favorite ? "Added to favorites" : "Removed from favorites",
+        description: `${rec.business_name} has been ${!rec.is_favorite ? 'added to' : 'removed from'} your favorites.`,
+      });
+    } catch (error: any) {
       console.error('Error toggling favorite:', error);
       toast({
         title: "Error updating favorite",

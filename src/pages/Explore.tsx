@@ -81,6 +81,7 @@ export default function Explore() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
+  const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   
   const { user } = useAuth();
 
@@ -141,35 +142,33 @@ export default function Explore() {
       }
     };
 
-    const loadFavorites = () => {
+    const loadFavorites = async () => {
+      if (!user) {
+        setFavoriteBusinesses(new Set());
+        return;
+      }
+      
       try {
-        const storedFavorites = localStorage.getItem('favorites');
-        if (storedFavorites) {
-          const favorites: any[] = JSON.parse(storedFavorites);
-          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
-          setFavoriteBusinesses(favoriteNames);
-        } else {
-          setFavoriteBusinesses(new Set());
+        const { data: favorites, error } = await supabase
+          .from('user_recommendations')
+          .select('business_name')
+          .eq('user_id', user.id)
+          .eq('is_favorite', true);
+
+        if (error) {
+          console.error('Error loading favorites:', error);
+          return;
         }
+
+        const favoriteNames = new Set(favorites?.map(fav => fav.business_name) || []);
+        setFavoriteBusinesses(favoriteNames);
       } catch (error) {
         console.error('Error loading favorites:', error);
       }
     };
 
-    const handleFavoritesUpdate = () => {
-      console.log('🔥 EXPLORE - Received favorites update event');
-      loadFavorites();
-    };
-
     loadUserLocation();
     loadFavorites();
-    
-    // Listen for favorites updates from dropdown
-    window.addEventListener('favoritesUpdated', handleFavoritesUpdate);
-    
-    return () => {
-      window.removeEventListener('favoritesUpdated', handleFavoritesUpdate);
-    };
   }, [user]);
 
   // Get user's current location
@@ -443,76 +442,112 @@ export default function Explore() {
     }
   };
 
-  const toggleFavorite = (business: Business, category: string) => {
-    console.log('🌟 EXPLORE - Attempting to favorite business:', business.name, 'Category:', category);
+  const toggleFavorite = async (business: Business, category: string) => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to favorite businesses.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const businessKey = business.name;
+    setFavoritingBusinesses(prev => new Set(prev).add(businessKey));
+
     try {
-      const storedFavorites = localStorage.getItem('favorites');
-      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
-      
-      const businessKey = business.name;
-      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
-      
-      if (existingIndex >= 0) {
-        // Remove from favorites
-        favorites.splice(existingIndex, 1);
+      // First check if the business is already saved
+      const { data: existingRecommendations, error: fetchError } = await supabase
+        .from('user_recommendations')
+        .select('id, is_favorite')
+        .eq('user_id', user.id)
+        .eq('business_name', business.name)
+        .eq('business_address', business.address)
+        .eq('category', category);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingRecommendations && existingRecommendations.length > 0) {
+        // Check if ANY record is currently favorited
+        const anyFavorited = existingRecommendations.some(rec => rec.is_favorite);
+        const newFavoriteStatus = !anyFavorited;
+        
+        // Update ALL matching records to have the same favorite status
+        const { error: updateError } = await supabase
+          .from('user_recommendations')
+          .update({ is_favorite: newFavoriteStatus })
+          .eq('user_id', user.id)
+          .eq('business_name', business.name)
+          .eq('business_address', business.address)
+          .eq('category', category);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Update local state
         setFavoriteBusinesses(prev => {
           const newSet = new Set(prev);
-          newSet.delete(businessKey);
+          if (newFavoriteStatus) {
+            newSet.add(businessKey);
+          } else {
+            newSet.delete(businessKey);
+          }
           return newSet;
         });
+
         toast({
-          title: "Removed from favorites",
-          description: `${business.name} has been removed from your favorites.`,
+          title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
+          description: `${business.name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
         });
       } else {
-        // Add to favorites
-        const favoriteData = {
-          business_name: business.name,
-          business_address: business.address,
-          business_description: business.description,
-          business_phone: business.phone,
-          business_website: business.website,
-          business_image: business.image_url,
-          business_features: business.features || [],
-          category: category,
-          distance_miles: business.distance_miles,
-          favorited_at: new Date().toISOString()
-        };
+        // Save as new recommendation with favorite status
+        const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
         
-        favorites.push(favoriteData);
-        console.log('💾 EXPLORE - Adding to favorites array, new length:', favorites.length);
-        
-        setFavoriteBusinesses(prev => {
-          const newSet = new Set(prev).add(businessKey);
-          console.log('⭐ EXPLORE - Updated favoriteBusinesses set, now has:', Array.from(newSet));
-          return newSet;
-        });
-        
+        const { error: insertError } = await supabase
+          .from('user_recommendations')
+          .insert({
+            user_id: user.id,
+            category: category,
+            business_name: business.name,
+            business_address: business.address,
+            business_description: business.description || `Great ${category} option`,
+            business_phone: business.phone,
+            business_website: business.website,
+            business_image: imageUrl,
+            business_features: business.features || [],
+            business_latitude: business.latitude,
+            business_longitude: business.longitude,
+            distance_miles: business.distance_miles,
+            is_favorite: true
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // Update local state
+        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+
         toast({
           title: "Added to favorites",
-          description: `${business.name} has been added to your favorites.`,
+          description: `${business.name} has been saved and added to your favorites.`,
         });
-        
-        // Additional toast with navigation hint
-        setTimeout(() => {
-          toast({
-            title: "Find all your favorites in the Dashboard!",
-            description: "Visit the Dashboard to see all your saved places",
-            duration: 4000
-          });
-        }, 1000);
       }
-      
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      
-      // Trigger manual event for same-window updates
-      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
+    } catch (error: any) {
+      console.error('Error favoriting business:', error);
       toast({
-        title: "Error",
-        description: "Failed to update favorite",
+        title: "Error updating favorite",
+        description: "We couldn't update your favorite. Please try again.",
         variant: "destructive"
+      });
+    } finally {
+      setFavoritingBusinesses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessKey);
+        return newSet;
       });
     }
   };
@@ -707,6 +742,7 @@ export default function Explore() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => toggleFavorite(business, selectedCategory || 'essentials')}
+                                disabled={favoritingBusinesses.has(business.name)}
                                 className="h-10 w-10 p-0 hover:bg-primary/10 min-h-[44px] min-w-[44px]"
                               >
                                 <Star 

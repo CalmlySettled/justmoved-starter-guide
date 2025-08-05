@@ -102,6 +102,7 @@ const PopularCategory = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
+  const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
 
   // Find category config
   const categoryConfig = trendingCategories.find(cat => 
@@ -189,16 +190,26 @@ const PopularCategory = () => {
       }
     };
 
-    const loadFavorites = () => {
+    const loadFavorites = async () => {
+      if (!user) {
+        setFavoriteBusinesses(new Set());
+        return;
+      }
+      
       try {
-        const storedFavorites = localStorage.getItem('favorites');
-        if (storedFavorites) {
-          const favorites: any[] = JSON.parse(storedFavorites);
-          const favoriteNames = new Set(favorites.map(fav => fav.business_name));
-          setFavoriteBusinesses(favoriteNames);
-        } else {
-          setFavoriteBusinesses(new Set());
+        const { data: favorites, error } = await supabase
+          .from('user_recommendations')
+          .select('business_name')
+          .eq('user_id', user.id)
+          .eq('is_favorite', true);
+
+        if (error) {
+          console.error('Error loading favorites:', error);
+          return;
         }
+
+        const favoriteNames = new Set(favorites?.map(fav => fav.business_name) || []);
+        setFavoriteBusinesses(favoriteNames);
       } catch (error) {
         console.error('Error loading favorites:', error);
       }
@@ -297,57 +308,101 @@ const PopularCategory = () => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
-  const toggleFavorite = (business: Business) => {
+  const toggleFavorite = async (business: Business) => {
+    if (!user) {
+      toast.error("Please log in to favorite businesses.");
+      return;
+    }
+
+    const businessKey = business.name;
+    setFavoritingBusinesses(prev => new Set(prev).add(businessKey));
+
     try {
-      const storedFavorites = localStorage.getItem('favorites');
-      const favorites: any[] = storedFavorites ? JSON.parse(storedFavorites) : [];
+      const category = 'name' in categoryConfig ? categoryConfig.name : categoryConfig.title;
       
-      const businessKey = business.name;
-      const existingIndex = favorites.findIndex(fav => fav.business_name === businessKey);
-      
-      if (existingIndex >= 0) {
-        // Remove from favorites
-        favorites.splice(existingIndex, 1);
+      // First check if the business is already saved
+      const { data: existingRecommendations, error: fetchError } = await supabase
+        .from('user_recommendations')
+        .select('id, is_favorite')
+        .eq('user_id', user.id)
+        .eq('business_name', business.name)
+        .eq('business_address', business.address)
+        .eq('category', category);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingRecommendations && existingRecommendations.length > 0) {
+        // Check if ANY record is currently favorited
+        const anyFavorited = existingRecommendations.some(rec => rec.is_favorite);
+        const newFavoriteStatus = !anyFavorited;
+        
+        // Update ALL matching records to have the same favorite status
+        const { error: updateError } = await supabase
+          .from('user_recommendations')
+          .update({ is_favorite: newFavoriteStatus })
+          .eq('user_id', user.id)
+          .eq('business_name', business.name)
+          .eq('business_address', business.address)
+          .eq('category', category);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Update local state
         setFavoriteBusinesses(prev => {
           const newSet = new Set(prev);
-          newSet.delete(businessKey);
+          if (newFavoriteStatus) {
+            newSet.add(businessKey);
+          } else {
+            newSet.delete(businessKey);
+          }
           return newSet;
         });
-        toast.success("Removed from favorites");
+
+        toast.success(newFavoriteStatus ? "Added to favorites" : "Removed from favorites");
       } else {
-        // Add to favorites
-        const favoriteData = {
-          business_name: business.name,
-          business_address: business.address,
-          business_description: business.description,
-          business_phone: business.phone,
-          business_website: business.website,
-          business_image: business.image_url,
-          business_features: business.features || [],
-          category: 'name' in categoryConfig ? categoryConfig.name : categoryConfig.title,
-          distance_miles: business.distance_miles,
-          favorited_at: new Date().toISOString()
-        };
+        // Save as new recommendation with favorite status
+        const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
         
-        favorites.push(favoriteData);
-        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
-        toast.success("Added to favorites");
-        
-        // Additional toast with navigation hint
-        setTimeout(() => {
-          toast.success("Find all your favorites in the Dashboard!", {
-            duration: 4000
+        const { error: insertError } = await supabase
+          .from('user_recommendations')
+          .insert({
+            user_id: user.id,
+            category: category,
+            business_name: business.name,
+            business_address: business.address,
+            business_description: business.description || `Great ${category} option`,
+            business_phone: business.phone,
+            business_website: business.website,
+            business_image: imageUrl,
+            business_features: business.features || [],
+            business_latitude: business.latitude,
+            business_longitude: business.longitude,
+            distance_miles: business.distance_miles,
+            is_favorite: true
           });
-        }, 1000);
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // Update local state
+        setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
+
+        toast.success("Added to favorites");
       }
-      
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      
-      // Trigger manual event for same-window updates
-      window.dispatchEvent(new CustomEvent('favoritesUpdated'));
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
+    } catch (error: any) {
+      console.error('Error favoriting business:', error);
       toast.error("Failed to update favorites");
+    } finally {
+      setFavoritingBusinesses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessKey);
+        return newSet;
+      });
     }
   };
 
@@ -469,6 +524,7 @@ const PopularCategory = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => toggleFavorite(business)}
+                              disabled={favoritingBusinesses.has(business.name)}
                               className="p-1 hover:bg-background/80"
                             >
                               <Heart 
