@@ -28,30 +28,19 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col gap-6 justify-center items-center">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/explore">
-              <Button 
-                variant="hero" 
-                size="lg"
-                className="text-lg px-8 py-6 min-w-[240px] transform hover:scale-105 shadow-2xl"
-              >
-                Explore Now
-                <ArrowRight className="ml-3 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/onboarding">
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="text-lg px-8 py-6 min-w-[240px] bg-white/10 text-white border-white/20 hover:bg-white/20"
-              >
-                Get Personalized
-              </Button>
-            </Link>
-          </div>
+          <Link to="/onboarding">
+            <Button 
+              variant="hero" 
+              size="lg"
+              className="text-lg sm:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 min-w-[280px] sm:min-w-[300px] transform hover:scale-110 shadow-2xl min-h-[56px]"
+            >
+              Settle Me In
+              <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
+            </Button>
+          </Link>
           
           <p className="text-white/80 text-sm font-medium">
-            Start exploring immediately or get personalized recommendations
+            We'll personalize your new city in under 60 seconds
           </p>
         </div>
         

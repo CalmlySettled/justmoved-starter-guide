@@ -16,7 +16,7 @@ import NotFound from "./pages/NotFound";
 import Features from "./pages/Features";
 import HowItWorks from "./pages/HowItWorks";
 import FAQ from "./pages/FAQ";
-import ExplorePreview from "./pages/ExplorePreview";
+import Explore from "./pages/Explore";
 import Popular from "./pages/Popular";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
@@ -35,7 +35,7 @@ const AppContent = () => {
       <ScrollToTop />
       <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/explore" element={<ExplorePreview />} />
+            <Route path="/explore" element={<Explore />} />
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/favorites" element={<Favorites />} />

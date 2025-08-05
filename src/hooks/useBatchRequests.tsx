@@ -115,11 +115,9 @@ export function useBatchRequests() {
   const batchInvoke = useCallback(
     <T = any>(
       functionName: 'generate-recommendations' | 'filter-recommendations' | 'geocode-address',
-      body: any,
-      options?: { previewMode?: boolean }
+      { body }: { body: any }
     ): Promise<T> => {
-      const bodyWithOptions = { ...body, ...options };
-      return batchManager.current.addRequest<T>(functionName, bodyWithOptions);
+      return batchManager.current.addRequest<T>(functionName, body);
     },
     []
   );
