@@ -58,12 +58,33 @@ function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) 
   }
 }
 
-// Geographic coordinate rounding for better cache efficiency
+// Geographic coordinate rounding for better cache efficiency - broader regions for better hits
 function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
+  // Round to ~5 mile precision for better cache hits (0.05 degrees ≈ 5.5 km)
   return {
-    lat: Math.round(lat * Math.pow(10, GEOGRAPHIC_PRECISION)) / Math.pow(10, GEOGRAPHIC_PRECISION),
-    lng: Math.round(lng * Math.pow(10, GEOGRAPHIC_PRECISION)) / Math.pow(10, GEOGRAPHIC_PRECISION)
+    lat: Math.round(lat * 20) / 20,
+    lng: Math.round(lng * 20) / 20
   };
+}
+
+// Generate simplified cache key for better hit rates
+function generateSimpleCacheKey(
+  coordinates: { lat: number, lng: number },
+  categories: string[],
+  preferences: any
+): string {
+  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
+  const sortedCategories = [...categories].sort().join(',');
+  
+  // Create simplified preference fingerprint - only core preferences
+  const prefFingerprint = {
+    budget: preferences.budgetPreference || 'any',
+    transport: preferences.transportationStyle || 'any',
+    household: preferences.householdType || 'any',
+    priorities: (preferences.priorities || []).sort().slice(0, 3).join(',') // Top 3 priorities only
+  };
+  
+  return `${roundedCoords.lat}_${roundedCoords.lng}_${sortedCategories}_${JSON.stringify(prefFingerprint)}`;
 }
 
 // Check if category should prioritize Yelp for data quality
@@ -1630,41 +1651,68 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   }
 }
 
-// COST-OPTIMIZED: Check cache with enhanced geographic batching
+// COST-OPTIMIZED: Check cache with fuzzy geographic matching
 async function getCachedRecommendations(
   supabase: any,
   coordinates: { lat: number; lng: number },
   categories: string[],
   preferences: any
 ): Promise<any[] | null> {
-  // Use rounded coordinates for better cache efficiency
-  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-  const cacheKey = `${roundedCoords.lat}_${roundedCoords.lng}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
+  
+  console.log(`🔍 CACHE LOOKUP: ${cacheKey}`);
   
   try {
-    const { data, error } = await supabase
+    // First try exact match
+    const { data: exactMatch, error: exactError } = await supabase
       .from('recommendations_cache')
-      .select('recommendations, created_at')
+      .select('recommendations, cache_key, created_at')
       .eq('cache_key', cacheKey)
       .gt('expires_at', new Date().toISOString())
-      .single();
-    
-    if (data && !error) {
+      .maybeSingle();
+
+    if (exactMatch && !exactError) {
       trackAPIUsage('cache', categories.length);
-      const cacheAge = Math.floor((new Date().getTime() - new Date(data.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      console.log(`💰 CACHE HIT: Found ${cacheAge}d old cached recommendations (key: ${cacheKey.substring(0, 50)}...)`);
-      return data.recommendations;
+      const cacheAge = Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`💰 EXACT CACHE HIT! Found ${cacheAge}d old recommendations: ${cacheKey.substring(0, 50)}...`);
+      return exactMatch.recommendations;
     }
+
+    // If no exact match, try fuzzy geographic matching within region
+    const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
+    const sortedCategories = [...categories].sort().join(',');
     
-    console.log(`Cache miss for key: ${cacheKey.substring(0, 50)}...`);
+    const { data: fuzzyMatches, error: fuzzyError } = await supabase
+      .from('recommendations_cache')
+      .select('recommendations, cache_key, created_at')
+      .contains('categories', categories)
+      .gt('expires_at', new Date().toISOString())
+      .limit(5);
+
+    if (fuzzyMatches && fuzzyMatches.length > 0 && !fuzzyError) {
+      // Find closest match with similar preferences
+      for (const match of fuzzyMatches) {
+        const matchKey = match.cache_key;
+        if (matchKey.includes(roundedCoords.lat.toString()) && 
+            matchKey.includes(roundedCoords.lng.toString()) &&
+            matchKey.includes(sortedCategories)) {
+          trackAPIUsage('cache', categories.length);
+          const cacheAge = Math.floor((new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60 * 24));
+          console.log(`💰 FUZZY CACHE HIT! Found ${cacheAge}d old nearby recommendations`);
+          return match.recommendations;
+        }
+      }
+    }
+
+    console.log(`❌ CACHE MISS: ${cacheKey.substring(0, 50)}...`);
     return null;
   } catch (error) {
-    console.log('Cache lookup failed:', error);
+    console.error('❌ CACHE ERROR:', error);
     return null;
   }
 }
 
-// COST-OPTIMIZED: Save recommendations with extended cache duration
+// COST-OPTIMIZED: Save recommendations with simplified cache key
 async function cacheRecommendations(
   supabase: any,
   coordinates: { lat: number; lng: number },
@@ -1672,9 +1720,10 @@ async function cacheRecommendations(
   preferences: any,
   recommendations: any[]
 ): Promise<void> {
-  // Use rounded coordinates for better cache efficiency
+  const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
   const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-  const cacheKey = `${roundedCoords.lat}_${roundedCoords.lng}_${categories.sort().join('_')}_${JSON.stringify(preferences)}`;
+  
+  console.log(`💾 SAVING TO CACHE: ${cacheKey}`);
   
   try {
     const { error } = await supabase
@@ -1687,12 +1736,14 @@ async function cacheRecommendations(
         preferences: preferences,
         expires_at: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
       });
-    
-    if (!error) {
-      console.log(`💰 CACHED: Saved ${categories.length} categories for ${CACHE_DURATION_DAYS}d (key: ${cacheKey.substring(0, 50)}...)`);
+
+    if (error) {
+      console.error('❌ CACHE SAVE FAILED:', error);
+    } else {
+      console.log(`✅ CACHED SUCCESSFULLY: ${cacheKey.substring(0, 50)}... (Will save future API costs)`);
     }
   } catch (error) {
-    console.log('Failed to cache recommendations:', error);
+    console.error('❌ CACHE SAVE ERROR:', error);
   }
 }
 
