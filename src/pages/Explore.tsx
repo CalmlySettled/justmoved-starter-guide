@@ -525,12 +525,7 @@ export default function Explore() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
           {/* Location Section */}
-          {isLoadingProfile ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading your location...</p>
-            </div>
-          ) : !location ? (
+          {!location ? (
             <div className="max-w-md mx-auto space-y-4">
               {user ? (
                 // Authenticated users get full functionality
