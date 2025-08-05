@@ -34,7 +34,7 @@ export function HeroSection() {
               size="lg"
               className="text-lg sm:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 min-w-[280px] sm:min-w-[300px] transform hover:scale-110 shadow-2xl min-h-[56px]"
             >
-              Settle Me In
+              Start Exploring
               <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </Link>
