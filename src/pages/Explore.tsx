@@ -525,7 +525,7 @@ export default function Explore() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
           {/* Location Section */}
-          {!location ? (
+          {!isLoadingProfile && !location ? (
             <div className="max-w-md mx-auto space-y-4">
               {user ? (
                 // Authenticated users get full functionality
