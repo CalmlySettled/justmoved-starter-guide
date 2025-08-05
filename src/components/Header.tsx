@@ -61,12 +61,6 @@ export function Header() {
           >
             Popular
           </Link>
-          <Link 
-            to="/dashboard"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            Dashboard
-          </Link>
         </nav>
         
         <div className="flex items-center space-x-4">
@@ -93,13 +87,6 @@ export function Header() {
                     onClick={() => setIsOpen(false)}
                   >
                     Popular
-                  </Link>
-                  <Link 
-                    to="/dashboard"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-smooth"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Dashboard
                   </Link>
                   
                   <div className="border-t border-border pt-6">
