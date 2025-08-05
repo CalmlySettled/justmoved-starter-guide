@@ -90,14 +90,15 @@ export function Header() {
                   </Link>
                   
                   <div className="border-t border-border pt-6">
-                    <div className="mb-8">
-                      <Link to="/onboarding" onClick={() => setIsOpen(false)}>
-                        <Button variant="default" size="mobile" className="w-full">
-                          Settle Me In
-                        </Button>
-                      </Link>
-                    </div>
-                    
+                     {user ? (
+                      <div className="mb-8">
+                        <Link to="/onboarding" onClick={() => setIsOpen(false)}>
+                          <Button variant="default" size="mobile" className="w-full">
+                            Settle Me In
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : null}
                      {user ? (
                       <div className="space-y-4">
                         <Link to="/profile" onClick={() => setIsOpen(false)}>
@@ -189,11 +190,6 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/onboarding">
-                    <Button variant="ghost">
-                      Settle Me In
-                    </Button>
-                  </Link>
                   <Link to="/auth">
                     <Button variant="default">
                       Sign In
