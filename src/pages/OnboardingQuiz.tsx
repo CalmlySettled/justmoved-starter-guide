@@ -806,7 +806,7 @@ export default function OnboardingQuiz() {
                 className="min-w-[120px]"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {currentQuestion === 0 || currentQuestion === 1 ? "Exit" : "Previous"}
+                {currentQuestion === 0 || currentQuestion === 1 ? "Return Home" : "Previous"}
               </Button>
               
               <Button
