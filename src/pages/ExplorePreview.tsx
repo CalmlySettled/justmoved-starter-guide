@@ -51,29 +51,29 @@ const trendingCategories = [
 const themedPacks = [
   {
     title: "First 48 Hours",
-    description: "Immediate essentials for your first days",
-    categories: ["Grocery stores", "Pharmacies", "Restaurants"],
+    description: "Immediate essentials for your first days in a new city",
+    categories: ["Grocery stores", "Pharmacies", "Gas stations", "Urgent care"],
     icon: "⏰",
     color: "bg-orange-100 text-orange-800"
   },
   {
     title: "Setting Up Home",
-    description: "Everything to make your new place feel like home",
-    categories: ["Furniture stores", "Hardware stores", "Home improvement"],
+    description: "Everything you need to make your new place feel like home",
+    categories: ["Hardware stores", "Furniture stores", "Home improvement", "Cleaning services"],
     icon: "🏠",
     color: "bg-blue-100 text-blue-800"
   },
   {
     title: "Getting Connected",
-    description: "Essential services to get organized",
+    description: "Essential services to get your life organized",
     categories: ["Banks", "Post offices", "Internet providers"],
     icon: "⚡",
     color: "bg-green-100 text-green-800"
   },
   {
     title: "Family Essentials",
-    description: "Important services for families",
-    categories: ["Pediatricians", "Schools", "Parks recreation"],
+    description: "Important services for families settling in",
+    categories: ["Pediatricians", "Schools", "Daycares", "Parks", "Libraries"],
     icon: "👨‍👩‍👧‍👦",
     color: "bg-purple-100 text-purple-800"
   },
@@ -387,7 +387,7 @@ export default function ExplorePreview() {
         {location && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-6">Just Moved Collections</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
               {themedPacks.map((pack) => (
                 <Card 
                   key={pack.title}
@@ -396,13 +396,23 @@ export default function ExplorePreview() {
                   }`}
                   onClick={() => handleThemedPackSelect(pack)}
                 >
-                  <CardContent className="p-4 text-center">
-                    <div className="text-3xl mb-2">{pack.icon}</div>
-                    <h3 className="font-semibold mb-1">{pack.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">{pack.description}</p>
-                    <Badge variant="secondary" className={pack.color}>
-                      {pack.categories.length} categories
-                    </Badge>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-2xl">
+                        {pack.icon}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{pack.title}</h3>
+                        <p className="text-sm text-muted-foreground">{pack.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {pack.categories.map((category) => (
+                        <Badge key={category} variant="secondary" className="text-xs">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
