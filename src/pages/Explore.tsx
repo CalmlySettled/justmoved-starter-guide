@@ -590,42 +590,20 @@ export default function Explore() {
                   </p>
                 </>
               ) : (
-                // Non-authenticated users see disabled inputs with sign up prompt
-                <>
+                // Non-authenticated users see only the quiz prompt
+                <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
+                  <p className="text-sm font-medium">Take the quiz to explore your area</p>
+                  <p className="text-xs text-muted-foreground">
+                    Complete our quick quiz to find nearby essentials and save your favorites
+                  </p>
                   <Button 
-                    disabled
-                    className="w-full opacity-50 cursor-not-allowed"
-                    size="lg"
+                    onClick={() => window.location.href = '/onboarding'}
+                    size="sm"
+                    className="mt-2"
                   >
-                    <MapPin className="mr-2 h-5 w-5" />
-                    Use my current location
+                    Take the Quiz
                   </Button>
-                  
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter city or zip code"
-                      disabled
-                      className="opacity-50"
-                    />
-                    <Button disabled className="opacity-50">
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm font-medium">Take the quiz to explore your area</p>
-                    <p className="text-xs text-muted-foreground">
-                      Complete our quick quiz to find nearby essentials and save your favorites
-                    </p>
-                    <Button 
-                      onClick={() => window.location.href = '/onboarding'}
-                      size="sm"
-                      className="mt-2"
-                    >
-                      Take the Quiz
-                    </Button>
-                  </div>
-                </>
+                </div>
               )}
             </div>
           ) : (
