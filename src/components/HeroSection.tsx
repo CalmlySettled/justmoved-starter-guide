@@ -39,9 +39,6 @@ export function HeroSection() {
             </Button>
           </Link>
           
-          <p className="text-white/80 text-sm font-medium">
-            We'll personalize your new city in under 60 seconds
-          </p>
         </div>
         
       </div>
