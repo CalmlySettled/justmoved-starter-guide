@@ -592,10 +592,7 @@ export default function Explore() {
               ) : (
                 // Non-authenticated users see only the quiz prompt
                 <div className="text-center space-y-3 p-4 bg-muted/50 rounded-lg border">
-                  <p className="text-sm font-medium">Take the quiz to explore your area</p>
-                  <p className="text-xs text-muted-foreground">
-                    Complete our quick quiz to find nearby essentials and save your favorites
-                  </p>
+                  <p className="text-sm font-medium">Sign up to explore your area</p>
                   <Button 
                     onClick={() => window.location.href = '/onboarding'}
                     size="sm"
