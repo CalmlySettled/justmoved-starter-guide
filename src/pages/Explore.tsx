@@ -596,9 +596,9 @@ export default function Explore() {
                   <Button 
                     onClick={() => window.location.href = '/onboarding'}
                     size="sm"
-                    className="mt-2"
+                    className="mt-2 bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
                   >
-                    Take the Quiz
+                    Sign up
                   </Button>
                 </div>
               )}
