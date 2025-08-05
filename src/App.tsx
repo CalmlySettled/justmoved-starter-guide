@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
+import AboutUs from "./pages/AboutUs";
 import OnboardingQuiz from "./pages/OnboardingQuiz";
 import Recommendations from "./pages/Recommendations";
 import Dashboard from "./pages/Dashboard";
@@ -35,6 +36,7 @@ const AppContent = () => {
       <ScrollToTop />
       <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
