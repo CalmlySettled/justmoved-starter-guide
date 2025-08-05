@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
-import { HeaderFavoritesDropdown } from "@/components/HeaderFavoritesDropdown";
+
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -119,9 +119,12 @@ export function Header() {
                             Profile
                           </Button>
                         </Link>
-                        <div className="w-full">
-                          <HeaderFavoritesDropdown />
-                        </div>
+                        <Link to="/favorites" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" size="mobile" className="w-full justify-start">
+                            <Star className="h-4 w-4 mr-2" />
+                            My Favorites
+                          </Button>
+                        </Link>
                         <Link to="/account-settings" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" size="mobile" className="w-full justify-start">
                             <Settings className="h-4 w-4 mr-2" />
@@ -183,7 +186,10 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <HeaderFavoritesDropdown />
+                        <Link to="/favorites" className="flex items-center">
+                          <Star className="h-4 w-4 mr-2" />
+                          My Favorites
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/account-settings" className="flex items-center">
