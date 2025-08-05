@@ -16,7 +16,7 @@ export function Footer() {
             </div>
             <p className="text-background/80 leading-relaxed max-w-md">
               Making your move stress-free with personalized recommendations and local insights. 
-              Join thousands who've found their perfect new home with CalmlySettled.
+              Join others who've calmly settled into their new home.
             </p>
           </div>
           
