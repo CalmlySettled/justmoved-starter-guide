@@ -805,7 +805,11 @@ export default function OnboardingQuiz() {
                 onClick={handlePrevious}
                 className="min-w-[120px]"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                {currentQuestion === 0 || currentQuestion === 1 ? (
+                  <Home className="h-4 w-4 mr-2" />
+                ) : (
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                )}
                 {currentQuestion === 0 || currentQuestion === 1 ? "Return Home" : "Previous"}
               </Button>
               
