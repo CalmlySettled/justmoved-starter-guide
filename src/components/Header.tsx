@@ -151,11 +151,6 @@ export function Header() {
             <>
               {user ? (
                 <>
-                  <Link to="/onboarding">
-                    <Button variant="default">
-                      Settle Me In
-                    </Button>
-                  </Link>
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
