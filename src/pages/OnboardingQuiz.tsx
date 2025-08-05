@@ -429,7 +429,7 @@ export default function OnboardingQuiz() {
                 localStorage.setItem('quizCompleted', 'true');
                 
                 // ALWAYS redirect to signup
-                navigate("/auth");
+                navigate("/auth?mode=signup");
               }}
               variant="hero" 
               size="lg"

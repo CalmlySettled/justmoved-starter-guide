@@ -13,7 +13,10 @@ import { Separator } from "@/components/ui/separator";
 
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false); // Default to sign in, not sign up
+  // Check URL params to determine initial state
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode');
+  const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
