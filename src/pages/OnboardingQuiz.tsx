@@ -60,11 +60,11 @@ const initialData: QuizData = {
   lifestyle: "",
   lifeStage: "",
   tasks: [],
-  isQuickStart: false
+  isQuickStart: true
 };
 
 export default function OnboardingQuiz() {
-  const [currentQuestion, setCurrentQuestion] = useState(0); // Start with mode selection
+  const [currentQuestion, setCurrentQuestion] = useState(1); // Start with address question
   const [quizData, setQuizData] = useState<QuizData>(initialData);
   const [isComplete, setIsComplete] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -494,7 +494,7 @@ export default function OnboardingQuiz() {
         }`}>
           <CardHeader className="pb-6">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center leading-tight">
-              {currentQuestion === 0 && "How would you like to get started?"}
+              {currentQuestion === 0 && "Let's get you started!"}
               {currentQuestion === 1 && "What's your new address or neighborhood?"}
               {currentQuestion === 2 && (quizData.isQuickStart ? "What are you looking for most?" : "Who did you move with?")}
               {currentQuestion === 3 && (quizData.isQuickStart ? "Perfect! Let's create your guide." : "What are the most important things you're looking for right now?")}
@@ -503,7 +503,7 @@ export default function OnboardingQuiz() {
               {currentQuestion === 6 && "Which stage of life best fits you right now?"}
             </CardTitle>
             {currentQuestion === 0 && (
-              <p className="text-muted-foreground text-center">Choose your preferred onboarding experience</p>
+              <p className="text-muted-foreground text-center">We'll get started with just your address and main priorities - takes about 30 seconds</p>
             )}
             {currentQuestion === 2 && !quizData.isQuickStart && (
               <p className="text-muted-foreground text-center">Choose all that apply</p>
@@ -517,48 +517,24 @@ export default function OnboardingQuiz() {
           </CardHeader>
           <CardContent className="space-y-6">
             
-            {/* Question 0: Mode Selection */}
+            {/* Question 0: Automatic Quick Start */}
             {currentQuestion === 0 && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card 
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg p-6 ${
-                      quizData.isQuickStart === true ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'
-                    }`}
-                    onClick={() => setQuizData({ ...quizData, isQuickStart: true })}
-                  >
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto bg-gradient-hero rounded-full flex items-center justify-center">
-                        <Clock className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="text-lg font-semibold">Quick Start</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Get started in 30 seconds with just your address and main priorities. 
-                        You can enhance your profile later.
-                      </p>
-                      <div className="text-xs text-primary font-medium">~30 seconds</div>
+              <div className="flex justify-center">
+                <Card className="ring-2 ring-primary max-w-md">
+                  <CardContent className="p-8 text-center space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-gradient-hero rounded-full flex items-center justify-center">
+                      <Clock className="h-10 w-10 text-white" />
                     </div>
-                  </Card>
-                  
-                  <Card 
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg p-6 ${
-                      quizData.isQuickStart === false ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'
-                    }`}
-                    onClick={() => setQuizData({ ...quizData, isQuickStart: false })}
-                  >
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto bg-gradient-subtle rounded-full flex items-center justify-center">
-                        <Star className="h-8 w-8 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-semibold">Complete Setup</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Take the full quiz for the most personalized recommendations 
-                        based on your lifestyle and preferences.
-                      </p>
-                      <div className="text-xs text-primary font-medium">~2 minutes</div>
+                    <h3 className="text-xl font-semibold">Quick Start</h3>
+                    <p className="text-muted-foreground">
+                      Get personalized recommendations with just your address and main priorities. 
+                      You can enhance your profile later for even better results.
+                    </p>
+                    <div className="text-sm text-primary font-medium bg-primary/10 px-3 py-1 rounded-full inline-block">
+                      ~30 seconds
                     </div>
-                  </Card>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
             
