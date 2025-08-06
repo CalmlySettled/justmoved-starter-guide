@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
 import OnboardingQuiz from "./pages/OnboardingQuiz";
 import Recommendations from "./pages/Recommendations";
-import Dashboard from "./pages/Dashboard";
+
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
@@ -46,7 +46,7 @@ const AppContent = () => {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/onboarding" element={<OnboardingQuiz />} />
             <Route path="/recommendations" element={<Recommendations />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<Auth />} />
             <Route path="/verify-email" element={<VerifyEmail />} />

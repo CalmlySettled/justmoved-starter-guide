@@ -537,8 +537,8 @@ export default function Auth() {
         setResetTokens(null);
         setIsResetPassword(false);
         
-        // Navigate to dashboard
-        navigate("/dashboard");
+        // Navigate to explore
+        navigate("/explore");
       }
     } catch (error) {
       toast({
@@ -569,7 +569,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard?redirect=${redirect}`,
+          redirectTo: `${window.location.origin}/explore?oauth=true&redirect=${redirect}`,
         }
       });
 

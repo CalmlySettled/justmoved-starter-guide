@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { useRequestCache } from "@/hooks/useRequestCache";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
+import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 
 interface LocationData {
   latitude: number;
@@ -86,6 +87,7 @@ export default function Explore() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
+  const [showAddressModal, setShowAddressModal] = useState(false);
   
   const { user } = useAuth();
   const { batchInvoke } = useBatchRequests();
@@ -113,7 +115,12 @@ export default function Explore() {
           .single();
 
         if (error || !profile?.address) {
-          console.log('No profile address found, user will need to enter location manually');
+          console.log('No profile address found, checking for OAuth redirect');
+          // Check if this is an OAuth redirect and user needs to set address
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('oauth') === 'true') {
+            setShowAddressModal(true);
+          }
           setIsLoadingProfile(false);
           return;
         }
@@ -766,6 +773,20 @@ export default function Explore() {
           )}
         </div>
       </main>
+      
+      <AddressCaptureModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onComplete={() => {
+          setShowAddressModal(false);
+          // Clear OAuth params from URL
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          // Reload the component to fetch user profile with new address
+          window.location.reload();
+        }}
+        sourceContext="oauth"
+      />
     </div>
   );
 }
