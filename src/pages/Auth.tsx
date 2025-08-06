@@ -454,17 +454,19 @@ export default function Auth() {
     try {
       console.log('🟡 AUTH - Google OAuth initiated');
       
-      // Always redirect to explore page
       // Get redirect parameter from URL to preserve user intent
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect') || 'explore';
       
       console.log('🟡 AUTH - Google OAuth redirect param:', redirect);
       
+      // Redirect to the page the user came from with OAuth parameters
+      const redirectPage = redirect === 'popular' ? 'popular' : 'explore';
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/explore?oauth=true&redirect=${redirect}`,
+          redirectTo: `${window.location.origin}/${redirectPage}?oauth=true&redirect=${redirect}`,
         }
       });
 
