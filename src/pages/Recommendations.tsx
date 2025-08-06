@@ -644,7 +644,6 @@ export default function Recommendations() {
     try {
       // Update interaction count for this business
       const { error } = await supabase
-        .from('user_recommendations')
         .rpc('increment_interaction', { 
           p_user_id: user.id,
           p_business_name: business.name,

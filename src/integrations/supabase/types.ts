@@ -191,6 +191,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      increment_interaction: {
+        Args: { p_user_id: string; p_business_name: string; p_category: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
