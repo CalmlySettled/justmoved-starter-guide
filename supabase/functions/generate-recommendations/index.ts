@@ -2059,13 +2059,17 @@ serve(async (req) => {
     if (coordinates && recommendations && Object.keys(recommendations).length > 0 && recommendationEngine === 'standard') {
       const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
       
-      await supabase
-        .from('recommendations_cache')
-        .insert({
-          cache_key: cacheKey,
-          recommendations: recommendations,
-          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
-        });
+      try {
+        await supabase
+          .from('recommendations_cache')
+          .insert({
+            cache_key: cacheKey,
+            recommendations: recommendations,
+            expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
+          });
+      } catch (cacheError) {
+        console.error('Failed to cache recommendations:', cacheError);
+      }
       
       console.log('💾 Cached recommendations for future standard users');
     } else if (recommendationEngine === 'ai') {
