@@ -85,6 +85,7 @@ export default function Explore() {
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isProcessingSavedAddress, setIsProcessingSavedAddress] = useState(false);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -152,7 +153,8 @@ export default function Explore() {
           return;
         }
 
-        // For users with saved address, keep loading until geocoding completes
+        // Immediately set processing state to prevent address input flash
+        setIsProcessingSavedAddress(true);
         console.log('Starting geocoding for saved address:', profile.address);
         
         // Geocode the stored address to get coordinates
@@ -182,9 +184,11 @@ export default function Explore() {
         // Only set loading to false after complete geocoding process
         console.log('Geocoding completed, setting loading to false');
         setIsLoadingProfile(false);
+        setIsProcessingSavedAddress(false);
       } catch (error) {
         console.error('Error loading user location:', error);
         setIsLoadingProfile(false);
+        setIsProcessingSavedAddress(false);
       }
     };
 
@@ -684,7 +688,7 @@ export default function Explore() {
           )}
 
           {/* Location Section */}
-          {!isLoadingProfile && !location && user ? (
+          {!isLoadingProfile && !isProcessingSavedAddress && !location && user ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
