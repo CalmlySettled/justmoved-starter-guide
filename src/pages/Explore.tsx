@@ -135,6 +135,13 @@ export default function Explore() {
 
         if (error) {
           console.log('Profile query error:', error);
+          // For OAuth users without a profile, show the address modal
+          const isOAuthRedirect = urlParams.get('oauth') === 'true';
+          if (isOAuthRedirect) {
+            console.log('OAuth user has no profile yet, showing address modal');
+            setShowAddressModal(true);
+            setSourceContext("oauth");
+          }
           setIsLoadingProfile(false);
           return;
         }

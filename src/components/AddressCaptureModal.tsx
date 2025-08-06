@@ -27,6 +27,12 @@ const getContextualContent = (source: string | null) => {
         description: "Where should we find the most popular places for you?",
         buttonText: "Show Popular Places"
       };
+    case "oauth":
+      return {
+        title: "Welcome! One more step...",
+        description: "To personalize your experience and show you the best places nearby, we need your location.",
+        buttonText: "Complete Setup"
+      };
     default:
       return {
         title: "Let's find great places for you!",
