@@ -47,11 +47,11 @@ const trendingCategories = [
     description: "Where the locals go after dark"
   },
   { 
-    name: "Food Trucks", 
-    icon: "🚚", 
-    searchTerms: ["food truck", "mobile food", "street food"],
+    name: "Happy Hours & Breweries", 
+    icon: "🍺", 
+    searchTerms: ["brewery", "brewpub", "craft beer", "happy hour", "bar"],
     color: "bg-orange-500",
-    description: "Mobile flavors around town"
+    description: "Local brews and after-work spots"
   },
   { 
     name: "Art & Culture", 
