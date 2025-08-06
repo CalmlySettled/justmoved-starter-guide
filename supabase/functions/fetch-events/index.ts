@@ -86,67 +86,67 @@ function generateCacheKey(latitude: number, longitude: number): string {
 }
 
 async function fetchEventsFromAPI(latitude: number, longitude: number): Promise<ProcessedEvent[]> {
-  if (!eventbriteApiKey) {
-    throw new Error('EventBrite API key not configured');
-  }
-
-  const radiusMiles = 25;
-  const today = new Date().toISOString();
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${latitude}&location.longitude=${longitude}&location.within=${radiusMiles}mi&start_date.range_start=${today}&start_date.range_end=${thirtyDaysFromNow}&expand=venue,category&sort_by=date`;
-
-  console.log(`🎉 Fetching events from EventBrite API for location: ${latitude}, ${longitude}`);
-
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${eventbriteApiKey}`,
-      'Content-Type': 'application/json',
+  // EventBrite discontinued public access to their Event Search API in 2020
+  // For now, return sample events data to demonstrate the functionality
+  console.log(`🎭 Generating sample events for location: ${latitude}, ${longitude}`);
+  
+  const today = new Date();
+  const sampleEvents: ProcessedEvent[] = [
+    {
+      id: 'sample-1',
+      name: 'Community Farmers Market',
+      description: 'Fresh local produce, artisanal goods, and live music in the heart of downtown.',
+      start_date: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      end_date: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+      venue: {
+        name: 'Downtown Square',
+        address: 'Main St & Center Ave',
+        latitude: latitude + 0.01,
+        longitude: longitude + 0.01,
+      },
+      ticket_url: '#',
+      category: 'community',
+      is_free: true,
+      distance_miles: 0.8,
     },
-  });
+    {
+      id: 'sample-2', 
+      name: 'Local Art Gallery Opening',
+      description: 'Featuring works by emerging local artists. Wine and light refreshments provided.',
+      start_date: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      end_date: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+      venue: {
+        name: 'River Arts Gallery',
+        address: '123 Gallery Row',
+        latitude: latitude + 0.02,
+        longitude: longitude - 0.01,
+      },
+      ticket_url: '#',
+      category: 'arts',
+      is_free: true,
+      distance_miles: 1.2,
+    },
+    {
+      id: 'sample-3',
+      name: 'Live Jazz at the Rooftop',
+      description: 'Smooth jazz under the stars with cocktails and city views.',
+      start_date: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      end_date: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
+      venue: {
+        name: 'Skyline Lounge',
+        address: '456 High St',
+        latitude: latitude - 0.01,
+        longitude: longitude + 0.02,
+      },
+      ticket_url: '#',
+      category: 'music',
+      is_free: false,
+      distance_miles: 2.1,
+    },
+  ];
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`EventBrite API error: ${response.status} - ${errorText}`);
-    throw new Error(`EventBrite API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const events: EventbriteEvent[] = data.events || [];
-
-  console.log(`📅 Found ${events.length} events from EventBrite`);
-
-  const processedEvents: ProcessedEvent[] = events
-    .filter(event => event.venue && event.venue.latitude && event.venue.longitude)
-    .map(event => {
-      const venueLat = parseFloat(event.venue.latitude);
-      const venueLng = parseFloat(event.venue.longitude);
-      const distance = calculateDistance(latitude, longitude, venueLat, venueLng);
-
-      return {
-        id: event.id,
-        name: event.name.text,
-        description: event.description?.text || '',
-        start_date: event.start.local,
-        end_date: event.end.local,
-        venue: {
-          name: event.venue.name,
-          address: `${event.venue.address.address_1}, ${event.venue.address.city}, ${event.venue.address.region}`,
-          latitude: venueLat,
-          longitude: venueLng,
-        },
-        ticket_url: event.url,
-        logo_url: event.logo?.original?.url,
-        category: event.category_id || 'general',
-        is_free: event.is_free,
-        distance_miles: Math.round(distance * 10) / 10,
-      };
-    })
-    .filter(event => event.distance_miles <= radiusMiles)
-    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-    .slice(0, 12); // Limit to 12 events
-
-  return processedEvents;
+  console.log(`📅 Generated ${sampleEvents.length} sample events`);
+  return sampleEvents;
 }
 
 serve(async (req) => {
