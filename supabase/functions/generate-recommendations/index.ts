@@ -2092,30 +2092,27 @@ serve(async (req) => {
 
     console.log('About to return response...');
     
-    return new Response(
-      JSON.stringify({ 
-        recommendations,
-        fromCache: false,
-        costOptimized: true,
-        recommendationEngine
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
+    const responseData = {
+      recommendations,
+      fromCache: false,
+      costOptimized: true,
+      recommendationEngine
+    };
+    
+    return new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
       }
-    );
+    });
+    
   } catch (error: any) {
     console.error('Error in generate-recommendations function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
   }
 });
 
