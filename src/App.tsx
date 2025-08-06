@@ -8,8 +8,6 @@ import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
-import OnboardingQuiz from "./pages/OnboardingQuiz";
-import Recommendations from "./pages/Recommendations";
 
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -44,8 +42,6 @@ const AppContent = () => {
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/faq" element={<FAQ />} />
-            <Route path="/onboarding" element={<OnboardingQuiz />} />
-            <Route path="/recommendations" element={<Recommendations />} />
             
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<Auth />} />

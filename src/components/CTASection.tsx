@@ -14,13 +14,13 @@ export function CTASection() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-          <Link to="/onboarding">
+          <Link to="/explore">
             <Button 
               variant="hero" 
               size="lg"
               className="text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 min-w-[200px] sm:min-w-[220px]"
             >
-              Settle Me In
+              Explore Local Businesses
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>

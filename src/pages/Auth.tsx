@@ -36,108 +36,6 @@ export default function Auth() {
   
   const navigate = useNavigate();
 
-  // Helper function to clear quiz data from localStorage
-  const clearQuizData = () => {
-    console.log('🟡 AUTH - Clearing quiz data from localStorage');
-    localStorage.removeItem('onboardingQuizData');
-    localStorage.removeItem('onboardingQuizDataBackup');
-    localStorage.removeItem('quizCompleted');
-    localStorage.removeItem('pendingQuizProcessing');
-    localStorage.removeItem('quizDataSource');
-  };
-
-  // Helper function to process quiz data after authentication
-  const processQuizDataAfterAuth = async (userId: string, quizData: any) => {
-    console.log('🟡 AUTH - Processing quiz data after auth for user:', userId);
-    
-    try {
-      // Get coordinates for address if not already available
-      let coordinates = { lat: quizData.latitude, lng: quizData.longitude };
-      
-      if (!coordinates.lat && quizData.address) {
-        console.log('🟡 AUTH - Getting coordinates for address:', quizData.address);
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(quizData.address)}&limit=1`, {
-          headers: { 'User-Agent': 'CalmlySettled/1.0' }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            coordinates = {
-              lat: parseFloat(data[0].lat),
-              lng: parseFloat(data[0].lon)
-            };
-          }
-        }
-      }
-
-      // Save profile data
-      const profileData = {
-        user_id: userId,
-        address: String(quizData.address || ''),
-        household_type: String(quizData.household || 'Not specified'),
-        priorities: Array.isArray(quizData.priorities) ? quizData.priorities : [],
-        priority_preferences: {},
-        transportation_style: String(quizData.transportation || 'Flexible'),
-        budget_preference: String(quizData.budgetRange || 'Moderate'),
-        life_stage: String(quizData.movingTimeline || 'Getting settled'),
-        settling_tasks: Array.isArray(quizData.settlingTasks) ? quizData.settlingTasks : [],
-        latitude: coordinates?.lat || null,
-        longitude: coordinates?.lng || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log('🟡 AUTH - Saving profile data:', profileData);
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'user_id' });
-
-      if (profileError) {
-        console.error('🔴 AUTH - Profile save error:', profileError);
-        throw profileError;
-      }
-
-      // Generate recommendations
-      const quizResponse = {
-        address: quizData.address,
-        householdType: quizData.household,
-        priorities: quizData.priorities,
-        transportationStyle: quizData.transportation || 'Flexible',
-        budgetPreference: quizData.budgetRange || 'Moderate',
-        lifeStage: quizData.movingTimeline || 'Getting settled',
-        settlingTasks: quizData.settlingTasks || [],
-        latitude: coordinates?.lat || null,
-        longitude: coordinates?.lng || null
-      };
-
-      console.log('🟡 AUTH - Generating recommendations:', quizResponse);
-      const { error: generateError } = await supabase.functions.invoke('generate-recommendations', {
-        body: { quizResponse, userId }
-      });
-
-      if (generateError) {
-        console.error('🔴 AUTH - Recommendations generation error:', generateError);
-      } else {
-        console.log('🟢 AUTH - Recommendations generated successfully');
-        
-        // Clear quiz data after successful processing
-        clearQuizData();
-        
-        toast({
-          title: "Welcome! Your recommendations are ready",
-          description: "We've generated personalized recommendations based on your quiz responses.",
-        });
-      }
-    } catch (error) {
-      console.error('🔴 AUTH - Error processing quiz data:', error);
-      
-      toast({
-        title: "Profile Processing",
-        description: "Your profile was saved but there was an issue generating recommendations. Please try exploring businesses.",
-        variant: "destructive"
-      });
-    }
-  };
 
   useEffect(() => {
     // Check if user is already logged in
@@ -310,7 +208,7 @@ export default function Auth() {
 
             toast({
               title: "Welcome to CalmlySettled!",
-              description: "Your account has been created and we're finding local recommendations for you."
+              description: "Your account has been created successfully. Start exploring local businesses!"
             });
           } catch (error) {
             console.error('Error creating profile:', error);
@@ -554,10 +452,7 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      // Check if user has quiz data to preserve it through OAuth flow
-      const hasQuizData = localStorage.getItem('onboardingQuizData') || localStorage.getItem('quizCompleted');
-      
-      console.log('🟡 AUTH - Google OAuth initiated, has quiz data:', !!hasQuizData);
+      console.log('🟡 AUTH - Google OAuth initiated');
       
       // Always redirect to explore page
       // Get redirect parameter from URL to preserve user intent
@@ -629,8 +524,8 @@ export default function Auth() {
                 : (isForgotPassword 
                   ? "Enter your email to receive a password reset link"
                   : (isSignUp 
-                    ? "Sign up to get personalized neighborhood recommendations" 
-                    : "Sign in to access your personalized recommendations"
+                     ? "Sign up to explore local businesses and services" 
+                     : "Sign in to access your saved favorites"
                   )
                 )
               }
