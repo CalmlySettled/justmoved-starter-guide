@@ -753,7 +753,7 @@ async function searchGooglePlaces(
           return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
         }
       })
-      .slice(0, exploreMode ? 5 : 15); // EXPLORE: Only 5 closest, POPULAR: 15 businesses
+      .slice(0, exploreMode ? 5 : 12); // EXPLORE: Only 5 closest, POPULAR: 12 businesses
 
     console.log(`Processing top ${topBusinesses.length} businesses to minimize API costs`);
 
