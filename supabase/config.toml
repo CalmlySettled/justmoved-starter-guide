@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.batch-recommendations]
 verify_jwt = false
+
+[functions.fetch-events]
+verify_jwt = false
