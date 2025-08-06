@@ -1940,40 +1940,52 @@ serve(async (req) => {
     }
 
     // COST OPTIMIZATION: Check cache before expensive API calls
-    // Note: Legacy quiz mode - simplified cache without preferences since quiz was removed
-    const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
+    // AI users get personalized results and bypass cache for better learning
+    const recommendationEngine = userId ? determineRecommendationEngine(userId) : 'standard';
+    console.log(`Recommendation engine: ${recommendationEngine} for user: ${userId || 'anonymous'}`);
     
-    const { data: cachedData } = await supabase
-      .from('recommendations_cache')
-      .select('recommendations, created_at')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', new Date().toISOString())
-      .single();
+    let cachedRecommendations = null;
     
-    const cachedRecommendations = cachedData?.recommendations;
-    
-    if (cachedRecommendations) {
-      console.log('💰 RETURNING CACHED RECOMMENDATIONS - NO API COSTS!');
-      return new Response(JSON.stringify({
-        success: true,
-        fromCache: true,
-        recommendations: cachedRecommendations
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (recommendationEngine === 'standard') {
+      // Standard users use cache for cost optimization
+      const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
+      
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+      
+      cachedRecommendations = cachedData?.recommendations;
+      
+      if (cachedRecommendations) {
+        console.log('💰 RETURNING CACHED RECOMMENDATIONS - NO API COSTS!');
+        return new Response(JSON.stringify({
+          success: true,
+          fromCache: true,
+          recommendations: cachedRecommendations,
+          recommendationEngine: 'standard'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      console.log('🤖 AI USER - Bypassing cache for personalized recommendations');
     }
 
     // Generate recommendations based on user priorities (only if not cached)
     console.log('💸 Generating NEW recommendations - API costs will be incurred');
     
-    // Add userId to quizResponse for AI personalization
-    const enhancedQuizResponse = { ...quizResponse, userId };
+    // Add userId and recommendation engine to quizResponse for AI personalization
+    const enhancedQuizResponse = { ...quizResponse, userId, recommendationEngine };
     const recommendations = await generateRecommendations(enhancedQuizResponse, coordinates);
 
     console.log('Generated recommendations categories:', Object.keys(recommendations));
 
     // COST OPTIMIZATION: Cache the generated recommendations to avoid future API costs
-    if (coordinates && recommendations && Object.keys(recommendations).length > 0) {
+    // Only cache standard recommendations, not AI personalized ones
+    if (coordinates && recommendations && Object.keys(recommendations).length > 0 && recommendationEngine === 'standard') {
       const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
       
       await supabase
@@ -1983,18 +1995,17 @@ serve(async (req) => {
           recommendations: recommendations,
           expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
         });
-        coordinates,
-        quizResponse.priorities || [],
-        cachePreferences,
-        recommendations
-      );
+      
+      console.log('💾 Cached recommendations for future standard users');
+    } else if (recommendationEngine === 'ai') {
+      console.log('🤖 AI recommendations not cached - keeping personalized');
     }
 
     // Save recommendations to database if userId is provided
     if (userId && Object.keys(recommendations).length > 0) {
       console.log(`Saving recommendations to database for user: ${userId}`);
       try {
-        await saveRecommendationsToDatabase(userId, recommendations, quizResponse, false);
+        await saveRecommendationsToDatabase(userId, recommendations, quizResponse, recommendationEngine === 'ai');
         console.log('Successfully saved recommendations to database');
       } catch (saveError) {
         console.error('Failed to save recommendations to database:', saveError);
@@ -2009,6 +2020,7 @@ serve(async (req) => {
         recommendations,
         fromCache: false,
         costOptimized: true,
+        recommendationEngine,
         apiStats: {
           yelpCalls: apiUsageStats.yelpCalls,
           googleCalls: apiUsageStats.googleCalls,
@@ -2048,8 +2060,14 @@ function determineRecommendationEngine(userId: string): 'ai' | 'standard' {
   }
   
   // Use absolute value and modulo to get consistent assignment
-  const normalizedHash = Math.abs(hash) / Math.pow(2, 31);
-  return normalizedHash < AI_RECOMMENDATION_PERCENTAGE ? 'ai' : 'standard';
+  // Fix: Use proper percentage calculation
+  const normalizedHash = Math.abs(hash) % 100;
+  console.log(`User ${userId} hash: ${normalizedHash}, AI threshold: ${AI_RECOMMENDATION_PERCENTAGE * 100}`);
+  
+  const isAiUser = normalizedHash < (AI_RECOMMENDATION_PERCENTAGE * 100);
+  console.log(`User ${userId} assigned to: ${isAiUser ? 'ai' : 'standard'} engine`);
+  
+  return isAiUser ? 'ai' : 'standard';
 }
 
 // AI ENHANCEMENT: Calculate collaborative filtering score
@@ -2463,7 +2481,7 @@ function calculateTransportationScore(business: Business, transportationStyle: s
 }
 
 // Enhanced function to save recommendations with relevance scores
-async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse, isPopularMode: boolean = false) {
+async function saveRecommendationsToDatabase(userId: string, recommendations: { [key: string]: Business[] }, userPreferences?: QuizResponse, isAiMode: boolean = false) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   
@@ -2511,7 +2529,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
         seenBusinesses.add(businessKey);
         
         // Calculate base relevance score
-        const scoringMode = isPopularMode ? 'rating-heavy' : 'distance-heavy';
+        const scoringMode = isAiMode ? 'distance-heavy' : 'distance-heavy';
         let relevanceScore = calculateRelevanceScore(business, category, userPreferences, scoringMode);
         
         // Calculate AI scores if using AI engine

@@ -50,10 +50,10 @@ const AdminDashboard = () => {
   const fetchMetrics = async () => {
     try {
       console.log('Fetching admin metrics...');
-      // Fetch recommendation metrics
+      // Fetch recommendation metrics with category
       const { data: recommendations, error: recError } = await supabase
         .from('user_recommendations')
-        .select('recommendation_engine, is_favorite, interaction_count, ai_scores, user_id');
+        .select('recommendation_engine, is_favorite, interaction_count, ai_scores, user_id, category');
 
       console.log('Recommendations data:', recommendations, 'Error:', recError);
 
@@ -69,7 +69,10 @@ const AdminDashboard = () => {
       const aiRecs = recommendations?.filter(r => r.recommendation_engine === 'ai').length || 0;
       const standardRecs = totalRecs - aiRecs;
       const totalUsers = profiles?.length || 0;
-      const aiTestUsers = Math.floor(totalUsers / 2); // Rough estimate for user_id % 2 = 1
+      // Count actual AI users based on actual assignment
+      const uniqueUsers = [...new Set(recommendations?.map(r => r.user_id) || [])];
+      const actualAiUsers = [...new Set(recommendations?.filter(r => r.recommendation_engine === 'ai').map(r => r.user_id) || [])].length;
+      const actualStandardUsers = [...new Set(recommendations?.filter(r => r.recommendation_engine === 'standard').map(r => r.user_id) || [])].length;
 
       const favorites = recommendations?.filter(r => r.is_favorite).length || 0;
       const favoriteRate = totalRecs > 0 ? (favorites / totalRecs) * 100 : 0;
@@ -82,7 +85,7 @@ const AdminDashboard = () => {
         aiRecommendations: aiRecs,
         standardRecommendations: standardRecs,
         totalUsers,
-        aiTestUsers,
+        aiTestUsers: actualAiUsers,
         avgResponseTime: 1.8, // Mock data - would come from edge function logs
         favoriteRate,
         interactionRate
@@ -96,7 +99,7 @@ const AdminDashboard = () => {
       const scoresByCategory: { [key: string]: { collaborative: number[], temporal: number[], crossCategory: number[] } } = {};
       
       aiRecsWithScores.forEach(rec => {
-        const category = 'General'; // Would get from rec.category if available
+        const category = rec.category || 'General';
         if (!scoresByCategory[category]) {
           scoresByCategory[category] = { collaborative: [], temporal: [], crossCategory: [] };
         }
