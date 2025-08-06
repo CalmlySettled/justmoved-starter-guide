@@ -388,7 +388,8 @@ export default function Explore() {
         .limit(1)
         .single();
 
-      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]) {
+      // Skip DB cache if results are empty (treat empty arrays as cache miss)
+      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]?.length > 0) {
         console.log('💰 DB CACHE HIT: Category results - NO API COST!');
         const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
@@ -408,7 +409,11 @@ export default function Explore() {
       
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
-      setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+      
+      // Only cache non-empty results for 30 minutes
+      if (results.length > 0) {
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+      }
     } catch (error) {
       console.error("Error loading category results:", error);
       toast({
