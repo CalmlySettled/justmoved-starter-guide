@@ -372,7 +372,8 @@ export default function Explore() {
       
       let cachedResults = getCached('category_results', cacheKey);
       
-      if (cachedResults) {
+      // Skip app cache for pharmacy searches for now to debug
+      if (cachedResults && category.searchTerm !== 'pharmacies') {
         console.log('💰 APP CACHE HIT: Category results - NO API COST!');
         setCategoryResults(cachedResults);
         return;
