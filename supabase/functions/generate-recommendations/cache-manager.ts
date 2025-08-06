@@ -20,19 +20,26 @@ export async function cacheRecommendations(
   supabase: any,
   cacheKey: string,
   recommendations: any,
+  lat: number,
+  lng: number,
+  categories: string[],
   daysToCache: number = 180
 ): Promise<void> {
   try {
+    const roundedCoords = roundCoordinates(lat, lng);
     await supabase
       .from('recommendations_cache')
       .insert({
         cache_key: cacheKey,
         recommendations: recommendations,
+        user_coordinates: `(${roundedCoords.lat},${roundedCoords.lng})`,
+        categories: categories,
         expires_at: new Date(Date.now() + daysToCache * 24 * 60 * 60 * 1000).toISOString()
       });
     console.log(`💾 Cached recommendations for ${daysToCache} days`);
   } catch (error) {
     console.error('Failed to cache recommendations:', error);
+    // Don't throw error to prevent caching failures from breaking the API
   }
 }
 

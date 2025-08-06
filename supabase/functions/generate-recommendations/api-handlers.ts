@@ -42,7 +42,7 @@ export async function handleExploreMode(
   }
 
   // Cache the results for 180 days
-  await cacheRecommendations(supabase, cacheKey, recommendations, 180);
+  await cacheRecommendations(supabase, cacheKey, recommendations, latitude, longitude, categories, 180);
   
   return new Response(JSON.stringify({ recommendations }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -85,7 +85,7 @@ export async function handlePopularMode(
   }
 
   // Cache the results for 7 days
-  await cacheRecommendations(supabase, cacheKey, recommendations, 7);
+  await cacheRecommendations(supabase, cacheKey, recommendations, latitude, longitude, categories, 7);
   
   return new Response(JSON.stringify({ recommendations }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
