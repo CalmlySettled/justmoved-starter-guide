@@ -168,6 +168,9 @@ const Popular = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
+            // Check if user is still authenticated before setting location
+            if (!user) return;
+            
             try {
               // Reverse geocode to get city name
               const response = await fetch(
@@ -183,6 +186,9 @@ const Popular = () => {
                 const data = await response.json();
                 const city = data.address?.city || data.address?.town || data.address?.village || 'Your Location';
                 
+                // Check again after async operation in case user signed out
+                if (!user) return;
+                
                 setLocation({
                   latitude: position.coords.latitude,
                   longitude: position.coords.longitude,
@@ -191,6 +197,9 @@ const Popular = () => {
               }
             } catch (error) {
               console.error('Error reverse geocoding:', error);
+              // Check if user is still authenticated before setting fallback location
+              if (!user) return;
+              
               setLocation({
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
@@ -200,6 +209,7 @@ const Popular = () => {
           },
           (error) => {
             console.error('Error getting location:', error);
+            // No need to set location on error - user will see location sharing prompt
           }
         );
       }
