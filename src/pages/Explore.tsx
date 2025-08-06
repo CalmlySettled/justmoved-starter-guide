@@ -129,7 +129,7 @@ export default function Explore() {
             setIsLoadingProfile(false);
             return;
           } else {
-            console.log('OAuth user already has address, skipping modal:', profile.address);
+            console.log('OAuth user already has address, will geocode without modal:', profile.address);
           }
         }
 
@@ -152,10 +152,8 @@ export default function Explore() {
           return;
         }
 
-        // Set loading state immediately when we detect saved address
-        setIsLoadingLocation(true);
-        // Keep profile loading true until we transition to location loading
-        // setIsLoadingProfile(false) will be called in finally block
+        // For users with saved address, keep loading until geocoding completes
+        console.log('Starting geocoding for saved address:', profile.address);
         
         // Geocode the stored address to get coordinates
         const response = await fetch(
@@ -180,10 +178,12 @@ export default function Explore() {
             await loadPopularPlaces(locationData);
           }
         }
-        setIsLoadingLocation(false);
+        
+        // Only set loading to false after complete geocoding process
+        console.log('Geocoding completed, setting loading to false');
+        setIsLoadingProfile(false);
       } catch (error) {
         console.error('Error loading user location:', error);
-      } finally {
         setIsLoadingProfile(false);
       }
     };
@@ -684,7 +684,7 @@ export default function Explore() {
           )}
 
           {/* Location Section */}
-          {!isLoadingProfile && !isLoadingLocation && !location && user ? (
+          {!isLoadingProfile && !location && user ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
@@ -715,7 +715,7 @@ export default function Explore() {
                 We couldn't find your saved address. Please enter your location to explore nearby places.
               </p>
             </div>
-          ) : (isLoadingProfile || isLoadingLocation) && user ? (
+          ) : isLoadingProfile && user ? (
             <div className="flex justify-center items-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
