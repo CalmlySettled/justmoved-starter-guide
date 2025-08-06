@@ -135,7 +135,7 @@ export function Header() {
                     ) : (
                       <div>
                         <Link to="/auth" onClick={() => setIsOpen(false)}>
-                          <Button variant="default" size="mobile" className="w-full">
+                          <Button size="mobile" className="w-full bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all">
                             Sign In
                           </Button>
                         </Link>
@@ -191,7 +191,7 @@ export function Header() {
               ) : (
                 <>
                   <Link to="/auth">
-                    <Button variant="default">
+                    <Button className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all">
                       Sign In
                     </Button>
                   </Link>
