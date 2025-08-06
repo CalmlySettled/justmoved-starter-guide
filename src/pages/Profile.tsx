@@ -50,13 +50,12 @@ const Profile = () => {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [notificationFrequency, setNotificationFrequency] = useState("weekly");
   const [locationSharing, setLocationSharing] = useState(true);
-  const [distancePriority, setDistancePriority] = useState(true);
+  
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
-      fetchUserPreferences();
     }
   }, [user]);
 
@@ -84,7 +83,6 @@ const Profile = () => {
           settling_tasks: data.settling_tasks || [],
           avatar_url: data.avatar_url || ""
         });
-        setDistancePriority(data.distance_priority ?? true);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -94,28 +92,6 @@ const Profile = () => {
     }
   };
 
-  const fetchUserPreferences = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('distance_priority')
-        .eq('user_id', user.id)
-        .maybeSingle();
-        
-      if (error) {
-        console.error('Error fetching user preferences:', error);
-        return;
-      }
-      
-      if (data) {
-        setDistancePriority(data.distance_priority ?? true);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
 
   const handleProfileUpdate = () => {
     // Refresh the profile data when preferences are updated
@@ -303,29 +279,6 @@ const Profile = () => {
     toast.error("Account deletion requires confirmation - feature coming soon");
   };
 
-  const handleDistancePriorityChange = async (enabled: boolean) => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ distance_priority: enabled })
-        .eq('user_id', user.id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      setDistancePriority(enabled);
-      toast.success(enabled ? "Distance priority enabled" : "Rating priority enabled");
-    } catch (error) {
-      console.error('Error updating distance priority:', error);
-      toast.error("Failed to update preference");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const getUserInitials = () => {
     const name = profileData.display_name || user?.email || '';
@@ -490,36 +443,6 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Recommendation Preferences Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MapPin className="h-5 w-5" />
-                <span>Recommendation Preferences</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Prioritize Closest Distance</p>
-                    <p className="text-sm text-muted-foreground">Show nearest businesses first, or prioritize highest-rated businesses</p>
-                  </div>
-                  <Switch
-                    checked={distancePriority}
-                    onCheckedChange={handleDistancePriorityChange}
-                    disabled={isSaving}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {distancePriority 
-                    ? "✓ Showing closest businesses first" 
-                    : "✓ Showing highest-rated businesses first"
-                  }
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Notifications Section */}
           <Card>
