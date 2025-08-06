@@ -32,9 +32,9 @@ export function Footer() {
             </ul>
           </div>
           
-          {/* Contact */}
+          {/* Support */}
           <div>
-            <h3 className="font-semibold mb-3">Contact</h3>
+            <h3 className="font-semibold mb-3">Support</h3>
             <ul className="space-y-2 text-background/80">
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
@@ -43,10 +43,6 @@ export function Footer() {
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
                 <span>925-437-6966</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>Bloomfield, CT</span>
               </li>
             </ul>
           </div>
