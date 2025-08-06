@@ -763,29 +763,17 @@ export default function Auth() {
             ) : (
               <form onSubmit={handleAuth} className="space-y-4">
                 {isSignUp && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Name</Label>
-                      <Input
-                        id="displayName"
-                        type="text"
-                        placeholder="Your name"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        required={isSignUp}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <AddressAutocomplete
-                        value={address}
-                        onChange={setAddress}
-                        onValidAddressSelected={setIsValidAddress}
-                        label="Address"
-                        placeholder="Enter your address..."
-                      />
-                    </div>
-                  </>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Name</Label>
+                    <Input
+                      id="displayName"
+                      type="text"
+                      placeholder="Your name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required={isSignUp}
+                    />
+                  </div>
                 )}
                 
                 <div className="space-y-2">
@@ -828,6 +816,18 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
+
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <AddressAutocomplete
+                      value={address}
+                      onChange={setAddress}
+                      onValidAddressSelected={setIsValidAddress}
+                      label="Address"
+                      placeholder="Enter your address..."
+                    />
+                  </div>
+                )}
                 
                 {!isSignUp && (
                   <div className="text-right">

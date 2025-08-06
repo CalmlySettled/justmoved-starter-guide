@@ -271,7 +271,7 @@ export function AddressAutocomplete({ value, onChange, onValidAddressSelected, p
           size="sm"
           onClick={getCurrentLocation}
           disabled={isGettingLocation}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 text-xs px-2 py-1 h-8"
         >
           {isGettingLocation ? (
             <Loader2 className="h-4 w-4 animate-spin" />
