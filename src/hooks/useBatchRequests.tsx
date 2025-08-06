@@ -19,7 +19,9 @@ class BatchRequestManager {
   private static instance: BatchRequestManager;
   private pendingRequests: Map<string, BatchRequest> = new Map();
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly batchDelay = 100; // 100ms window for batching
+  private readonly batchDelay = 2000; // 2 second window for better batching
+  private requestDeduplicator: Map<string, Promise<any>> = new Map();
+  private lastRequestTime: Map<string, number> = new Map();
 
   static getInstance(): BatchRequestManager {
     if (!BatchRequestManager.instance) {
@@ -32,20 +34,61 @@ class BatchRequestManager {
     type: BatchRequest['type'],
     body: any
   ): Promise<T> {
+    // Create deduplication key based on request content
+    const dedupeKey = `${type}-${JSON.stringify(this.normalizeBody(body))}`;
+    
+    // Check if identical request is already in progress
+    if (this.requestDeduplicator.has(dedupeKey)) {
+      console.log(`🔄 DEDUPLICATION: Reusing existing request for ${type}`);
+      return this.requestDeduplicator.get(dedupeKey) as Promise<T>;
+    }
+
+    // Check if similar request was made recently (within 5 minutes)
+    const lastRequestTime = this.lastRequestTime.get(dedupeKey);
+    if (lastRequestTime && Date.now() - lastRequestTime < 300000) {
+      console.log(`⏰ THROTTLING: Similar request made recently for ${type}`);
+      return Promise.reject(new Error('Rate limited: Similar request made recently'));
+    }
+
     return new Promise<T>((resolve, reject) => {
       const id = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      const request: BatchRequest = {
-        id,
-        type,
-        body,
-        resolve,
-        reject
-      };
+      const wrappedPromise = new Promise<T>((innerResolve, innerReject) => {
+        const request: BatchRequest = {
+          id,
+          type,
+          body,
+          resolve: (value) => {
+            this.requestDeduplicator.delete(dedupeKey);
+            this.lastRequestTime.set(dedupeKey, Date.now());
+            innerResolve(value);
+            resolve(value);
+          },
+          reject: (error) => {
+            this.requestDeduplicator.delete(dedupeKey);
+            innerReject(error);
+            reject(error);
+          }
+        };
 
-      this.pendingRequests.set(id, request);
-      this.scheduleBatch();
+        this.pendingRequests.set(id, request);
+        this.scheduleBatch();
+      });
+
+      this.requestDeduplicator.set(dedupeKey, wrappedPromise);
     });
+  }
+
+  private normalizeBody(body: any): any {
+    // Normalize coordinates to 3 decimal places for better deduplication
+    if (body.latitude && body.longitude) {
+      return {
+        ...body,
+        latitude: Number(body.latitude.toFixed(3)),
+        longitude: Number(body.longitude.toFixed(3))
+      };
+    }
+    return body;
   }
 
   private scheduleBatch() {

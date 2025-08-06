@@ -9,12 +9,14 @@ import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
+import { useRequestCache } from "@/hooks/useRequestCache";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
+import { APICostMonitor } from "@/components/APICostMonitor";
 
 import { 
   Home, 
@@ -72,6 +74,7 @@ export default function Dashboard() {
   
   const { user, loading: authLoading } = useAuth();
   const { batchInvoke } = useBatchRequests();
+  const { getCached, setCached } = useRequestCache();
   const [recommendations, setRecommendations] = useState<SavedRecommendation[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);

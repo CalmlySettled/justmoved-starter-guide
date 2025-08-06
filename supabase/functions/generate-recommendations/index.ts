@@ -60,10 +60,10 @@ function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) 
 
 // Geographic coordinate rounding for better cache efficiency - broader regions for better hits
 function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
-  // Round to ~5 mile precision for better cache hits (0.05 degrees ≈ 5.5 km)
+  // Round to ~2 mile precision for better cache hits (0.03 degrees ≈ 2 miles)
   return {
-    lat: Math.round(lat * 20) / 20,
-    lng: Math.round(lng * 20) / 20
+    lat: Math.round(lat * 33.33) / 33.33,
+    lng: Math.round(lng * 33.33) / 33.33
   };
 }
 
@@ -1799,10 +1799,13 @@ serve(async (req) => {
 
       const coordinates = { lat: latitude, lng: longitude };
       
-      // Create cache key for explore requests based on location and categories
-      const cacheKey = `explore_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
+      // Create cache key for explore requests based on rounded location and categories
+      const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
+      const cacheKey = `explore_${roundedCoords.lat.toFixed(3)}_${roundedCoords.lng.toFixed(3)}_${categories.sort().join('_')}`;
       
-      // Check for cached explore results (24 hour cache for explore)
+      console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
+      
+      // Check for cached explore results (48 hour cache for explore)
       const { data: cachedData } = await supabase
         .from('recommendations_cache')
         .select('recommendations, created_at')
@@ -1811,7 +1814,8 @@ serve(async (req) => {
         .single();
 
       if (cachedData) {
-        console.log('✅ Returning cached explore recommendations');
+        console.log('💰 EXPLORE CACHE HIT! Returning cached recommendations - NO API COSTS!');
+        trackAPIUsage('cache', categories.length);
         return new Response(
           JSON.stringify({ 
             recommendations: cachedData.recommendations,

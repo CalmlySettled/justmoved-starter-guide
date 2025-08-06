@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
+import { useRequestCache } from "@/hooks/useRequestCache";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 
 interface LocationData {
@@ -88,6 +89,7 @@ export default function Explore() {
   
   const { user } = useAuth();
   const { batchInvoke } = useBatchRequests();
+  const { getCached, setCached } = useRequestCache();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -279,8 +281,24 @@ export default function Explore() {
     try {
       const sampleCategories = ["restaurants", "coffee shops", "parks recreation"];
       
-      // First, try to get cached recommendations
-      const { data: cachedData, error: cacheError } = await supabase
+      // Check app-level cache first
+      const cacheKey = {
+        type: 'explore_popular',
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        categories: sampleCategories
+      };
+      
+      let cachedData = getCached('explore_popular', cacheKey);
+
+      if (cachedData) {
+        console.log('💰 APP CACHE HIT: Explore popular places - NO API COST!');
+        setPopularPlaces(cachedData);
+        return;
+      }
+
+      // Then try database cache
+      const { data: dbCachedData, error: cacheError } = await supabase
         .from('recommendations_cache')
         .select('recommendations, expires_at')
         .gte('expires_at', new Date().toISOString())
@@ -288,13 +306,14 @@ export default function Explore() {
         .limit(1)
         .single();
 
-      if (!cacheError && cachedData?.recommendations) {
-        console.log('✅ Using cached data for explore popular places - NO API COST!');
-        setPopularPlaces(cachedData.recommendations as any);
+      if (!cacheError && dbCachedData?.recommendations) {
+        console.log('💰 DB CACHE HIT: Explore popular places - NO API COST!');
+        setPopularPlaces(dbCachedData.recommendations as any);
+        setCached('explore_popular', cacheKey, dbCachedData.recommendations, 1800000); // Cache for 30 min
         return;
       }
 
-      console.log('❌ No valid cache found, making fresh API call for explore popular places');
+      console.log('❌ No cache found, making fresh API call for explore popular places');
       
       // Only make API call if no cache found
       const data = await batchInvoke('generate-recommendations', {
@@ -306,11 +325,14 @@ export default function Explore() {
         }
       });
       
-      setPopularPlaces(data.recommendations || {});
+      if (data?.recommendations) {
+        setPopularPlaces(data.recommendations);
+        setCached('explore_popular', cacheKey, data.recommendations, 1800000); // Cache for 30 min
+      }
     } catch (error) {
       console.error("Error loading popular places:", error);
       toast({
-        title: "Error loading recommendations",
+        title: "Error loading places",
         description: "Please try again later",
         variant: "destructive",
       });
@@ -333,7 +355,23 @@ export default function Explore() {
     setIsModalOpen(true);
     
     try {
-      // Check cache first for single category
+      // Check app-level cache first
+      const cacheKey = {
+        type: 'category',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        category: category.searchTerm
+      };
+      
+      let cachedResults = getCached('category_results', cacheKey);
+      
+      if (cachedResults) {
+        console.log('💰 APP CACHE HIT: Category results - NO API COST!');
+        setCategoryResults(cachedResults);
+        return;
+      }
+
+      // Check database cache
       const { data: cachedData, error: cacheError } = await supabase
         .from('recommendations_cache')
         .select('recommendations, expires_at')
@@ -343,8 +381,10 @@ export default function Explore() {
         .single();
 
       if (!cacheError && cachedData?.recommendations?.[category.searchTerm]) {
-        console.log('✅ Using cached data for category:', category.searchTerm, '- NO API COST!');
-        setCategoryResults(cachedData.recommendations[category.searchTerm]);
+        console.log('💰 DB CACHE HIT: Category results - NO API COST!');
+        const results = cachedData.recommendations[category.searchTerm];
+        setCategoryResults(results);
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
         return;
       }
 
@@ -358,7 +398,9 @@ export default function Explore() {
         }
       });
       
-      setCategoryResults(data.recommendations?.[category.searchTerm] || []);
+      const results = data.recommendations?.[category.searchTerm] || [];
+      setCategoryResults(results);
+      setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
     } catch (error) {
       console.error("Error loading category results:", error);
       toast({
@@ -382,7 +424,8 @@ export default function Explore() {
       return;
     }
 
-    const categoriesToSearch = specificCategory ? [specificCategory] : pack.categories;
+    // CRITICAL FIX: Don't search all categories if user clicked specific one
+    const categoriesToSearch = specificCategory ? [specificCategory] : pack.categories.slice(0, 3); // Limit to 3 categories max
     setSelectedCategory(specificCategory || pack.title);
     setSelectedThemedPack(specificCategory ? null : pack.title);
     setIsLoadingCategory(true);
@@ -391,7 +434,24 @@ export default function Explore() {
     console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
     
     try {
-      // Check cache first for themed pack categories
+      // Check app-level cache first
+      const cacheKey = {
+        type: 'themed_pack',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        categories: categoriesToSearch,
+        specificCategory
+      };
+      
+      let cachedResults = getCached('themed_pack_results', cacheKey);
+      
+      if (cachedResults) {
+        console.log('💰 APP CACHE HIT: Themed pack results - NO API COST!');
+        setCategoryResults(cachedResults);
+        return;
+      }
+
+      // Check database cache
       const { data: cachedData, error: cacheError } = await supabase
         .from('recommendations_cache')
         .select('recommendations, expires_at')
@@ -402,7 +462,7 @@ export default function Explore() {
 
       let data: any;
       if (!cacheError && cachedData?.recommendations) {
-        console.log('✅ Using cached data for themed pack - NO API COST!');
+        console.log('💰 DB CACHE HIT: Themed pack - NO API COST!');
         data = { recommendations: cachedData.recommendations };
       } else {
         console.log('❌ No cache for themed pack - making API call');
@@ -416,19 +476,22 @@ export default function Explore() {
         });
       }
       
+      let results: Business[] = [];
+      
       // If searching for a specific category, show only those results
       if (specificCategory) {
-        const categoryResults = data.recommendations?.[specificCategory] || [];
-        setCategoryResults(categoryResults.sort((a, b) => a.distance_miles - b.distance_miles));
+        results = data.recommendations?.[specificCategory] || [];
       } else {
-        // Flatten results from all categories in the pack
-        const allResults: Business[] = [];
+        // Flatten results from limited categories in the pack
         Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
+          results.push(...businesses);
         });
-        // Sort by distance
-        setCategoryResults(allResults.sort((a, b) => a.distance_miles - b.distance_miles));
       }
+      
+      // Sort by distance
+      const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
+      setCategoryResults(sortedResults);
+      setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
     } catch (error) {
       console.error("Error loading themed pack results:", error);
       toast({
