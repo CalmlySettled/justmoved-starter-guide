@@ -112,12 +112,14 @@ export default function Explore() {
           .from('profiles')
           .select('address')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        // Check if this is an OAuth redirect first, regardless of profile status
+        console.log('Profile query result:', { profile, error, hasAddress: !!profile?.address });
+
+        // Check if this is an OAuth redirect first
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('oauth') === 'true') {
-          console.log('OAuth redirect detected, profile address:', profile?.address);
+          console.log('OAuth redirect detected, profile:', profile);
           // Only show address modal for OAuth redirects when user has no address
           if (!profile?.address) {
             console.log('Showing address modal for OAuth user without address');
@@ -125,12 +127,18 @@ export default function Explore() {
             setIsLoadingProfile(false);
             return;
           } else {
-            console.log('OAuth user already has address, skipping modal');
+            console.log('OAuth user already has address, skipping modal:', profile.address);
           }
         }
 
-        if (error || !profile?.address) {
-          console.log('Profile error or no address found:', error || 'No address');
+        if (error) {
+          console.log('Profile query error:', error);
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        if (!profile?.address) {
+          console.log('No address found in profile, not showing modal for non-OAuth users');
           setIsLoadingProfile(false);
           return;
         }
