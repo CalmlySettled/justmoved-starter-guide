@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Home, Mail, Eye, EyeOff } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 import { Separator } from "@/components/ui/separator";
+import heroImage from "@/assets/hero-lifestyle.jpg";
 
 
 export default function Auth() {
@@ -587,8 +588,17 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
+      
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/85 to-primary/80" />
+      
+      <div className="relative z-10 w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <button 
             onClick={() => navigate("/")}
@@ -597,12 +607,12 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
               <Home className="h-7 w-7 text-white" />
             </div>
-            <span className="text-3xl font-bold text-foreground">CalmlySettled</span>
+            <span className="text-3xl font-bold text-white">CalmlySettled</span>
           </button>
-          <p className="text-muted-foreground">Let's personalize your move 🌍</p>
+          <p className="text-white/90">Let's personalize your move 🌍</p>
         </div>
 
-        <Card className="shadow-elegant border-border/50">
+        <Card className="shadow-2xl border-white/20 backdrop-blur-sm bg-white/95 dark:bg-black/90">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
               {isResetPassword ? "Set New Password" : (isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back"))}
