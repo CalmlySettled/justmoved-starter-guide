@@ -116,7 +116,7 @@ export default function Explore() {
 
         if (error || !profile?.address) {
           console.log('No profile address found, checking for OAuth redirect');
-          // Check if this is an OAuth redirect and user needs to set address
+          // Only show address modal for OAuth redirects when user has no address
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.get('oauth') === 'true') {
             setShowAddressModal(true);
