@@ -286,7 +286,7 @@ const Popular = () => {
                 <TrendingUp className="h-16 w-16 text-primary mx-auto" />
                 <h2 className="text-3xl font-bold">Discover What's Popular</h2>
                 <p className="text-muted-foreground">
-                  Take our quick quiz to explore trending places, hot spots, and local favorites in your area
+                  Explore trending places, hot spots, and local favorites in your area
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 my-8 opacity-60">
                   {trendingCategories.slice(0, 6).map((category) => (
@@ -301,9 +301,9 @@ const Popular = () => {
                 <Button 
                   onClick={() => window.location.href = '/onboarding'}
                   size="lg"
-                  className="mt-6"
+                  className="mt-6 bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
                 >
-                  Take the Quiz to Discover Popular Places
+                  Discover Popular Places
                 </Button>
                 <p className="text-sm text-muted-foreground">
                   Already completed the quiz? <button onClick={() => window.location.href = '/auth'} className="text-primary hover:underline">Sign in</button>
