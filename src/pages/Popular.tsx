@@ -131,11 +131,17 @@ const Popular = () => {
       }
 
       try {
+        // Check if user is still authenticated before querying profile
+        if (!user) return;
+        
         const { data: profile } = await supabase
           .from('profiles')
           .select('address')
           .eq('user_id', user.id)
           .single();
+
+        // Check again after async operation
+        if (!user) return;
 
         if (profile?.address) {
           // Geocode the saved address to get coordinates and city
@@ -148,9 +154,15 @@ const Popular = () => {
             }
           );
 
+          // Check if user is still authenticated after geocoding request
+          if (!user) return;
+
           if (response.ok) {
             const data = await response.json();
             if (data.length > 0) {
+              // Final check before setting location
+              if (!user) return;
+              
               setLocation({
                 latitude: parseFloat(data[0].lat),
                 longitude: parseFloat(data[0].lon),
