@@ -596,7 +596,7 @@ export default function Auth() {
       />
       
       {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/85 to-primary/80" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/70 via-primary/60 to-primary/50" />
       
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
