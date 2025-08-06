@@ -67,24 +67,13 @@ function roundCoordinates(lat: number, lng: number): { lat: number, lng: number 
   };
 }
 
-// Generate simplified cache key for better hit rates
-function generateSimpleCacheKey(
-  coordinates: { lat: number, lng: number },
-  categories: string[],
-  preferences: any
-): string {
-  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-  const sortedCategories = [...categories].sort().join(',');
+// Simplified cache key generation for better cache hit rates
+function generateSimpleCacheKey(lat: number, lng: number, categories: string[], mode: 'popular' | 'explore' = 'explore'): string {
+  const roundedCoords = roundCoordinates(lat, lng);
+  const sortedCategories = categories.sort().join('_');
   
-  // Create simplified preference fingerprint - only core preferences
-  const prefFingerprint = {
-    budget: preferences.budgetPreference || 'any',
-    transport: preferences.transportationStyle || 'any',
-    household: preferences.householdType || 'any',
-    priorities: (preferences.priorities || []).sort().slice(0, 3).join(',') // Top 3 priorities only
-  };
-  
-  return `${roundedCoords.lat}_${roundedCoords.lng}_${sortedCategories}_${JSON.stringify(prefFingerprint)}`;
+  // Use only location and category for cache keys since user preferences are no longer available
+  return `${mode}_${roundedCoords.lat.toFixed(3)}_${roundedCoords.lng.toFixed(3)}_${sortedCategories}`;
 }
 
 // Check if category should prioritize Yelp for data quality
@@ -1651,101 +1640,9 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   }
 }
 
-// COST-OPTIMIZED: Check cache with fuzzy geographic matching
-async function getCachedRecommendations(
-  supabase: any,
-  coordinates: { lat: number; lng: number },
-  categories: string[],
-  preferences: any
-): Promise<any[] | null> {
-  const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
-  
-  console.log(`🔍 CACHE LOOKUP: ${cacheKey}`);
-  
-  try {
-    // First try exact match
-    const { data: exactMatch, error: exactError } = await supabase
-      .from('recommendations_cache')
-      .select('recommendations, cache_key, created_at')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
+// Legacy cache functions removed - now using simplified cache keys without preferences
 
-    if (exactMatch && !exactError) {
-      trackAPIUsage('cache', categories.length);
-      const cacheAge = Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      console.log(`💰 EXACT CACHE HIT! Found ${cacheAge}d old recommendations: ${cacheKey.substring(0, 50)}...`);
-      return exactMatch.recommendations;
-    }
-
-    // If no exact match, try fuzzy geographic matching within region
-    const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-    const sortedCategories = [...categories].sort().join(',');
-    
-    const { data: fuzzyMatches, error: fuzzyError } = await supabase
-      .from('recommendations_cache')
-      .select('recommendations, cache_key, created_at')
-      .contains('categories', categories)
-      .gt('expires_at', new Date().toISOString())
-      .limit(5);
-
-    if (fuzzyMatches && fuzzyMatches.length > 0 && !fuzzyError) {
-      // Find closest match with similar preferences
-      for (const match of fuzzyMatches) {
-        const matchKey = match.cache_key;
-        if (matchKey.includes(roundedCoords.lat.toString()) && 
-            matchKey.includes(roundedCoords.lng.toString()) &&
-            matchKey.includes(sortedCategories)) {
-          trackAPIUsage('cache', categories.length);
-          const cacheAge = Math.floor((new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60 * 24));
-          console.log(`💰 FUZZY CACHE HIT! Found ${cacheAge}d old nearby recommendations`);
-          return match.recommendations;
-        }
-      }
-    }
-
-    console.log(`❌ CACHE MISS: ${cacheKey.substring(0, 50)}...`);
-    return null;
-  } catch (error) {
-    console.error('❌ CACHE ERROR:', error);
-    return null;
-  }
-}
-
-// COST-OPTIMIZED: Save recommendations with simplified cache key
-async function cacheRecommendations(
-  supabase: any,
-  coordinates: { lat: number; lng: number },
-  categories: string[],
-  preferences: any,
-  recommendations: any[]
-): Promise<void> {
-  const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
-  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-  
-  console.log(`💾 SAVING TO CACHE: ${cacheKey}`);
-  
-  try {
-    const { error } = await supabase
-      .from('recommendations_cache')
-      .upsert({
-        cache_key: cacheKey,
-        user_coordinates: `POINT(${roundedCoords.lng} ${roundedCoords.lat})`,
-        recommendations: recommendations,
-        categories: categories,
-        preferences: preferences,
-        expires_at: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
-      });
-
-    if (error) {
-      console.error('❌ CACHE SAVE FAILED:', error);
-    } else {
-      console.log(`✅ CACHED SUCCESSFULLY: ${cacheKey.substring(0, 50)}... (Will save future API costs)`);
-    }
-  } catch (error) {
-    console.error('❌ CACHE SAVE ERROR:', error);
-  }
-}
+// Legacy cache function removed - now using simplified inline caching
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -1800,8 +1697,7 @@ serve(async (req) => {
       const coordinates = { lat: latitude, lng: longitude };
       
       // Create cache key for explore requests based on rounded location and categories
-      const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
-      const cacheKey = `explore_${roundedCoords.lat.toFixed(3)}_${roundedCoords.lng.toFixed(3)}_${categories.sort().join('_')}`;
+      const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, categories, 'explore');
       
       console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
       
@@ -1873,6 +1769,72 @@ serve(async (req) => {
       }
 
       const coordinates = { lat: latitude, lng: longitude };
+      
+      // Create cache key for popular requests based on rounded location and categories
+      const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, categories, 'popular');
+      
+      console.log(`🔍 POPULAR CACHE LOOKUP: ${cacheKey}`);
+      
+      // Check for cached popular results (7 day cache for popular content)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (cachedData) {
+        console.log('💰 POPULAR CACHE HIT! Returning cached recommendations - NO API COSTS!');
+        trackAPIUsage('cache', categories.length);
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true,
+            cacheAge: Math.floor((Date.now() - new Date(cachedData.created_at).getTime()) / (1000 * 60 * 60)) // hours
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      console.log('💸 No popular cache found, generating new recommendations');
+      
+      // Generate recommendations for popular mode
+      const recommendations: { [key: string]: Business[] } = {};
+      
+      for (const category of categories) {
+        console.log(`Exploring category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates, 8000, userId);
+        
+        // Sort by rating for popular mode (highest rated first)
+        const sortedBusinesses = businesses.sort((a, b) => {
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          if (Math.abs(ratingA - ratingB) > 0.1) {
+            return ratingB - ratingA; // Higher rating first
+          }
+          // Tie-breaker: prefer closer businesses
+          return (a.distance_miles || 999) - (b.distance_miles || 999);
+        });
+        
+        recommendations[category] = sortedBusinesses;
+        console.log(`Found ${businesses.length} businesses for "${category}", ${sortedBusinesses.length} unique after deduplication`);
+      }
+
+      // Cache popular results for 7 days
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          recommendations: recommendations,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        });
+      
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
       
       // Create cache key for popular requests based on location and categories
       const cacheKey = `popular_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
@@ -1978,21 +1940,17 @@ serve(async (req) => {
     }
 
     // COST OPTIMIZATION: Check cache before expensive API calls
-    const cachePreferences = {
-      householdType: quizResponse.householdType,
-      priorities: quizResponse.priorities,
-      priorityPreferences: quizResponse.priorityPreferences,
-      transportationStyle: quizResponse.transportationStyle,
-      budgetPreference: quizResponse.budgetPreference,
-      lifeStage: quizResponse.lifeStage
-    };
+    // Note: Legacy quiz mode - simplified cache without preferences since quiz was removed
+    const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
     
-    const cachedRecommendations = await getCachedRecommendations(
-      supabase, 
-      coordinates, 
-      quizResponse.priorities || [], 
-      cachePreferences
-    );
+    const { data: cachedData } = await supabase
+      .from('recommendations_cache')
+      .select('recommendations, created_at')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+    
+    const cachedRecommendations = cachedData?.recommendations;
     
     if (cachedRecommendations) {
       console.log('💰 RETURNING CACHED RECOMMENDATIONS - NO API COSTS!');
@@ -2016,8 +1974,15 @@ serve(async (req) => {
 
     // COST OPTIMIZATION: Cache the generated recommendations to avoid future API costs
     if (coordinates && recommendations && Object.keys(recommendations).length > 0) {
-      await cacheRecommendations(
-        supabase,
+      const cacheKey = generateSimpleCacheKey(coordinates.lat, coordinates.lng, quizResponse.priorities || ['general'], 'explore');
+      
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          recommendations: recommendations,
+          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
+        });
         coordinates,
         quizResponse.priorities || [],
         cachePreferences,
