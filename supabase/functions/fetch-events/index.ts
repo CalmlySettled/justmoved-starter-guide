@@ -9,44 +9,64 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const eventbriteApiKey = Deno.env.get('EVENTBRITE_API_KEY');
+const ticketmasterApiKey = Deno.env.get('TICKETMASTER_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-interface EventbriteEvent {
+interface TicketmasterEvent {
   id: string;
-  name: {
-    text: string;
-  };
-  description: {
-    text: string;
-  };
-  start: {
-    utc: string;
-    local: string;
-  };
-  end: {
-    utc: string;
-    local: string;
-  };
-  venue: {
-    name: string;
-    address: {
-      address_1: string;
-      city: string;
-      region: string;
+  name: string;
+  info?: string;
+  dates: {
+    start: {
+      localDate: string;
+      localTime?: string;
+      dateTime?: string;
     };
-    latitude: string;
-    longitude: string;
+    end?: {
+      localDate: string;
+      localTime?: string;
+      dateTime?: string;
+    };
+  };
+  _embedded?: {
+    venues?: Array<{
+      name: string;
+      address?: {
+        line1?: string;
+        line2?: string;
+      };
+      city?: {
+        name: string;
+      };
+      state?: {
+        name: string;
+        stateCode: string;
+      };
+      location?: {
+        latitude: string;
+        longitude: string;
+      };
+    }>;
   };
   url: string;
-  logo: {
-    original: {
-      url: string;
+  images?: Array<{
+    url: string;
+    width: number;
+    height: number;
+  }>;
+  classifications?: Array<{
+    segment?: {
+      name: string;
     };
-  } | null;
-  category_id: string;
-  is_free: boolean;
+    genre?: {
+      name: string;
+    };
+  }>;
+  priceRanges?: Array<{
+    min: number;
+    max: number;
+  }>;
 }
 
 interface ProcessedEvent {
@@ -86,8 +106,112 @@ function generateCacheKey(latitude: number, longitude: number): string {
 }
 
 async function fetchEventsFromAPI(latitude: number, longitude: number): Promise<ProcessedEvent[]> {
-  // EventBrite discontinued public access to their Event Search API in 2020
-  // For now, return sample events data to demonstrate the functionality
+  if (!ticketmasterApiKey) {
+    console.warn('⚠️ TICKETMASTER_API_KEY not configured, using sample data');
+    return getSampleEvents(latitude, longitude);
+  }
+
+  try {
+    console.log(`🎟️ Fetching events from Ticketmaster for location: ${latitude}, ${longitude}`);
+    
+    // Build Ticketmaster API URL
+    const apiUrl = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
+    apiUrl.searchParams.set('apikey', ticketmasterApiKey);
+    apiUrl.searchParams.set('geoPoint', `${latitude},${longitude}`);
+    apiUrl.searchParams.set('radius', '25'); // 25 miles radius
+    apiUrl.searchParams.set('unit', 'miles');
+    apiUrl.searchParams.set('sort', 'date,asc');
+    apiUrl.searchParams.set('size', '20'); // Max 20 events
+    apiUrl.searchParams.set('includeTest', 'no');
+    
+    // Only include future events
+    const now = new Date();
+    const startDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    apiUrl.searchParams.set('startDateTime', `${startDate}T00:00:00Z`);
+
+    const response = await fetch(apiUrl.toString());
+    
+    if (!response.ok) {
+      throw new Error(`Ticketmaster API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data._embedded?.events) {
+      console.log('📭 No events found from Ticketmaster');
+      return [];
+    }
+
+    const events: ProcessedEvent[] = data._embedded.events.map((event: TicketmasterEvent) => {
+      const venue = event._embedded?.venues?.[0];
+      const venueLocation = venue?.location;
+      const venueAddress = [
+        venue?.address?.line1,
+        venue?.city?.name,
+        venue?.state?.stateCode
+      ].filter(Boolean).join(', ') || 'Address not available';
+
+      // Calculate distance if venue has coordinates
+      let distance = 0;
+      if (venueLocation?.latitude && venueLocation?.longitude) {
+        distance = calculateDistance(
+          latitude,
+          longitude,
+          parseFloat(venueLocation.latitude),
+          parseFloat(venueLocation.longitude)
+        );
+      }
+
+      // Format dates
+      const startDate = event.dates.start.dateTime || 
+        `${event.dates.start.localDate}T${event.dates.start.localTime || '19:00:00'}`;
+      const endDate = event.dates.end?.dateTime || 
+        event.dates.end?.localDate ? 
+          `${event.dates.end.localDate}T${event.dates.end.localTime || '22:00:00'}` :
+          new Date(new Date(startDate).getTime() + 3 * 60 * 60 * 1000).toISOString(); // +3 hours default
+
+      // Get category from classifications
+      const category = event.classifications?.[0]?.segment?.name?.toLowerCase() || 
+        event.classifications?.[0]?.genre?.name?.toLowerCase() || 'entertainment';
+
+      // Get event image
+      const logoUrl = event.images?.find(img => img.width >= 300)?.url || 
+        event.images?.[0]?.url;
+
+      // Check if event is free (no price ranges typically means free or TBD)
+      const isFree = !event.priceRanges || event.priceRanges.length === 0;
+
+      return {
+        id: event.id,
+        name: event.name,
+        description: event.info || `${category} event - check Ticketmaster for full details`,
+        start_date: startDate,
+        end_date: endDate,
+        venue: {
+          name: venue?.name || 'Venue TBD',
+          address: venueAddress,
+          latitude: venueLocation?.latitude ? parseFloat(venueLocation.latitude) : latitude,
+          longitude: venueLocation?.longitude ? parseFloat(venueLocation.longitude) : longitude,
+        },
+        ticket_url: event.url,
+        logo_url: logoUrl,
+        category,
+        is_free: isFree,
+        distance_miles: Math.round(distance * 10) / 10, // Round to 1 decimal
+      };
+    });
+
+    console.log(`🎟️ Found ${events.length} events from Ticketmaster`);
+    return events;
+    
+  } catch (error) {
+    console.error('❌ Error fetching from Ticketmaster:', error);
+    console.log('🔄 Falling back to sample events');
+    return getSampleEvents(latitude, longitude);
+  }
+}
+
+function getSampleEvents(latitude: number, longitude: number): ProcessedEvent[] {
   console.log(`🎭 Generating sample events for location: ${latitude}, ${longitude}`);
   
   const today = new Date();
@@ -145,7 +269,6 @@ async function fetchEventsFromAPI(latitude: number, longitude: number): Promise<
     },
   ];
 
-  console.log(`📅 Generated ${sampleEvents.length} sample events`);
   return sampleEvents;
 }
 
