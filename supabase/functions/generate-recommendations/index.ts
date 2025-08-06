@@ -1805,7 +1805,7 @@ serve(async (req) => {
       
       console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
       
-      // Check for cached explore results (24 hour cache for essentials)
+      // Check for cached explore results (180 day cache for essentials - 6 months)
       const { data: cachedData } = await supabase
         .from('recommendations_cache')
         .select('recommendations, created_at')
@@ -1849,13 +1849,13 @@ serve(async (req) => {
         console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
 
-      // Cache explore results for 24 hours
+      // Cache explore results for 180 days (6 months for essentials)
       await supabase
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
           recommendations: recommendations,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
         });
       
       return new Response(JSON.stringify({ recommendations }), {
