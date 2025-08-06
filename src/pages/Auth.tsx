@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Home, Mail, Eye, EyeOff } from "lucide-react";
@@ -24,6 +24,8 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [address, setAddress] = useState("");
+  const [isValidAddress, setIsValidAddress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
@@ -152,80 +154,8 @@ export default function Auth() {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
         if (session) {
-          console.log('🟡 AUTH - Session detected, checking for quiz data...');
-          
-          // Check if there's completed quiz data in localStorage (user took quiz before signup)
-          const storedQuizData = localStorage.getItem('onboardingQuizData');
-          const quizCompleted = localStorage.getItem('quizCompleted');
-          const backupQuizData = localStorage.getItem('onboardingQuizDataBackup');
-          
-          console.log('🟡 AUTH - Quiz data check:', { 
-            hasStoredQuizData: !!storedQuizData, 
-            quizCompleted,
-            hasBackupData: !!backupQuizData
-          });
-          
-          // Try to recover quiz data if available (primary or backup)
-          const quizDataToProcess = storedQuizData || backupQuizData;
-          
-          if (quizDataToProcess && quizCompleted) {
-            try {
-              const quizData = JSON.parse(quizDataToProcess);
-              console.log('🟡 AUTH - Parsed quiz data:', quizData);
-              
-              // Validate quiz data has required fields
-              const isValidQuizData = quizData.address && 
-                                   quizData.priorities && 
-                                   Array.isArray(quizData.priorities) && 
-                                   quizData.priorities.length > 0;
-              
-              if (isValidQuizData) {
-                console.log('🟢 AUTH - Valid quiz data found, processing after auth...');
-                
-                // Set processing flags for dashboard to handle
-                localStorage.setItem('pendingQuizProcessing', 'true');
-                localStorage.setItem('quizDataSource', storedQuizData ? 'primary' : 'backup');
-                
-                // Process quiz data immediately to avoid race conditions
-                setTimeout(async () => {
-                  await processQuizDataAfterAuth(session.user.id, quizData);
-                }, 1000);
-                
-                navigate("/dashboard");
-                return;
-              } else {
-                console.log('🔴 AUTH - Invalid quiz data structure, clearing localStorage');
-                clearQuizData();
-              }
-            } catch (error) {
-              console.error('🔴 AUTH - Error parsing quiz data:', error);
-              clearQuizData();
-            }
-          }
-          
-          // Check if user has completed onboarding in Supabase
-          console.log('Mobile Debug: Checking if user has profile data...');
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('address, priorities')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            console.log('Mobile Debug: Profile data:', profile, 'Error:', profileError);
-            
-            // If they have profile data, go to dashboard, otherwise onboarding
-            if (profile?.address && profile?.priorities && profile?.priorities.length > 0) {
-              console.log('Mobile Debug: User has profile data, navigating to dashboard');
-              navigate("/dashboard");
-            } else {
-              console.log('Mobile Debug: User has no profile data, navigating to onboarding');
-              navigate("/onboarding");
-            }
-          } catch (error) {
-            console.error('Mobile Debug: Error checking profile:', error);
-            navigate("/onboarding");
-          }
+          console.log('🟡 AUTH - Session detected, redirecting to explore...');
+          navigate("/explore");
         }
       }
     );
@@ -240,10 +170,19 @@ export default function Auth() {
     try {
       if (isSignUp) {
         // Validate and sanitize inputs
-        if (!email || !password || !displayName) {
+        if (!email || !password || !displayName || !address) {
           toast({
             title: "Error",
             description: "Please fill in all fields",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!isValidAddress) {
+          toast({
+            title: "Invalid address",
+            description: "Please select a valid address from the suggestions",
             variant: "destructive",
           });
           return;
@@ -269,20 +208,34 @@ export default function Auth() {
         }
 
         const sanitizedDisplayName = sanitizeInput(displayName);
+        const sanitizedAddress = sanitizeInput(address);
 
-        // Check if user has quiz data to determine redirect URL
-        const hasQuizData = localStorage.getItem('onboardingQuizData');
-        const redirectUrl = hasQuizData 
-          ? `${window.location.origin}/verify-email`
-          : `${window.location.origin}/verify-email`;
+        // Geocode the address to get coordinates
+        const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(sanitizedAddress)}&limit=1`, {
+          headers: { 'User-Agent': 'CalmlySettled/1.0' }
+        });
+        
+        let coordinates = { lat: null, lng: null };
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json();
+          if (geocodeData && geocodeData.length > 0) {
+            coordinates = {
+              lat: parseFloat(geocodeData[0].lat),
+              lng: parseFloat(geocodeData[0].lon)
+            };
+          }
+        }
         
         const { data, error } = await supabase.auth.signUp({
           email: email.toLowerCase().trim(),
           password,
           options: {
-            emailRedirectTo: redirectUrl,
+            emailRedirectTo: `${window.location.origin}/verify-email`,
             data: {
-              display_name: sanitizedDisplayName
+              display_name: sanitizedDisplayName,
+              address: sanitizedAddress,
+              latitude: coordinates.lat,
+              longitude: coordinates.lng
             }
           }
         });
@@ -304,20 +257,47 @@ export default function Auth() {
           }
         } else if (data.user && !data.session) {
           // User was created but needs email verification
-          // Supabase will automatically trigger our custom webhook email
           toast({
             title: "Account created!",
             description: "Please check your email (including spam folder) for a verification link to complete your registration."
           });
           setShowResendButton(true);
           
-        } else {
-          // User was created and auto-confirmed
-          toast({
-            title: "Account created!",
-            description: "Welcome! You're now signed in."
-          });
-          
+        } else if (data.user && data.session) {
+          // User was created and auto-confirmed, create profile immediately
+          try {
+            const profileData = {
+              user_id: data.user.id,
+              display_name: sanitizedDisplayName,
+              address: sanitizedAddress,
+              latitude: coordinates.lat,
+              longitude: coordinates.lng,
+              // Set sensible defaults for other fields
+              household_type: 'Not specified',
+              priorities: ['Convenience'],
+              transportation_style: 'Flexible',
+              budget_preference: 'Moderate',
+              life_stage: 'Getting settled',
+              settling_tasks: [],
+              priority_preferences: {},
+              distance_priority: true
+            };
+
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .upsert(profileData, { onConflict: 'user_id' });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            }
+
+            toast({
+              title: "Welcome to CalmlySettled!",
+              description: "Your account has been created and we're finding local recommendations for you."
+            });
+          } catch (error) {
+            console.error('Error creating profile:', error);
+          }
         }
       } else {
         // Sign in validation
@@ -382,11 +362,8 @@ export default function Auth() {
 
     setResendLoading(true);
     try {
-      // Use Supabase's resend method - this will trigger our webhook to send custom email
-      const hasQuizData = localStorage.getItem('onboardingQuizData');
-      const redirectUrl = hasQuizData 
-        ? `${window.location.origin}/verify-email`
-        : `${window.location.origin}/verify-email`;
+      // Use Supabase's resend method
+      const redirectUrl = `${window.location.origin}/verify-email`;
       
       const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -770,17 +747,29 @@ export default function Auth() {
             ) : (
               <form onSubmit={handleAuth} className="space-y-4">
                 {isSignUp && (
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Name</Label>
-                    <Input
-                      id="displayName"
-                      type="text"
-                      placeholder="Your name"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      required={isSignUp}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Name</Label>
+                      <Input
+                        id="displayName"
+                        type="text"
+                        placeholder="Your name"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        required={isSignUp}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <AddressAutocomplete
+                        value={address}
+                        onChange={setAddress}
+                        onValidAddressSelected={setIsValidAddress}
+                        label="Address"
+                        placeholder="Enter your address..."
+                      />
+                    </div>
+                  </>
                 )}
                 
                 <div className="space-y-2">
