@@ -113,12 +113,6 @@ export function Header() {
                             My Favorites
                           </Button>
                         </Link>
-                        <Link to="/account-settings" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" size="mobile" className="w-full justify-start">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Account Settings
-                          </Button>
-                        </Link>
                         <Button 
                           variant="ghost" 
                           size="mobile"
@@ -172,12 +166,6 @@ export function Header() {
                         <Link to="/favorites" className="flex items-center">
                           <Star className="h-4 w-4 mr-2" />
                           My Favorites
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/account-settings" className="flex items-center">
-                          <Settings className="h-4 w-4 mr-2" />
-                          Account Settings
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
