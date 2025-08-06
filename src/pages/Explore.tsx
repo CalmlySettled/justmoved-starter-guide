@@ -78,7 +78,7 @@ export default function Explore() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [manualLocation, setManualLocation] = useState("");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [popularPlaces, setPopularPlaces] = useState<ExploreRecommendations>({});
+  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedThemedPack, setSelectedThemedPack] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
@@ -177,7 +177,6 @@ export default function Explore() {
             };
 
             setLocation(locationData);
-            await loadPopularPlaces(locationData);
           }
         }
         
@@ -262,7 +261,6 @@ export default function Explore() {
       }
 
       setLocation(locationData);
-      await loadPopularPlaces(locationData);
     } catch (error) {
       console.error("Error getting location:", error);
       toast({
@@ -307,7 +305,6 @@ export default function Explore() {
       };
 
       setLocation(locationData);
-      await loadPopularPlaces(locationData);
     } catch (error) {
       console.error("Error geocoding location:", error);
       toast({
@@ -320,68 +317,6 @@ export default function Explore() {
     }
   };
 
-  // Load popular places for the location
-  const loadPopularPlaces = async (locationData: LocationData) => {
-    try {
-      const sampleCategories = ["restaurants", "coffee shops", "parks recreation"];
-      
-      // Check app-level cache first
-      const cacheKey = {
-        type: 'explore_popular',
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        categories: sampleCategories
-      };
-      
-      let cachedData = getCached('explore_popular', cacheKey);
-
-      if (cachedData) {
-        console.log('💰 APP CACHE HIT: Explore popular places - NO API COST!');
-        setPopularPlaces(cachedData);
-        return;
-      }
-
-      // Then try database cache
-      const { data: dbCachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', sampleCategories)
-        .limit(1)
-        .single();
-
-      if (!cacheError && dbCachedData?.recommendations) {
-        console.log('💰 DB CACHE HIT: Explore popular places - NO API COST!');
-        setPopularPlaces(dbCachedData.recommendations as any);
-        setCached('explore_popular', cacheKey, dbCachedData.recommendations, 1800000); // Cache for 30 min
-        return;
-      }
-
-      console.log('❌ No cache found, making fresh API call for explore popular places');
-      
-      // Only make API call if no cache found
-      const data = await batchInvoke('generate-recommendations', {
-        body: {
-          exploreMode: true,
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
-          categories: sampleCategories
-        }
-      });
-      
-      if (data?.recommendations) {
-        setPopularPlaces(data.recommendations);
-        setCached('explore_popular', cacheKey, data.recommendations, 1800000); // Cache for 30 min
-      }
-    } catch (error) {
-      console.error("Error loading popular places:", error);
-      toast({
-        title: "Error loading places",
-        description: "Please try again later",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Handle category selection
   const handleCategoryClick = async (category: { searchTerm: string; name: string }) => {
