@@ -560,10 +560,16 @@ export default function Auth() {
       console.log('🟡 AUTH - Google OAuth initiated, has quiz data:', !!hasQuizData);
       
       // Always redirect to dashboard - quiz processing will happen there
+      // Get redirect parameter from URL to preserve user intent
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect') || 'explore';
+      
+      console.log('🟡 AUTH - Google OAuth redirect param:', redirect);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard?redirect=${redirect}`,
         }
       });
 

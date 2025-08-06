@@ -14,6 +14,7 @@ import { Header } from "@/components/Header";
 
 import { EditPreferencesModal } from "@/components/EditPreferencesModal";
 import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
+import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 
 import { 
   Home, 
@@ -85,6 +86,8 @@ export default function Dashboard() {
   const [additionalResults, setAdditionalResults] = useState<{[category: string]: number}>({});
   const [favoriteBusinessNames, setFavoriteBusinessNames] = useState<Set<string>>(new Set());
   const lastFetchTime = useRef<number>(0);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [addressModalSource, setAddressModalSource] = useState<string | null>(null);
 
   // Memoized refresh function
   const refreshData = useCallback(async (forceRefresh = false) => {
@@ -128,6 +131,44 @@ export default function Dashboard() {
     if (!user) {
       console.log('Mobile Debug: Dashboard - No user yet, waiting...');
       return;
+    }
+
+    // Check for OAuth address capture flow
+    const urlParams = new URLSearchParams(location.search);
+    const redirectParam = urlParams.get('redirect');
+    
+    if (redirectParam && (redirectParam === 'explore' || redirectParam === 'popular')) {
+      console.log('OAuth redirect detected, checking if address capture is needed:', redirectParam);
+      
+      // Check if user has incomplete profile (no address) - this indicates OAuth signup
+      const checkProfileAndShowModal = async () => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('address')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (!profile?.address) {
+            console.log('OAuth user needs address capture, showing modal');
+            setAddressModalSource(redirectParam);
+            setShowAddressModal(true);
+            return;
+          } else {
+            // User has address, redirect to intended destination
+            console.log('OAuth user has address, redirecting to:', redirectParam);
+            if (redirectParam === 'popular') {
+              navigate('/popular');
+            } else {
+              navigate('/explore');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking profile for OAuth flow:', error);
+        }
+      };
+      
+      checkProfileAndShowModal();
     }
     
     const loadFavorites = async () => {
@@ -1736,6 +1777,19 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Address Capture Modal for OAuth users */}
+        <AddressCaptureModal
+          isOpen={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onComplete={(redirectPath) => {
+            setShowAddressModal(false);
+            if (redirectPath) {
+              navigate(redirectPath);
+            }
+          }}
+          sourceContext={addressModalSource}
+        />
       </div>
     </div>
   );
