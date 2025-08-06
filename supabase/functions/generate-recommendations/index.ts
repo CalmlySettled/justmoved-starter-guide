@@ -2038,7 +2038,7 @@ serve(async (req) => {
           recommendations: cachedRecommendations,
           recommendationEngine: 'standard'
         }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
     } else {
