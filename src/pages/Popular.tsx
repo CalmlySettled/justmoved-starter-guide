@@ -113,6 +113,15 @@ const Popular = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
+  // Clear all data when user signs out
+  useEffect(() => {
+    if (!user) {
+      setLocation(null);
+      setEvents([]);
+      setEventsLoading(false);
+    }
+  }, [user]);
+
   // Load saved location on component mount - only for authenticated users
   useEffect(() => {
     const loadLocation = async () => {
@@ -206,12 +215,24 @@ const Popular = () => {
       
       setEventsLoading(true);
       try {
+        // Check if user is still authenticated before making API call
+        if (!user) {
+          setEventsLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.functions.invoke('fetch-events', {
           body: {
             latitude: location.latitude,
             longitude: location.longitude
           }
         });
+
+        // Check again after async operation in case user signed out
+        if (!user) {
+          setEventsLoading(false);
+          return;
+        }
 
         if (error) {
           console.error('Error fetching events:', error);
