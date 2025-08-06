@@ -78,7 +78,14 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
       }
 
       // Update user profile with address
-      const { error } = await supabase
+      console.log('Attempting to save address:', { 
+        userId: user.id, 
+        address, 
+        coordinates,
+        sourceContext 
+      });
+
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
@@ -88,11 +95,17 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select();
+
+      console.log('Profile upsert result:', { profileData, error });
 
       if (error) {
+        console.error('Profile upsert error:', error);
         throw error;
       }
+
+      console.log('Address saved successfully to profile:', profileData);
 
       toast({
         title: "Address saved!",
@@ -174,7 +187,15 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
           }
 
           // Update profile with location
-          const { error } = await supabase
+          console.log('Attempting to save location:', { 
+            userId: user.id, 
+            address: addressFromCoords, 
+            latitude, 
+            longitude,
+            sourceContext 
+          });
+
+          const { data: profileData, error } = await supabase
             .from('profiles')
             .upsert({
               user_id: user.id,
@@ -184,11 +205,17 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
               updated_at: new Date().toISOString(),
             }, {
               onConflict: 'user_id'
-            });
+            })
+            .select();
+
+          console.log('Profile location upsert result:', { profileData, error });
 
           if (error) {
+            console.error('Profile location upsert error:', error);
             throw error;
           }
+
+          console.log('Location saved successfully to profile:', profileData);
 
           toast({
             title: "Location saved!",

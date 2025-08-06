@@ -88,6 +88,7 @@ export default function Explore() {
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [sourceContext, setSourceContext] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { batchInvoke } = useBatchRequests();
@@ -120,10 +121,11 @@ export default function Explore() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('oauth') === 'true') {
           console.log('OAuth redirect detected, profile:', profile);
-          // Only show address modal for OAuth redirects when user has no address
+          // Always show address modal for OAuth redirects when user has no address
           if (!profile?.address) {
             console.log('Showing address modal for OAuth user without address');
             setShowAddressModal(true);
+            setSourceContext("oauth");
             setIsLoadingProfile(false);
             return;
           } else {
@@ -809,7 +811,7 @@ export default function Explore() {
           // Reload the component to fetch user profile with new address
           window.location.reload();
         }}
-        sourceContext="oauth"
+        sourceContext={sourceContext}
       />
     </div>
   );
