@@ -599,7 +599,7 @@ export default function Auth() {
             </div>
             <span className="text-3xl font-bold text-foreground">CalmlySettled</span>
           </button>
-          <p className="text-muted-foreground">Welcome to your neighborhood guide</p>
+          <p className="text-muted-foreground">Let's personalize your move 🌍</p>
         </div>
 
         <Card className="shadow-elegant border-border/50">
