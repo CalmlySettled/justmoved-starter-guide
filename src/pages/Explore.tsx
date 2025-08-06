@@ -152,8 +152,10 @@ export default function Explore() {
           return;
         }
 
-        // Set loading state while geocoding saved address
+        // Set loading state immediately when we detect saved address
         setIsLoadingLocation(true);
+        // Keep profile loading true until we transition to location loading
+        // setIsLoadingProfile(false) will be called in finally block
         
         // Geocode the stored address to get coordinates
         const response = await fetch(
