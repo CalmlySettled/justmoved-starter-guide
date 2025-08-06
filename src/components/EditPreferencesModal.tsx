@@ -199,9 +199,9 @@ export function EditPreferencesModal({ userProfile, onProfileUpdate }: EditPrefe
 
       setOpen(false);
       
-      // Wait a moment for recommendations to be saved, then refresh Dashboard
+      // Wait a moment for recommendations to be saved, then refresh explore
       setTimeout(() => {
-        console.log('🔄 Triggering Dashboard refresh...');
+        console.log('🔄 Triggering explore refresh...');
         onProfileUpdate();
       }, 2000);
     } catch (error) {

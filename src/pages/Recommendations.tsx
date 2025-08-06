@@ -512,7 +512,7 @@ export default function Recommendations() {
 
       toast({
         title: "Recommendation saved!",
-        description: `${business.name} has been saved to your dashboard.`,
+        description: `${business.name} has been saved to your favorites.`,
       });
     } catch (error: any) {
       console.error('Error saving recommendation:', error);
@@ -718,10 +718,10 @@ export default function Recommendations() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/explore")}
               >
                 <Bookmark className="h-4 w-4 mr-2" />
-                View Dashboard
+                Explore More
               </Button>
             </div>
           )}

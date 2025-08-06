@@ -37,7 +37,7 @@ export default function VerifyEmail() {
             
             // Redirect after short delay
             setTimeout(() => {
-              navigate('/dashboard', { replace: true });
+              navigate('/explore', { replace: true });
             }, 1500);
             
             // Clean up subscription
@@ -57,7 +57,7 @@ export default function VerifyEmail() {
             // Don't set pendingQuizProcessing flag here - let Auth.tsx handle it
             
             setTimeout(() => {
-              navigate('/dashboard', { replace: true });
+              navigate('/explore', { replace: true });
             }, 1500);
           } else {
             // Check for URL errors
@@ -117,7 +117,7 @@ export default function VerifyEmail() {
           {verificationStatus === 'success' && (
             <div className="flex items-center justify-center space-x-2 text-green-600">
               <CheckCircle className="h-4 w-4" />
-              <span>Redirecting to dashboard...</span>
+              <span>Redirecting to explore...</span>
             </div>
           )}
           

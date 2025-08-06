@@ -133,7 +133,7 @@ export default function Auth() {
       
       toast({
         title: "Profile Processing",
-        description: "Your profile was saved but there was an issue generating recommendations. Please refresh your dashboard.",
+        description: "Your profile was saved but there was an issue generating recommendations. Please try exploring businesses.",
         variant: "destructive"
       });
     }
@@ -559,7 +559,7 @@ export default function Auth() {
       
       console.log('🟡 AUTH - Google OAuth initiated, has quiz data:', !!hasQuizData);
       
-      // Always redirect to dashboard - quiz processing will happen there
+      // Always redirect to explore page
       // Get redirect parameter from URL to preserve user intent
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect') || 'explore';

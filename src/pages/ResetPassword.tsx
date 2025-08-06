@@ -108,8 +108,8 @@ const ResetPassword = () => {
 
       // Toast notification removed per user request
 
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Redirect to explore page
+      navigate("/explore");
       
     } catch (error: any) {
       console.error('Password reset error:', error);

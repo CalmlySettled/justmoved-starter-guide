@@ -97,7 +97,7 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
 
       // Category removed notification removed per user request
 
-      onNewRecommendations(); // Refresh the dashboard
+      onNewRecommendations(); // Refresh the explore results
     } catch (error) {
       console.error('Error removing category:', error);
       // Error notification removed per user request

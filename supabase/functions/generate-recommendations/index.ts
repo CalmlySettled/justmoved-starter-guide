@@ -2772,7 +2772,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         const specificSearchTerms = getSubPreferenceSearchTerms(priority, subPref);
         
         for (const searchTerm of specificSearchTerms) {
-          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} businesses for sub-preference "${subPref}" with search term "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2800,7 +2800,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
           console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
           foundMatch = true;
           
-          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse);
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2834,7 +2834,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     ];
     
     for (const category of defaultCategories) {
-      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse);
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse, exploreMode);
       if (businesses.length > 0) {
         recommendations[category.name] = businesses;
       }

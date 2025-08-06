@@ -217,13 +217,13 @@ const Profile = () => {
 
           if (recError) {
             console.error('Error generating new recommendations:', recError);
-            toast.error('Profile saved but failed to update recommendations. Please visit the dashboard to regenerate.');
+            toast.error('Profile saved but failed to update recommendations. Please explore to find new businesses.');
           } else {
             toast.success('Profile updated and new recommendations generated for your new location!');
           }
         } catch (recError) {
           console.error('Error calling recommendation service:', recError);
-          toast.error('Profile saved but failed to update recommendations. Please visit the dashboard to regenerate.');
+          toast.error('Profile saved but failed to update recommendations. Please explore to find new businesses.');
         }
       } else {
         toast.success('Profile updated successfully');

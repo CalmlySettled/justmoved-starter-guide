@@ -320,22 +320,22 @@ export default function OnboardingQuiz() {
 
            if (generateError) {
              console.error('🔴 Error generating recommendations:', generateError);
-             // Don't throw - still redirect to dashboard with toast
+             // Don't throw - still redirect to explore with toast
              toast({
                title: "Profile saved!",
-               description: "There was an issue generating recommendations. Please try refreshing your dashboard.",
+               description: "There was an issue generating recommendations. Please try exploring businesses.",
                variant: "destructive"
              });
            } else {
              console.log('🟢 Recommendations generated successfully:', recsData);
              toast({
                title: "Profile complete!",
-               description: "Your personalized recommendations are ready on your dashboard.",
+               description: "Your personalized recommendations are ready. Explore to see local businesses!",
              });
            }
 
-          // Redirect to dashboard
-          navigate("/dashboard");
+          // Redirect to explore page
+          navigate("/explore");
           
         } catch (error) {
           console.error('Error saving authenticated user profile:', error);
@@ -631,7 +631,7 @@ export default function OnboardingQuiz() {
                   <h3 className="text-xl font-semibold">You're all set!</h3>
                   <p className="text-muted-foreground">
                     We'll create your personalized guide based on your location and priorities. 
-                    You can always refine your preferences later from your dashboard.
+                    You can always refine your preferences later from your profile.
                   </p>
                   <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                     <p className="text-sm font-medium">Your selections:</p>
