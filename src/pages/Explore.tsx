@@ -565,7 +565,7 @@ export default function Explore() {
                 Get started to find your nearby essentials
               </p>
               <Button 
-                onClick={() => window.location.href = '/onboarding'}
+                onClick={() => window.location.href = '/auth?mode=signup&redirect=explore'}
                 size="sm"
                 className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
               >

@@ -28,7 +28,7 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col gap-6 justify-center items-center">
-          <Link to="/auth?mode=signup">
+          <Link to="/auth?mode=signup&redirect=explore">
             <Button 
               variant="hero" 
               size="lg"

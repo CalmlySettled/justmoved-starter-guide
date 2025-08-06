@@ -143,7 +143,15 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirect = urlParams.get('redirect');
+        
+        // Redirect based on the context they came from
+        if (redirect === 'popular') {
+          navigate("/popular");
+        } else {
+          navigate("/explore"); // Default to explore for all other cases
+        }
       }
     };
     checkUser();
@@ -154,8 +162,16 @@ export default function Auth() {
         console.log('Auth state change event:', event, 'Session:', !!session);
         
         if (session) {
-          console.log('🟡 AUTH - Session detected, redirecting to explore...');
-          navigate("/explore");
+          console.log('🟡 AUTH - Session detected, checking redirect...');
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirect = urlParams.get('redirect');
+          
+          // Redirect based on the context they came from
+          if (redirect === 'popular') {
+            navigate("/popular");
+          } else {
+            navigate("/explore"); // Default to explore for all other cases
+          }
         }
       }
     );

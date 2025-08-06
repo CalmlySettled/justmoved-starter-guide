@@ -299,7 +299,7 @@ const Popular = () => {
                   ))}
                 </div>
                 <Button 
-                  onClick={() => window.location.href = '/onboarding'}
+                  onClick={() => window.location.href = '/auth?mode=signup&redirect=popular'}
                   size="lg"
                   className="mt-6 bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
                 >
