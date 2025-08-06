@@ -2091,14 +2091,7 @@ serve(async (req) => {
         recommendations,
         fromCache: false,
         costOptimized: true,
-        recommendationEngine,
-        apiStats: {
-          yelpCalls: apiUsageStats.yelpCalls,
-          googleCalls: apiUsageStats.googleCalls,
-          cacheHits: apiUsageStats.cacheHits,
-          estimatedCost: apiUsageStats.estimatedCost,
-          costSavings: apiUsageStats.costSavings
-        }
+        recommendationEngine
       }),
       {
         status: 200,
