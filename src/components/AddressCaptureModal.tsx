@@ -284,15 +284,17 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
                 Use My Current Location
               </Button>
 
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                disabled={loading}
-                className="w-full text-muted-foreground"
-              >
-                <SkipForward className="mr-2 h-4 w-4" />
-                Skip for now
-              </Button>
+              {sourceContext !== "oauth" && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  disabled={loading}
+                  className="w-full text-muted-foreground"
+                >
+                  <SkipForward className="mr-2 h-4 w-4" />
+                  Skip for now
+                </Button>
+              )}
             </div>
           </div>
         </div>
