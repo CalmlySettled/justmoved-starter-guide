@@ -328,22 +328,6 @@ const Profile = () => {
           </Card>
 
 
-          {/* Settling Progress */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Settling Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-center text-muted-foreground">
-                  Your settling tasks and progress will appear here
-                </div>
-                <Button variant="outline" className="w-full">
-                  View Settling Tasks
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
