@@ -2086,6 +2086,8 @@ serve(async (req) => {
       console.warn('No userId provided - recommendations will not be saved to database');
     }
 
+    console.log('About to return response...');
+    
     return new Response(
       JSON.stringify({ 
         recommendations,
