@@ -538,37 +538,34 @@ const PopularCategory = () => {
                           </div>
                         
                           <div className="space-y-2">
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <MapPin className="mr-1 h-3 w-3" />
-                              <span className="line-clamp-1">{business.address}</span>
-                            </div>
+                            <a 
+                              href={getGoogleMapsUrl(business.address)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                            >
+                              <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                              <span className="line-clamp-1 hover:underline">{business.address}</span>
+                            </a>
                             
                             <div className="text-sm font-medium text-primary">
                               {business.distance_miles?.toFixed(1)} miles away
                             </div>
                           </div>
                         
-                        <div className="mt-4 flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => window.open(getGoogleMapsUrl(business.address), '_blank')}
-                          >
-                            <MapPin className="mr-1 h-3 w-3" />
-                            Directions
-                          </Button>
-                          
-                          {business.website && (
+                        {business.website && (
+                          <div className="mt-4">
                             <Button 
                               variant="outline" 
                               size="sm"
+                              className="w-full"
                               onClick={() => window.open(business.website, '_blank')}
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <ExternalLink className="mr-1 h-3 w-3" />
+                              Website
                             </Button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
