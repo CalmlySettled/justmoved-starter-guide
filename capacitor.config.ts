@@ -4,10 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.calmlysettled.justmoved',
   appName: 'justmoved-starter-guide',
   webDir: 'dist',
-  server: {
-    url: 'https://calmlysettled.com',
-    cleartext: true
-  },
+  // server: {
+  //   url: 'https://calmlysettled.com',
+  //   cleartext: true
+  // },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
