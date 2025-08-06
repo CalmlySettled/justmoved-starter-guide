@@ -633,7 +633,7 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
   return strategies;
 }
 
-// COST-OPTIMIZED Google Places API integration with FieldMasks and Session Tokens
+// ENHANCED: Google Places API integration with quota management and fallback
 async function searchGooglePlaces(
   category: string,
   latitude: number,
@@ -648,7 +648,7 @@ async function searchGooglePlaces(
     return [];
   }
   
-  console.log('Google Places API key found, using advanced cost-optimized search...');
+  console.log('Google Places API key found, using quota-aware search...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
@@ -662,7 +662,7 @@ async function searchGooglePlaces(
   console.log(`Using session token: ${sessionToken.substring(0, 8)}...`);
   
   try {
-    console.log(`Advanced cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
+    console.log(`Enhanced quota-aware search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
     
     // Execute limited search strategies with FieldMasks
     for (const strategy of searchStrategies) {
@@ -692,6 +692,13 @@ async function searchGooglePlaces(
 
       if (!response.ok) {
         console.error('Google Places API error:', response.status, response.statusText);
+        
+        // Check for quota exceeded errors
+        if (response.status === 429 || response.status === 403) {
+          const errorText = await response.text();
+          console.error('Google Places quota/permission error:', errorText);
+          throw new Error(`GOOGLE_QUOTA_EXCEEDED: ${response.status} - ${errorText}`);
+        }
         continue;
       }
 
@@ -702,6 +709,12 @@ async function searchGooglePlaces(
         console.error(`Google Places API returned status: ${data.status}`);
         if (data.error_message) {
           console.error(`Error message: ${data.error_message}`);
+        }
+        
+        // Check for quota-related status codes
+        if (data.status === 'OVER_QUERY_LIMIT' || data.status === 'REQUEST_DENIED') {
+          console.error('Google Places quota exceeded or permission denied');
+          throw new Error(`GOOGLE_QUOTA_EXCEEDED: ${data.status} - ${data.error_message}`);
         }
       }
 
@@ -811,8 +824,15 @@ async function searchGooglePlaces(
     console.log(`Cost-optimized search completed: ${businesses.length} businesses processed`);
     return businesses.filter(b => b.name && b.address);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching from Google Places API:', error);
+    
+    // Re-throw quota exceeded errors so they can be caught and handled by fallback logic
+    if (error.message && error.message.includes('GOOGLE_QUOTA_EXCEEDED')) {
+      throw error;
+    }
+    
+    // For other errors, return empty array
     return [];
   }
 }
@@ -1021,7 +1041,7 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
   return deduplicatedBusinesses;
 }
 
-// COST-OPTIMIZED: Smart business search with selective API routing
+// ENHANCED: Smart business search with API quota fallback system
 async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
@@ -1030,30 +1050,81 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
   let businesses: Business[] = [];
+  let fallbackUsed = false;
   
   // Smart API routing: Use Yelp for consumer businesses, Google for civic/institutional
   if (shouldUseYelpPrimary(category)) {
     console.log(`Using Yelp as primary for consumer category: "${category}"`);
     
-    // Search Yelp first
-    const yelpBusinesses = await searchYelp(category, coordinates.lat, coordinates.lng, optimalRadius, 15);
-    console.log(`Yelp found ${yelpBusinesses.length} businesses`);
-    
-    // If Yelp results are insufficient, supplement with Google Places
-    if (yelpBusinesses.length < 8) {
-      console.log(`Supplementing with Google Places (Yelp returned ${yelpBusinesses.length} businesses)`);
-      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
-      console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
+    try {
+      // Search Yelp first
+      const yelpBusinesses = await searchYelp(category, coordinates.lat, coordinates.lng, optimalRadius, 15);
+      console.log(`Yelp found ${yelpBusinesses.length} businesses`);
       
-      // Deduplicate across APIs and combine
-      businesses = deduplicateAcrossAPIs(yelpBusinesses, googleBusinesses);
-    } else {
-      businesses = yelpBusinesses;
+      // If Yelp results are insufficient, supplement with Google Places
+      if (yelpBusinesses.length < 8) {
+        console.log(`Supplementing with Google Places (Yelp returned ${yelpBusinesses.length} businesses)`);
+        
+        try {
+          const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+          console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
+          
+          // Deduplicate across APIs and combine
+          businesses = deduplicateAcrossAPIs(yelpBusinesses, googleBusinesses);
+        } catch (error: any) {
+          console.log(`Google Places fallback failed for "${category}": ${error.message}`);
+          if (error.message.includes('GOOGLE_QUOTA_EXCEEDED')) {
+            console.log('Google Places quota exceeded - continuing with Yelp results only');
+            fallbackUsed = true;
+          }
+          businesses = yelpBusinesses; // Use Yelp results only
+        }
+      } else {
+        businesses = yelpBusinesses;
+      }
+    } catch (error: any) {
+      console.log(`Yelp search failed for "${category}": ${error.message}`);
+      // If Yelp fails, try Google Places as backup
+      try {
+        console.log(`Attempting Google Places fallback for consumer category: "${category}"`);
+        businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+        console.log(`Google Places fallback found ${businesses.length} businesses`);
+        fallbackUsed = true;
+      } catch (googleError: any) {
+        console.log(`Both APIs failed for "${category}": ${googleError.message}`);
+        businesses = []; // Will trigger generic fallback below
+      }
     }
   } else {
     console.log(`Using Google Places as primary for civic/institutional category: "${category}"`);
-    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
-    console.log(`Google Places found ${businesses.length} businesses`);
+    
+    try {
+      businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+      console.log(`Google Places found ${businesses.length} businesses`);
+    } catch (error: any) {
+      console.log(`Google Places failed for "${category}": ${error.message}`);
+      
+      if (error.message.includes('GOOGLE_QUOTA_EXCEEDED')) {
+        console.log('🚨 Google Places quota exceeded - attempting Yelp fallback');
+        fallbackUsed = true;
+        
+        try {
+          // Try Yelp as fallback for Google Places categories
+          businesses = await searchYelp(category, coordinates.lat, coordinates.lng, optimalRadius, 15);
+          console.log(`✅ Yelp fallback found ${businesses.length} businesses for "${category}"`);
+        } catch (yelpError: any) {
+          console.log(`Yelp fallback also failed for "${category}": ${yelpError.message}`);
+          businesses = []; // Will trigger generic fallback below
+        }
+      } else {
+        businesses = []; // Will trigger generic fallback below
+      }
+    }
+  }
+  
+  // Log if fallback was used for monitoring
+  if (fallbackUsed) {
+    console.log(`⚠️ FALLBACK USED for "${category}" - API quota management active`);
   }
   
   // Apply deduplication to remove same-name businesses within 5 miles
