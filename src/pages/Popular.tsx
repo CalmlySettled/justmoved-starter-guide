@@ -305,9 +305,6 @@ const Popular = () => {
                 >
                   Discover Popular Places
                 </Button>
-                <p className="text-sm text-muted-foreground">
-                  Already completed the quiz? <button onClick={() => window.location.href = '/auth'} className="text-primary hover:underline">Sign in</button>
-                </p>
               </div>
             </div>
           )}
