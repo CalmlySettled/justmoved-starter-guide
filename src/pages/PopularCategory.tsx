@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Phone, Star, ExternalLink, ArrowLeft, Heart } from "lucide-react";
+import { MapPin, Star, ExternalLink, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -527,11 +527,11 @@ const PopularCategory = () => {
                               disabled={favoritingBusinesses.has(business.name)}
                               className="p-1 hover:bg-background/80"
                             >
-                              <Heart 
+                              <Star 
                                 className={`h-4 w-4 transition-colors ${
                                   favoriteBusinesses.has(business.name)
-                                    ? 'fill-red-500 text-red-500' 
-                                    : 'text-muted-foreground hover:text-red-500'
+                                    ? 'fill-current text-yellow-500' 
+                                    : 'text-muted-foreground hover:text-yellow-500'
                                 }`} 
                               />
                             </Button>
@@ -541,29 +541,11 @@ const PopularCategory = () => {
                             <div className="flex items-center text-sm text-muted-foreground">
                               <MapPin className="mr-1 h-3 w-3" />
                               <span className="line-clamp-1">{business.address}</span>
-                              <span className="ml-auto text-xs">
-                                {business.distance_miles?.toFixed(1)} mi
-                              </span>
                             </div>
                             
-                            {business.phone && (
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Phone className="mr-1 h-3 w-3" />
-                                <a 
-                                  href={`tel:${business.phone}`}
-                                  className="hover:text-primary transition-colors"
-                                >
-                                  {business.phone}
-                                </a>
-                              </div>
-                            )}
-                            
-                            {business.rating && (
-                              <div className="flex items-center text-sm">
-                                <Star className="mr-1 h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span>{business.rating.toFixed(1)}</span>
-                              </div>
-                            )}
+                            <div className="text-sm font-medium text-primary">
+                              {business.distance_miles?.toFixed(1)} miles away
+                            </div>
                           </div>
                         
                         <div className="mt-4 flex gap-2">
