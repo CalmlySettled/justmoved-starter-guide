@@ -551,21 +551,7 @@ const PopularCategory = () => {
                             <div className="text-sm font-medium text-primary">
                               {business.distance_miles?.toFixed(1)} miles away
                             </div>
-                          </div>
-                        
-                        {business.website && (
-                          <div className="mt-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="w-full"
-                              onClick={() => window.open(business.website, '_blank')}
-                            >
-                              <ExternalLink className="mr-1 h-3 w-3" />
-                              Website
-                            </Button>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
