@@ -584,11 +584,6 @@ export default function Recommendations() {
 
         console.log('Successfully updated favorite status to:', newFavoriteStatus);
 
-        // Track interaction for AI learning
-        if (newFavoriteStatus) {
-          await trackUserInteraction(business, category, 'favorite');
-        }
-
         toast({
           title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
           description: `${business.name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
@@ -634,29 +629,6 @@ export default function Recommendations() {
         newSet.delete(key);
         return newSet;
       });
-    }
-  };
-
-  // Track user interactions for AI learning
-  const trackUserInteraction = async (business: Business, category: string, interactionType: 'favorite' | 'call' | 'visit' | 'view') => {
-    if (!user) return;
-
-    try {
-      // Update interaction count for this business
-      const { error } = await supabase
-        .rpc('increment_interaction', { 
-          p_user_id: user.id,
-          p_business_name: business.name,
-          p_category: category
-        });
-
-      if (error) {
-        console.error('Error tracking interaction:', error);
-      } else {
-        console.log(`✅ Tracked ${interactionType} interaction for ${business.name}`);
-      }
-    } catch (error) {
-      console.error('Error in trackUserInteraction:', error);
     }
   };
 
