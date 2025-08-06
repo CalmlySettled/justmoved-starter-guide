@@ -152,6 +152,9 @@ export default function Explore() {
           return;
         }
 
+        // Set loading state while geocoding saved address
+        setIsLoadingLocation(true);
+        
         // Geocode the stored address to get coordinates
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
@@ -175,6 +178,7 @@ export default function Explore() {
             await loadPopularPlaces(locationData);
           }
         }
+        setIsLoadingLocation(false);
       } catch (error) {
         console.error('Error loading user location:', error);
       } finally {
@@ -678,7 +682,7 @@ export default function Explore() {
           )}
 
           {/* Location Section */}
-          {!isLoadingProfile && !location && user ? (
+          {!isLoadingProfile && !isLoadingLocation && !location && user ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
@@ -708,6 +712,10 @@ export default function Explore() {
               <p className="text-sm text-muted-foreground text-center">
                 We couldn't find your saved address. Please enter your location to explore nearby places.
               </p>
+            </div>
+          ) : (isLoadingProfile || isLoadingLocation) && user ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
             <div className="space-y-4"></div>
