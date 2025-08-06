@@ -1805,7 +1805,7 @@ serve(async (req) => {
       
       console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
       
-      // Check for cached explore results (48 hour cache for explore)
+      // Check for cached explore results (24 hour cache for essentials)
       const { data: cachedData } = await supabase
         .from('recommendations_cache')
         .select('recommendations, created_at')
@@ -1877,7 +1877,7 @@ serve(async (req) => {
       // Create cache key for popular requests based on location and categories
       const cacheKey = `popular_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
       
-      // Check for cached popular results (24 hour cache for popular)
+      // Check for cached popular results (7 day cache for seasonal relevance)
       const { data: cachedData } = await supabase
         .from('recommendations_cache')
         .select('recommendations, created_at')
@@ -1886,7 +1886,8 @@ serve(async (req) => {
         .single();
 
       if (cachedData) {
-        console.log('✅ Returning cached popular recommendations');
+        console.log('✅ Returning cached popular recommendations (7-day seasonal cache)');
+        trackAPIUsage('cache', categories.length);
         return new Response(
           JSON.stringify({ 
             recommendations: cachedData.recommendations,
@@ -1920,13 +1921,13 @@ serve(async (req) => {
         console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
 
-      // Cache popular results for 24 hours
+      // Cache popular results for 7 days (seasonal relevance for trending places)
       await supabase
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
           recommendations: recommendations,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days for seasonal trends
         });
       
       return new Response(JSON.stringify({ recommendations }), {
