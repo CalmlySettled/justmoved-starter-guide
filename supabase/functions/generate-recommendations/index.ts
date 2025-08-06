@@ -753,7 +753,7 @@ async function searchGooglePlaces(
           return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
         }
       })
-      .slice(0, 15); // REDUCED from 30 to 15 businesses
+      .slice(0, exploreMode ? 5 : 15); // EXPLORE: Only 5 closest, POPULAR: 15 businesses
 
     console.log(`Processing top ${topBusinesses.length} businesses to minimize API costs`);
 
@@ -764,18 +764,20 @@ async function searchGooglePlaces(
         let website = '';
         let phone = '';
         
-        // COST REDUCTION: Only fetch photos for highly rated businesses (4.0+)
-        if (place.photos && place.photos.length > 0 && (place.rating || 0) >= 4.0) {
+        // EXPLORE MODE: Fetch photos for ALL businesses (no rating filter)
+        // POPULAR MODE: Only fetch photos for highly rated businesses (4.0+)
+        if (place.photos && place.photos.length > 0 && (exploreMode || (place.rating || 0) >= 4.0)) {
           const photoReference = place.photos[0].photo_reference;
           // COST OPTIMIZATION: Use smaller image size and session token for photos
           imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-          console.log(`→ Fetching optimized photo for high-rated business: ${place.name}`);
+          console.log(`→ Fetching optimized photo for business: ${place.name}`);
         } else {
           console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
-        // COST REDUCTION: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
-        if (place.place_id && (place.rating || 0) >= 4.2) {
+        // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
+        // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
+        if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
           try {
             // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
             const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
@@ -1120,11 +1122,22 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
   }
   
-  // Apply relevance scoring and sort by score (highest first)
-  if (userPreferences && filteredBusinesses.length > 0) {
-    // Use distance-heavy scoring for Dashboard recommendations
-    const scoringMode = exploreMode ? 'distance-heavy' : 'distance-heavy'; // Dashboard always uses distance-heavy
-    console.log(`Applying ${scoringMode} relevance scoring to ${filteredBusinesses.length} businesses`);
+  // EXPLORE MODE: Simple distance-only sorting (no complex scoring)
+  // POPULAR MODE: Apply relevance scoring with ratings
+  if (exploreMode) {
+    console.log(`EXPLORE MODE: Sorting ${filteredBusinesses.length} businesses by distance only (no rating calculations)`);
+    
+    // Simple distance-only sorting for explore mode
+    filteredBusinesses.sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+    
+    console.log(`Top 5 closest businesses:`);
+    filteredBusinesses.slice(0, 5).forEach((business, index) => {
+      console.log(`${index + 1}. ${business.name} - Distance: ${business.distance_miles}mi`);
+    });
+  } else if (userPreferences && filteredBusinesses.length > 0) {
+    // Use distance-heavy scoring for Popular mode recommendations
+    const scoringMode = 'distance-heavy';
+    console.log(`POPULAR MODE: Applying ${scoringMode} relevance scoring to ${filteredBusinesses.length} businesses`);
     
     // Calculate relevance score for each business
     filteredBusinesses.forEach(business => {
