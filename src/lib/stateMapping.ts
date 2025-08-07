@@ -139,13 +139,27 @@ export const medicalCategories = [
 
 /**
  * Get the US News Health URL path for a given state
- * @param location - The location data containing city information
+ * @param location - The location data containing city and state information
  * @returns The US News Health URL path or null if state cannot be determined
  */
-export function getUSNewsStatePath(location: { city?: string; address?: string }): string | null {
+export function getUSNewsStatePath(location: { city?: string; address?: string; state?: string }): string | null {
+  console.log('Attempting to find state from location data:', location);
+  
+  // First priority: use the state field directly if available
+  if (location.state) {
+    const normalizedState = location.state.toLowerCase();
+    console.log('Using state field directly:', normalizedState);
+    const statePath = stateToUSNewsPath[normalizedState];
+    if (statePath) {
+      console.log('Found state path from state field:', statePath);
+      return statePath;
+    }
+  }
+  
+  // Fallback: try to extract from city or address string
   const locationString = location.city || location.address;
   if (!locationString) {
-    console.log('No city or address found in location data:', location);
+    console.log('No city, address, or state found in location data:', location);
     return null;
   }
   
@@ -154,7 +168,7 @@ export function getUSNewsStatePath(location: { city?: string; address?: string }
   // Try multiple approaches to extract state
   const locationStr = locationString.toLowerCase();
   
-  // First, check if any state name/abbreviation is contained in the location string
+  // Check if any state name/abbreviation is contained in the location string
   for (const [key, value] of Object.entries(stateToUSNewsPath)) {
     if (locationStr.includes(key)) {
       console.log(`Found state "${key}" in location string, mapping to: ${value}`);

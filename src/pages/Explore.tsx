@@ -20,6 +20,7 @@ interface LocationData {
   latitude: number;
   longitude: number;
   city?: string;
+  state?: string;
 }
 
 interface Business {
@@ -175,6 +176,7 @@ export default function Explore() {
               latitude: parseFloat(data[0].lat),
               longitude: parseFloat(data[0].lon),
               city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address.split(',')[0],
+              state: data[0].address?.state || data[0].address?.['ISO3166-2-lvl4']?.split('-')[1],
             };
 
             setLocation(locationData);
@@ -256,6 +258,7 @@ export default function Explore() {
         if (response.ok) {
           const data = await response.json();
           locationData.city = data.address?.city || data.address?.town || data.address?.village || "Your area";
+          locationData.state = data.address?.state || data.address?.['ISO3166-2-lvl4']?.split('-')[1];
         }
       } catch (error) {
         console.log("Couldn't get city name, but location coordinates are available");
@@ -303,6 +306,7 @@ export default function Explore() {
         latitude: parseFloat(data[0].lat),
         longitude: parseFloat(data[0].lon),
         city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || manualLocation,
+        state: data[0].address?.state || data[0].address?.['ISO3166-2-lvl4']?.split('-')[1],
       };
 
       setLocation(locationData);
