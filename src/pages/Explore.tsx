@@ -59,13 +59,13 @@ const themedPacks = [
   {
     title: "Setting Up Home",
     description: "Everything you need to make your new place feel like home",
-    categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services"],
+    categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services", "internet providers"],
     icon: Home,
   },
   {
     title: "Getting Connected",
     description: "Essential services to get your life organized",
-    categories: ["banks", "post offices", "internet providers"],
+    categories: ["banks", "post offices"],
     icon: Zap,
   },
   {
