@@ -365,7 +365,10 @@ export default function Explore() {
         console.log('💰 DB CACHE HIT: Category results - NO API COST!');
         const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
-        setCached('category_results', cacheKey, results, 21600000); // Cache for 6 hours
+        // Use database TTL (up to 180 days) for app-level cache when from DB hit
+        const dbExpiry = new Date(cachedData.expires_at).getTime();
+        const remainingTTL = dbExpiry - Date.now();
+        setCached('category_results', cacheKey, results, Math.max(remainingTTL, 2592000000)); // At least 30 days
         return;
       }
 
@@ -382,9 +385,9 @@ export default function Explore() {
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
       
-      // Cache for 6 hours if we have results (was 30 minutes)
+      // Cache for 30 days if we have results
       if (results.length > 0) {
-        setCached('category_results', cacheKey, results, 21600000); // Cache for 6 hours
+        setCached('category_results', cacheKey, results); // Use default 30-day TTL for categories
       }
     } catch (error) {
       console.error("Error loading category results:", error);
@@ -476,7 +479,7 @@ export default function Explore() {
       // Sort by distance
       const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
       setCategoryResults(sortedResults);
-      setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
+      setCached('themed_pack_results', cacheKey, sortedResults); // Use default 30-day TTL for categories
     } catch (error) {
       console.error("Error loading themed pack results:", error);
       toast({

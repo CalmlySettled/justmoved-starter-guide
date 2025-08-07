@@ -296,8 +296,10 @@ const Popular = () => {
           console.log('💰 DB CACHE HIT: Popular events - NO API COST!');
           const events = cachedData.recommendations as any[];
           setEvents(events);
-          // Cache in app-level for 6 hours
-          setCached('popular_events', cacheKey, events, 21600000);
+          // Use database TTL (7 days) for app-level cache when from DB hit
+          const dbExpiry = new Date(cachedData.expires_at).getTime();
+          const remainingTTL = dbExpiry - Date.now();
+          setCached('popular_events', cacheKey, events, Math.max(remainingTTL, 604800000)); // At least 7 days
           setEventsLoading(false);
           return;
         }
@@ -325,11 +327,11 @@ const Popular = () => {
           const events = data?.events || [];
           setEvents(events);
           
-          // Cache in app-level for 6 hours if we have results
+          // Cache in app-level for 7 days if we have results
           if (events.length > 0) {
-            setCached('popular_events', cacheKey, events, 21600000);
+            setCached('popular_events', cacheKey, events); // Use default 7-day TTL for events
             
-            // Also cache in database for 7 days (604800000 ms) instead of 24 hours
+            // Also cache in database for 7 days
             const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
             await supabase
               .from('recommendations_cache')

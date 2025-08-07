@@ -8,7 +8,9 @@ interface CacheEntry {
 
 class RequestCacheManager {
   private static instance: RequestCacheManager;
-  private readonly DEFAULT_TTL = 21600000; // 6 hours (was 30 minutes)
+  private readonly DEFAULT_TTL = 2592000000; // 30 days (was 6 hours)
+  private readonly EVENTS_TTL = 604800000; // 7 days for events
+  private readonly CATEGORY_TTL = 2592000000; // 30 days for categories  
   private readonly CLEANUP_INTERVAL = 600000; // 10 minutes
   private readonly STORAGE_KEY = 'lovable_request_cache';
 
@@ -98,12 +100,25 @@ class RequestCacheManager {
     return null;
   }
 
-  set(type: string, params: any, data: any, ttl: number = this.DEFAULT_TTL): void {
+  set(type: string, params: any, data: any, ttl?: number): void {
     const key = this.generateCacheKey(type, params);
+    
+    // Use intelligent TTL based on data type
+    let actualTTL = ttl;
+    if (!actualTTL) {
+      if (type.includes('events') || type.includes('popular_events')) {
+        actualTTL = this.EVENTS_TTL; // 7 days for events
+      } else if (type.includes('category') || type.includes('themed_pack')) {
+        actualTTL = this.CATEGORY_TTL; // 30 days for categories
+      } else {
+        actualTTL = this.DEFAULT_TTL; // 30 days default
+      }
+    }
+    
     const entry: CacheEntry = {
       data,
       timestamp: Date.now(),
-      expiry: Date.now() + ttl
+      expiry: Date.now() + actualTTL
     };
     
     try {
@@ -112,7 +127,7 @@ class RequestCacheManager {
       const cacheData = stored ? JSON.parse(stored) : {};
       cacheData[key] = entry;
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cacheData));
-      console.log(`💾 PERSISTENT CACHE: ${type} for ${Math.round(ttl / 60000)} minutes`);
+      console.log(`💾 PERSISTENT CACHE: ${type} for ${Math.round(actualTTL / 86400000)} days`);
     } catch (error) {
       console.error('Error saving to cache storage:', error);
     }
