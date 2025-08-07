@@ -168,6 +168,12 @@ export function Header() {
                           My Favorites
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/analytics" className="flex items-center">
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          Analytics
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                         <LogOut className="h-4 w-4 mr-2" />

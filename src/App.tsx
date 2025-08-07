@@ -23,6 +23,8 @@ import Profile from "./pages/Profile";
 import PopularCategory from "./pages/PopularCategory";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
+import Analytics from "./pages/Analytics";
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +34,8 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Routes>
+      <AnalyticsProvider>
+        <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/explore" element={<Explore />} />
@@ -50,10 +53,12 @@ const AppContent = () => {
             
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin/ai-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<Analytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+      </AnalyticsProvider>
+    </BrowserRouter>
     );
 };
 
