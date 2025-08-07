@@ -65,7 +65,7 @@ const themedPacks = [
   {
     title: "Getting Connected",
     description: "Essential services to get your life organized",
-    categories: ["banks", "post offices"],
+    categories: ["banks", "post offices", "DMV"],
     icon: Zap,
   },
   {
