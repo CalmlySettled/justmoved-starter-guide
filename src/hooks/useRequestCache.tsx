@@ -134,5 +134,51 @@ export function useRequestCache() {
     return cacheManager.current.getStats();
   }, []);
 
-  return { getCached, setCached, clearCache, getCacheStats };
+  // New function to check backend cache via edge function
+  const checkBackendCache = useCallback(async (coordinates: { lat: number; lng: number }, categories: string[]) => {
+    try {
+      console.log(`🔍 CHECKING BACKEND CACHE via edge function:`, {
+        coordinates,
+        categories
+      });
+
+      const response = await fetch('https://ghbnvodnnxgxkiufcael.supabase.co/functions/v1/check-cache', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coordinates,
+          categories
+        })
+      });
+
+      if (!response.ok) {
+        console.error('❌ BACKEND CACHE CHECK FAILED:', response.status);
+        return null;
+      }
+
+      const result = await response.json();
+      
+      if (result.cached && result.data) {
+        console.log(`💰 BACKEND CACHE HIT via edge function!`, {
+          categories: Object.keys(result.data),
+          cacheAge: result.cacheAge,
+          fuzzy: result.fuzzy || false
+        });
+        return result.data;
+      }
+
+      console.log(`❌ BACKEND CACHE MISS via edge function`, {
+        coordinates,
+        categories
+      });
+      return null;
+    } catch (error) {
+      console.error('❌ BACKEND CACHE CHECK ERROR:', error);
+      return null;
+    }
+  }, []);
+
+  return { getCached, setCached, clearCache, getCacheStats, checkBackendCache };
 }

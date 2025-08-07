@@ -93,7 +93,7 @@ export default function Explore() {
   
   const { user } = useAuth();
   const { batchInvoke } = useBatchRequests();
-  const { getCached, setCached } = useRequestCache();
+  const { getCached, setCached, checkBackendCache } = useRequestCache();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -334,7 +334,9 @@ export default function Explore() {
     setIsModalOpen(true);
     
     try {
-      // Check app-level cache first
+      // CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call
+      
+      // L1: Check frontend cache first
       const cacheKey = {
         type: 'category',
         latitude: location.latitude,
@@ -342,7 +344,7 @@ export default function Explore() {
         category: category.searchTerm
       };
       
-      console.log(`🔍 FRONTEND CACHE LOOKUP for category:`, {
+      console.log(`🔍 L1 FRONTEND CACHE LOOKUP:`, {
         category: category.name,
         cacheKey,
         location: { lat: location.latitude, lng: location.longitude }
@@ -350,71 +352,62 @@ export default function Explore() {
       
       let cachedResults = getCached('category_results', cacheKey);
       
-      // Skip cache if results are empty (cache miss for empty arrays)
+      // L1 Hit: Use frontend cached data
       if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
-        console.log('💰 FRONTEND APP CACHE HIT: Category results - NO API COST!', {
+        console.log('💰 L1 FRONTEND CACHE HIT - NO API COST!', {
           resultCount: cachedResults.length,
           category: category.name
         });
         setCategoryResults(cachedResults);
         return;
-      } else if (cachedResults) {
-        console.log('⚠️ FRONTEND CACHE BYPASS: Empty results found, treating as cache miss', {
-          cachedResults,
-          category: category.name
-        });
       }
 
-      // Check database cache
-      console.log(`🔍 FRONTEND DB CACHE LOOKUP for category:`, {
+      // L1 Miss: Check backend cache via edge function
+      console.log(`❌ L1 FRONTEND CACHE MISS - Checking L2 backend cache`);
+      
+      const backendCacheResults = await checkBackendCache(
+        { lat: location.latitude, lng: location.longitude },
+        [category.searchTerm]
+      );
+
+      // L2 Hit: Use backend cached data and store in frontend cache
+      if (backendCacheResults && backendCacheResults[category.searchTerm]?.length > 0) {
+        console.log('💰 L2 BACKEND CACHE HIT - NO API COST!', {
+          resultCount: backendCacheResults[category.searchTerm].length,
+          category: category.name
+        });
+        const results = backendCacheResults[category.searchTerm];
+        setCategoryResults(results);
+        // Store in L1 frontend cache for faster future access
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        return;
+      }
+
+      // L1 & L2 Miss: Make API call
+      console.log(`🌐 L3 API CALL - Cache hierarchy exhausted`, {
         category: category.searchTerm,
         coordinates: { lat: location.latitude, lng: location.longitude }
       });
-      
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', [category.searchTerm])
-        .limit(1)
-        .single();
 
-      // Skip DB cache if results are empty (treat empty arrays as cache miss)
-      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]?.length > 0) {
-        console.log('💰 FRONTEND DB CACHE HIT: Category results - NO API COST!', {
-          resultCount: cachedData.recommendations[category.searchTerm].length,
-          category: category.name,
-          expiresAt: cachedData.expires_at
-        });
-        const results = cachedData.recommendations[category.searchTerm];
-        setCategoryResults(results);
-        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
-        return;
-      } else if (!cacheError && cachedData) {
-        console.log('⚠️ FRONTEND DB CACHE BYPASS: Empty results found, treating as cache miss', {
-          cachedData: cachedData?.recommendations?.[category.searchTerm],
-          category: category.name
-        });
-      } else if (cacheError) {
-        console.log('❌ FRONTEND DB CACHE ERROR:', cacheError);
-      }
-
-      console.log('❌ No cache for category:', category.searchTerm, '- making API call');
       const data = await batchInvoke('generate-recommendations', {
         body: {
-          exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          categories: [category.searchTerm]
+          categories: [category.searchTerm],
+          exploreMode: true
         }
       });
       
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
       
-      // Only cache non-empty results for 30 minutes
+      // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
       if (results.length > 0) {
         setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        console.log(`💾 L1 FRONTEND CACHED after API call:`, {
+          resultCount: results.length,
+          category: category.name
+        });
       }
     } catch (error) {
       console.error("Error loading category results:", error);
@@ -449,7 +442,9 @@ export default function Explore() {
     console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
     
     try {
-      // Check app-level cache first
+      // CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call
+      
+      // L1: Check frontend cache first
       const cacheKey = {
         type: 'themed_pack',
         latitude: location.latitude,
@@ -458,38 +453,83 @@ export default function Explore() {
         specificCategory
       };
       
+      console.log(`🔍 L1 FRONTEND CACHE LOOKUP (Themed Pack):`, {
+        pack: pack.title,
+        categories: categoriesToSearch,
+        specificCategory,
+        cacheKey
+      });
+      
       let cachedResults = getCached('themed_pack_results', cacheKey);
       
+      // L1 Hit: Use frontend cached data
       if (cachedResults) {
-        console.log('💰 APP CACHE HIT: Themed pack results - NO API COST!');
+        console.log('💰 L1 FRONTEND CACHE HIT - NO API COST!', {
+          resultCount: cachedResults.length,
+          pack: pack.title
+        });
         setCategoryResults(cachedResults);
         return;
       }
 
-      // Check database cache
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', categoriesToSearch)
-        .limit(1)
-        .single();
+      // L1 Miss: Check backend cache via edge function
+      console.log(`❌ L1 FRONTEND CACHE MISS - Checking L2 backend cache (Themed Pack)`);
+      
+      const backendCacheResults = await checkBackendCache(
+        { lat: location.latitude, lng: location.longitude },
+        categoriesToSearch
+      );
 
-      let data: any;
-      if (!cacheError && cachedData?.recommendations) {
-        console.log('💰 DB CACHE HIT: Themed pack - NO API COST!');
-        data = { recommendations: cachedData.recommendations };
-      } else {
-        console.log('❌ No cache for themed pack - making API call');
-        data = await batchInvoke('generate-recommendations', {
-          body: {
-            exploreMode: true,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            categories: categoriesToSearch
-          }
-        });
+      // L2 Hit: Use backend cached data and store in frontend cache
+      if (backendCacheResults) {
+        let results: Business[] = [];
+        let hasResults = false;
+        
+        // If searching for a specific category, show only those results
+        if (specificCategory && backendCacheResults[specificCategory]?.length > 0) {
+          results = backendCacheResults[specificCategory];
+          hasResults = true;
+        } else if (!specificCategory) {
+          // Flatten results from all available categories in the pack
+          Object.values(backendCacheResults).forEach((businesses: Business[]) => {
+            if (businesses?.length > 0) {
+              results.push(...businesses);
+              hasResults = true;
+            }
+          });
+        }
+        
+        if (hasResults) {
+          console.log('💰 L2 BACKEND CACHE HIT - NO API COST!', {
+            resultCount: results.length,
+            pack: pack.title,
+            foundCategories: Object.keys(backendCacheResults)
+          });
+          
+          // Sort by distance
+          const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
+          setCategoryResults(sortedResults);
+          // Store in L1 frontend cache for faster future access
+          setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
+          return;
+        }
       }
+
+      // L1 & L2 Miss: Make API call
+      console.log(`🌐 L3 API CALL - Cache hierarchy exhausted (Themed Pack)`, {
+        pack: pack.title,
+        categories: categoriesToSearch,
+        coordinates: { lat: location.latitude, lng: location.longitude }
+      });
+
+      const data = await batchInvoke('generate-recommendations', {
+        body: {
+          exploreMode: true,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: categoriesToSearch
+        }
+      });
       
       let results: Business[] = [];
       
@@ -506,7 +546,15 @@ export default function Explore() {
       // Sort by distance
       const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
       setCategoryResults(sortedResults);
-      setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
+      
+      // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
+      if (sortedResults.length > 0) {
+        setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
+        console.log(`💾 L1 FRONTEND CACHED after API call (Themed Pack):`, {
+          resultCount: sortedResults.length,
+          pack: pack.title
+        });
+      }
     } catch (error) {
       console.error("Error loading themed pack results:", error);
       toast({
