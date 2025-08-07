@@ -150,24 +150,33 @@ export function getUSNewsStatePath(location: { city?: string }): string | null {
   
   console.log('Attempting to extract state from city:', location.city);
   
-  // Extract state from city string (usually in format "City, State" or just "City")
+  // Try multiple approaches to extract state
+  const cityStr = location.city.toLowerCase();
+  
+  // First, check if any state name/abbreviation is contained in the city string
+  for (const [key, value] of Object.entries(stateToUSNewsPath)) {
+    if (cityStr.includes(key)) {
+      console.log(`Found state "${key}" in city string, mapping to: ${value}`);
+      return value;
+    }
+  }
+  
+  // Fallback: try splitting by comma and using the last part
   const cityParts = location.city.split(',');
   console.log('City parts:', cityParts);
   
-  if (cityParts.length < 2) {
-    console.log('No state found in city string, trying to use city name as state');
-    // Try using the city name itself as a state
-    const normalizedCity = cityParts[0].trim().toLowerCase();
-    const statePath = stateToUSNewsPath[normalizedCity];
-    console.log('State path from city name:', statePath);
-    return statePath || null;
+  if (cityParts.length >= 2) {
+    const state = cityParts[cityParts.length - 1].trim().toLowerCase();
+    console.log('Extracted state from comma split:', state);
+    const statePath = stateToUSNewsPath[state];
+    if (statePath) {
+      console.log('Final state path:', statePath);
+      return statePath;
+    }
   }
   
-  const state = cityParts[cityParts.length - 1].trim().toLowerCase();
-  console.log('Extracted state:', state);
-  const statePath = stateToUSNewsPath[state];
-  console.log('Final state path:', statePath);
-  return statePath || null;
+  console.log('No state found, returning null');
+  return null;
 }
 
 /**
