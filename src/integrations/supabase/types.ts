@@ -255,6 +255,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_cache_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       increment_interaction: {
         Args: { p_user_id: string; p_business_name: string; p_category: string }
         Returns: undefined
