@@ -92,7 +92,7 @@ export function Header() {
                   <div className="border-t border-border pt-6">
                      {user ? (
                       <div className="mb-8">
-                        <Link to="/onboarding" onClick={() => setIsOpen(false)}>
+                        <Link to="/explore" onClick={() => setIsOpen(false)}>
                           <Button variant="default" size="mobile" className="w-full">
                             Settle Me In
                           </Button>

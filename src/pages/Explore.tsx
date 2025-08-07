@@ -805,7 +805,7 @@ export default function Explore() {
                     if (user) {
                       handleThemedPackClick(pack);
                     } else {
-                      window.location.href = '/onboarding';
+                      window.location.href = '/auth';
                     }
                   }}
                 >
@@ -831,11 +831,11 @@ export default function Explore() {
                            }`}
                            onClick={(e) => {
                              e.stopPropagation();
-                             if (user) {
-                               handleThemedPackClick(pack, category);
-                             } else {
-                               window.location.href = '/onboarding';
-                             }
+                              if (user) {
+                                handleThemedPackClick(pack, category);
+                              } else {
+                                window.location.href = '/auth';
+                              }
                            }}
                          >
                            {category.charAt(0).toUpperCase() + category.slice(1)}
