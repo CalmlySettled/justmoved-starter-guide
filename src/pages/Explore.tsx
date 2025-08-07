@@ -71,7 +71,7 @@ const themedPacks = [
   {
     title: "Family Essentials",
     description: "Important services for families settling in",
-    categories: ["pediatricians", "schools", "daycares", "parks", "libraries"],
+    categories: ["doctors", "schools", "daycares", "parks", "libraries"],
     icon: Users,
   },
 ];
