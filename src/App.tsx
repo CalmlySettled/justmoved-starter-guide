@@ -25,6 +25,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +53,16 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/admin/ai-dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
+            <Route path="/admin/ai-dashboard" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute requireAdmin={true}>
+                <Analytics />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
         </Routes>
