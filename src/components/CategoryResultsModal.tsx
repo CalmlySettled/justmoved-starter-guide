@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
-import { ArrowLeft, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, ExternalLink, Loader2 } from 'lucide-react';
+import { useBusinessDetails } from '@/hooks/useBusinessDetails';
 
 interface Business {
   name: string;
@@ -16,6 +17,7 @@ interface Business {
   latitude: number;
   longitude: number;
   distance_miles: number;
+  place_id?: string;
 }
 
 interface CategoryResultsModalProps {
@@ -39,10 +41,22 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
   favoritingBusinesses,
   onToggleFavorite,
 }) => {
+  const { getBusinessDetails, loadingStates } = useBusinessDetails();
+  const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
+
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
     const query = encodeURIComponent(`${businessName} ${address}`);
     return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
+  const handleGetWebsite = async (business: Business) => {
+    if (!business.place_id) return;
+    
+    const details = await getBusinessDetails(business.place_id, business.name);
+    if (details?.website) {
+      setBusinessWebsites(prev => ({ ...prev, [business.place_id!]: details.website! }));
+    }
   };
 
   return (
@@ -91,17 +105,9 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <a 
-                          href={business.website ? 
-                            (business.website.startsWith('http') ? business.website : `https://${business.website}`) : 
-                            getGoogleMapsDirectionsUrl(business.address, business.name)
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xl font-semibold text-foreground hover:text-primary hover:font-bold transition-all hover:underline"
-                        >
+                        <h3 className="text-xl font-semibold text-foreground">
                           {business.name}
-                        </a>
+                        </h3>
                         <div className="flex items-center gap-2 mt-1">
                           {business.distance_miles && (
                             <>
@@ -128,21 +134,50 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="space-y-4">
-                    {business.address && (
-                      <a 
-                        href={getGoogleMapsDirectionsUrl(business.address, business.name)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
-                      >
-                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                        <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
-                          {business.address}
-                        </span>
-                      </a>
-                    )}
-                  </CardContent>
+                   <CardContent className="space-y-4">
+                     {business.address && (
+                       <a 
+                         href={getGoogleMapsDirectionsUrl(business.address, business.name)}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="flex items-start gap-2 text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer"
+                       >
+                         <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                         <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
+                           {business.address}
+                         </span>
+                       </a>
+                     )}
+                     
+                     <div className="flex gap-2">
+                       {business.website || businessWebsites[business.place_id!] ? (
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                           className="flex items-center gap-1"
+                         >
+                           <ExternalLink className="h-3 w-3" />
+                           Website
+                         </Button>
+                       ) : business.place_id ? (
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           onClick={() => handleGetWebsite(business)}
+                           disabled={loadingStates[business.place_id]}
+                           className="flex items-center gap-1"
+                         >
+                           {loadingStates[business.place_id] ? (
+                             <Loader2 className="h-3 w-3 animate-spin" />
+                           ) : (
+                             <ExternalLink className="h-3 w-3" />
+                           )}
+                           {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                         </Button>
+                       ) : null}
+                     </div>
+                   </CardContent>
                 </Card>
               ))}
             </div>

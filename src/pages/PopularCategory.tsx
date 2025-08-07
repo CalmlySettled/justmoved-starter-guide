@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Star, ExternalLink, ArrowLeft } from "lucide-react";
+import { MapPin, Star, ExternalLink, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useBusinessDetails } from "@/hooks/useBusinessDetails";
 
 interface LocationData {
   latitude: number;
@@ -29,6 +30,7 @@ interface Business {
   distance_miles: number;
   rating?: number;
   is_favorite?: boolean;
+  place_id?: string;
 }
 
 const trendingCategories = [
@@ -103,6 +105,9 @@ const PopularCategory = () => {
   const [loading, setLoading] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
+  const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
+  
+  const { getBusinessDetails, loadingStates } = useBusinessDetails();
 
   // Find category config
   const categoryConfig = trendingCategories.find(cat => 
@@ -308,6 +313,15 @@ const PopularCategory = () => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
+  const handleGetWebsite = async (business: Business) => {
+    if (!business.place_id) return;
+    
+    const details = await getBusinessDetails(business.place_id, business.name);
+    if (details?.website) {
+      setBusinessWebsites(prev => ({ ...prev, [business.place_id!]: details.website! }));
+    }
+  };
+
   const toggleFavorite = async (business: Business) => {
     if (!user) {
       toast.error("Please log in to favorite businesses.");
@@ -506,19 +520,7 @@ const PopularCategory = () => {
                       
                         <div className="p-4">
                           <div className="flex items-start justify-between mb-2">
-                            {business.website ? (
-                              <a 
-                                href={business.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-lg font-semibold hover:text-primary transition-colors flex items-center gap-1 group/link"
-                              >
-                                {business.name}
-                                <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                              </a>
-                            ) : (
-                              <h3 className="text-lg font-semibold">{business.name}</h3>
-                            )}
+                            <h3 className="text-lg font-semibold">{business.name}</h3>
                             
                             <Button
                               variant="ghost"
@@ -550,6 +552,35 @@ const PopularCategory = () => {
                             
                             <div className="text-sm font-medium text-primary">
                               {business.distance_miles?.toFixed(1)} miles away
+                            </div>
+                            
+                            <div className="flex gap-2 mt-3">
+                              {business.website || businessWebsites[business.place_id!] ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                                  className="flex items-center gap-1"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Website
+                                </Button>
+                              ) : business.place_id ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleGetWebsite(business)}
+                                  disabled={loadingStates[business.place_id]}
+                                  className="flex items-center gap-1"
+                                >
+                                  {loadingStates[business.place_id] ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <ExternalLink className="h-3 w-3" />
+                                  )}
+                                  {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                                </Button>
+                              ) : null}
                             </div>
                         </div>
                       </div>

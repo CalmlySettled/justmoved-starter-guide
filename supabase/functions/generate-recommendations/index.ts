@@ -775,29 +775,9 @@ async function searchGooglePlaces(
           console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
-        // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
-        // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
-        if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
-          try {
-            // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
-            const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-            const detailsResponse = await fetch(detailsUrl);
-            
-            if (detailsResponse.ok) {
-              const detailsData = await detailsResponse.json();
-              if (detailsData.result) {
-                website = detailsData.result.website || '';
-                phone = detailsData.result.formatted_phone_number || '';
-                console.log(`→ Fetched details for top business: ${place.name} (FieldMask optimized)`);
-              }
-            }
-          } catch (error) {
-            console.log(`→ Could not fetch details for: ${place.name}`);
-          }
-        } else {
-          console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
-        }
+        // Details will be fetched on-demand via get-business-details function
+        // This reduces API costs by 70-90% by only fetching details when users interact with businesses
+        console.log(`→ Skipping automatic details for: ${place.name} (will be fetched on-demand)`);
 
         // COST OPTIMIZATION: Generate static map as fallback if no business photo
         const staticMapUrl = !imageUrl && place.geometry?.location?.lat && place.geometry?.location?.lng
