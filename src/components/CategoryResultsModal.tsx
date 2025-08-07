@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, MapPin, Star, ExternalLink, Loader2 } from 'lucide-react';
 import { useBusinessDetails } from '@/hooks/useBusinessDetails';
 
@@ -149,34 +150,46 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
                        </a>
                      )}
                      
-                     <div className="flex gap-2">
-                       {business.website || businessWebsites[business.place_id!] ? (
-                         <Button 
-                           variant="outline" 
-                           size="sm"
-                           onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
-                           className="flex items-center gap-1"
-                         >
-                           <ExternalLink className="h-3 w-3" />
-                           Website
-                         </Button>
-                       ) : business.place_id ? (
-                         <Button 
-                           variant="outline" 
-                           size="sm"
-                           onClick={() => handleGetWebsite(business)}
-                           disabled={loadingStates[business.place_id]}
-                           className="flex items-center gap-1"
-                         >
-                           {loadingStates[business.place_id] ? (
-                             <Loader2 className="h-3 w-3 animate-spin" />
-                           ) : (
-                             <ExternalLink className="h-3 w-3" />
-                           )}
-                           {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
-                         </Button>
-                       ) : null}
-                     </div>
+                      <div className="flex gap-2">
+                        <TooltipProvider>
+                          {business.website || businessWebsites[business.place_id!] ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  Website
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Opens in new tab</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : business.place_id ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleGetWebsite(business)}
+                                  disabled={loadingStates[business.place_id]}
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {loadingStates[business.place_id] ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <ExternalLink className="h-4 w-4" />
+                                  )}
+                                  {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Opens in new tab</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                        </TooltipProvider>
+                      </div>
                    </CardContent>
                 </Card>
               ))}
