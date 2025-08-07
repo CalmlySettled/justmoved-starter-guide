@@ -692,6 +692,7 @@ async function searchGooglePlaces(
   category: string,
   latitude: number,
   longitude: number,
+  supabase: any,
   customRadius?: number,
   exploreMode: boolean = false,
   userCoordinates?: { lat: number; lng: number }
@@ -1105,7 +1106,7 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
 }
 
 // COST-OPTIMIZED: Smart business search with selective API routing
-async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, supabase: any, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
   console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
   // Use dynamic radius based on location
@@ -1125,7 +1126,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     // If Yelp results are insufficient, supplement with Google Places
     if (yelpBusinesses.length < 8) {
       console.log(`Supplementing with Google Places (Yelp returned ${yelpBusinesses.length} businesses)`);
-      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, supabase, optimalRadius, exploreMode, coordinates);
       console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
       
       // Deduplicate across APIs and combine
@@ -1135,7 +1136,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   } else {
     console.log(`Using Google Places as primary for civic/institutional category: "${category}"`);
-    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
+    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, supabase, optimalRadius, exploreMode, coordinates);
     console.log(`Google Places found ${businesses.length} businesses`);
   }
   
@@ -1701,7 +1702,7 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   
   try {
     // Fetch specific businesses for this filter
-    const businesses = await searchGooglePlaces(searchTerm, coordinates.lat, coordinates.lng);
+    const businesses = await searchGooglePlaces(searchTerm, coordinates.lat, coordinates.lng, supabase);
     console.log(`Found ${businesses.length} businesses for filter "${filter}"`);
     
     // Return the specific filtered results
@@ -1915,7 +1916,7 @@ serve(async (req) => {
       
       for (const category of categories) {
         console.log(`Exploring category: "${category}"`);
-        const businesses = await searchBusinesses(category, coordinates, undefined, true);
+        const businesses = await searchBusinesses(category, coordinates, supabase, undefined, true);
         
         // Filter out businesses we've already seen globally
         const uniqueBusinesses = businesses.filter(business => {
@@ -1987,7 +1988,7 @@ serve(async (req) => {
       
       for (const category of categories) {
         console.log(`Finding popular businesses for category: "${category}"`);
-        const businesses = await searchBusinesses(category, coordinates, undefined, false); // false = rating-based sorting
+        const businesses = await searchBusinesses(category, coordinates, supabase, undefined, false); // false = rating-based sorting
         
         // Filter out businesses we've already seen globally
         const uniqueBusinesses = businesses.filter(business => {
@@ -2855,7 +2856,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         const specificSearchTerms = getSubPreferenceSearchTerms(priority, subPref);
         
         for (const searchTerm of specificSearchTerms) {
-          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
+          const businesses = await searchBusinesses(searchTerm, coordinates, supabase, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} businesses for sub-preference "${subPref}" with search term "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2883,7 +2884,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
           console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
           foundMatch = true;
           
-          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
+          const businesses = await searchBusinesses(searchTerm, coordinates, supabase, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2917,7 +2918,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     ];
     
     for (const category of defaultCategories) {
-      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse, exploreMode);
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, supabase, quizResponse, exploreMode);
       if (businesses.length > 0) {
         recommendations[category.name] = businesses;
       }
