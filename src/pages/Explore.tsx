@@ -365,7 +365,7 @@ export default function Explore() {
         console.log('💰 DB CACHE HIT: Category results - NO API COST!');
         const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
-        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        setCached('category_results', cacheKey, results, 21600000); // Cache for 6 hours
         return;
       }
 
@@ -382,9 +382,9 @@ export default function Explore() {
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
       
-      // Only cache non-empty results for 30 minutes
+      // Cache for 6 hours if we have results (was 30 minutes)
       if (results.length > 0) {
-        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        setCached('category_results', cacheKey, results, 21600000); // Cache for 6 hours
       }
     } catch (error) {
       console.error("Error loading category results:", error);

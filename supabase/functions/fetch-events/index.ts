@@ -312,8 +312,8 @@ serve(async (req) => {
     // Fetch fresh events
     const events = await fetchEventsFromAPI(latitude, longitude);
 
-    // Cache the results for 24 hours
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // Cache the results for 7 days (was 24 hours)
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabase
       .from('recommendations_cache')
       .insert({
@@ -325,7 +325,7 @@ serve(async (req) => {
         expires_at: expiresAt,
       });
 
-    console.log(`💾 CACHED: Events for ${Math.round(24)} hours`);
+    console.log(`💾 CACHED: Events for ${Math.round(7 * 24)} hours (7 days)`);
 
     return new Response(JSON.stringify({ 
       events,
