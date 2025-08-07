@@ -143,14 +143,31 @@ export const medicalCategories = [
  * @returns The US News Health URL path or null if state cannot be determined
  */
 export function getUSNewsStatePath(location: { city?: string }): string | null {
-  if (!location.city) return null;
+  if (!location.city) {
+    console.log('No city found in location data:', location);
+    return null;
+  }
   
-  // Extract state from city string (usually in format "City, State")
+  console.log('Attempting to extract state from city:', location.city);
+  
+  // Extract state from city string (usually in format "City, State" or just "City")
   const cityParts = location.city.split(',');
-  if (cityParts.length < 2) return null;
+  console.log('City parts:', cityParts);
+  
+  if (cityParts.length < 2) {
+    console.log('No state found in city string, trying to use city name as state');
+    // Try using the city name itself as a state
+    const normalizedCity = cityParts[0].trim().toLowerCase();
+    const statePath = stateToUSNewsPath[normalizedCity];
+    console.log('State path from city name:', statePath);
+    return statePath || null;
+  }
   
   const state = cityParts[cityParts.length - 1].trim().toLowerCase();
-  return stateToUSNewsPath[state] || null;
+  console.log('Extracted state:', state);
+  const statePath = stateToUSNewsPath[state];
+  console.log('Final state path:', statePath);
+  return statePath || null;
 }
 
 /**
