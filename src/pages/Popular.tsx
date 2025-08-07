@@ -12,6 +12,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { toast } from "sonner";
 
 interface LocationData {
@@ -115,6 +116,7 @@ const spotlightSections = [
 
 const Popular = () => {
   const { user } = useAuth();
+  const { trackUIInteraction } = useAnalytics();
   const routerLocation = useLocation();
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -308,6 +310,14 @@ const Popular = () => {
   };
 
   const navigateToCategory = (categoryName: string) => {
+    // Track popular category click
+    const category = trendingCategories.find(cat => cat.name === categoryName);
+    trackUIInteraction('popular_category', 'clicked', 'popular', {
+      category: categoryName,
+      searchTerms: category?.searchTerms || [],
+      location: location?.city || 'Unknown'
+    });
+
     const urlFriendlyName = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and');
     navigate(`/popular/${urlFriendlyName}`);
   };

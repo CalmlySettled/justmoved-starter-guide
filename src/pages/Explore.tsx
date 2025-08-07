@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { useRequestCache } from "@/hooks/useRequestCache";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
@@ -94,6 +95,7 @@ export default function Explore() {
   const [sourceContext, setSourceContext] = useState<string | null>(null);
   
   const { user } = useAuth();
+  const { trackUIInteraction } = useAnalytics();
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
 
@@ -334,6 +336,13 @@ export default function Explore() {
       return;
     }
 
+    // Track category click
+    trackUIInteraction('explore_category', 'clicked', 'explore', {
+      category: category.name,
+      searchTerm: category.searchTerm,
+      location: location.city || 'Unknown'
+    });
+
     // Check if this is a medical category and redirect to US News Health
     if (isMedicalCategory(category.searchTerm)) {
       const statePath = getUSNewsStatePath(location);
@@ -458,6 +467,14 @@ export default function Explore() {
       });
       return;
     }
+
+    // Track themed pack or specific category click
+    trackUIInteraction('explore_themed_pack', 'clicked', 'explore', {
+      packTitle: pack.title,
+      specificCategory: specificCategory || null,
+      categoriesInPack: pack.categories,
+      location: location.city || 'Unknown'
+    });
 
     // Check if this is a medical category and redirect to US News Health
     if (specificCategory && isMedicalCategory(specificCategory)) {

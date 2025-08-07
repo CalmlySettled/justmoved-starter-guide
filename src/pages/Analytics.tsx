@@ -27,6 +27,9 @@ interface CategoryData {
   views: number;
   clicks: number;
   favorites: number;
+  explores: number;
+  populars: number;
+  totalInteractions: number;
   clickThroughRate: number;
 }
 
@@ -102,13 +105,28 @@ export default function Analytics() {
       });
 
       // Process category data
-      const categoryMap = new Map<string, { views: number; clicks: number; favorites: number }>();
+      const categoryMap = new Map<string, { views: number; clicks: number; favorites: number; explores: number; populars: number }>();
       
       eventsData?.forEach(event => {
         const eventData = event.event_data as any;
-        const category = eventData?.category || 'Unknown';
+        let category = eventData?.category || 'Unknown';
+        
+        // Handle UI interaction events for explore/popular categories
+        if (event.event_type === 'ui_interaction') {
+          const action = eventData?.action;
+          const element = eventData?.element;
+          
+          if (element === 'explore_category' && action === 'clicked') {
+            category = `Explore: ${eventData?.category || 'Unknown'}`;
+          } else if (element === 'popular_category' && action === 'clicked') {
+            category = `Popular: ${eventData?.category || 'Unknown'}`;
+          } else if (element === 'explore_themed_pack' && action === 'clicked') {
+            category = `Themed Pack: ${eventData?.packTitle || 'Unknown'}`;
+          }
+        }
+        
         if (!categoryMap.has(category)) {
-          categoryMap.set(category, { views: 0, clicks: 0, favorites: 0 });
+          categoryMap.set(category, { views: 0, clicks: 0, favorites: 0, explores: 0, populars: 0 });
         }
         
         const categoryStats = categoryMap.get(category)!;
@@ -122,6 +140,14 @@ export default function Analytics() {
           case 'favorite_added':
             categoryStats.favorites++;
             break;
+          case 'ui_interaction':
+            const element = eventData?.element;
+            if (element === 'explore_category' || element === 'explore_themed_pack') {
+              categoryStats.explores++;
+            } else if (element === 'popular_category') {
+              categoryStats.populars++;
+            }
+            break;
         }
       });
 
@@ -130,8 +156,11 @@ export default function Analytics() {
         views: stats.views,
         clicks: stats.clicks,
         favorites: stats.favorites,
+        explores: stats.explores,
+        populars: stats.populars,
+        totalInteractions: stats.explores + stats.populars + stats.clicks,
         clickThroughRate: stats.views > 0 ? Math.round((stats.clicks / stats.views) * 10000) / 100 : 0,
-      })).sort((a, b) => b.views - a.views);
+      })).sort((a, b) => b.totalInteractions - a.totalInteractions);
 
       setCategoryData(categoryDataArray);
 
@@ -418,9 +447,53 @@ export default function Analytics() {
         </TabsContent>
 
         <TabsContent value="categories">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Most Clicked Explore Categories */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Explore Categories</CardTitle>
+                <CardDescription>Most clicked categories from Explore page</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {categoryData
+                    .filter(cat => cat.category.startsWith('Explore:'))
+                    .slice(0, 5)
+                    .map((category, index) => (
+                    <div key={category.category} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <span className="text-sm font-medium">{category.category.replace('Explore: ', '')}</span>
+                      <Badge variant="secondary">{category.explores} clicks</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Most Clicked Popular Categories */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Popular Categories</CardTitle>
+                <CardDescription>Most clicked categories from Popular page</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {categoryData
+                    .filter(cat => cat.category.startsWith('Popular:'))
+                    .slice(0, 5)
+                    .map((category, index) => (
+                    <div key={category.category} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <span className="text-sm font-medium">{category.category.replace('Popular: ', '')}</span>
+                      <Badge variant="secondary">{category.populars} clicks</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Category Performance</CardTitle>
+              <CardTitle>All Category Performance</CardTitle>
               <CardDescription>Detailed breakdown of user interactions by category</CardDescription>
             </CardHeader>
             <CardContent>
@@ -438,13 +511,20 @@ export default function Analytics() {
                           <span>{category.views} views</span>
                           <span>{category.clicks} clicks</span>
                           <span>{category.favorites} favorites</span>
+                          <span>{category.explores} explores</span>
+                          <span>{category.populars} popular clicks</span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant={category.clickThroughRate > 5 ? "default" : "secondary"}>
-                        {category.clickThroughRate}% CTR
-                      </Badge>
+                      <div className="space-y-1">
+                        <Badge variant={category.totalInteractions > 10 ? "default" : "secondary"}>
+                          {category.totalInteractions} interactions
+                        </Badge>
+                        <Badge variant={category.clickThroughRate > 5 ? "default" : "secondary"}>
+                          {category.clickThroughRate}% CTR
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 ))}
