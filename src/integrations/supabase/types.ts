@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_daily_aggregates: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          metadata: Json | null
+          metric_key: string
+          metric_type: string
+          metric_value: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          metadata?: Json | null
+          metric_key: string
+          metric_type: string
+          metric_value?: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          metadata?: Json | null
+          metric_key?: string
+          metric_type?: string
+          metric_value?: number
+        }
+        Relationships: []
+      }
+      business_cache: {
+        Row: {
+          address: string | null
+          business_name: string
+          business_status: string | null
+          created_at: string
+          expires_at: string
+          features: string[] | null
+          id: string
+          latitude: number | null
+          location: unknown | null
+          longitude: number | null
+          opening_hours: Json | null
+          phone: string | null
+          photo_url: string | null
+          place_id: string
+          rating: number | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          business_status?: string | null
+          created_at?: string
+          expires_at?: string
+          features?: string[] | null
+          id?: string
+          latitude?: number | null
+          location?: unknown | null
+          longitude?: number | null
+          opening_hours?: Json | null
+          phone?: string | null
+          photo_url?: string | null
+          place_id: string
+          rating?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          business_status?: string | null
+          created_at?: string
+          expires_at?: string
+          features?: string[] | null
+          id?: string
+          latitude?: number | null
+          location?: unknown | null
+          longitude?: number | null
+          opening_hours?: Json | null
+          phone?: string | null
+          photo_url?: string | null
+          place_id?: string
+          rating?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -107,6 +197,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_events: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          page_url: string | null
+          session_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          session_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          session_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_recommendations: {
         Row: {
           ai_scores: Json | null
@@ -182,14 +311,71 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          duration_seconds: number | null
+          ended_at: string | null
+          favorites_added: number | null
+          id: string
+          ip_address: unknown | null
+          page_views: number | null
+          recommendations_clicked: number | null
+          recommendations_viewed: number | null
+          session_id: string
+          started_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          favorites_added?: number | null
+          id?: string
+          ip_address?: unknown | null
+          page_views?: number | null
+          recommendations_clicked?: number | null
+          recommendations_viewed?: number | null
+          session_id: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          duration_seconds?: number | null
+          ended_at?: string | null
+          favorites_added?: number | null
+          id?: string
+          ip_address?: unknown | null
+          page_views?: number | null
+          recommendations_clicked?: number | null
+          recommendations_viewed?: number | null
+          session_id?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      aggregate_daily_analytics: {
+        Args: { target_date?: string }
+        Returns: undefined
+      }
+      cleanup_expired_business_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_cache_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       increment_interaction: {
         Args: { p_user_id: string; p_business_name: string; p_category: string }
