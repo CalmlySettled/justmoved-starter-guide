@@ -6,11 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Simple coordinate rounding for cache key consistency
+// Simple coordinate rounding for cache key consistency (~1 mile precision)
 function roundCoordinates(lat: number, lng: number): { lat: number; lng: number } {
   return {
-    lat: Math.round(lat * 1000) / 1000, // Round to 3 decimal places (~100m precision)
-    lng: Math.round(lng * 1000) / 1000
+    lat: Math.round(lat * 100) / 100, // Round to 2 decimal places (~1 mile precision)
+    lng: Math.round(lng * 100) / 100
   };
 }
 
@@ -19,7 +19,7 @@ function generateSimpleCacheKey(coordinates: { lat: number; lng: number }, categ
   const rounded = roundCoordinates(coordinates.lat, coordinates.lng);
   const categoryString = categories.sort().join(',');
   
-  return `explore_${rounded.lat.toFixed(3)}_${rounded.lng.toFixed(3)}_${categoryString}`;
+  return `explore_${rounded.lat.toFixed(2)}_${rounded.lng.toFixed(2)}_${categoryString}`;
 }
 
 serve(async (req) => {

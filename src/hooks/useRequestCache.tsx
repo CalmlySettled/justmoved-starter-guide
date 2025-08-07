@@ -24,12 +24,12 @@ class RequestCacheManager {
   }
 
   private generateCacheKey(type: string, params: any): string {
-    // Normalize coordinates for better cache hits
+    // Normalize coordinates for better cache hits (~1 mile precision)
     if (params.latitude && params.longitude) {
       params = {
         ...params,
-        latitude: Number(params.latitude.toFixed(3)),
-        longitude: Number(params.longitude.toFixed(3))
+        latitude: Number(params.latitude.toFixed(2)),
+        longitude: Number(params.longitude.toFixed(2))
       };
     }
     
