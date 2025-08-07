@@ -8,12 +8,74 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Business caching helper to eliminate expensive repeated photo API calls
-async function getCachedPhotoUrl(placeId: string, photoReference: string, apiKey: string): Promise<string | undefined> {
-  if (!placeId || !photoReference) return undefined;
+// Business caching helper with database integration
+async function getCachedBusinessDetails(supabase: any, placeId: string, apiKey: string): Promise<{
+  phone?: string;
+  website?: string;
+  hours?: any;
+  photoUrl?: string;
+} | null> {
+  if (!placeId) return null;
   
-  // For now, return the optimized photo URL - this could be enhanced to cache actual URLs
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${apiKey}`;
+  // Check business cache first
+  const { data: cached } = await supabase
+    .from('business_cache')
+    .select('phone, website, opening_hours, photo_url')
+    .eq('place_id', placeId)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+    
+  if (cached) {
+    console.log(`Business cache hit for ${placeId}`);
+    return {
+      phone: cached.phone,
+      website: cached.website,
+      hours: cached.opening_hours,
+      photoUrl: cached.photo_url
+    };
+  }
+  
+  console.log(`Business cache miss for ${placeId}, fetching details`);
+  
+  // Fetch from Google Places Details API
+  try {
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website,opening_hours,photos&key=${apiKey}`;
+    const response = await fetch(detailsUrl);
+    const data = await response.json();
+    
+    if (data.result) {
+      const result = data.result;
+      const photoUrl = result.photos?.[0]?.photo_reference 
+        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${result.photos[0].photo_reference}&key=${apiKey}`
+        : undefined;
+      
+      // Cache in database for 180 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 180);
+      
+      await supabase
+        .from('business_cache')
+        .upsert({
+          place_id: placeId,
+          phone: result.formatted_phone_number,
+          website: result.website,
+          opening_hours: result.opening_hours,
+          photo_url: photoUrl,
+          expires_at: expiresAt.toISOString()
+        });
+      
+      return {
+        phone: result.formatted_phone_number,
+        website: result.website,
+        hours: result.opening_hours,
+        photoUrl: photoUrl
+      };
+    }
+  } catch (error) {
+    console.error(`Error fetching details for ${placeId}:`, error);
+  }
+  
+  return null;
 }
 
 interface FilterRequest {
@@ -75,7 +137,7 @@ const getFilterSearchTerms = (category: string, filter: string): string[] => {
   return searchMap[category]?.[filter] || [filter];
 };
 
-const searchGooglePlaces = async (searchTerms: string[], location: string, radius: number = 10000): Promise<Business[]> => {
+const searchGooglePlaces = async (searchTerms: string[], location: string, radius: number = 10000, supabase: any): Promise<Business[]> => {
   const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!apiKey) {
     throw new Error('Google Places API key not configured');
@@ -92,6 +154,9 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
       
       if (data.results) {
         for (const place of data.results.slice(0, 10)) {
+          // Get cached business details (phone, website, hours, photo)
+          const businessDetails = await getCachedBusinessDetails(supabase, place.place_id, apiKey);
+          
           const business: Business = {
             place_id: place.place_id,
             name: place.name,
@@ -101,7 +166,12 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
             features: place.types || [],
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
-            image: await getCachedPhotoUrl(place.place_id, place.photos?.[0]?.photo_reference, apiKey)
+            phone: businessDetails?.phone,
+            website: businessDetails?.website,
+            hours: businessDetails?.hours ? JSON.stringify(businessDetails.hours) : undefined,
+            image: businessDetails?.photoUrl || place.photos?.[0]?.photo_reference 
+              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
+              : undefined
           };
           
           // Avoid duplicates
@@ -172,7 +242,7 @@ serve(async (req) => {
       }
       
       const searchTerms = getFilterSearchTerms(category, filter);
-      businesses = await searchGooglePlaces(searchTerms, location, radius);
+      businesses = await searchGooglePlaces(searchTerms, location, radius, supabaseClient);
       
       // Cache the results
       await cacheResults(supabaseClient, cacheKey, businesses);
