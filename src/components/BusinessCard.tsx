@@ -126,21 +126,9 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
       <CardHeader className={variant === 'explore' ? "pb-4" : "pb-3"}>
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            {variant === 'favorites' && business.category && (
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {business.category}
-                </span>
-              </div>
-            )}
-            <h3 className={`font-semibold text-foreground ${variant === 'explore' ? 'text-xl' : 'text-lg'} ${variant === 'favorites' ? 'mb-1 truncate' : ''}`}>
+            <h3 className="font-semibold text-foreground text-xl">
               {business.name}
             </h3>
-            {variant === 'favorites' && (
-              <p className="text-sm text-muted-foreground mb-2">
-                {getBusinessTagline()}
-              </p>
-            )}
             <div className="flex items-center gap-2 mt-1">
               {business.distance_miles && (
                 <>
@@ -157,14 +145,10 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
             size="icon"
             onClick={variant === 'favorites' && onRemoveFavorite ? onRemoveFavorite : onToggleFavorite}
             disabled={isToggling}
-            className={`h-10 w-10 p-0 min-h-[44px] min-w-[44px] ${
-              variant === 'favorites' && onRemoveFavorite 
-                ? 'hover:bg-destructive/10 text-destructive' 
-                : 'hover:bg-primary/10'
-            }`}
+            className="h-10 w-10 p-0 min-h-[44px] min-w-[44px] hover:bg-primary/10"
           >
             <Star 
-              className="h-5 w-5" 
+              className="h-5 w-5 text-yellow-500" 
               fill={isFavorited ? "currentColor" : "none"}
             />
           </Button>
@@ -187,93 +171,47 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
           </a>
         )}
 
-        {/* Badges for favorites variant */}
-        {variant === 'favorites' && getBusinessBadges().length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {getBusinessBadges().map((badge, index) => (
-              <span 
-                key={index} 
-                className={`text-xs px-2 py-1 rounded-full font-medium ${badge.color}`}
-              >
-                {badge.icon} {badge.label}
-              </span>
-            ))}
-          </div>
-        )}
         
         {/* Action buttons */}
-        <div className={`flex gap-2 ${variant === 'favorites' ? 'flex-row' : 'flex-row'}`}>
-          {variant === 'explore' ? (
-            <TooltipProvider>
-              {business.website || businessWebsites[business.place_id!] ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
-                    >
+        <div className="flex gap-2">
+          <TooltipProvider>
+            {business.website || businessWebsites[business.place_id!] ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Website
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Opens in new tab</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : business.place_id ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleGetWebsite}
+                    disabled={loadingStates[business.place_id]}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingStates[business.place_id] ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
                       <ExternalLink className="h-4 w-4" />
-                      Website
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Opens in new tab</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : business.place_id ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleGetWebsite}
-                      disabled={loadingStates[business.place_id]}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loadingStates[business.place_id] ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                      {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Opens in new tab</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
-            </TooltipProvider>
-          ) : (
-            <>
-              <Button 
-                size="sm" 
-                onClick={() => window.open(getGoogleMapsDirectionsUrl(business.address || '', business.name), '_blank')}
-                className="flex-1"
-              >
-                <MapPin className="h-3 w-3 mr-1" />
-                Directions
-              </Button>
-              
-              {business.phone && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.open(`tel:${business.phone}`, '_blank')}
-                >
-                  <Phone className="h-3 w-3" />
-                </Button>
-              )}
-              
-              {business.website && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.open(business.website, '_blank')}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              )}
-            </>
-          )}
+                    )}
+                    {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Opens in new tab</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>
