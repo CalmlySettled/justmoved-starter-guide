@@ -16,7 +16,10 @@ export const useAdminAuth = (): AdminAuthState => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      console.log('🔍 Checking admin status for user:', user?.id);
+      
       if (!user) {
+        console.log('❌ No user found, setting isAdmin to false');
         setIsAdmin(false);
         setLoading(false);
         setError(null);
@@ -26,6 +29,7 @@ export const useAdminAuth = (): AdminAuthState => {
       try {
         setLoading(true);
         setError(null);
+        console.log('🔄 Calling has_role function...');
 
         // Call the database function to check if user has admin role
         const { data, error } = await supabase.rpc('has_role', {
@@ -33,19 +37,24 @@ export const useAdminAuth = (): AdminAuthState => {
           _role: 'admin'
         });
 
+        console.log('📊 has_role response:', { data, error });
+
         if (error) {
-          console.error('Admin check error:', error);
+          console.error('❌ Admin check error:', error);
           setError('Failed to verify admin privileges');
           setIsAdmin(false);
         } else {
-          setIsAdmin(data || false);
+          const isAdminResult = data || false;
+          console.log('✅ Admin check result:', isAdminResult);
+          setIsAdmin(isAdminResult);
         }
       } catch (err) {
-        console.error('Unexpected admin check error:', err);
+        console.error('💥 Unexpected admin check error:', err);
         setError('Unexpected error checking admin privileges');
         setIsAdmin(false);
       } finally {
         setLoading(false);
+        console.log('🏁 Admin check completed');
       }
     };
 

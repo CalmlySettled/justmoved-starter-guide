@@ -17,7 +17,7 @@ import { useState } from "react";
 
 export function Header() {
   const { user, signOut } = useAuth();
-  const { isAdmin } = useAdminAuth();
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -170,7 +170,7 @@ export function Header() {
                           My Favorites
                         </Link>
                       </DropdownMenuItem>
-                      {isAdmin && (
+                      {!adminLoading && isAdmin && (
                         <DropdownMenuItem asChild>
                           <Link to="/admin/analytics" className="flex items-center">
                             <LayoutDashboard className="h-4 w-4 mr-2" />

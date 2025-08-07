@@ -50,39 +50,8 @@ export default function Analytics() {
   const { toast } = useToast();
   const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
 
-  // Admin authentication check - only admins can access analytics
-  if (adminLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (adminError || !isAdmin) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <ShieldX className="h-5 w-5" />
-              Access Denied
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              {adminError || "You don't have permission to access the analytics dashboard. Admin privileges are required."}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              If you believe this is an error, please contact your administrator.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Move admin check into component render logic to prevent blocking
+  console.log('📈 Analytics component render - Admin status:', { isAdmin, adminLoading, adminError });
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -236,8 +205,45 @@ export default function Analytics() {
   };
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [dateRange]);
+    // Only fetch analytics if user is confirmed admin
+    if (!adminLoading && isAdmin) {
+      fetchAnalytics();
+    }
+  }, [dateRange, isAdmin, adminLoading]);
+
+  // Admin authentication check - only admins can access analytics
+  if (adminLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (adminError || !isAdmin) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <ShieldX className="h-5 w-5" />
+              Access Denied
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              {adminError || "You don't have permission to access the analytics dashboard. Admin privileges are required."}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              If you believe this is an error, please contact your administrator.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
