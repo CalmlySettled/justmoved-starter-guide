@@ -8,76 +8,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Business caching helper with database integration
-async function getCachedBusinessDetails(supabase: any, placeId: string, apiKey: string): Promise<{
-  phone?: string;
-  website?: string;
-  hours?: any;
-  photoUrl?: string;
-} | null> {
-  if (!placeId) return null;
-  
-  // Check business cache first
-  const { data: cached } = await supabase
-    .from('business_cache')
-    .select('phone, website, opening_hours, photo_url')
-    .eq('place_id', placeId)
-    .gt('expires_at', new Date().toISOString())
-    .single();
-    
-  if (cached) {
-    console.log(`Business cache hit for ${placeId}`);
-    return {
-      phone: cached.phone,
-      website: cached.website,
-      hours: cached.opening_hours,
-      photoUrl: cached.photo_url
-    };
-  }
-  
-  console.log(`Business cache miss for ${placeId}, fetching details`);
-  
-  // Fetch from Google Places Details API
-  try {
-    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website,opening_hours,photos&key=${apiKey}`;
-    const response = await fetch(detailsUrl);
-    const data = await response.json();
-    
-    if (data.result) {
-      const result = data.result;
-      const photoUrl = result.photos?.[0]?.photo_reference 
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${result.photos[0].photo_reference}&key=${apiKey}`
-        : undefined;
-      
-      // Cache in database for 180 days
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 180);
-      
-      await supabase
-        .from('business_cache')
-        .upsert({
-          place_id: placeId,
-          phone: result.formatted_phone_number,
-          website: result.website,
-          opening_hours: result.opening_hours,
-          photo_url: photoUrl,
-          expires_at: expiresAt.toISOString()
-        });
-      
-      return {
-        phone: result.formatted_phone_number,
-        website: result.website,
-        hours: result.opening_hours,
-        photoUrl: photoUrl
-      };
-    }
-  } catch (error) {
-    console.error(`Error fetching details for ${placeId}:`, error);
-  }
-  
-  return null;
-}
-
 interface FilterRequest {
   category: string;
   filter: string;
@@ -137,35 +67,23 @@ const getFilterSearchTerms = (category: string, filter: string): string[] => {
   return searchMap[category]?.[filter] || [filter];
 };
 
-const searchGooglePlaces = async (searchTerms: string[], location: string, radius: number = 10000, supabase: any): Promise<Business[]> => {
+const searchGooglePlaces = async (searchTerms: string[], location: string, radius: number = 10000): Promise<Business[]> => {
   const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!apiKey) {
     throw new Error('Google Places API key not configured');
   }
 
-  console.log('🔍 Searching Google Places with location:', location);
-
   const businesses: Business[] = [];
   
   for (const term of searchTerms) {
     try {
-      // Ensure we're searching specifically in Connecticut if it's not already specified
-      const searchLocation = location.includes('Connecticut') || location.includes('CT') ? 
-        location : 
-        `${location}, Connecticut`;
-      
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${searchLocation}`)}&radius=${radius}&key=${apiKey}`;
-      
-      console.log('🌍 Google Places search:', `${term} near ${searchLocation}`);
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${location}`)}&radius=${radius}&key=${apiKey}`;
       
       const response = await fetch(searchUrl);
       const data = await response.json();
       
       if (data.results) {
         for (const place of data.results.slice(0, 10)) {
-          // Get cached business details (phone, website, hours, photo)
-          const businessDetails = await getCachedBusinessDetails(supabase, place.place_id, apiKey);
-          
           const business: Business = {
             place_id: place.place_id,
             name: place.name,
@@ -175,12 +93,9 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
             features: place.types || [],
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
-            phone: businessDetails?.phone,
-            website: businessDetails?.website,
-            hours: businessDetails?.hours ? JSON.stringify(businessDetails.hours) : undefined,
-            image: businessDetails?.photoUrl || place.photos?.[0]?.photo_reference 
-              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
-              : undefined
+            image: place.photos?.[0] ? 
+              `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}` : 
+              undefined
           };
           
           // Avoid duplicates
@@ -238,14 +153,7 @@ serve(async (req) => {
       throw new Error('Category and filter are required');
     }
 
-    // Validate location string to ensure it's Connecticut-focused
-    const validatedLocation = location?.includes('Connecticut') || location?.includes('CT') ? 
-      location : 
-      `${location}, Connecticut`;
-      
-    console.log('📍 Validated location for search:', validatedLocation);
-
-    const cacheKey = `filter_${category}_${filter}_${validatedLocation}_${radius}`;
+    const cacheKey = `filter_${category}_${filter}_${location}_${radius}`;
     
     // Check cache first
     let businesses = await getCachedResults(supabaseClient, cacheKey);
@@ -253,12 +161,12 @@ serve(async (req) => {
     if (!businesses) {
       console.log(`Cache miss for ${cacheKey}, fetching from API`);
       
-      if (!validatedLocation) {
+      if (!location) {
         throw new Error('Location is required for new searches');
       }
       
       const searchTerms = getFilterSearchTerms(category, filter);
-      businesses = await searchGooglePlaces(searchTerms, validatedLocation, radius, supabaseClient);
+      businesses = await searchGooglePlaces(searchTerms, location, radius);
       
       // Cache the results
       await cacheResults(supabaseClient, cacheKey, businesses);

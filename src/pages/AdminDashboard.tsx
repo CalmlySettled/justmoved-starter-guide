@@ -10,7 +10,6 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Brain, Users, TrendingUp, Activity, AlertCircle, Star, Bookmark, Clock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useNavigate } from "react-router-dom";
-import { APICostMonitor } from "@/components/APICostMonitor";
 
 interface AdminMetrics {
   totalRecommendations: number;
@@ -402,9 +401,6 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
-            
-            {/* API Cost and Cache Monitoring */}
-            <APICostMonitor />
           </TabsContent>
         </Tabs>
       </div>

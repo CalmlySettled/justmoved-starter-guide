@@ -12,7 +12,6 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRequestCache } from "@/hooks/useRequestCache";
 import { toast } from "sonner";
 
 interface LocationData {
@@ -115,7 +114,6 @@ const Popular = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const { getCached, setCached } = useRequestCache();
 
   // Handle OAuth redirect and show address modal for new users
   useEffect(() => {
@@ -253,7 +251,7 @@ const Popular = () => {
     loadLocation();
   }, [user]);
 
-  // Fetch events when location changes with comprehensive caching
+  // Fetch events when location changes
   useEffect(() => {
     const fetchEvents = async () => {
       if (!location || !user) return;
@@ -265,46 +263,6 @@ const Popular = () => {
           setEventsLoading(false);
           return;
         }
-
-        // Create cache key for events
-        const cacheKey = {
-          type: 'events',
-          latitude: location.latitude,
-          longitude: location.longitude
-        };
-
-        // Check app-level cache first (localStorage)
-        let cachedEvents = getCached('popular_events', cacheKey);
-        if (cachedEvents && Array.isArray(cachedEvents) && cachedEvents.length > 0) {
-          console.log('💰 APP CACHE HIT: Popular events - NO API COST!');
-          setEvents(cachedEvents);
-          setEventsLoading(false);
-          return;
-        }
-
-        // Check database cache for popular events
-        const dbCacheKey = `popular_events_${location.latitude.toFixed(2)}_${location.longitude.toFixed(2)}`;
-        const { data: cachedData, error: cacheError } = await supabase
-          .from('recommendations_cache')
-          .select('recommendations, expires_at')
-          .eq('cache_key', dbCacheKey)
-          .gte('expires_at', new Date().toISOString())
-          .limit(1)
-          .maybeSingle();
-
-        if (!cacheError && cachedData?.recommendations && Array.isArray(cachedData.recommendations) && cachedData.recommendations.length > 0) {
-          console.log('💰 DB CACHE HIT: Popular events - NO API COST!');
-          const events = cachedData.recommendations as any[];
-          setEvents(events);
-          // Use database TTL (7 days) for app-level cache when from DB hit
-          const dbExpiry = new Date(cachedData.expires_at).getTime();
-          const remainingTTL = dbExpiry - Date.now();
-          setCached('popular_events', cacheKey, events, Math.max(remainingTTL, 604800000)); // At least 7 days
-          setEventsLoading(false);
-          return;
-        }
-
-        console.log('❌ No cache for popular events - making API call');
 
         const { data, error } = await supabase.functions.invoke('fetch-events', {
           body: {
@@ -324,27 +282,7 @@ const Popular = () => {
           toast.error('Failed to load events');
           setEvents([]);
         } else {
-          const events = data?.events || [];
-          setEvents(events);
-          
-          // Cache in app-level for 7 days if we have results
-          if (events.length > 0) {
-            setCached('popular_events', cacheKey, events); // Use default 7-day TTL for events
-            
-            // Also cache in database for 7 days
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-            await supabase
-              .from('recommendations_cache')
-              .upsert({
-                cache_key: dbCacheKey,
-                user_coordinates: `(${location.latitude},${location.longitude})`,
-                recommendations: events,
-                categories: ['popular_events'],
-                preferences: {},
-                expires_at: expiresAt,
-              });
-            console.log('💾 CACHED: Popular events for 7 days in database');
-          }
+          setEvents(data?.events || []);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -356,7 +294,7 @@ const Popular = () => {
     };
 
     fetchEvents();
-  }, [location, user, getCached, setCached]);
+  }, [location, user]);
 
   const handleLocationSelect = (selectedLocation: LocationData) => {
     setLocation(selectedLocation);

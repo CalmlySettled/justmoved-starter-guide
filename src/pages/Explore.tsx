@@ -109,15 +109,6 @@ export default function Explore() {
         return;
       }
 
-      // Clear potentially corrupted location cache on first load
-      try {
-        console.log('🧹 Clearing potentially corrupted location cache...');
-        await supabase.functions.invoke('clear-location-cache', { body: {} });
-        console.log('✅ Cache cleared successfully');
-      } catch (error) {
-        console.error('Cache clear failed:', error);
-      }
-
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -374,28 +365,16 @@ export default function Explore() {
         console.log('💰 DB CACHE HIT: Category results - NO API COST!');
         const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
-        // Use database TTL (up to 180 days) for app-level cache when from DB hit
-        const dbExpiry = new Date(cachedData.expires_at).getTime();
-        const remainingTTL = dbExpiry - Date.now();
-        setCached('category_results', cacheKey, results, Math.max(remainingTTL, 2592000000)); // At least 30 days
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
         return;
       }
 
       console.log('❌ No cache for category:', category.searchTerm, '- making API call');
-      
-      // Create a proper location string for the API
-      const locationString = location.city ? 
-        `${location.city}, Connecticut` : 
-        `${location.latitude},${location.longitude}`;
-      
-      console.log('🌍 Using location string:', locationString, 'for', category.searchTerm);
-      
       const data = await batchInvoke('generate-recommendations', {
         body: {
           exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          locationString: locationString,
           categories: [category.searchTerm]
         }
       });
@@ -403,9 +382,9 @@ export default function Explore() {
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
       
-      // Cache for 30 days if we have results
+      // Only cache non-empty results for 30 minutes
       if (results.length > 0) {
-        setCached('category_results', cacheKey, results); // Use default 30-day TTL for categories
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
       }
     } catch (error) {
       console.error("Error loading category results:", error);
@@ -472,20 +451,11 @@ export default function Explore() {
         data = { recommendations: cachedData.recommendations };
       } else {
         console.log('❌ No cache for themed pack - making API call');
-        
-        // Create a proper location string for the API
-        const locationString = location.city ? 
-          `${location.city}, Connecticut` : 
-          `${location.latitude},${location.longitude}`;
-        
-        console.log('🌍 Using location string:', locationString, 'for themed pack');
-        
         data = await batchInvoke('generate-recommendations', {
           body: {
             exploreMode: true,
             latitude: location.latitude,
             longitude: location.longitude,
-            locationString: locationString,
             categories: categoriesToSearch
           }
         });
@@ -506,7 +476,7 @@ export default function Explore() {
       // Sort by distance
       const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
       setCategoryResults(sortedResults);
-      setCached('themed_pack_results', cacheKey, sortedResults); // Use default 30-day TTL for categories
+      setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
     } catch (error) {
       console.error("Error loading themed pack results:", error);
       toast({

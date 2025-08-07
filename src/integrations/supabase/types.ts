@@ -14,66 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      business_cache: {
-        Row: {
-          address: string | null
-          business_name: string
-          business_status: string | null
-          created_at: string
-          expires_at: string
-          features: string[] | null
-          id: string
-          latitude: number | null
-          location: unknown | null
-          longitude: number | null
-          opening_hours: Json | null
-          phone: string | null
-          photo_url: string | null
-          place_id: string
-          rating: number | null
-          updated_at: string
-          website: string | null
-        }
-        Insert: {
-          address?: string | null
-          business_name: string
-          business_status?: string | null
-          created_at?: string
-          expires_at?: string
-          features?: string[] | null
-          id?: string
-          latitude?: number | null
-          location?: unknown | null
-          longitude?: number | null
-          opening_hours?: Json | null
-          phone?: string | null
-          photo_url?: string | null
-          place_id: string
-          rating?: number | null
-          updated_at?: string
-          website?: string | null
-        }
-        Update: {
-          address?: string | null
-          business_name?: string
-          business_status?: string | null
-          created_at?: string
-          expires_at?: string
-          features?: string[] | null
-          id?: string
-          latitude?: number | null
-          location?: unknown | null
-          longitude?: number | null
-          opening_hours?: Json | null
-          phone?: string | null
-          photo_url?: string | null
-          place_id?: string
-          rating?: number | null
-          updated_at?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           address: string | null
@@ -247,17 +187,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_business_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      get_cache_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
       }
       increment_interaction: {
         Args: { p_user_id: string; p_business_name: string; p_category: string }

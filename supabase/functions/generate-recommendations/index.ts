@@ -58,58 +58,6 @@ function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) 
   }
 }
 
-// Business caching functions to eliminate expensive repeated API calls
-async function getCachedBusinessData(supabase: any, placeId: string) {
-  if (!placeId) return null;
-  
-  // EMERGENCY: Bypass cache during debugging
-  if (CACHE_BYPASS) {
-    console.log(`⚠️ EMERGENCY: Cache bypassed for place_id ${placeId}`);
-    return null;
-  }
-  
-  try {
-    const { data, error } = await supabase
-      .from('business_cache')
-      .select('*')
-      .eq('place_id', placeId)
-      .gt('expires_at', new Date().toISOString())
-      .single();
-    
-    if (error || !data) {
-      console.log(`📭 CACHE MISS: No cached data for place_id ${placeId}`);
-      return null;
-    }
-    
-    console.log(`🎯 CACHE HIT: Using cached business data for place_id ${placeId} - ZERO API CALLS!`);
-    trackAPIUsage('cache', 1);
-    return data;
-  } catch (error) {
-    console.log(`Cache lookup failed for place_id ${placeId}:`, error);
-    return null;
-  }
-}
-
-async function cacheBusinessData(supabase: any, businessData: any) {
-  if (!businessData.place_id) return;
-  
-  try {
-    const { error } = await supabase
-      .from('business_cache')
-      .upsert(businessData, { 
-        onConflict: 'place_id'
-      });
-    
-    if (error) {
-      console.error('Failed to cache business data:', error);
-    } else {
-      console.log(`💾 CACHED for 180 days: ${businessData.business_name} - Future API calls eliminated!`);
-    }
-  } catch (error) {
-    console.error('Cache write failed:', error);
-  }
-}
-
 // Geographic coordinate rounding for better cache efficiency - broader regions for better hits
 function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
   // Round to ~2 mile precision for better cache hits (0.03 degrees ≈ 2 miles)
@@ -199,40 +147,25 @@ function getBrandLogo(businessName: string): string | null {
 
 // Helper function to get coordinates from address using OpenStreetMap Nominatim
 async function getCoordinatesFromAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  console.log(`🗺️ EMERGENCY DEBUG: Geocoding address: "${address}"`);
-  
   try {
     const encodedAddress = encodeURIComponent(address);
-    const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`;
-    console.log(`🌐 GEOCODE REQUEST: ${geocodeUrl}`);
-    
-    const response = await fetch(geocodeUrl, {
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`, {
       headers: {
         'User-Agent': 'CalmlySettled/1.0'
       }
     });
     
-    console.log(`📍 GEOCODE RESPONSE STATUS: ${response.status}`);
-    
     if (response.ok) {
       const data = await response.json();
-      console.log(`📊 GEOCODE DATA:`, data);
-      
       if (data && data.length > 0) {
-        const coords = {
+        return {
           lat: parseFloat(data[0].lat),
           lng: parseFloat(data[0].lon)
         };
-        console.log(`✅ GEOCODE SUCCESS: ${address} → ${coords.lat}, ${coords.lng}`);
-        return coords;
-      } else {
-        console.log(`❌ GEOCODE NO RESULTS for: ${address}`);
       }
-    } else {
-      console.log(`❌ GEOCODE FAILED: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
-    console.error('❌ GEOCODE ERROR:', error);
+    console.error('Error getting coordinates from address:', error);
   }
   return null;
 }
@@ -298,16 +231,15 @@ async function searchYelp(
   radius: number = 8000,
   limit: number = 15
 ): Promise<Business[]> {
-  console.log(`🔍 EMERGENCY DEBUG: Starting Yelp search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
-  
   if (!yelpApiKey) {
-    console.log('❌ YELP API KEY MISSING - skipping Yelp search');
+    console.log('Yelp API key not found, skipping Yelp search');
     return [];
   }
 
+  console.log(`Searching Yelp for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
+
   // Map categories to Yelp search terms
   const yelpSearchTerms = getYelpSearchTerms(category);
-  console.log(`🏷️ YELP SEARCH TERMS: ${yelpSearchTerms.join(', ')}`);
   const businesses: Business[] = [];
 
   try {
@@ -717,20 +649,17 @@ async function searchGooglePlaces(
   category: string,
   latitude: number,
   longitude: number,
-  supabase: any,
   customRadius?: number,
   exploreMode: boolean = false,
   userCoordinates?: { lat: number; lng: number }
 ): Promise<Business[]> {
-  console.log(`🔍 EMERGENCY DEBUG: Starting Google Places search for "${category}" at ${latitude}, ${longitude}`);
-  
   const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!googleApiKey) {
-    console.log('❌ GOOGLE PLACES API KEY MISSING - skipping Google search');
+    console.log('Google Places API key not found, skipping Google search');
     return [];
   }
   
-  console.log('✅ Google Places API key found, using advanced cost-optimized search...');
+  console.log('Google Places API key found, using advanced cost-optimized search...');
 
   // Use dynamic radius based on area density
   const radius = customRadius || getOptimalRadius({ lat: latitude, lng: longitude });
@@ -763,7 +692,6 @@ async function searchGooglePlaces(
       // Add session token and field mask for cost optimization
       searchUrl += `&fields=${nearbySearchFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
       
-      console.log(`🌐 EMERGENCY DEBUG: API URL: ${searchUrl}`);
       console.log(`→ Strategy: ${strategy.keyword || strategy.type} (with FieldMask)`);
       trackAPIUsage('google'); // Track Google Places API call
       
@@ -773,25 +701,19 @@ async function searchGooglePlaces(
         }
       });
 
-      console.log(`📡 API RESPONSE STATUS: ${response.status} ${response.statusText}`);
-
       if (!response.ok) {
-        console.error('❌ Google Places API error:', response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('❌ Error response body:', errorText);
+        console.error('Google Places API error:', response.status, response.statusText);
         continue;
       }
 
       const data = await response.json();
-      console.log(`📊 API RESPONSE DATA:`, JSON.stringify(data, null, 2));
       console.log(`→ Strategy returned ${data.results?.length || 0} businesses`);
       
       if (data.status && data.status !== 'OK') {
-        console.error(`❌ Google Places API returned status: ${data.status}`);
+        console.error(`Google Places API returned status: ${data.status}`);
         if (data.error_message) {
-          console.error(`❌ Error message: ${data.error_message}`);
+          console.error(`Error message: ${data.error_message}`);
         }
-        // Continue despite API errors to see if any strategies work
       }
 
       // Add unique results using place_id as key to avoid duplicates
@@ -842,66 +764,39 @@ async function searchGooglePlaces(
         let website = '';
         let phone = '';
         
-        // BUSINESS CACHE: Check if we already have this business data cached
-        const cachedBusiness = await getCachedBusinessData(supabase, place.place_id);
-        
-        if (cachedBusiness) {
-          // Use cached data - NO API calls needed!
-          imageUrl = cachedBusiness.photo_url || '';
-          website = cachedBusiness.website || '';
-          phone = cachedBusiness.phone || '';
-          console.log(`→ Using cached data for: ${place.name} (NO API CALLS)`);
+        // EXPLORE MODE: Fetch photos for ALL businesses (no rating filter)
+        // POPULAR MODE: Only fetch photos for highly rated businesses (4.0+)
+        if (place.photos && place.photos.length > 0 && (exploreMode || (place.rating || 0) >= 4.0)) {
+          const photoReference = place.photos[0].photo_reference;
+          // COST OPTIMIZATION: Use smaller image size and session token for photos
+          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+          console.log(`→ Fetching optimized photo for business: ${place.name}`);
         } else {
-          // Only make expensive API calls if not cached
-          console.log(`→ Cache miss - fetching fresh data for: ${place.name}`);
-          
-          // EXPLORE MODE: Fetch photos for ALL businesses (no rating filter)
-          // POPULAR MODE: Only fetch photos for highly rated businesses (4.0+)
-          if (place.photos && place.photos.length > 0 && (exploreMode || (place.rating || 0) >= 4.0)) {
-            const photoReference = place.photos[0].photo_reference;
-            // COST OPTIMIZATION: Use smaller image size and session token for photos
-            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-            console.log(`→ Fetching optimized photo for business: ${place.name}`);
-          }
+          console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
+        }
 
-          // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
-          // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
-          if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
-            try {
-              // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
-              const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
-              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-              const detailsResponse = await fetch(detailsUrl);
-              
-              if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                if (detailsData.result) {
-                  website = detailsData.result.website || '';
-                  phone = detailsData.result.formatted_phone_number || '';
-                  console.log(`→ Fetched details for business: ${place.name} (FieldMask optimized)`);
-                }
+        // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
+        // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
+        if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
+          try {
+            // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
+            const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+            const detailsResponse = await fetch(detailsUrl);
+            
+            if (detailsResponse.ok) {
+              const detailsData = await detailsResponse.json();
+              if (detailsData.result) {
+                website = detailsData.result.website || '';
+                phone = detailsData.result.formatted_phone_number || '';
+                console.log(`→ Fetched details for top business: ${place.name} (FieldMask optimized)`);
               }
-            } catch (error) {
-              console.log(`→ Could not fetch details for: ${place.name}`);
             }
+          } catch (error) {
+            console.log(`→ Could not fetch details for: ${place.name}`);
           }
-          
-          // Cache the fetched data for 180 days to eliminate future API calls
-          await cacheBusinessData(supabase, {
-            place_id: place.place_id,
-            business_name: place.name,
-            address: place.vicinity || place.formatted_address || '',
-            latitude: place.geometry?.location?.lat,
-            longitude: place.geometry?.location?.lng,
-            rating: place.rating,
-            features: place.types || [],
-            photo_url: imageUrl,
-            website: website,
-            phone: phone,
-            opening_hours: null,
-            business_status: 'OPERATIONAL'
-          });
-          console.log(`→ Cached business data for 180 days: ${place.name}`);
+        } else {
+          console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
         }
 
         // COST OPTIMIZATION: Generate static map as fallback if no business photo
@@ -1140,19 +1035,12 @@ function deduplicateBusinessesByLocation(businesses: Business[], userCoordinates
 }
 
 // COST-OPTIMIZED: Smart business search with selective API routing
-async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, supabase: any, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
-  console.log(`🔍 EMERGENCY DEBUG: searchBusinesses called for "${category}" at ${coordinates.lat}, ${coordinates.lng}`);
-  console.log(`📊 EMERGENCY DEBUG: exploreMode=${exploreMode}, userPreferences provided=${!!userPreferences}`);
-  
-  // Validate coordinates
-  if (!coordinates.lat || !coordinates.lng || isNaN(coordinates.lat) || isNaN(coordinates.lng)) {
-    console.error(`❌ INVALID COORDINATES: lat=${coordinates.lat}, lng=${coordinates.lng}`);
-    return [];
-  }
+async function searchBusinesses(category: string, coordinates: { lat: number; lng: number }, userPreferences?: QuizResponse, exploreMode: boolean = false): Promise<Business[]> {
+  console.log(`Searching for "${category}" businesses near ${coordinates.lat}, ${coordinates.lng}`);
   
   // Use dynamic radius based on location
   const optimalRadius = getOptimalRadius(coordinates);
-  console.log(`📐 Using dynamic radius: ${optimalRadius}m for area density optimization`);
+  console.log(`Using dynamic radius: ${optimalRadius}m for area density optimization`);
   
   let businesses: Business[] = [];
   
@@ -1167,7 +1055,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     // If Yelp results are insufficient, supplement with Google Places
     if (yelpBusinesses.length < 8) {
       console.log(`Supplementing with Google Places (Yelp returned ${yelpBusinesses.length} businesses)`);
-      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, supabase, optimalRadius, exploreMode, coordinates);
+      const googleBusinesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
       console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
       
       // Deduplicate across APIs and combine
@@ -1177,7 +1065,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     }
   } else {
     console.log(`Using Google Places as primary for civic/institutional category: "${category}"`);
-    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, supabase, optimalRadius, exploreMode, coordinates);
+    businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
     console.log(`Google Places found ${businesses.length} businesses`);
   }
   
@@ -1743,7 +1631,7 @@ async function handleDynamicFilter(quizResponse: any, dynamicFilter: any) {
   
   try {
     // Fetch specific businesses for this filter
-    const businesses = await searchGooglePlaces(searchTerm, coordinates.lat, coordinates.lng, supabase);
+    const businesses = await searchGooglePlaces(searchTerm, coordinates.lat, coordinates.lng);
     console.log(`Found ${businesses.length} businesses for filter "${filter}"`);
     
     // Return the specific filtered results
@@ -1873,8 +1761,6 @@ async function cacheRecommendations(
 }
 
 serve(async (req) => {
-  console.log(`🚨 EMERGENCY DEBUG: Request received at ${new Date().toISOString()}`);
-  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1884,8 +1770,6 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
-  console.log(`✅ EMERGENCY DEBUG: Supabase client initialized successfully`);
 
   try {
     // Rate limiting check
@@ -1912,9 +1796,8 @@ serve(async (req) => {
     } else {
       rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
     }
-    
     const requestBody = await req.json();
-    console.log(`📥 EMERGENCY DEBUG: Request body received:`, JSON.stringify(requestBody, null, 2));
+    console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
     const { quizResponse, dynamicFilter, exploreMode, popularMode, latitude, longitude, categories, userId } = requestBody;
     
@@ -1935,42 +1818,34 @@ serve(async (req) => {
       
       console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
       
-      // EMERGENCY: Bypass cache during debugging  
-      if (CACHE_BYPASS) {
-        console.log(`⚠️ EMERGENCY: Bypassing cache lookup for explore mode`);
-      } else {
-        // Check for cached explore results (180 day cache for essentials - 6 months)
-        const { data: cachedData } = await supabase
-          .from('recommendations_cache')
-          .select('recommendations, created_at')
-          .eq('cache_key', cacheKey)
-          .gt('expires_at', new Date().toISOString())
-          .single();
+      // Check for cached explore results (180 day cache for essentials - 6 months)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
 
-        if (cachedData) {
-          console.log('💰 EXPLORE CACHE HIT! Returning cached recommendations - NO API COSTS!');
-          trackAPIUsage('cache', categories.length);
-          return new Response(
-            JSON.stringify({ 
-              recommendations: cachedData.recommendations,
-              fromCache: true 
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
+      if (cachedData) {
+        console.log('💰 EXPLORE CACHE HIT! Returning cached recommendations - NO API COSTS!');
+        trackAPIUsage('cache', categories.length);
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const recommendations: { [key: string]: Business[] } = {};
       const globalSeenBusinesses = new Set(); // Global deduplication across all categories
       
-      console.log(`🔍 EMERGENCY DEBUG: Starting explore mode for categories:`, categories);
-      
       for (const category of categories) {
-        console.log(`🏪 EMERGENCY DEBUG: Exploring category: "${category}" at coordinates ${coordinates.lat}, ${coordinates.lng}`);
-        const businesses = await searchBusinesses(category, coordinates, supabase, undefined, true);
-        console.log(`📊 EMERGENCY DEBUG: searchBusinesses returned ${businesses.length} results for "${category}"`);
+        console.log(`Exploring category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates, undefined, true);
         
         // Filter out businesses we've already seen globally
         const uniqueBusinesses = businesses.filter(business => {
@@ -1984,7 +1859,7 @@ serve(async (req) => {
         });
         
         recommendations[category] = uniqueBusinesses;
-        console.log(`✅ Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
+        console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
 
       // Cache explore results for 180 days (6 months for essentials)
@@ -2042,7 +1917,7 @@ serve(async (req) => {
       
       for (const category of categories) {
         console.log(`Finding popular businesses for category: "${category}"`);
-        const businesses = await searchBusinesses(category, coordinates, supabase, undefined, false); // false = rating-based sorting
+        const businesses = await searchBusinesses(category, coordinates, undefined, false); // false = rating-based sorting
         
         // Filter out businesses we've already seen globally
         const uniqueBusinesses = businesses.filter(business => {
@@ -2910,7 +2785,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
         const specificSearchTerms = getSubPreferenceSearchTerms(priority, subPref);
         
         for (const searchTerm of specificSearchTerms) {
-          const businesses = await searchBusinesses(searchTerm, coordinates, supabase, quizResponse, exploreMode);
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} businesses for sub-preference "${subPref}" with search term "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2938,7 +2813,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
           console.log(`Found match for "${priority}" with search term "${searchTerm}"`);
           foundMatch = true;
           
-          const businesses = await searchBusinesses(searchTerm, coordinates, supabase, quizResponse, exploreMode);
+          const businesses = await searchBusinesses(searchTerm, coordinates, quizResponse, exploreMode);
           console.log(`Found ${businesses.length} real businesses for "${searchTerm}"`);
           
           if (businesses.length > 0) {
@@ -2972,7 +2847,7 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     ];
     
     for (const category of defaultCategories) {
-      const businesses = await searchBusinesses(category.searchTerm, coordinates, supabase, quizResponse, exploreMode);
+      const businesses = await searchBusinesses(category.searchTerm, coordinates, quizResponse, exploreMode);
       if (businesses.length > 0) {
         recommendations[category.name] = businesses;
       }
