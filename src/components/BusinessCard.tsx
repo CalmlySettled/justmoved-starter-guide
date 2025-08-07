@@ -110,8 +110,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
     <Card 
       className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden h-fit"
     >
-      {/* Business Image - only show for explore variant */}
-      {showImage && variant === 'explore' && (
+      {/* Business Image */}
+      {showImage && (
         <div className="aspect-video overflow-hidden bg-muted">
           <ImageWithFallback
             src={business.image_url || ''}
