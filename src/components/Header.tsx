@@ -10,12 +10,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdminAuth();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -168,12 +170,14 @@ export function Header() {
                           My Favorites
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/analytics" className="flex items-center">
-                          <LayoutDashboard className="h-4 w-4 mr-2" />
-                          Analytics
-                        </Link>
-                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/analytics" className="flex items-center">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Analytics
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                         <LogOut className="h-4 w-4 mr-2" />
