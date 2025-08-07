@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Heart, Store, Coffee, Utensils, Car, Building, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { BusinessCard } from "@/components/BusinessCard";
@@ -75,6 +75,31 @@ export default function Favorites() {
       console.error('Error removing favorite:', error);
       // Toast notification removed per user request
     }
+  };
+
+  // Group favorites by category
+  const groupedFavorites = favorites.reduce((acc, business) => {
+    const category = business.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(business);
+    return acc;
+  }, {} as Record<string, FavoriteBusiness[]>);
+
+  // Sort categories alphabetically
+  const sortedCategories = Object.keys(groupedFavorites).sort();
+
+  // Get icon for category
+  const getCategoryIcon = (category: string) => {
+    const lowerCategory = category.toLowerCase();
+    if (lowerCategory.includes('grocery') || lowerCategory.includes('food')) return Store;
+    if (lowerCategory.includes('coffee') || lowerCategory.includes('cafe')) return Coffee;
+    if (lowerCategory.includes('restaurant') || lowerCategory.includes('dining')) return Utensils;
+    if (lowerCategory.includes('automotive') || lowerCategory.includes('car')) return Car;
+    if (lowerCategory.includes('bank') || lowerCategory.includes('finance')) return Building;
+    if (lowerCategory.includes('retail') || lowerCategory.includes('shop')) return ShoppingBag;
+    return Store; // default icon
   };
 
 
@@ -161,27 +186,52 @@ export default function Favorites() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {favorites.map((business) => (
-                <BusinessCard
-                  key={business.id}
-                  business={{
-                    name: business.business_name,
-                    address: business.business_address,
-                    phone: business.business_phone,
-                    website: business.business_website,
-                    features: business.business_features,
-                    image_url: business.business_image,
-                    distance_miles: business.distance_miles,
-                    category: business.category
-                  }}
-                  isFavorited={true}
-                  onToggleFavorite={() => {}}
-                  onRemoveFavorite={() => removeFavorite(business.id, business.business_name)}
-                  showImage={true}
-                  variant="favorites"
-                />
-              ))}
+            <div className="space-y-12">
+              {sortedCategories.map((category) => {
+                const categoryBusinesses = groupedFavorites[category];
+                const CategoryIcon = getCategoryIcon(category);
+                
+                return (
+                  <section key={category} className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-hero rounded-lg flex items-center justify-center shadow-glow">
+                        <CategoryIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold capitalize">
+                          {category}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          {categoryBusinesses.length} {categoryBusinesses.length === 1 ? 'place' : 'places'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {categoryBusinesses.map((business) => (
+                        <BusinessCard
+                          key={business.id}
+                          business={{
+                            name: business.business_name,
+                            address: business.business_address,
+                            phone: business.business_phone,
+                            website: business.business_website,
+                            features: business.business_features,
+                            image_url: business.business_image,
+                            distance_miles: business.distance_miles,
+                            category: business.category
+                          }}
+                          isFavorited={true}
+                          onToggleFavorite={() => {}}
+                          onRemoveFavorite={() => removeFavorite(business.id, business.business_name)}
+                          showImage={true}
+                          variant="favorites"
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>
