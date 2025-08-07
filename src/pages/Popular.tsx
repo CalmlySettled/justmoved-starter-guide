@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { EventCard } from "@/components/EventCard";
-import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar } from "lucide-react";
+import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +82,13 @@ const trendingCategories = [
     searchTerms: ["live music venue", "concert hall", "music bar"],
     color: "bg-blue-500",
     description: "Catch local performances"
+  },
+  { 
+    name: "Faith Communities", 
+    icon: "⛪", 
+    searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
+    color: "bg-indigo-500",
+    description: "Find spiritual communities and places of worship"
   }
 ];
 
