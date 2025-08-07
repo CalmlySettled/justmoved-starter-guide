@@ -344,10 +344,10 @@ export default function Explore() {
       
       let cachedResults = getCached('category_results', cacheKey);
       
-      // ✅ FIXED: Cache empty results as valid responses to prevent repeated API calls
-      if (cachedResults !== null) {
-        console.log('💰 APP CACHE HIT: Category results (including empty) - NO API COST!');
-        setCategoryResults(Array.isArray(cachedResults) ? cachedResults : []);
+      // Skip cache if results are empty (cache miss for empty arrays)
+      if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+        console.log('💰 APP CACHE HIT: Category results - NO API COST!');
+        setCategoryResults(cachedResults);
         return;
       }
 
@@ -358,12 +358,12 @@ export default function Explore() {
         .gte('expires_at', new Date().toISOString())
         .overlaps('categories', [category.searchTerm])
         .limit(1)
-        .maybeSingle();
+        .single();
 
-      // ✅ FIXED: Cache empty results from database to prevent repeated API calls
-      if (!cacheError && cachedData?.recommendations) {
-        console.log('💰 DB CACHE HIT: Category results (including empty) - NO API COST!');
-        const results = cachedData.recommendations[category.searchTerm] || [];
+      // Skip DB cache if results are empty (treat empty arrays as cache miss)
+      if (!cacheError && cachedData?.recommendations?.[category.searchTerm]?.length > 0) {
+        console.log('💰 DB CACHE HIT: Category results - NO API COST!');
+        const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
         setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
         return;
@@ -378,16 +378,13 @@ export default function Explore() {
           categories: [category.searchTerm]
         }
       });
-
-      if (data?.recommendations?.[category.searchTerm]) {
-        const results = data.recommendations[category.searchTerm];
-        setCategoryResults(results);
-        // ✅ FIXED: Cache successful results
+      
+      const results = data.recommendations?.[category.searchTerm] || [];
+      setCategoryResults(results);
+      
+      // Only cache non-empty results for 30 minutes
+      if (results.length > 0) {
         setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
-      } else {
-        setCategoryResults([]);
-        // ✅ FIXED: Cache empty results to prevent repeated API calls for same search
-        setCached('category_results', cacheKey, [], 900000); // Cache empty results for 15 min
       }
     } catch (error) {
       console.error("Error loading category results:", error);
