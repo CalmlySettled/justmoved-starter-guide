@@ -142,31 +142,32 @@ export const medicalCategories = [
  * @param location - The location data containing city information
  * @returns The US News Health URL path or null if state cannot be determined
  */
-export function getUSNewsStatePath(location: { city?: string }): string | null {
-  if (!location.city) {
-    console.log('No city found in location data:', location);
+export function getUSNewsStatePath(location: { city?: string; address?: string }): string | null {
+  const locationString = location.city || location.address;
+  if (!locationString) {
+    console.log('No city or address found in location data:', location);
     return null;
   }
   
-  console.log('Attempting to extract state from city:', location.city);
+  console.log('Attempting to extract state from location string:', locationString);
   
   // Try multiple approaches to extract state
-  const cityStr = location.city.toLowerCase();
+  const locationStr = locationString.toLowerCase();
   
-  // First, check if any state name/abbreviation is contained in the city string
+  // First, check if any state name/abbreviation is contained in the location string
   for (const [key, value] of Object.entries(stateToUSNewsPath)) {
-    if (cityStr.includes(key)) {
-      console.log(`Found state "${key}" in city string, mapping to: ${value}`);
+    if (locationStr.includes(key)) {
+      console.log(`Found state "${key}" in location string, mapping to: ${value}`);
       return value;
     }
   }
   
   // Fallback: try splitting by comma and using the last part
-  const cityParts = location.city.split(',');
-  console.log('City parts:', cityParts);
+  const locationParts = locationString.split(',');
+  console.log('Location parts:', locationParts);
   
-  if (cityParts.length >= 2) {
-    const state = cityParts[cityParts.length - 1].trim().toLowerCase();
+  if (locationParts.length >= 2) {
+    const state = locationParts[locationParts.length - 1].trim().toLowerCase();
     console.log('Extracted state from comma split:', state);
     const statePath = stateToUSNewsPath[state];
     if (statePath) {
