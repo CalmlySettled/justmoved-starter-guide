@@ -24,12 +24,13 @@ class RequestCacheManager {
   }
 
   private generateCacheKey(type: string, params: any): string {
-    // Normalize coordinates for better cache hits
+    // ✅ FIXED: Normalize coordinates to match database cache key format
     if (params.latitude && params.longitude) {
+      // Use same rounding as backend (66.67 = 1 mile precision)
       params = {
         ...params,
-        latitude: Number(params.latitude.toFixed(3)),
-        longitude: Number(params.longitude.toFixed(3))
+        latitude: Math.round(params.latitude * 66.67) / 66.67,
+        longitude: Math.round(params.longitude * 66.67) / 66.67
       };
     }
     
@@ -49,7 +50,7 @@ class RequestCacheManager {
       return null;
     }
 
-    console.log(`💰 CACHE HIT: ${type} - saved API call cost!`);
+    console.log(`💰 APP CACHE HIT: ${type} - NO API COST! (${Math.round((entry.expiry - Date.now()) / 60000)}min remaining)`);
     return entry.data;
   }
 
@@ -60,7 +61,7 @@ class RequestCacheManager {
       timestamp: Date.now(),
       expiry: Date.now() + ttl
     });
-    console.log(`💾 CACHED: ${type} for ${Math.round(ttl / 60000)} minutes`);
+    console.log(`💾 APP CACHED: ${type} for ${Math.round(ttl / 60000)} minutes - will prevent future API costs`);
   }
 
   private cleanup(): void {

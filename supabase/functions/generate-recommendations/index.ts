@@ -14,12 +14,48 @@ const RATE_WINDOW = 60000; // 1 minute in milliseconds
 // AI Recommendation System Configuration
 const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations for A/B testing
 
+// ✅ EMERGENCY COST OPTIMIZATION - Session Token Management
+interface SessionTokenManager {
+  token: string | null;
+  createdAt: number;
+  expiryMs: number;
+}
+
+const sessionTokens = new Map<string, SessionTokenManager>();
+const SESSION_TOKEN_EXPIRY = 180000; // 3 minutes
+
+function getOrCreateSessionToken(userId: string): string {
+  const existing = sessionTokens.get(userId);
+  const now = Date.now();
+  
+  if (existing && (now - existing.createdAt) < existing.expiryMs) {
+    console.log(`💰 REUSING SESSION TOKEN: ${existing.token?.substring(0, 8)}... (${Math.round((existing.expiryMs - (now - existing.createdAt)) / 1000)}s remaining)`);
+    return existing.token!;
+  }
+  
+  const newToken = generateSessionToken();
+  sessionTokens.set(userId, {
+    token: newToken,
+    createdAt: now,
+    expiryMs: SESSION_TOKEN_EXPIRY
+  });
+  
+  console.log(`💰 NEW SESSION TOKEN: ${newToken.substring(0, 8)}... (${SESSION_TOKEN_EXPIRY / 1000}s TTL)`);
+  return newToken;
+}
+
+function generateSessionToken(): string {
+  return Array.from({length: 8}, () => 
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]
+  ).join('');
+}
+
 // Cost Optimization Configuration
 const CACHE_DURATION_DAYS = 180; // Extended cache duration for static business data
 const GEOGRAPHIC_PRECISION = 2; // Round coordinates to 2 decimals for better caching
 const YELP_ONLY_CATEGORIES = ['restaurants', 'dining', 'food', 'bars', 'nightlife']; // High-value Yelp categories
 
-// API Cost Tracking with Enhanced Optimization
+// ✅ ENHANCED API Cost Tracking with Emergency Monitoring
 interface APIUsageStats {
   yelpCalls: number;
   googleCalls: number;
@@ -27,6 +63,8 @@ interface APIUsageStats {
   totalSearches: number;
   estimatedCost: number;
   costSavings: number;
+  sessionTokenReuses: number;
+  emptyResultsReturned: number;
 }
 
 let apiUsageStats: APIUsageStats = {
@@ -35,10 +73,12 @@ let apiUsageStats: APIUsageStats = {
   cacheHits: 0,
   totalSearches: 0,
   estimatedCost: 0,
-  costSavings: 0
+  costSavings: 0,
+  sessionTokenReuses: 0,
+  emptyResultsReturned: 0
 };
 
-function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) {
+function trackAPIUsage(api: 'yelp' | 'google' | 'cache' | 'session_reuse' | 'empty_results', callCount: number = 1) {
   if (api === 'yelp') {
     apiUsageStats.yelpCalls += callCount;
     apiUsageStats.estimatedCost += callCount * 0.01413; // Yelp cost per call
@@ -48,26 +88,40 @@ function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) 
   } else if (api === 'cache') {
     apiUsageStats.cacheHits += callCount;
     apiUsageStats.costSavings += callCount * 0.02; // Average cost saved per cache hit
+  } else if (api === 'session_reuse') {
+    apiUsageStats.sessionTokenReuses += callCount;
+    apiUsageStats.costSavings += callCount * 0.01; // Session token reuse savings
+  } else if (api === 'empty_results') {
+    apiUsageStats.emptyResultsReturned += callCount;
   }
   apiUsageStats.totalSearches += 1;
   
-  // Log cost optimization every 5 searches
-  if (apiUsageStats.totalSearches % 5 === 0) {
-    const cacheEfficiency = (apiUsageStats.cacheHits / (apiUsageStats.cacheHits + apiUsageStats.yelpCalls + apiUsageStats.googleCalls)) * 100;
-    console.log(`Cost Optimization: Cache ${cacheEfficiency.toFixed(1)}%, Cost: $${apiUsageStats.estimatedCost.toFixed(4)}, Saved: $${apiUsageStats.costSavings.toFixed(4)}`);
+  // ✅ ENHANCED: Log comprehensive cost monitoring every request 
+  if (apiUsageStats.totalSearches % 1 === 0) {
+    const totalAPICalls = apiUsageStats.yelpCalls + apiUsageStats.googleCalls;
+    const cacheEfficiency = totalAPICalls > 0 ? (apiUsageStats.cacheHits / (apiUsageStats.cacheHits + totalAPICalls)) * 100 : 0;
+    const costPerSearch = totalAPICalls > 0 ? apiUsageStats.estimatedCost / apiUsageStats.totalSearches : 0;
+    
+    console.log(`💰 COST MONITOR: Search #${apiUsageStats.totalSearches} | Cache: ${cacheEfficiency.toFixed(1)}% | Cost: $${apiUsageStats.estimatedCost.toFixed(4)} | Saved: $${apiUsageStats.costSavings.toFixed(4)} | AvgCost/Search: $${costPerSearch.toFixed(4)}`);
+    console.log(`📊 API CALLS: Google=${apiUsageStats.googleCalls}, Yelp=${apiUsageStats.yelpCalls}, Cache=${apiUsageStats.cacheHits}, TokenReuse=${apiUsageStats.sessionTokenReuses}, EmptyResults=${apiUsageStats.emptyResultsReturned}`);
+    
+    // Alert if costs are too high
+    if (costPerSearch > 0.50) {
+      console.log(`🚨 HIGH COST ALERT: $${costPerSearch.toFixed(4)} per search exceeds $0.50 threshold!`);
+    }
   }
 }
 
-// Geographic coordinate rounding for better cache efficiency - broader regions for better hits
+// ✅ ENHANCED: Better geographic coordinate rounding for cache efficiency
 function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
-  // Round to ~2 mile precision for better cache hits (0.03 degrees ≈ 2 miles)
+  // Round to ~1 mile precision for better cache hits (0.015 degrees ≈ 1 mile)
   return {
-    lat: Math.round(lat * 33.33) / 33.33,
-    lng: Math.round(lng * 33.33) / 33.33
+    lat: Math.round(lat * 66.67) / 66.67,
+    lng: Math.round(lng * 66.67) / 66.67
   };
 }
 
-// Generate simplified cache key for better hit rates
+// ✅ ENHANCED: Generate consistent cache key format for better hit rates
 function generateSimpleCacheKey(
   coordinates: { lat: number, lng: number },
   categories: string[],
@@ -668,9 +722,12 @@ async function searchGooglePlaces(
   const searchStrategies = getSearchStrategies(category).slice(0, 2); // Max 2 strategies instead of all
   const uniquePlaces = new Map();
   
-  // COST OPTIMIZATION: Generate session token for this search session
-  const sessionToken = generateSessionToken();
-  console.log(`Using session token: ${sessionToken.substring(0, 8)}...`);
+  // ✅ COST OPTIMIZATION: Use session-specific token to reduce API costs
+  const userId = coordinates.lat + "_" + coordinates.lng; // Create user session ID from coordinates
+  const sessionToken = getOrCreateSessionToken(userId);
+  if (sessionTokens.get(userId)?.createdAt !== Date.now()) {
+    trackAPIUsage('session_reuse'); // Track session token reuse savings
+  }
   
   try {
     console.log(`Advanced cost-optimized search for "${category}" at ${latitude}, ${longitude} with ${radius}m radius`);
@@ -822,10 +879,18 @@ async function searchGooglePlaces(
     );
 
     console.log(`Cost-optimized search completed: ${businesses.length} businesses processed`);
+    
+    // ✅ Track empty results to identify areas with low business density
+    if (businesses.length === 0) {
+      trackAPIUsage('empty_results');
+      console.log(`❌ NO BUSINESSES FOUND for "${category}" near ${latitude}, ${longitude}`);
+    }
+    
     return businesses.filter(b => b.name && b.address);
 
   } catch (error) {
     console.error('Error fetching from Google Places API:', error);
+    trackAPIUsage('empty_results'); // Track API failures as empty results
     return [];
   }
 }
@@ -1862,12 +1927,15 @@ serve(async (req) => {
         console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
 
-      // Cache explore results for 180 days (6 months for essentials)
+      // ✅ FIXED: Cache explore results with required user_coordinates field
       await supabase
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
+          user_coordinates: `POINT(${roundedCoords.lng} ${roundedCoords.lat})`,
           recommendations: recommendations,
+          categories: categories,
+          preferences: {},
           expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
         });
       
@@ -1934,12 +2002,16 @@ serve(async (req) => {
         console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
       }
 
-      // Cache popular results for 7 days (seasonal relevance for trending places)
+      // ✅ FIXED: Cache popular results with required user_coordinates field  
+      const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
       await supabase
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
+          user_coordinates: `POINT(${roundedCoords.lng} ${roundedCoords.lat})`,
           recommendations: recommendations,
+          categories: categories,
+          preferences: {},
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days for seasonal trends
         });
       
