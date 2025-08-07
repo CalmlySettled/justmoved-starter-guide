@@ -143,11 +143,20 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
     throw new Error('Google Places API key not configured');
   }
 
+  console.log('🔍 Searching Google Places with location:', location);
+
   const businesses: Business[] = [];
   
   for (const term of searchTerms) {
     try {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${location}`)}&radius=${radius}&key=${apiKey}`;
+      // Ensure we're searching specifically in Connecticut if it's not already specified
+      const searchLocation = location.includes('Connecticut') || location.includes('CT') ? 
+        location : 
+        `${location}, Connecticut`;
+      
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${searchLocation}`)}&radius=${radius}&key=${apiKey}`;
+      
+      console.log('🌍 Google Places search:', `${term} near ${searchLocation}`);
       
       const response = await fetch(searchUrl);
       const data = await response.json();
@@ -229,7 +238,14 @@ serve(async (req) => {
       throw new Error('Category and filter are required');
     }
 
-    const cacheKey = `filter_${category}_${filter}_${location}_${radius}`;
+    // Validate location string to ensure it's Connecticut-focused
+    const validatedLocation = location?.includes('Connecticut') || location?.includes('CT') ? 
+      location : 
+      `${location}, Connecticut`;
+      
+    console.log('📍 Validated location for search:', validatedLocation);
+
+    const cacheKey = `filter_${category}_${filter}_${validatedLocation}_${radius}`;
     
     // Check cache first
     let businesses = await getCachedResults(supabaseClient, cacheKey);
@@ -237,12 +253,12 @@ serve(async (req) => {
     if (!businesses) {
       console.log(`Cache miss for ${cacheKey}, fetching from API`);
       
-      if (!location) {
+      if (!validatedLocation) {
         throw new Error('Location is required for new searches');
       }
       
       const searchTerms = getFilterSearchTerms(category, filter);
-      businesses = await searchGooglePlaces(searchTerms, location, radius, supabaseClient);
+      businesses = await searchGooglePlaces(searchTerms, validatedLocation, radius, supabaseClient);
       
       // Cache the results
       await cacheResults(supabaseClient, cacheKey, businesses);

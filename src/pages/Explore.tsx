@@ -109,6 +109,15 @@ export default function Explore() {
         return;
       }
 
+      // Clear potentially corrupted location cache on first load
+      try {
+        console.log('🧹 Clearing potentially corrupted location cache...');
+        await supabase.functions.invoke('clear-location-cache', { body: {} });
+        console.log('✅ Cache cleared successfully');
+      } catch (error) {
+        console.error('Cache clear failed:', error);
+      }
+
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -373,11 +382,20 @@ export default function Explore() {
       }
 
       console.log('❌ No cache for category:', category.searchTerm, '- making API call');
+      
+      // Create a proper location string for the API
+      const locationString = location.city ? 
+        `${location.city}, Connecticut` : 
+        `${location.latitude},${location.longitude}`;
+      
+      console.log('🌍 Using location string:', locationString, 'for', category.searchTerm);
+      
       const data = await batchInvoke('generate-recommendations', {
         body: {
           exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
+          locationString: locationString,
           categories: [category.searchTerm]
         }
       });
@@ -454,11 +472,20 @@ export default function Explore() {
         data = { recommendations: cachedData.recommendations };
       } else {
         console.log('❌ No cache for themed pack - making API call');
+        
+        // Create a proper location string for the API
+        const locationString = location.city ? 
+          `${location.city}, Connecticut` : 
+          `${location.latitude},${location.longitude}`;
+        
+        console.log('🌍 Using location string:', locationString, 'for themed pack');
+        
         data = await batchInvoke('generate-recommendations', {
           body: {
             exploreMode: true,
             latitude: location.latitude,
             longitude: location.longitude,
+            locationString: locationString,
             categories: categoriesToSearch
           }
         });
