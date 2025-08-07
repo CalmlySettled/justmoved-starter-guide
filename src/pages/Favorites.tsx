@@ -15,6 +15,7 @@ interface FavoriteBusiness {
   business_phone: string;
   business_website: string;
   business_features: string[];
+  business_image: string;
   category: string;
   distance_miles: number;
   created_at: string;
@@ -42,7 +43,7 @@ export default function Favorites() {
       
       const { data, error } = await supabase
         .from('user_recommendations')
-        .select('*')
+        .select('id, business_name, business_address, business_description, business_phone, business_website, business_features, business_image, category, distance_miles, created_at')
         .eq('user_id', user?.id)
         .eq('is_favorite', true)
         .order('created_at', { ascending: false });
@@ -170,13 +171,14 @@ export default function Favorites() {
                     phone: business.business_phone,
                     website: business.business_website,
                     features: business.business_features,
+                    image_url: business.business_image,
                     distance_miles: business.distance_miles,
                     category: business.category
                   }}
                   isFavorited={true}
                   onToggleFavorite={() => {}}
                   onRemoveFavorite={() => removeFavorite(business.id, business.business_name)}
-                  showImage={false}
+                  showImage={true}
                   variant="favorites"
                 />
               ))}
