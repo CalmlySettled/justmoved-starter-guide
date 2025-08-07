@@ -172,7 +172,7 @@ export function Header() {
                       </DropdownMenuItem>
                       {isAdmin && (
                         <DropdownMenuItem asChild>
-                          <Link to="/analytics" className="flex items-center">
+                          <Link to="/admin/analytics" className="flex items-center">
                             <LayoutDashboard className="h-4 w-4 mr-2" />
                             Analytics
                           </Link>
