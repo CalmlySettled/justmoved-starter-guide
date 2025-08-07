@@ -363,7 +363,7 @@ const Popular = () => {
                 
                 {eventsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {[...Array(8)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <Card key={i} className="h-48">
                         <CardContent className="p-4">
                           <Skeleton className="h-4 w-3/4 mb-2" />
@@ -376,7 +376,7 @@ const Popular = () => {
                   </div>
                 ) : events.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {events.slice(0, 8).map((event) => (
+                    {events.slice(0, 4).map((event) => (
                       <EventCard
                         key={event.id}
                         event={event}

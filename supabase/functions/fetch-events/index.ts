@@ -201,8 +201,14 @@ async function fetchEventsFromAPI(latitude: number, longitude: number): Promise<
       };
     });
 
-    console.log(`🎟️ Found ${events.length} events from Ticketmaster`);
-    return events;
+    // Filter out duplicate events by name (case-insensitive)
+    // Keep only the first occurrence of each event name
+    const uniqueEvents = events.filter((event, index, arr) => 
+      arr.findIndex(e => e.name.toLowerCase() === event.name.toLowerCase()) === index
+    );
+
+    console.log(`🎟️ Found ${events.length} total events, ${uniqueEvents.length} unique events after filtering duplicates`);
+    return uniqueEvents;
     
   } catch (error) {
     console.error('❌ Error fetching from Ticketmaster:', error);
