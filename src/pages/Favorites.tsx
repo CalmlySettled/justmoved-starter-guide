@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Heart, Star, ExternalLink, Phone, MapPin } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { BusinessCard } from "@/components/BusinessCard";
 
 
 interface FavoriteBusiness {
@@ -26,56 +26,6 @@ export default function Favorites() {
   const { user } = useAuth();
   
 
-  const getBusinessTagline = (business: FavoriteBusiness) => {
-    // Generate clean taglines based on category
-    if (business.category?.toLowerCase().includes('grocery')) {
-      if (business.business_name.toLowerCase().includes('geissler')) return "Family-owned grocery chain with great produce";
-      if (business.business_features.some(f => f.toLowerCase().includes('organic'))) return "Fresh organic produce and natural foods";
-      if (business.business_features.some(f => f.toLowerCase().includes('affordable'))) return "Affordable groceries for everyday needs";
-      return "Your neighborhood grocery destination";
-    }
-    if (business.category?.toLowerCase().includes('fitness')) {
-      return "Stay active and healthy in your community";
-    }
-    if (business.category?.toLowerCase().includes('restaurant')) {
-      return "Local dining favorite";
-    }
-    if (business.category?.toLowerCase().includes('faith')) {
-      return "Welcoming spiritual community";
-    }
-    if (business.category?.toLowerCase().includes('green space')) {
-      return "Perfect for outdoor activities and relaxation";
-    }
-    return "Highly recommended local spot";
-  };
-
-  const getBusinessBadges = (business: FavoriteBusiness) => {
-    const badges = [];
-    
-    // Local badge for non-franchise businesses
-    const businessNameLower = business.business_name.toLowerCase();
-    const franchiseIndicators = ['mcdonalds', 'subway', 'starbucks', 'walmart', 'target', 'cvs', 'walgreens', 'kroger', 'safeway', 'whole foods', 'trader joe', 'costco', 'planet fitness', 'la fitness'];
-    const isLocalFavorite = !franchiseIndicators.some(franchise => businessNameLower.includes(franchise));
-    
-    if (isLocalFavorite) {
-      badges.push({ 
-        label: "Local", 
-        icon: "🏪", 
-        color: "bg-green-50 text-green-700 border border-green-200" 
-      });
-    }
-    
-    // Add a nearby badge if distance is available
-    if (business.distance_miles && business.distance_miles <= 2) {
-      badges.push({ 
-        label: "Nearby", 
-        icon: "📍", 
-        color: "bg-blue-50 text-blue-700 border border-blue-200" 
-      });
-    }
-    
-    return badges.slice(0, 2); // Only show 2 most important badges
-  };
 
   useEffect(() => {
     if (user) {
@@ -126,10 +76,6 @@ export default function Favorites() {
     }
   };
 
-  const getGoogleMapsUrl = (business: FavoriteBusiness) => {
-    const query = encodeURIComponent(`${business.business_name} ${business.business_address}`);
-    return `https://www.google.com/maps/search/?api=1&query=${query}`;
-  };
 
   if (!user) {
     return (
@@ -216,93 +162,23 @@ export default function Favorites() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {favorites.map((business) => (
-                <Card key={business.id} className="h-fit">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                            {business.category}
-                          </span>
-                        </div>
-                         <CardTitle className="text-lg mb-1 truncate">{business.business_name}</CardTitle>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {getBusinessTagline(business)}
-                        </p>
-                        {business.business_address && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{business.business_address}</span>
-                          </div>
-                        )}
-                        {business.distance_miles && (
-                          <span className="text-sm text-muted-foreground">
-                            {business.distance_miles} miles away
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFavorite(business.id, business.business_name)}
-                        className="h-8 w-8 p-0 hover:bg-destructive/10 text-destructive"
-                      >
-                        <Heart className="h-4 w-4" fill="currentColor" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    {/* Remove any raw description display and only show clean tagline */}
-                    
-                    {/* Display clean badges instead of raw features */}
-                    {getBusinessBadges(business).length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex flex-wrap gap-2">
-                          {getBusinessBadges(business).map((badge, index) => (
-                            <span 
-                              key={index} 
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${badge.color}`}
-                            >
-                              {badge.icon} {badge.label}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={() => window.open(getGoogleMapsUrl(business), '_blank')}
-                        className="flex-1"
-                      >
-                        <MapPin className="h-3 w-3 mr-1" />
-                        Directions
-                      </Button>
-                      
-                      {business.business_phone && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => window.open(`tel:${business.business_phone}`, '_blank')}
-                        >
-                          <Phone className="h-3 w-3" />
-                        </Button>
-                      )}
-                      
-                      {business.business_website && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => window.open(business.business_website, '_blank')}
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <BusinessCard
+                  key={business.id}
+                  business={{
+                    name: business.business_name,
+                    address: business.business_address,
+                    phone: business.business_phone,
+                    website: business.business_website,
+                    features: business.business_features,
+                    distance_miles: business.distance_miles,
+                    category: business.category
+                  }}
+                  isFavorited={true}
+                  onToggleFavorite={() => {}}
+                  onRemoveFavorite={() => removeFavorite(business.id, business.business_name)}
+                  showImage={false}
+                  variant="favorites"
+                />
               ))}
             </div>
           )}
