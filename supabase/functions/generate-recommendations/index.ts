@@ -1905,6 +1905,8 @@ serve(async (req) => {
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
+          user_coordinates: `(${latitude}, ${longitude})`, // Required field
+          categories: categories, // Required field
           recommendations: recommendations,
           expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
         });
@@ -1977,6 +1979,8 @@ serve(async (req) => {
         .from('recommendations_cache')
         .insert({
           cache_key: cacheKey,
+          user_coordinates: `(${coordinates.lat}, ${coordinates.lng})`, // Required field
+          categories: categories, // Required field
           recommendations: recommendations,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days for seasonal trends
         });
