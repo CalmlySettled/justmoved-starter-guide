@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { Calendar, TrendingUp, Users, MousePointer, Heart, Eye, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Calendar, TrendingUp, Users, MousePointer, Heart, Eye, Clock, RefreshCw, AlertTriangle, ShieldX } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 interface DashboardMetrics {
@@ -48,21 +48,36 @@ export default function Analytics() {
   const [dateRange, setDateRange] = useState('7');
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
 
-  // Simple authentication check - redirect if not logged in
-  if (!user) {
+  // Admin authentication check - only admins can access analytics
+  if (adminLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (adminError || !isAdmin) {
     return (
       <div className="container mx-auto p-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Access Restricted
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <ShieldX className="h-5 w-5" />
+              Access Denied
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Please log in to access the analytics dashboard.</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {adminError || "You don't have permission to access the analytics dashboard. Admin privileges are required."}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              If you believe this is an error, please contact your administrator.
+            </p>
           </CardContent>
         </Card>
       </div>

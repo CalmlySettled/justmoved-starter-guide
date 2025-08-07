@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Brain, Users, TrendingUp, Activity, AlertCircle, Star, Bookmark, Clock } from "lucide-react";
+import { Brain, Users, TrendingUp, Activity, AlertCircle, Star, Bookmark, Clock, ShieldX } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useNavigate } from "react-router-dom";
 
@@ -31,21 +31,20 @@ interface AIScoreData {
 }
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [aiScores, setAiScores] = useState<AIScoreData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Relaxed admin check for testing - allows any logged in user
-  const isAdmin = true; // user?.email?.endsWith('@calmlysettled.com') || user?.email === 'admin@example.com' || true;
+  const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
 
   useEffect(() => {
-    console.log('AdminDashboard mounted, user:', user);
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
-  }, []);
+    if (isAdmin) {
+      console.log('AdminDashboard mounted, fetching metrics...');
+      fetchMetrics();
+      const interval = setInterval(fetchMetrics, 30000); // Refresh every 30s
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin]);
 
   const fetchMetrics = async () => {
     try {
@@ -127,12 +126,8 @@ const AdminDashboard = () => {
     }
   };
 
-  // Remove auth check that was causing issues
-  // if (!user || !isAdmin) {
-  //   return null;
-  // }
-
-  if (loading) {
+  // Admin authentication check - only admins can access dashboard
+  if (adminLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -140,9 +135,37 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Activity className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Loading admin metrics...</p>
+              <p className="text-muted-foreground">
+                {adminLoading ? "Verifying admin privileges..." : "Loading admin metrics..."}
+              </p>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (adminError || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="pt-24 px-6 max-w-7xl mx-auto">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <ShieldX className="h-5 w-5" />
+                Access Denied
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                {adminError || "You don't have permission to access the admin dashboard. Admin privileges are required."}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                If you believe this is an error, please contact your administrator.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
