@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, TrendingUp, Users, MousePointer, Heart, Eye, Clock, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Calendar, TrendingUp, Users, MousePointer, Heart, Eye, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
 interface DashboardMetrics {
@@ -45,7 +46,28 @@ export default function Analytics() {
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7');
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Simple authentication check - redirect if not logged in
+  if (!user) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Access Restricted
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Please log in to access the analytics dashboard.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -167,6 +189,8 @@ export default function Analytics() {
 
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to fetch analytics: ${errorMessage}`);
       toast({
         title: "Error fetching analytics",
         description: "Failed to load analytics data. Please try again.",
@@ -206,6 +230,27 @@ export default function Analytics() {
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Error Loading Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => { setError(null); fetchAnalytics(); }}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
