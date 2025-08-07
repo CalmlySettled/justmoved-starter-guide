@@ -14,6 +14,7 @@ import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { useRequestCache } from "@/hooks/useRequestCache";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
+import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
 
 interface LocationData {
   latitude: number;
@@ -329,6 +330,28 @@ export default function Explore() {
       return;
     }
 
+    // Check if this is a medical category and redirect to US News Health
+    if (isMedicalCategory(category.searchTerm)) {
+      const statePath = getUSNewsStatePath(location);
+      if (statePath) {
+        const usNewsURL = getUSNewsHealthURL(statePath);
+        window.open(usNewsURL, '_blank');
+        toast({
+          title: "Redirecting to US News Health",
+          description: `Opening ${location.city} medical directory`,
+        });
+        return;
+      } else {
+        // Fallback to general US News doctor finder
+        window.open('https://health.usnews.com/doctors', '_blank');
+        toast({
+          title: "Redirecting to US News Health",
+          description: "Opening general medical directory",
+        });
+        return;
+      }
+    }
+
     setSelectedCategory(category.name);
     setIsLoadingCategory(true);
     setIsModalOpen(true);
@@ -430,6 +453,28 @@ export default function Explore() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Check if this is a medical category and redirect to US News Health
+    if (specificCategory && isMedicalCategory(specificCategory)) {
+      const statePath = getUSNewsStatePath(location);
+      if (statePath) {
+        const usNewsURL = getUSNewsHealthURL(statePath);
+        window.open(usNewsURL, '_blank');
+        toast({
+          title: "Redirecting to US News Health",
+          description: `Opening ${location.city} medical directory`,
+        });
+        return;
+      } else {
+        // Fallback to general US News doctor finder
+        window.open('https://health.usnews.com/doctors', '_blank');
+        toast({
+          title: "Redirecting to US News Health",
+          description: "Opening general medical directory",
+        });
+        return;
+      }
     }
 
     // CRITICAL FIX: Don't search all categories if user clicked specific one
