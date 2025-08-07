@@ -91,12 +91,6 @@ export function EventCard({ event, onClick }: EventCardProps) {
       
       <CardContent className="pt-0">
         <div className="space-y-3">
-          {event.description && (
-            <CardDescription className="line-clamp-2">
-              {event.description}
-            </CardDescription>
-          )}
-          
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground truncate">
@@ -107,18 +101,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
             </span>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              {event.is_free && (
-                <Badge variant="secondary" className="text-xs">
-                  Free
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-xs">
-                {formatEventDate(startDate)}
-              </Badge>
-            </div>
-            
+          <div className="flex items-center justify-end">
             <Button 
               size="sm" 
               onClick={handleTicketClick}
