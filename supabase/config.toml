@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.fetch-events]
 verify_jwt = false
+
+[functions.check-cache]
+verify_jwt = false
