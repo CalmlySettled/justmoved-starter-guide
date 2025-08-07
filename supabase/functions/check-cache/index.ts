@@ -6,11 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Simple coordinate rounding for cache key consistency (~1 mile precision)
+// Simple coordinate rounding for cache key consistency (~2 mile precision)
 function roundCoordinates(lat: number, lng: number): { lat: number; lng: number } {
   return {
-    lat: Math.round(lat * 100) / 100, // Round to 2 decimal places (~1 mile precision)
-    lng: Math.round(lng * 100) / 100
+    lat: Math.round(lat / 0.02) * 0.02, // Round to nearest 0.02 degrees (~2 mile precision)
+    lng: Math.round(lng / 0.02) * 0.02
   };
 }
 
