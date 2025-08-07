@@ -1672,8 +1672,16 @@ async function getCachedRecommendations(
   preferences: any
 ): Promise<any[] | null> {
   const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
+  const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
   
-  console.log(`🔍 CACHE LOOKUP: ${cacheKey}`);
+  console.log(`🔍 BACKEND CACHE LOOKUP:`, {
+    fullCacheKey: cacheKey,
+    coordinates: { lat: coordinates.lat, lng: coordinates.lng },
+    roundedCoords,
+    categories,
+    preferences,
+    keyLength: cacheKey.length
+  });
   
   try {
     // First try exact match
@@ -1687,7 +1695,11 @@ async function getCachedRecommendations(
     if (exactMatch && !exactError) {
       trackAPIUsage('cache', categories.length);
       const cacheAge = Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      console.log(`💰 EXACT CACHE HIT! Found ${cacheAge}d old recommendations: ${cacheKey.substring(0, 50)}...`);
+      console.log(`💰 BACKEND EXACT CACHE HIT!`, {
+        cacheKey: cacheKey.substring(0, 50) + '...',
+        cacheAgeHours: Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60)),
+        resultCount: Array.isArray(exactMatch.recommendations) ? Object.keys(exactMatch.recommendations).length : 'not-object'
+      });
       return exactMatch.recommendations;
     }
 
@@ -1717,7 +1729,21 @@ async function getCachedRecommendations(
       }
     }
 
-    console.log(`❌ CACHE MISS: ${cacheKey.substring(0, 50)}...`);
+    // Log all available cache keys for debugging
+    const { data: allCacheKeys } = await supabase
+      .from('recommendations_cache')
+      .select('cache_key, created_at')
+      .gt('expires_at', new Date().toISOString())
+      .limit(10);
+
+    console.log(`❌ BACKEND CACHE MISS:`, {
+      searchedKey: cacheKey.substring(0, 50) + '...',
+      availableCacheKeys: allCacheKeys?.map(k => ({
+        key: k.cache_key.substring(0, 50) + '...',
+        created: k.created_at
+      })) || [],
+      totalAvailableKeys: allCacheKeys?.length || 0
+    });
     return null;
   } catch (error) {
     console.error('❌ CACHE ERROR:', error);
@@ -1736,7 +1762,16 @@ async function cacheRecommendations(
   const cacheKey = generateSimpleCacheKey(coordinates, categories, preferences);
   const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
   
-  console.log(`💾 SAVING TO CACHE: ${cacheKey}`);
+  console.log(`💾 BACKEND SAVING TO CACHE:`, {
+    fullCacheKey: cacheKey,
+    coordinates: { lat: coordinates.lat, lng: coordinates.lng },
+    roundedCoords,
+    categories,
+    preferences,
+    resultCount: Array.isArray(recommendations) ? Object.keys(recommendations).length : 'not-object',
+    keyLength: cacheKey.length,
+    expiresAt: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  });
   
   try {
     const { error } = await supabase
@@ -1751,12 +1786,15 @@ async function cacheRecommendations(
       });
 
     if (error) {
-      console.error('❌ CACHE SAVE FAILED:', error);
+      console.error('❌ BACKEND CACHE SAVE FAILED:', error);
     } else {
-      console.log(`✅ CACHED SUCCESSFULLY: ${cacheKey.substring(0, 50)}... (Will save future API costs)`);
+      console.log(`✅ BACKEND CACHED SUCCESSFULLY:`, {
+        cacheKey: cacheKey.substring(0, 50) + '...',
+        willExpireAt: new Date(Date.now() + CACHE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      });
     }
   } catch (error) {
-    console.error('❌ CACHE SAVE ERROR:', error);
+    console.error('❌ BACKEND CACHE SAVE ERROR:', error);
   }
 }
 

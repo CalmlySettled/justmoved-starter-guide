@@ -33,7 +33,16 @@ class RequestCacheManager {
       };
     }
     
-    return `${type}-${JSON.stringify(params)}`;
+    const cacheKey = `${type}-${JSON.stringify(params)}`;
+    console.log(`🔑 CACHE KEY GENERATED:`, {
+      type,
+      originalParams: arguments[1], // Keep original params for debugging
+      normalizedParams: params,
+      finalKey: cacheKey,
+      keyLength: cacheKey.length
+    });
+    
+    return cacheKey;
   }
 
   get(type: string, params: any): any | null {
@@ -41,15 +50,31 @@ class RequestCacheManager {
     const entry = this.cache.get(key);
     
     if (!entry) {
+      console.log(`❌ CACHE MISS: ${type}`, {
+        key,
+        reason: 'Entry not found',
+        availableKeys: Array.from(this.cache.keys()),
+        cacheSize: this.cache.size
+      });
       return null;
     }
 
     if (Date.now() > entry.expiry) {
       this.cache.delete(key);
+      console.log(`⏰ CACHE EXPIRED: ${type}`, {
+        key,
+        expiredAt: new Date(entry.expiry).toISOString(),
+        now: new Date().toISOString()
+      });
       return null;
     }
 
-    console.log(`💰 CACHE HIT: ${type} - saved API call cost!`);
+    console.log(`💰 CACHE HIT: ${type}`, {
+      key,
+      dataSize: Array.isArray(entry.data) ? entry.data.length : 'not-array',
+      cachedAt: new Date(entry.timestamp).toISOString(),
+      expiresAt: new Date(entry.expiry).toISOString()
+    });
     return entry.data;
   }
 
@@ -60,7 +85,13 @@ class RequestCacheManager {
       timestamp: Date.now(),
       expiry: Date.now() + ttl
     });
-    console.log(`💾 CACHED: ${type} for ${Math.round(ttl / 60000)} minutes`);
+    console.log(`💾 CACHED: ${type}`, {
+      key,
+      dataSize: Array.isArray(data) ? data.length : 'not-array',
+      ttlMinutes: Math.round(ttl / 60000),
+      expiresAt: new Date(Date.now() + ttl).toISOString(),
+      totalCacheSize: this.cache.size
+    });
   }
 
   private cleanup(): void {

@@ -342,16 +342,35 @@ export default function Explore() {
         category: category.searchTerm
       };
       
+      console.log(`🔍 FRONTEND CACHE LOOKUP for category:`, {
+        category: category.name,
+        cacheKey,
+        location: { lat: location.latitude, lng: location.longitude }
+      });
+      
       let cachedResults = getCached('category_results', cacheKey);
       
       // Skip cache if results are empty (cache miss for empty arrays)
       if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
-        console.log('💰 APP CACHE HIT: Category results - NO API COST!');
+        console.log('💰 FRONTEND APP CACHE HIT: Category results - NO API COST!', {
+          resultCount: cachedResults.length,
+          category: category.name
+        });
         setCategoryResults(cachedResults);
         return;
+      } else if (cachedResults) {
+        console.log('⚠️ FRONTEND CACHE BYPASS: Empty results found, treating as cache miss', {
+          cachedResults,
+          category: category.name
+        });
       }
 
       // Check database cache
+      console.log(`🔍 FRONTEND DB CACHE LOOKUP for category:`, {
+        category: category.searchTerm,
+        coordinates: { lat: location.latitude, lng: location.longitude }
+      });
+      
       const { data: cachedData, error: cacheError } = await supabase
         .from('recommendations_cache')
         .select('recommendations, expires_at')
@@ -362,11 +381,22 @@ export default function Explore() {
 
       // Skip DB cache if results are empty (treat empty arrays as cache miss)
       if (!cacheError && cachedData?.recommendations?.[category.searchTerm]?.length > 0) {
-        console.log('💰 DB CACHE HIT: Category results - NO API COST!');
+        console.log('💰 FRONTEND DB CACHE HIT: Category results - NO API COST!', {
+          resultCount: cachedData.recommendations[category.searchTerm].length,
+          category: category.name,
+          expiresAt: cachedData.expires_at
+        });
         const results = cachedData.recommendations[category.searchTerm];
         setCategoryResults(results);
         setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
         return;
+      } else if (!cacheError && cachedData) {
+        console.log('⚠️ FRONTEND DB CACHE BYPASS: Empty results found, treating as cache miss', {
+          cachedData: cachedData?.recommendations?.[category.searchTerm],
+          category: category.name
+        });
+      } else if (cacheError) {
+        console.log('❌ FRONTEND DB CACHE ERROR:', cacheError);
       }
 
       console.log('❌ No cache for category:', category.searchTerm, '- making API call');
