@@ -53,7 +53,7 @@ const themedPacks = [
   {
     title: "First 48 Hours",
     description: "Immediate essentials for your first days in a new city",
-    categories: ["grocery stores", "pharmacies", "gas stations"],
+    categories: ["grocery stores", "pharmacies", "gas stations", "trash pickup services"],
     icon: Clock,
   },
   {
