@@ -201,13 +201,20 @@ async function fetchEventsFromAPI(latitude: number, longitude: number): Promise<
       };
     });
 
-    // Filter out duplicate events by name (case-insensitive)
-    // Keep only the first occurrence of each event name
-    const uniqueEvents = events.filter((event, index, arr) => 
-      arr.findIndex(e => e.name.toLowerCase() === event.name.toLowerCase()) === index
-    );
+    // Sort events by date to prioritize upcoming events
+    events.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
-    console.log(`🎟️ Found ${events.length} total events, ${uniqueEvents.length} unique events after filtering duplicates`);
+    // Enhanced duplicate filtering: consider both event name and venue
+    // Keep only the earliest occurrence of each unique event-venue combination
+    const uniqueEvents = events.filter((event, index, arr) => {
+      const eventKey = `${event.name.toLowerCase().trim()}|${event.venue.name.toLowerCase().trim()}`;
+      return arr.findIndex(e => {
+        const compareKey = `${e.name.toLowerCase().trim()}|${e.venue.name.toLowerCase().trim()}`;
+        return compareKey === eventKey;
+      }) === index;
+    });
+
+    console.log(`🎟️ Found ${events.length} total events, ${uniqueEvents.length} unique events after filtering by name+venue`);
     return uniqueEvents;
     
   } catch (error) {
