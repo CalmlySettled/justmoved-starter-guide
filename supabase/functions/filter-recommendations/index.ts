@@ -8,6 +8,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Business caching helper to eliminate expensive repeated photo API calls
+async function getCachedPhotoUrl(placeId: string, photoReference: string, apiKey: string): Promise<string | undefined> {
+  if (!placeId || !photoReference) return undefined;
+  
+  // For now, return the optimized photo URL - this could be enhanced to cache actual URLs
+  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${apiKey}`;
+}
+
 interface FilterRequest {
   category: string;
   filter: string;
@@ -93,9 +101,7 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
             features: place.types || [],
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
-            image: place.photos?.[0] ? 
-              `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}` : 
-              undefined
+            image: await getCachedPhotoUrl(place.place_id, place.photos?.[0]?.photo_reference, apiKey)
           };
           
           // Avoid duplicates

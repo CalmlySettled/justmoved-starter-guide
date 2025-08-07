@@ -58,6 +58,49 @@ function trackAPIUsage(api: 'yelp' | 'google' | 'cache', callCount: number = 1) 
   }
 }
 
+// Business caching functions to eliminate expensive repeated API calls
+async function getCachedBusinessData(supabase: any, placeId: string) {
+  if (!placeId) return null;
+  
+  try {
+    const { data, error } = await supabase
+      .from('business_cache')
+      .select('*')
+      .eq('place_id', placeId)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+    
+    if (error || !data) return null;
+    
+    console.log(`🎯 CACHE HIT: Using cached business data for place_id ${placeId} - ZERO API CALLS!`);
+    trackAPIUsage('cache', 1);
+    return data;
+  } catch (error) {
+    console.log(`Cache lookup failed for place_id ${placeId}:`, error);
+    return null;
+  }
+}
+
+async function cacheBusinessData(supabase: any, businessData: any) {
+  if (!businessData.place_id) return;
+  
+  try {
+    const { error } = await supabase
+      .from('business_cache')
+      .upsert(businessData, { 
+        onConflict: 'place_id'
+      });
+    
+    if (error) {
+      console.error('Failed to cache business data:', error);
+    } else {
+      console.log(`💾 CACHED for 180 days: ${businessData.business_name} - Future API calls eliminated!`);
+    }
+  } catch (error) {
+    console.error('Cache write failed:', error);
+  }
+}
+
 // Geographic coordinate rounding for better cache efficiency - broader regions for better hits
 function roundCoordinates(lat: number, lng: number): { lat: number, lng: number } {
   // Round to ~2 mile precision for better cache hits (0.03 degrees ≈ 2 miles)
@@ -764,39 +807,66 @@ async function searchGooglePlaces(
         let website = '';
         let phone = '';
         
-        // EXPLORE MODE: Fetch photos for ALL businesses (no rating filter)
-        // POPULAR MODE: Only fetch photos for highly rated businesses (4.0+)
-        if (place.photos && place.photos.length > 0 && (exploreMode || (place.rating || 0) >= 4.0)) {
-          const photoReference = place.photos[0].photo_reference;
-          // COST OPTIMIZATION: Use smaller image size and session token for photos
-          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-          console.log(`→ Fetching optimized photo for business: ${place.name}`);
+        // BUSINESS CACHE: Check if we already have this business data cached
+        const cachedBusiness = await getCachedBusinessData(supabase, place.place_id);
+        
+        if (cachedBusiness) {
+          // Use cached data - NO API calls needed!
+          imageUrl = cachedBusiness.photo_url || '';
+          website = cachedBusiness.website || '';
+          phone = cachedBusiness.phone || '';
+          console.log(`→ Using cached data for: ${place.name} (NO API CALLS)`);
         } else {
-          console.log(`→ Skipping photo for: ${place.name} (rating: ${place.rating || 'N/A'})`);
-        }
-
-        // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
-        // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
-        if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
-          try {
-            // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
-            const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
-            const detailsResponse = await fetch(detailsUrl);
-            
-            if (detailsResponse.ok) {
-              const detailsData = await detailsResponse.json();
-              if (detailsData.result) {
-                website = detailsData.result.website || '';
-                phone = detailsData.result.formatted_phone_number || '';
-                console.log(`→ Fetched details for top business: ${place.name} (FieldMask optimized)`);
-              }
-            }
-          } catch (error) {
-            console.log(`→ Could not fetch details for: ${place.name}`);
+          // Only make expensive API calls if not cached
+          console.log(`→ Cache miss - fetching fresh data for: ${place.name}`);
+          
+          // EXPLORE MODE: Fetch photos for ALL businesses (no rating filter)
+          // POPULAR MODE: Only fetch photos for highly rated businesses (4.0+)
+          if (place.photos && place.photos.length > 0 && (exploreMode || (place.rating || 0) >= 4.0)) {
+            const photoReference = place.photos[0].photo_reference;
+            // COST OPTIMIZATION: Use smaller image size and session token for photos
+            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${photoReference}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+            console.log(`→ Fetching optimized photo for business: ${place.name}`);
           }
-        } else {
-          console.log(`→ Skipping details for: ${place.name} (rating: ${place.rating || 'N/A'})`);
+
+          // EXPLORE MODE: Fetch details for ALL businesses (no rating filter)
+          // POPULAR MODE: Only fetch place details for top-rated businesses (4.2+ rating) with FieldMask
+          if (place.place_id && (exploreMode || (place.rating || 0) >= 4.2)) {
+            try {
+              // COST OPTIMIZATION: Use FieldMask to only request needed fields and session token
+              const detailsFields = 'website,formatted_phone_number,opening_hours,business_status';
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=${detailsFields}&sessiontoken=${sessionToken}&key=${googleApiKey}`;
+              const detailsResponse = await fetch(detailsUrl);
+              
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                if (detailsData.result) {
+                  website = detailsData.result.website || '';
+                  phone = detailsData.result.formatted_phone_number || '';
+                  console.log(`→ Fetched details for business: ${place.name} (FieldMask optimized)`);
+                }
+              }
+            } catch (error) {
+              console.log(`→ Could not fetch details for: ${place.name}`);
+            }
+          }
+          
+          // Cache the fetched data for 180 days to eliminate future API calls
+          await cacheBusinessData(supabase, {
+            place_id: place.place_id,
+            business_name: place.name,
+            address: place.vicinity || place.formatted_address || '',
+            latitude: place.geometry?.location?.lat,
+            longitude: place.geometry?.location?.lng,
+            rating: place.rating,
+            features: place.types || [],
+            photo_url: imageUrl,
+            website: website,
+            phone: phone,
+            opening_hours: null,
+            business_status: 'OPERATIONAL'
+          });
+          console.log(`→ Cached business data for 180 days: ${place.name}`);
         }
 
         // COST OPTIMIZATION: Generate static map as fallback if no business photo
