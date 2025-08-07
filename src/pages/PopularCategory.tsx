@@ -76,6 +76,13 @@ const trendingCategories = [
     searchTerms: ["live music venue", "concert hall", "music bar"],
     color: "bg-blue-500",
     description: "Catch local performances"
+  },
+  { 
+    name: "Faith Communities", 
+    icon: "⛪", 
+    searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
+    color: "bg-indigo-500",
+    description: "Find spiritual communities and places of worship"
   }
 ];
 
