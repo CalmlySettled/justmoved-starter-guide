@@ -205,8 +205,10 @@ export default function Analytics() {
   };
 
   useEffect(() => {
+    console.log('Analytics useEffect:', { adminLoading, isAdmin });
     // Only fetch analytics if user is confirmed admin
     if (!adminLoading && isAdmin) {
+      console.log('✅ Fetching analytics data...');
       fetchAnalytics();
     }
   }, [dateRange, isAdmin, adminLoading]);

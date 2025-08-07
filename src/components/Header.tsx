@@ -170,9 +170,9 @@ export function Header() {
                           My Favorites
                         </Link>
                       </DropdownMenuItem>
-                      {!adminLoading && isAdmin && (
+                      {isAdmin && (
                         <DropdownMenuItem asChild>
-                          <Link to="/admin/analytics" className="flex items-center">
+                          <Link to="/analytics" className="flex items-center">
                             <LayoutDashboard className="h-4 w-4 mr-2" />
                             Analytics
                           </Link>
