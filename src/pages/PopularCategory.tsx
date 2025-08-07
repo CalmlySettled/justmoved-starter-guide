@@ -267,7 +267,7 @@ const PopularCategory = () => {
             .slice(0, 12);
 
           setBusinesses(sortedResults);
-          toast.success(`Found ${sortedResults.length} popular places`);
+          console.log(`Found ${sortedResults.length} popular places from cache`);
           setLoading(false);
           return;
         }
@@ -300,7 +300,7 @@ const PopularCategory = () => {
           .slice(0, 12); // Limit to 12 results
 
         setBusinesses(sortedResults);
-        toast.success(`Found ${sortedResults.length} popular places`);
+        console.log(`Found ${sortedResults.length} popular places from API`);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
