@@ -62,12 +62,12 @@ class RequestCacheManager {
   }
 
   private generateCacheKey(type: string, params: any): string {
-    // Normalize coordinates for better cache hits with tighter rounding
+    // Normalize coordinates to match database cache precision (~3.2km)
     if (params.latitude && params.longitude) {
       params = {
         ...params,
-        latitude: Number(params.latitude.toFixed(2)), // Tighter rounding for same-address hits
-        longitude: Number(params.longitude.toFixed(2))
+        latitude: Math.round(params.latitude * 33.33) / 33.33, // Match database cache precision
+        longitude: Math.round(params.longitude * 33.33) / 33.33
       };
     }
     
