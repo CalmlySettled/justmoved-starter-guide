@@ -54,7 +54,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
   return (
     <Card 
-      className="h-full cursor-pointer hover:shadow-md transition-shadow duration-200 group max-h-32"
+      className="h-full cursor-pointer hover:shadow-md transition-shadow duration-200 group min-h-40"
       onClick={handleCardClick}
     >
       <CardHeader className="p-3 pb-2">
