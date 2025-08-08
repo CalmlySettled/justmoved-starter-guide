@@ -665,7 +665,6 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
     strategies.push(
       { keyword: 'boutique' },
       { keyword: 'shopping center' },
-      { keyword: 'market' },
       { keyword: 'retail store' },
       { keyword: 'shopping mall' },
       { type: 'shopping_mall' },
