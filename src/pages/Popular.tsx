@@ -71,11 +71,11 @@ const trendingCategories = [
     description: "Local brews and after-work spots"
   },
   { 
-    name: "Shopping & Markets", 
+    name: "Shopping", 
     icon: "🛍️", 
     searchTerms: ["boutique", "shopping center", "retail store"],
     color: "bg-cyan-500",
-    description: "Unique finds and local shopping"
+    description: "Boutiques and specialty retail"
   },
   { 
     name: "Wellness & Self Care", 

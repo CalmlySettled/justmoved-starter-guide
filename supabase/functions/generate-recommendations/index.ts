@@ -479,8 +479,8 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     }
   }
   
-  // For Shopping & Markets, exclude grocery stores and food-related businesses
-  if (category.includes('Shopping & Markets')) {
+  // For Shopping, exclude grocery stores and food-related businesses
+  if (category.includes('Shopping')) {
     const groceryKeywords = [
       'grocery', 'supermarket', 'market', 'food', 'deli', 'convenience',
       'bodega', 'corner store', 'food mart', 'fresh market'
@@ -494,7 +494,7 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     // Exclude if it has grocery-related keywords or types
     if (groceryKeywords.some(keyword => name.includes(keyword)) ||
         groceryTypes.some(type => types.includes(type))) {
-      console.log(`→ Excluding grocery/food business from Shopping & Markets: ${place.name}`);
+      console.log(`→ Excluding grocery/food business from Shopping: ${place.name}`);
       return false;
     }
   }
@@ -681,14 +681,10 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'food truck' },
       { type: 'restaurant' }
     );
-  } else if (category.includes('Shopping & Markets') || category.includes('boutique')) {
+  } else if (category.includes('Shopping') || category.includes('boutique')) {
     strategies.push(
       { keyword: 'boutique' },
-      { keyword: 'shopping center' },
-      { keyword: 'retail store' },
       { keyword: 'shopping mall' },
-      { keyword: 'department store' },
-      { keyword: 'specialty retail' },
       { type: 'shopping_mall' },
       { type: 'clothing_store' },
       { type: 'department_store' }
