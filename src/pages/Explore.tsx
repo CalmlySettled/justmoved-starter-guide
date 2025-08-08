@@ -849,12 +849,12 @@ export default function Explore() {
                        </p>
                        <div className="space-y-2">
                          {/* First row - 2 categories */}
-                         <div className="flex flex-wrap gap-2 justify-center">
+                         <div className="flex gap-2 justify-center">
                            {pack.categories.slice(0, 2).map((category, index) => (
                              <Badge 
                                key={index} 
                                variant="secondary" 
-                               className={`text-xs transition-all duration-200 shadow-sm ${
+                               className={`text-xs transition-all duration-200 shadow-sm flex-shrink-0 ${
                                  user 
                                    ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
                                    : "cursor-not-allowed"
@@ -873,12 +873,12 @@ export default function Explore() {
                            ))}
                          </div>
                          {/* Second row - 3 categories */}
-                         <div className="flex flex-wrap gap-2 justify-center">
+                         <div className="flex gap-2 justify-center flex-wrap max-w-full">
                            {pack.categories.slice(2, 5).map((category, index) => (
                              <Badge 
                                key={index + 2} 
                                variant="secondary" 
-                               className={`text-xs transition-all duration-200 shadow-sm ${
+                               className={`text-xs transition-all duration-200 shadow-sm flex-shrink-0 max-w-[30%] ${
                                  user 
                                    ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
                                    : "cursor-not-allowed"
