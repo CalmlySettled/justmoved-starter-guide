@@ -17,7 +17,7 @@ const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations
 // Cost Optimization Configuration
 const CACHE_DURATION_DAYS = 180; // Extended cache duration for static business data
 const GEOGRAPHIC_PRECISION = 2; // Round coordinates to 2 decimals for better caching
-const YELP_ONLY_CATEGORIES = ['restaurants', 'dining', 'food', 'bars', 'nightlife']; // High-value Yelp categories
+const YELP_ONLY_CATEGORIES = ['restaurants', 'dining', 'food', 'bars']; // High-value Yelp categories
 
 // API Cost Tracking with Enhanced Optimization
 interface APIUsageStats {
@@ -218,7 +218,7 @@ function shouldUseYelpPrimary(category: string): boolean {
   const yelpPrimaryCategories = [
     'Restaurants', 'Coffee shops', 'Bakeries', 'Grocery stores', 
     'Shopping', 'Beauty', 'Salon', 'Spa', 'Retail', 'Entertainment',
-    'Fitness options', 'Bars', 'Nightlife'
+    'Fitness options', 'Bars'
   ];
   return yelpPrimaryCategories.some(cat => category.includes(cat));
 }
@@ -309,7 +309,7 @@ function getYelpSearchTerms(category: string): string[] {
   } else if (category.includes('Beauty')) {
     return ['beauty salon', 'hair salon', 'spa'];
   } else if (category.includes('Bars')) {
-    return ['bars', 'pubs', 'nightlife'];
+    return ['bars', 'pubs'];
   } else {
     return [category.toLowerCase()];
   }

@@ -57,13 +57,6 @@ const trendingCategories = [
     description: "Savor the local dining experiences"
   },
   { 
-    name: "Nightlife", 
-    icon: "🍸", 
-    searchTerms: ["bar", "cocktail lounge", "nightclub"],
-    color: "bg-purple-500",
-    description: "Where the locals go after dark"
-  },
-  { 
     name: "Happy Hours & Breweries", 
     icon: "🍺", 
     searchTerms: ["brewery", "brewpub", "craft beer", "happy hour", "bar"],
