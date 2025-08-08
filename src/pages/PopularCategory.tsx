@@ -83,6 +83,34 @@ const trendingCategories = [
     searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
     color: "bg-indigo-500",
     description: "Find spiritual communities and places of worship"
+  },
+  { 
+    name: "Food Scene", 
+    icon: "🍴", 
+    searchTerms: ["restaurant", "dining", "food truck", "eatery", "cuisine", "fine dining", "casual dining"],
+    color: "bg-red-500",
+    description: "Explore local dining and culinary experiences"
+  },
+  { 
+    name: "Shopping & Markets", 
+    icon: "🛍️", 
+    searchTerms: ["shopping center", "boutique", "market", "retail store", "farmers market", "mall"],
+    color: "bg-cyan-500",
+    description: "Discover unique shopping and local markets"
+  },
+  { 
+    name: "Wellness & Self Care", 
+    icon: "🧘", 
+    searchTerms: ["spa", "wellness center", "massage therapy", "meditation center", "yoga studio", "health spa"],
+    color: "bg-emerald-500",
+    description: "Rejuvenate your mind and body"
+  },
+  { 
+    name: "Local Events", 
+    icon: "📅", 
+    searchTerms: ["event venue", "community center", "entertainment venue", "theater", "event space"],
+    color: "bg-violet-500",
+    description: "Find venues hosting local events and activities"
   }
 ];
 
