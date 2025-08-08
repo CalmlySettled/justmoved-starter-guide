@@ -1,5 +1,6 @@
 import { toast } from "@/utils/notificationRemover";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,13 +72,14 @@ const themedPacks = [
   },
   {
     title: "First 90 Days",
-    description: "Important services for families settling in",
-    categories: ["libraries", "parks"],
+    description: "Ready to explore your community? Head to Popular to discover local favorites and start settling in",
+    categories: [],
     icon: Users,
   },
 ];
 
 export default function Explore() {
+  const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [manualLocation, setManualLocation] = useState("");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -831,32 +833,45 @@ export default function Explore() {
                 </CardHeader>
                  <CardContent>
                    <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
-                   <p className="text-sm text-center text-muted-foreground mb-3 font-medium">
-                     Click a category below:
-                   </p>
-                   <div className="flex flex-wrap gap-2 justify-center">
-                     {pack.categories.map((category, index) => (
-                       <Badge 
-                         key={index} 
-                         variant="secondary" 
-                         className={`text-xs transition-all duration-200 shadow-sm ${
-                           user 
-                             ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                             : "cursor-not-allowed"
-                         }`}
-                         onClick={(e) => {
-                           e.stopPropagation();
-                            if (user) {
-                              handleThemedPackClick(pack, category);
-                            } else {
-                              window.location.href = '/auth';
-                            }
-                         }}
+                   {pack.title === "First 90 Days" ? (
+                     <div className="flex justify-center">
+                       <Button 
+                         onClick={() => navigate('/popular')}
+                         className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-glow-hover transition-all duration-300"
                        >
-                         {category.charAt(0).toUpperCase() + category.slice(1)}
-                       </Badge>
-                     ))}
-                   </div>
+                         Explore Popular
+                       </Button>
+                     </div>
+                   ) : (
+                     <>
+                       <p className="text-sm text-center text-muted-foreground mb-3 font-medium">
+                         Click a category below:
+                       </p>
+                       <div className="flex flex-wrap gap-2 justify-center">
+                         {pack.categories.map((category, index) => (
+                           <Badge 
+                             key={index} 
+                             variant="secondary" 
+                             className={`text-xs transition-all duration-200 shadow-sm ${
+                               user 
+                                 ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                 : "cursor-not-allowed"
+                             }`}
+                             onClick={(e) => {
+                               e.stopPropagation();
+                                if (user) {
+                                  handleThemedPackClick(pack, category);
+                                } else {
+                                  window.location.href = '/auth';
+                                }
+                             }}
+                           >
+                             {category.charAt(0).toUpperCase() + category.slice(1)}
+                           </Badge>
+                         ))}
+                       </div>
+                     </>
+                   )}
                  </CardContent>
               </Card>
               ))}
