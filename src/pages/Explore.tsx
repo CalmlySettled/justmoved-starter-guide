@@ -66,13 +66,13 @@ const themedPacks = [
   {
     title: "First Month",
     description: "Essential services to get your life organized",
-    categories: ["DMV", "doctors", "Fitness", "post offices", "veterinarians"],
+    categories: ["daycares", "DMV", "doctors", "Fitness", "post offices", "veterinarians"],
     icon: Zap,
   },
   {
     title: "First 90 Days",
     description: "Important services for families settling in",
-    categories: ["daycares", "libraries", "parks"],
+    categories: ["libraries", "parks"],
     icon: Users,
   },
 ];
