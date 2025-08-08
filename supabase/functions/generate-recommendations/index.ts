@@ -524,6 +524,38 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
   return true;
 }
 
+// Helper function to check if a business is DMV-related
+function isDMVRelated(place: any): boolean {
+  const name = place.name?.toLowerCase() || '';
+  const types = place.types || [];
+  const typesString = types.join(' ').toLowerCase();
+  
+  // DMV-specific keywords
+  const dmvKeywords = [
+    'department of motor vehicles', 'dmv', 'motor vehicle', 'vehicle registration',
+    'driver license', 'driver\'s license', 'vehicle licensing', 'motor vehicle services',
+    'registry of motor vehicles', 'motor vehicle department'
+  ];
+  
+  // Non-DMV government services to exclude
+  const excludeKeywords = [
+    'social services', 'revenue', 'taxation', 'health department', 'planning',
+    'building department', 'fire department', 'police', 'court', 'clerk',
+    'treasurer', 'assessor', 'parks', 'recreation', 'library', 'aaa', 'triple a',
+    'department of social services', 'parking authority', 'department of revenue'
+  ];
+  
+  const hasDMVKeywords = dmvKeywords.some(keyword => 
+    name.includes(keyword) || typesString.includes(keyword)
+  );
+  
+  const hasExcludeKeywords = excludeKeywords.some(keyword => 
+    name.includes(keyword) || typesString.includes(keyword)
+  );
+  
+  return hasDMVKeywords && !hasExcludeKeywords;
+}
+
 // Define multiple search strategies for different categories to improve coverage
 function getSearchStrategies(category: string): Array<{ keyword?: string; type?: string }> {
   const strategies = [];
@@ -598,8 +630,10 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
   } else if (category.includes('DMV / Government services')) {
     strategies.push(
       { keyword: 'DMV' },
-      { keyword: 'government services' },
-      { keyword: 'city hall' },
+      { keyword: 'Department of Motor Vehicles' },
+      { keyword: 'motor vehicle department' },
+      { keyword: 'vehicle registration' },
+      { keyword: 'driver license' },
       { type: 'local_government_office' }
     );
   } else if (category.includes('Public transit / commute info')) {
@@ -1170,6 +1204,43 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
     );
     
     console.log(`Filtered from ${businesses.length} to ${filteredBusinesses.length} businesses based on transportation`);
+  }
+  
+  // Special filtering for DMV searches to ensure only actual DMV locations
+  if (category.includes('DMV / Government services')) {
+    console.log(`Applying DMV-specific filtering to ${filteredBusinesses.length} businesses`);
+    filteredBusinesses = filteredBusinesses.filter(business => {
+      // For Google Places businesses, use the isDMVRelated function
+      if (business.place_id) {
+        return isDMVRelated({ name: business.name, types: business.types || [] });
+      }
+      
+      // For Yelp businesses, check name and categories
+      const name = business.name?.toLowerCase() || '';
+      const categories = business.categories?.join(' ').toLowerCase() || '';
+      
+      const dmvKeywords = [
+        'department of motor vehicles', 'dmv', 'motor vehicle', 'vehicle registration',
+        'driver license', 'driver\'s license', 'vehicle licensing', 'motor vehicle services'
+      ];
+      
+      const excludeKeywords = [
+        'social services', 'revenue', 'taxation', 'health department', 'planning',
+        'building department', 'fire department', 'police', 'court', 'clerk',
+        'aaa', 'triple a', 'parking authority', 'department of revenue'
+      ];
+      
+      const hasDMVKeywords = dmvKeywords.some(keyword => 
+        name.includes(keyword) || categories.includes(keyword)
+      );
+      
+      const hasExcludeKeywords = excludeKeywords.some(keyword => 
+        name.includes(keyword) || categories.includes(keyword)
+      );
+      
+      return hasDMVKeywords && !hasExcludeKeywords;
+    });
+    console.log(`DMV filtering: ${businesses.length} → ${filteredBusinesses.length} businesses`);
   }
   
   // EXPLORE MODE: Simple distance-only sorting (no complex scoring)
@@ -2799,8 +2870,8 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
     "home depot": "hardware stores",
     "lowes": "hardware stores",
     "improvement": "hardware stores",
-    "dmv / government services": "government offices",
-    "dmv": "government offices",
+    "dmv / government services": "DMV / Government services",
+    "dmv": "DMV / Government services",
     "government services": "government offices",
     "government": "government offices",
     "city hall": "government offices",
