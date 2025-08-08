@@ -50,6 +50,13 @@ const trendingCategories = [
     description: "Discover the local coffee culture"
   },
   { 
+    name: "Food Scene", 
+    icon: "🍴", 
+    searchTerms: ["restaurant", "dining", "food truck", "bistro"],
+    color: "bg-red-500",
+    description: "Savor the local dining experiences"
+  },
+  { 
     name: "Nightlife", 
     icon: "🍸", 
     searchTerms: ["bar", "cocktail lounge", "nightclub"],
@@ -62,6 +69,20 @@ const trendingCategories = [
     searchTerms: ["brewery", "brewpub", "craft beer", "happy hour", "bar"],
     color: "bg-orange-500",
     description: "Local brews and after-work spots"
+  },
+  { 
+    name: "Shopping & Markets", 
+    icon: "🛍️", 
+    searchTerms: ["boutique", "shopping center", "market", "retail store"],
+    color: "bg-cyan-500",
+    description: "Unique finds and local shopping"
+  },
+  { 
+    name: "Wellness & Self Care", 
+    icon: "🧘", 
+    searchTerms: ["spa", "wellness center", "massage therapy", "meditation"],
+    color: "bg-emerald-500",
+    description: "Relax and rejuvenate yourself"
   },
   { 
     name: "Art & Culture", 
@@ -83,6 +104,13 @@ const trendingCategories = [
     searchTerms: ["live music venue", "concert hall", "music bar"],
     color: "bg-blue-500",
     description: "Catch local performances"
+  },
+  { 
+    name: "Local Events", 
+    icon: "📅", 
+    searchTerms: ["event venue", "community center", "entertainment venue"],
+    color: "bg-violet-500",
+    description: "Discover what's happening around town"
   },
   { 
     name: "Faith Communities", 

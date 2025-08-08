@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Camera, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
@@ -46,15 +46,15 @@ const trendingCategories = [
   { name: "Fitness", icon: Dumbbell, searchTerm: "fitness gyms", color: "bg-blue-500" },
   { name: "Grocery", icon: ShoppingCart, searchTerm: "grocery stores", color: "bg-green-500" },
   { name: "Parks", icon: TreePine, searchTerm: "parks recreation", color: "bg-emerald-500" },
-  { name: "Restaurants", icon: Star, searchTerm: "restaurants", color: "bg-red-500" },
-  { name: "Entertainment", icon: Camera, searchTerm: "entertainment venues", color: "bg-purple-500" },
+  { name: "Junk Removal", icon: Trash2, searchTerm: "junk removal", color: "bg-orange-500" },
+  { name: "Personal Care", icon: Scissors, searchTerm: "personal care", color: "bg-pink-500" },
 ];
 
 const themedPacks = [
   {
     title: "First 48 Hours",
     description: "Immediate essentials for your first days in a new city",
-    categories: ["grocery stores", "pharmacies", "gas stations", "trash pickup"],
+    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal"],
     icon: Clock,
   },
   {

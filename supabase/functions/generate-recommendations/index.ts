@@ -636,6 +636,58 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { type: 'library' },
       { type: 'school' }
     );
+  } else if (category.includes('junk removal')) {
+    strategies.push(
+      { keyword: 'junk removal' },
+      { keyword: 'waste removal' },
+      { keyword: 'hauling services' },
+      { keyword: 'debris removal' },
+      { keyword: 'trash removal' }
+    );
+  } else if (category.includes('personal care')) {
+    strategies.push(
+      { keyword: 'hair salon' },
+      { keyword: 'nail salon' },
+      { keyword: 'barbershop' },
+      { keyword: 'beauty salon' },
+      { type: 'hair_care' },
+      { type: 'beauty_salon' }
+    );
+  } else if (category.includes('Food Scene') || category.includes('restaurant')) {
+    strategies.push(
+      { keyword: 'restaurants' },
+      { keyword: 'dining' },
+      { keyword: 'bistro' },
+      { keyword: 'food truck' },
+      { type: 'restaurant' }
+    );
+  } else if (category.includes('Shopping & Markets') || category.includes('boutique')) {
+    strategies.push(
+      { keyword: 'boutique' },
+      { keyword: 'shopping center' },
+      { keyword: 'market' },
+      { keyword: 'retail store' },
+      { keyword: 'shopping mall' },
+      { type: 'shopping_mall' },
+      { type: 'clothing_store' }
+    );
+  } else if (category.includes('Wellness & Self Care') || category.includes('spa')) {
+    strategies.push(
+      { keyword: 'spa' },
+      { keyword: 'wellness center' },
+      { keyword: 'massage therapy' },
+      { keyword: 'meditation center' },
+      { keyword: 'day spa' },
+      { type: 'spa' }
+    );
+  } else if (category.includes('Local Events') || category.includes('event venue')) {
+    strategies.push(
+      { keyword: 'event venue' },
+      { keyword: 'community center' },
+      { keyword: 'entertainment venue' },
+      { keyword: 'event space' },
+      { type: 'community_center' }
+    );
   } else {
     // Default single strategy for other categories
     strategies.push({ keyword: category });
