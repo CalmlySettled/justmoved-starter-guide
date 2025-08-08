@@ -17,7 +17,7 @@ import { useRequestCache } from "@/hooks/useRequestCache";
 import { useMoveInProgress } from "@/hooks/useMoveInProgress";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
-import { TimelinePackModal } from "@/components/TimelinePackModal";
+
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
 
 interface LocationData {
@@ -69,37 +69,37 @@ const timelinePacks = [
   },
   {
     title: "First Week", 
-    description: "Getting settled and establishing your new routine",
+    description: "Get your basic utilities and accounts set up",
     icon: "🏠",
     gradient: "from-blue-500/20 to-cyan-500/20",
     categories: [
       { name: "hardware stores", displayName: "Hardware Stores" },
       { name: "internet providers", displayName: "Internet Providers" },
       { name: "banks", displayName: "Banks" },
-      { name: "DMV", displayName: "DMV/Government Services" },
-      { name: "post offices", displayName: "Post Offices" },
       { name: "personal care", displayName: "Personal Care" },
       { name: "furniture stores", displayName: "Furniture Stores" },
-      { name: "home improvement", displayName: "Home Improvement" }
+      { name: "home improvement", displayName: "Home Improvement" },
+      { name: "DMV", displayName: "DMV/Government" },
+      { name: "post offices", displayName: "Post Offices" }
     ]
   },
   {
     title: "First Month",
-    description: "Building your routine and exploring your neighborhood", 
-    icon: "🌱",
+    description: "Establish your routine and find local amenities", 
+    icon: "🌟",
     gradient: "from-green-500/20 to-emerald-500/20",
     categories: [
-      { name: "fitness", displayName: "Fitness Options" },
+      { name: "fitness gyms", displayName: "Fitness Options" },
       { name: "libraries", displayName: "Libraries/Education" },
-      { name: "parks", displayName: "Parks/Trails" },
+      { name: "parks recreation", displayName: "Parks/Trails" },
       { name: "veterinary care", displayName: "Veterinary Care" },
       { name: "faith communities", displayName: "Faith Communities" }
     ]
   },
   {
     title: "First 90 Days",
-    description: "Integrating into your new community and building connections",
-    icon: "🤝", 
+    description: "Discover your community and build connections",
+    icon: "🎯", 
     gradient: "from-purple-500/20 to-pink-500/20",
     categories: [
       { name: "social events", displayName: "Local Events" },
@@ -118,8 +118,6 @@ export default function Explore() {
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
-  const [selectedPack, setSelectedPack] = useState<typeof timelinePacks[0] | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isProcessingSavedAddress, setIsProcessingSavedAddress] = useState(false);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
@@ -491,30 +489,6 @@ export default function Explore() {
     }
   };
 
-  const handleThemedPackClick = (pack: typeof timelinePacks[0]) => {
-    setSelectedPack(pack);
-    setIsTimelineModalOpen(true);
-    
-    trackUIInteraction('explore_themed_pack', 'clicked', 'explore', {
-      packTitle: pack.title,
-      categoriesInPack: pack.categories.map(cat => cat.name),
-      location: location?.city || 'Unknown'
-    });
-  };
-
-  const handleCategorySelectFromPack = async (categoryName: string) => {
-    if (!location) {
-      toast({
-        title: "Location required",
-        description: "Please set your location first to get recommendations.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsTimelineModalOpen(false);
-    await handleSingleCategoryClick(categoryName);
-  };
 
   // Handle single category selection  
   const handleSingleCategoryClick = async (categoryName: string) => {
@@ -855,13 +829,19 @@ export default function Explore() {
                       </div>
                     </div>
 
-                    <Button 
-                      onClick={() => handleThemedPackClick(pack)}
-                      className="w-full"
-                      size="lg"
-                    >
-                      Explore Phase
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      {pack.categories.map((category) => (
+                        <Button
+                          key={category.name}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleSingleCategoryClick(category.name)}
+                          className="text-xs"
+                        >
+                          {category.displayName}
+                        </Button>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -889,13 +869,6 @@ export default function Explore() {
                 onToggleFavorite={toggleFavorite}
               />
 
-              {/* Timeline Pack Modal */}
-              <TimelinePackModal
-                isOpen={isTimelineModalOpen}
-                onClose={() => setIsTimelineModalOpen(false)}
-                pack={selectedPack}
-                onCategorySelect={handleCategorySelectFromPack}
-              />
             </>
           )}
           
