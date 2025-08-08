@@ -479,6 +479,26 @@ function isRetailConsumerBusiness(place: any, category: string): boolean {
     }
   }
   
+  // For Shopping & Markets, exclude grocery stores and food-related businesses
+  if (category.includes('Shopping & Markets')) {
+    const groceryKeywords = [
+      'grocery', 'supermarket', 'market', 'food', 'deli', 'convenience',
+      'bodega', 'corner store', 'food mart', 'fresh market'
+    ];
+    
+    const groceryTypes = [
+      'grocery_or_supermarket', 'supermarket', 'convenience_store', 'meal_takeaway',
+      'restaurant', 'food', 'bakery', 'liquor_store'
+    ];
+    
+    // Exclude if it has grocery-related keywords or types
+    if (groceryKeywords.some(keyword => name.includes(keyword)) ||
+        groceryTypes.some(type => types.includes(type))) {
+      console.log(`→ Excluding grocery/food business from Shopping & Markets: ${place.name}`);
+      return false;
+    }
+  }
+  
   // Exclude businesses that are clearly not consumer retail
   const generalExcludeKeywords = [
     'wholesale', 'distributor', 'b2b', 'commercial only',
@@ -667,8 +687,11 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'shopping center' },
       { keyword: 'retail store' },
       { keyword: 'shopping mall' },
+      { keyword: 'department store' },
+      { keyword: 'specialty retail' },
       { type: 'shopping_mall' },
-      { type: 'clothing_store' }
+      { type: 'clothing_store' },
+      { type: 'department_store' }
     );
   } else if (category.includes('Wellness & Self Care') || category.includes('spa')) {
     strategies.push(

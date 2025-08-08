@@ -73,7 +73,7 @@ const trendingCategories = [
   { 
     name: "Shopping & Markets", 
     icon: "🛍️", 
-    searchTerms: ["boutique", "shopping center", "market", "retail store"],
+    searchTerms: ["boutique", "shopping center", "retail store"],
     color: "bg-cyan-500",
     description: "Unique finds and local shopping"
   },
