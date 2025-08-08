@@ -60,7 +60,7 @@ const themedPacks = [
   {
     title: "Setting Up Home",
     description: "Everything you need to make your new place feel like home",
-    categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services", "internet providers"],
+    categories: ["hardware stores", "furniture stores", "cleaning services", "internet providers"],
     icon: Home,
   },
   {
