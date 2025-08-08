@@ -1150,7 +1150,19 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   } else {
     console.log(`Using Google Places as primary for civic/institutional category: "${category}"`);
     businesses = await searchGooglePlaces(category, coordinates.lat, coordinates.lng, optimalRadius, exploreMode, coordinates);
-    console.log(`Google Places found ${businesses.length} businesses`);
+    console.log(`Google Places found ${businesses.length} businesses for category: ${category}`);
+    
+    // Extra debugging for DMV searches
+    if (category.includes('DMV / Government services')) {
+      console.log(`=== DMV SEARCH RESULTS ===`);
+      console.log(`Search radius: ${optimalRadius}m`);
+      console.log(`Raw Google Places results:`, businesses.map(b => ({ 
+        name: b.name, 
+        address: b.address, 
+        types: b.types,
+        distance: b.distance_miles 
+      })));
+    }
   }
   
   // Apply deduplication to remove same-name businesses within 5 miles
@@ -1208,7 +1220,10 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
   
   // Special filtering for DMV searches to ensure only actual DMV locations
   if (category.includes('DMV / Government services')) {
-    console.log(`Applying DMV-specific filtering to ${filteredBusinesses.length} businesses`);
+    console.log(`=== DMV SEARCH DEBUG ===`);
+    console.log(`Starting DMV filtering with ${filteredBusinesses.length} businesses`);
+    console.log(`Businesses before DMV filtering:`, filteredBusinesses.map(b => ({ name: b.name, address: b.address, types: b.types })));
+    
     filteredBusinesses = filteredBusinesses.filter(business => {
       // For Google Places businesses, use the isDMVRelated function
       if (business.place_id) {
@@ -1238,9 +1253,14 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
         name.includes(keyword) || categories.includes(keyword)
       );
       
-      return hasDMVKeywords && !hasExcludeKeywords;
+      const isValidDMV = hasDMVKeywords && !hasExcludeKeywords;
+      console.log(`Business: ${business.name} | DMV keywords: ${hasDMVKeywords} | Exclude keywords: ${hasExcludeKeywords} | Valid DMV: ${isValidDMV}`);
+      
+      return isValidDMV;
     });
     console.log(`DMV filtering: ${businesses.length} → ${filteredBusinesses.length} businesses`);
+    console.log(`Final DMV businesses:`, filteredBusinesses.map(b => ({ name: b.name, address: b.address, distance: b.distance_miles })));
+    console.log(`=== END DMV DEBUG ===`);
   }
   
   // EXPLORE MODE: Simple distance-only sorting (no complex scoring)
