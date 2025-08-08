@@ -66,7 +66,7 @@ const themedPacks = [
   {
     title: "First Month",
     description: "Essential services to get your life organized",
-    categories: ["DMV", "doctors", "fitness gyms", "post offices", "veterinarians"],
+    categories: ["DMV", "doctors", "Fitness", "post offices", "veterinarians"],
     icon: Zap,
   },
   {
