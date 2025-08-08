@@ -377,7 +377,9 @@ export default function Explore() {
         type: 'category',
         latitude: location.latitude,
         longitude: location.longitude,
-        category: category.searchTerm
+        category: category.searchTerm,
+        // Cache buster for DMV debugging - remove this after fixing
+        debug: category.searchTerm === 'DMV' ? Date.now() : undefined
       };
       
       console.log(`🔍 L1 FRONTEND CACHE LOOKUP:`, {
