@@ -55,13 +55,13 @@ const themedPacks = [
   {
     title: "First 48 Hours",
     description: "Immediate essentials for your first days in a new city",
-    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal", "doctors"],
+    categories: ["doctors", "gas stations", "grocery stores", "junk removal", "pharmacies"],
     icon: Clock,
   },
   {
     title: "First Week",
     description: "Everything you need to make your new place feel like home",
-    categories: ["hardware stores", "furniture stores", "cleaning services", "internet providers", "banks"],
+    categories: ["banks", "cleaning services", "furniture stores", "hardware stores", "internet providers"],
     icon: Home,
   },
   {
@@ -847,28 +847,55 @@ export default function Explore() {
                        <p className="text-sm text-center text-muted-foreground mb-3 font-medium">
                          Click a category below:
                        </p>
-                       <div className="flex flex-wrap gap-2 justify-center">
-                         {pack.categories.map((category, index) => (
-                           <Badge 
-                             key={index} 
-                             variant="secondary" 
-                             className={`text-xs transition-all duration-200 shadow-sm ${
-                               user 
-                                 ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                 : "cursor-not-allowed"
-                             }`}
-                             onClick={(e) => {
-                               e.stopPropagation();
-                                if (user) {
-                                  handleThemedPackClick(pack, category);
-                                } else {
-                                  window.location.href = '/auth';
-                                }
-                             }}
-                           >
-                             {category.charAt(0).toUpperCase() + category.slice(1)}
-                           </Badge>
-                         ))}
+                       <div className="space-y-2">
+                         {/* First row - 2 categories */}
+                         <div className="flex flex-wrap gap-2 justify-center">
+                           {pack.categories.slice(0, 2).map((category, index) => (
+                             <Badge 
+                               key={index} 
+                               variant="secondary" 
+                               className={`text-xs transition-all duration-200 shadow-sm ${
+                                 user 
+                                   ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                   : "cursor-not-allowed"
+                               }`}
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                  if (user) {
+                                    handleThemedPackClick(pack, category);
+                                  } else {
+                                    window.location.href = '/auth';
+                                  }
+                               }}
+                             >
+                               {category.charAt(0).toUpperCase() + category.slice(1)}
+                             </Badge>
+                           ))}
+                         </div>
+                         {/* Second row - 3 categories */}
+                         <div className="flex flex-wrap gap-2 justify-center">
+                           {pack.categories.slice(2, 5).map((category, index) => (
+                             <Badge 
+                               key={index + 2} 
+                               variant="secondary" 
+                               className={`text-xs transition-all duration-200 shadow-sm ${
+                                 user 
+                                   ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                   : "cursor-not-allowed"
+                               }`}
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                  if (user) {
+                                    handleThemedPackClick(pack, category);
+                                  } else {
+                                    window.location.href = '/auth';
+                                  }
+                               }}
+                             >
+                               {category.charAt(0).toUpperCase() + category.slice(1)}
+                             </Badge>
+                           ))}
+                         </div>
                        </div>
                      </>
                    )}
