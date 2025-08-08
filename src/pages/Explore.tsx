@@ -58,19 +58,19 @@ const themedPacks = [
     icon: Clock,
   },
   {
-    title: "Setting Up Home",
+    title: "First Week",
     description: "Everything you need to make your new place feel like home",
     categories: ["hardware stores", "furniture stores", "cleaning services", "internet providers"],
     icon: Home,
   },
   {
-    title: "Getting Connected",
+    title: "First Month",
     description: "Essential services to get your life organized",
     categories: ["banks", "post offices", "DMV"],
     icon: Zap,
   },
   {
-    title: "Family Essentials",
+    title: "First 90 Days",
     description: "Important services for families settling in",
     categories: ["doctors", "veterinarians", "daycares", "parks", "libraries"],
     icon: Users,
