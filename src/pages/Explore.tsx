@@ -17,6 +17,7 @@ import { useRequestCache } from "@/hooks/useRequestCache";
 import { useMoveInProgress } from "@/hooks/useMoveInProgress";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
+import { TimelinePackModal } from "@/components/TimelinePackModal";
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
 
 interface LocationData {
@@ -55,40 +56,56 @@ const trendingCategories = [
 const timelinePacks = [
   {
     title: "First 48 Hours",
-    description: "Survival essentials for your first days",
-    timeline: "Emergency needs",
-    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal", "medical care"],
-    icon: Clock,
-    color: "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800",
-    iconColor: "text-red-600 dark:text-red-400",
+    description: "Essential services you need immediately after moving in",
+    icon: "⚡",
+    gradient: "from-red-500/20 to-orange-500/20",
+    categories: [
+      { name: "grocery stores", displayName: "Grocery Stores" },
+      { name: "pharmacies", displayName: "Pharmacies" },
+      { name: "gas stations", displayName: "Gas Stations" },
+      { name: "junk removal", displayName: "Junk Removal" },
+      { name: "medical care", displayName: "Medical Care" }
+    ]
   },
   {
     title: "First Week", 
-    description: "Getting your home and services set up",
-    timeline: "Settlement phase",
-    categories: ["hardware stores", "internet providers", "banks", "DMV", "post offices", "personal care", "furniture stores", "home improvement"],
-    icon: Home,
-    color: "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800",
-    iconColor: "text-orange-600 dark:text-orange-400",
+    description: "Getting settled and establishing your new routine",
+    icon: "🏠",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    categories: [
+      { name: "hardware stores", displayName: "Hardware Stores" },
+      { name: "internet providers", displayName: "Internet Providers" },
+      { name: "banks", displayName: "Banks" },
+      { name: "DMV", displayName: "DMV/Government Services" },
+      { name: "post offices", displayName: "Post Offices" },
+      { name: "personal care", displayName: "Personal Care" },
+      { name: "furniture stores", displayName: "Furniture Stores" },
+      { name: "home improvement", displayName: "Home Improvement" }
+    ]
   },
   {
     title: "First Month",
-    description: "Building your routine and exploring",
-    timeline: "Routine building",
-    categories: ["fitness options", "libraries", "parks", "veterinary care", "faith communities"],
-    icon: Calendar,
-    color: "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800", 
-    iconColor: "text-blue-600 dark:text-blue-400",
+    description: "Building your routine and exploring your neighborhood", 
+    icon: "🌱",
+    gradient: "from-green-500/20 to-emerald-500/20",
+    categories: [
+      { name: "fitness", displayName: "Fitness Options" },
+      { name: "libraries", displayName: "Libraries/Education" },
+      { name: "parks", displayName: "Parks/Trails" },
+      { name: "veterinary care", displayName: "Veterinary Care" },
+      { name: "faith communities", displayName: "Faith Communities" }
+    ]
   },
   {
     title: "First 90 Days",
-    description: "Connecting with your community",
-    timeline: "Community integration",
-    categories: ["local events", "mental health services", "social events"],
-    icon: Users,
-    color: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800",
-    iconColor: "text-green-600 dark:text-green-400",
-  },
+    description: "Integrating into your new community and building connections",
+    icon: "🤝", 
+    gradient: "from-purple-500/20 to-pink-500/20",
+    categories: [
+      { name: "social events", displayName: "Local Events" },
+      { name: "mental health", displayName: "Mental Health Services" }
+    ]
+  }
 ];
 
 export default function Explore() {
@@ -101,6 +118,8 @@ export default function Explore() {
   const [categoryResults, setCategoryResults] = useState<Business[]>([]);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<typeof timelinePacks[0] | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isProcessingSavedAddress, setIsProcessingSavedAddress] = useState(false);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
@@ -472,8 +491,33 @@ export default function Explore() {
     }
   };
 
-  // Handle themed pack selection  
-  const handleThemedPackClick = async (pack: typeof timelinePacks[0], specificCategory?: string) => {
+  const handleThemedPackClick = (pack: typeof timelinePacks[0]) => {
+    setSelectedPack(pack);
+    setIsTimelineModalOpen(true);
+    
+    trackUIInteraction('explore_themed_pack', 'clicked', 'explore', {
+      packTitle: pack.title,
+      categoriesInPack: pack.categories.map(cat => cat.name),
+      location: location?.city || 'Unknown'
+    });
+  };
+
+  const handleCategorySelectFromPack = async (categoryName: string) => {
+    if (!location) {
+      toast({
+        title: "Location required",
+        description: "Please set your location first to get recommendations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTimelineModalOpen(false);
+    await handleSingleCategoryClick(categoryName);
+  };
+
+  // Handle single category selection  
+  const handleSingleCategoryClick = async (categoryName: string) => {
     if (!location) {
       toast({
         title: "Location required",
@@ -483,16 +527,8 @@ export default function Explore() {
       return;
     }
 
-    // Track themed pack or specific category click
-    trackUIInteraction('explore_themed_pack', 'clicked', 'explore', {
-      packTitle: pack.title,
-      specificCategory: specificCategory || null,
-      categoriesInPack: pack.categories,
-      location: location.city || 'Unknown'
-    });
-
     // Check if this is a medical category and redirect to US News Health
-    if (specificCategory && isMedicalCategory(specificCategory)) {
+    if (isMedicalCategory(categoryName)) {
       const statePath = getUSNewsStatePath(location);
       if (statePath) {
         const usNewsURL = getUSNewsHealthURL(statePath);
@@ -513,127 +549,84 @@ export default function Explore() {
       }
     }
 
-    // CRITICAL FIX: Don't search all categories if user clicked specific one
-    const categoriesToSearch = specificCategory ? [specificCategory] : pack.categories.slice(0, 3); // Limit to 3 categories max
-    setSelectedCategory(specificCategory || pack.title);
-    setSelectedThemedPack(specificCategory ? null : pack.title);
+    setSelectedCategory(categoryName);
     setIsLoadingCategory(true);
     setIsModalOpen(true);
-    
-    console.log('🔍 EXPLORE - Searching for categories:', categoriesToSearch, 'Selected category:', specificCategory || pack.title);
     
     try {
       // CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call
       
       // L1: Check frontend cache first
       const cacheKey = {
-        type: 'themed_pack',
+        type: 'category',
         latitude: location.latitude,
         longitude: location.longitude,
-        categories: categoriesToSearch,
-        specificCategory
+        category: categoryName
       };
       
-      console.log(`🔍 L1 FRONTEND CACHE LOOKUP (Themed Pack):`, {
-        pack: pack.title,
-        categories: categoriesToSearch,
-        specificCategory,
-        cacheKey
+      console.log(`🔍 L1 FRONTEND CACHE LOOKUP:`, {
+        category: categoryName,
+        cacheKey,
+        location: { lat: location.latitude, lng: location.longitude }
       });
       
-      let cachedResults = getCached('themed_pack_results', cacheKey);
+      let cachedResults = getCached('category_results', cacheKey);
       
       // L1 Hit: Use frontend cached data
-      if (cachedResults) {
+      if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
         console.log('💰 L1 FRONTEND CACHE HIT - NO API COST!', {
           resultCount: cachedResults.length,
-          pack: pack.title
+          category: categoryName
         });
         setCategoryResults(cachedResults);
         return;
       }
 
       // L1 Miss: Check backend cache via edge function
-      console.log(`❌ L1 FRONTEND CACHE MISS - Checking L2 backend cache (Themed Pack)`);
+      console.log(`❌ L1 FRONTEND CACHE MISS - Checking L2 backend cache`);
       
       const backendCacheResults = await checkBackendCache(
         { lat: location.latitude, lng: location.longitude },
-        categoriesToSearch
+        [categoryName]
       );
 
       // L2 Hit: Use backend cached data and store in frontend cache
-      if (backendCacheResults) {
-        let results: Business[] = [];
-        let hasResults = false;
-        
-        // If searching for a specific category, show only those results
-        if (specificCategory && backendCacheResults[specificCategory]?.length > 0) {
-          results = backendCacheResults[specificCategory];
-          hasResults = true;
-        } else if (!specificCategory) {
-          // Flatten results from all available categories in the pack
-          Object.values(backendCacheResults).forEach((businesses: Business[]) => {
-            if (businesses?.length > 0) {
-              results.push(...businesses);
-              hasResults = true;
-            }
-          });
-        }
-        
-        if (hasResults) {
-          console.log('💰 L2 BACKEND CACHE HIT - NO API COST!', {
-            resultCount: results.length,
-            pack: pack.title,
-            foundCategories: Object.keys(backendCacheResults)
-          });
-          
-          // Sort by distance
-          const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
-          setCategoryResults(sortedResults);
-          // Store in L1 frontend cache for faster future access
-          setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
-          return;
-        }
+      if (backendCacheResults && backendCacheResults[categoryName]?.length > 0) {
+        console.log('💰 L2 BACKEND CACHE HIT - NO API COST!', {
+          resultCount: backendCacheResults[categoryName].length,
+          category: categoryName
+        });
+        const results = backendCacheResults[categoryName];
+        setCategoryResults(results);
+        // Store in L1 frontend cache for faster future access
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        return;
       }
 
       // L1 & L2 Miss: Make API call
-      console.log(`🌐 L3 API CALL - Cache hierarchy exhausted (Themed Pack)`, {
-        pack: pack.title,
-        categories: categoriesToSearch,
+      console.log(`🌐 L3 API CALL - Cache hierarchy exhausted`, {
+        category: categoryName,
         coordinates: { lat: location.latitude, lng: location.longitude }
       });
 
       const data = await batchInvoke('generate-recommendations', {
         body: {
-          exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          categories: categoriesToSearch
+          categories: [categoryName],
+          exploreMode: true
         }
       });
       
-      let results: Business[] = [];
-      
-      // If searching for a specific category, show only those results
-      if (specificCategory) {
-        results = data.recommendations?.[specificCategory] || [];
-      } else {
-        // Flatten results from limited categories in the pack
-        Object.values(data.recommendations || {}).forEach((businesses: Business[]) => {
-          results.push(...businesses);
-        });
-      }
-      
-      // Sort by distance
-      const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
-      setCategoryResults(sortedResults);
+      const results = data.recommendations?.[categoryName] || [];
+      setCategoryResults(results);
       
       // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
-      if (sortedResults.length > 0) {
-        setCached('themed_pack_results', cacheKey, sortedResults, 1800000); // Cache for 30 min
-        console.log(`💾 L1 FRONTEND CACHED after API call (Themed Pack):`, {
-          resultCount: sortedResults.length,
-          pack: pack.title
+      if (results.length > 0) {
+        setCached('category_results', cacheKey, results, 1800000); // Cache for 30 min
+        console.log(`💾 L1 FRONTEND CACHED after API call:`, {
+          resultCount: results.length,
+          category: categoryName
         });
       }
     } catch (error) {
@@ -828,114 +821,49 @@ export default function Explore() {
               <p className="text-muted-foreground text-lg">Essential services organized by priority and timeline</p>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-              {timelinePacks.map((pack, packIndex) => (
-              <Card 
-                key={pack.title}
-                className={`relative transition-all duration-300 hover:shadow-lg ${pack.color} ${
-                  user 
-                    ? "hover:scale-[1.02]" 
-                    : "opacity-75"
-                }`}
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${pack.iconColor} bg-white/80 dark:bg-gray-900/80`}>
-                      <pack.icon className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="text-xl font-bold">{pack.title}</CardTitle>
-                        <Badge variant="outline" className={`text-xs px-2 py-1 ${pack.iconColor} border-current`}>
-                          {pack.timeline}
-                        </Badge>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {timelinePacks.map((pack, index) => (
+                <Card key={index} className="group hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${pack.gradient} opacity-50`} />
+                  <CardContent className="p-6 relative z-10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-3xl">{pack.icon}</span>
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground">
+                          {pack.title}
+                        </h3>
                       </div>
-                      <p className="text-muted-foreground text-sm">{pack.description}</p>
                     </div>
-                  </div>
-                </CardHeader>
-                  <CardContent className="pt-0">
-                   <div className="flex items-center justify-between mb-4">
-                     <p className="text-sm text-muted-foreground font-medium">
-                       Essential services for this phase:
-                     </p>
-                     {user && (
-                       <div className="flex items-center gap-2">
-                         <div className="text-xs text-muted-foreground">
-                           {getPhaseProgress(pack.categories).completed}/{getPhaseProgress(pack.categories).total}
-                         </div>
-                         <div className="w-16 bg-secondary/30 rounded-full h-2">
-                           <div 
-                             className={`h-2 rounded-full transition-all duration-300 ${pack.iconColor.replace('text-', 'bg-')}`}
-                             style={{ width: `${getPhaseProgress(pack.categories).percentage}%` }}
-                           />
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                   <div className="space-y-2">
-                     {pack.categories.map((category, index) => {
-                       const isCompleted = user && isComplete(category);
-                       return (
-                         <div
-                           key={index}
-                           className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
-                             isCompleted 
-                               ? `border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20` 
-                               : `border-border/50 ${user ? "cursor-pointer hover:bg-accent/50 hover:border-primary/30 hover:shadow-sm" : "cursor-not-allowed"}`
-                           }`}
-                           onClick={(e) => {
-                             e.stopPropagation();
-                              if (user) {
-                                handleThemedPackClick(pack, category);
-                              } else {
-                                window.location.href = '/auth';
-                              }
-                           }}
-                         >
-                           {user && (
-                             <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (isCompleted) {
-                                    // Toggle off: mark as incomplete
-                                    markIncomplete(category);
-                                    toast({
-                                      title: "Task unmarked",
-                                      description: `${category} marked as not completed`,
-                                    });
-                                  } else {
-                                    // Toggle on: mark as complete
-                                    markComplete(category);
-                                    toast({
-                                      title: "Task completed!",
-                                      description: `Great job finding your ${category}!`,
-                                    });
-                                  }
-                                }}
-                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                                 isCompleted 
-                                   ? 'bg-green-500 border-green-500 text-white' 
-                                   : 'border-border hover:border-primary'
-                               }`}
-                             >
-                               {isCompleted && <span className="text-xs">✓</span>}
-                             </button>
-                           )}
-                           <div className="flex-1 flex items-center justify-between">
-                             <span className={`text-sm font-medium capitalize ${isCompleted ? 'text-green-700 dark:text-green-300' : ''}`}>
-                               {category}
-                             </span>
-                             <div className="text-xs text-muted-foreground">
-                               {isCompleted ? "Completed ✓" : "Click to explore →"}
-                             </div>
-                           </div>
-                         </div>
-                       );
-                     })}
-                   </div>
-                 </CardContent>
-              </Card>
+                    
+                    <p className="text-muted-foreground mb-6 leading-relaxed">
+                      {pack.description}
+                    </p>
+                    
+                    <div className="mb-6">
+                      <p className="text-sm font-medium text-foreground mb-2">Key categories:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {pack.categories.slice(0, 4).map((category) => (
+                          <span key={category.name} className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                            {category.displayName}
+                          </span>
+                        ))}
+                        {pack.categories.length > 4 && (
+                          <span className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                            +{pack.categories.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => handleThemedPackClick(pack)}
+                      className="w-full"
+                      size="lg"
+                    >
+                      Explore Phase
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </section>
@@ -959,6 +887,14 @@ export default function Explore() {
                 favoriteBusinesses={favoriteBusinesses}
                 favoritingBusinesses={favoritingBusinesses}
                 onToggleFavorite={toggleFavorite}
+              />
+
+              {/* Timeline Pack Modal */}
+              <TimelinePackModal
+                isOpen={isTimelineModalOpen}
+                onClose={() => setIsTimelineModalOpen(false)}
+                pack={selectedPack}
+                onCategorySelect={handleCategorySelectFromPack}
               />
             </>
           )}
