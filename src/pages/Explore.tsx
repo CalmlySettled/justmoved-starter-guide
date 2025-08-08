@@ -55,7 +55,7 @@ const themedPacks = [
   {
     title: "First 48 Hours",
     description: "Immediate essentials for your first days in a new city",
-    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal"],
+    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal", "doctors"],
     icon: Clock,
   },
   {
@@ -67,7 +67,7 @@ const themedPacks = [
   {
     title: "First Month",
     description: "Essential services to get your life organized",
-    categories: ["daycares", "DMV", "doctors", "Fitness", "post offices", "veterinarians"],
+    categories: ["daycares", "DMV", "Fitness", "post offices", "veterinarians"],
     icon: Zap,
   },
   {
