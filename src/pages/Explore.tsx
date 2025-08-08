@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { useRequestCache } from "@/hooks/useRequestCache";
+import { useMoveInProgress } from "@/hooks/useMoveInProgress";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
@@ -50,30 +52,42 @@ const trendingCategories = [
   { name: "Personal Care", icon: Scissors, searchTerm: "personal care", color: "bg-pink-500" },
 ];
 
-const themedPacks = [
+const timelinePacks = [
   {
     title: "First 48 Hours",
-    description: "Immediate essentials for your first days in a new city",
-    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal"],
+    description: "Survival essentials for your first days",
+    timeline: "Emergency needs",
+    categories: ["grocery stores", "pharmacies", "gas stations", "junk removal", "medical care"],
     icon: Clock,
+    color: "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800",
+    iconColor: "text-red-600 dark:text-red-400",
   },
   {
-    title: "Setting Up Home",
-    description: "Everything you need to make your new place feel like home",
-    categories: ["hardware stores", "furniture stores", "home improvement", "cleaning services", "internet providers"],
+    title: "First Week", 
+    description: "Getting your home and services set up",
+    timeline: "Settlement phase",
+    categories: ["hardware stores", "internet providers", "banks", "DMV", "post offices", "personal care", "furniture stores", "home improvement"],
     icon: Home,
+    color: "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800",
+    iconColor: "text-orange-600 dark:text-orange-400",
   },
   {
-    title: "Getting Connected",
-    description: "Essential services to get your life organized",
-    categories: ["banks", "post offices", "DMV"],
-    icon: Zap,
+    title: "First Month",
+    description: "Building your routine and exploring",
+    timeline: "Routine building",
+    categories: ["fitness options", "libraries", "parks", "veterinary care", "faith communities"],
+    icon: Calendar,
+    color: "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800", 
+    iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
-    title: "Family Essentials",
-    description: "Important services for families settling in",
-    categories: ["doctors", "veterinarians", "daycares", "parks", "libraries"],
+    title: "First 90 Days",
+    description: "Connecting with your community",
+    timeline: "Community integration",
+    categories: ["local events", "mental health services", "social events"],
     icon: Users,
+    color: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800",
+    iconColor: "text-green-600 dark:text-green-400",
   },
 ];
 
@@ -98,6 +112,7 @@ export default function Explore() {
   const { trackUIInteraction } = useAnalytics();
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
+  const { markComplete, markIncomplete, isComplete, getPhaseProgress } = useMoveInProgress();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -458,7 +473,7 @@ export default function Explore() {
   };
 
   // Handle themed pack selection  
-  const handleThemedPackClick = async (pack: typeof themedPacks[0], specificCategory?: string) => {
+  const handleThemedPackClick = async (pack: typeof timelinePacks[0], specificCategory?: string) => {
     if (!location) {
       toast({
         title: "Location required",
@@ -806,54 +821,118 @@ export default function Explore() {
             <div className="space-y-4"></div>
           )}
 
-          {/* Just Moved Collections - Show for all users */}
+          {/* Move-In Timeline - Show for all users */}
           <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-center">Just Moved Collections</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-              {themedPacks.map((pack) => (
+            <div className="text-center mb-8">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">Your Move-In Timeline</h2>
+              <p className="text-muted-foreground text-lg">Essential services organized by priority and timeline</p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              {timelinePacks.map((pack, packIndex) => (
               <Card 
                 key={pack.title}
-                className={`bg-gradient-card shadow-card border-0 ${
+                className={`relative transition-all duration-300 hover:shadow-lg ${pack.color} ${
                   user 
-                    ? "" 
+                    ? "hover:scale-[1.02]" 
                     : "opacity-75"
                 }`}
               >
-                <CardHeader>
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
-                      <pack.icon className="h-8 w-8 text-white" />
+                <CardHeader className="pb-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${pack.iconColor} bg-white/80 dark:bg-gray-900/80`}>
+                      <pack.icon className="h-6 w-6" />
                     </div>
-                    <CardTitle className="text-xl">{pack.title}</CardTitle>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CardTitle className="text-xl font-bold">{pack.title}</CardTitle>
+                        <Badge variant="outline" className={`text-xs px-2 py-1 ${pack.iconColor} border-current`}>
+                          {pack.timeline}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground text-sm">{pack.description}</p>
+                    </div>
                   </div>
                 </CardHeader>
-                 <CardContent>
-                   <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
-                   <p className="text-sm text-center text-muted-foreground mb-3 font-medium">
-                     Click a category below:
-                   </p>
-                   <div className="flex flex-wrap gap-2 justify-center">
-                     {pack.categories.map((category, index) => (
-                       <Badge 
-                         key={index} 
-                         variant="secondary" 
-                         className={`text-xs transition-all duration-200 shadow-sm ${
-                           user 
-                             ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                             : "cursor-not-allowed"
-                         }`}
-                         onClick={(e) => {
-                           e.stopPropagation();
-                            if (user) {
-                              handleThemedPackClick(pack, category);
-                            } else {
-                              window.location.href = '/auth';
-                            }
-                         }}
-                       >
-                         {category.charAt(0).toUpperCase() + category.slice(1)}
-                       </Badge>
-                     ))}
+                  <CardContent className="pt-0">
+                   <div className="flex items-center justify-between mb-4">
+                     <p className="text-sm text-muted-foreground font-medium">
+                       Essential services for this phase:
+                     </p>
+                     {user && (
+                       <div className="flex items-center gap-2">
+                         <div className="text-xs text-muted-foreground">
+                           {getPhaseProgress(pack.categories).completed}/{getPhaseProgress(pack.categories).total}
+                         </div>
+                         <div className="w-16 bg-secondary/30 rounded-full h-2">
+                           <div 
+                             className={`h-2 rounded-full transition-all duration-300 ${pack.iconColor.replace('text-', 'bg-')}`}
+                             style={{ width: `${getPhaseProgress(pack.categories).percentage}%` }}
+                           />
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                   <div className="space-y-2">
+                     {pack.categories.map((category, index) => {
+                       const isCompleted = user && isComplete(category);
+                       return (
+                         <div
+                           key={index}
+                           className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                             isCompleted 
+                               ? `border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20` 
+                               : `border-border/50 ${user ? "cursor-pointer hover:bg-accent/50 hover:border-primary/30 hover:shadow-sm" : "cursor-not-allowed"}`
+                           }`}
+                           onClick={(e) => {
+                             e.stopPropagation();
+                              if (user) {
+                                handleThemedPackClick(pack, category);
+                              } else {
+                                window.location.href = '/auth';
+                              }
+                           }}
+                         >
+                           {user && (
+                             <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isCompleted) {
+                                    // Toggle off: mark as incomplete
+                                    markIncomplete(category);
+                                    toast({
+                                      title: "Task unmarked",
+                                      description: `${category} marked as not completed`,
+                                    });
+                                  } else {
+                                    // Toggle on: mark as complete
+                                    markComplete(category);
+                                    toast({
+                                      title: "Task completed!",
+                                      description: `Great job finding your ${category}!`,
+                                    });
+                                  }
+                                }}
+                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                 isCompleted 
+                                   ? 'bg-green-500 border-green-500 text-white' 
+                                   : 'border-border hover:border-primary'
+                               }`}
+                             >
+                               {isCompleted && <span className="text-xs">✓</span>}
+                             </button>
+                           )}
+                           <div className="flex-1 flex items-center justify-between">
+                             <span className={`text-sm font-medium capitalize ${isCompleted ? 'text-green-700 dark:text-green-300' : ''}`}>
+                               {category}
+                             </span>
+                             <div className="text-xs text-muted-foreground">
+                               {isCompleted ? "Completed ✓" : "Click to explore →"}
+                             </div>
+                           </div>
+                         </div>
+                       );
+                     })}
                    </div>
                  </CardContent>
               </Card>

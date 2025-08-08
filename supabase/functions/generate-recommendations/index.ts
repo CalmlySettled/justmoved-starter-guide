@@ -621,11 +621,12 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { type: 'church' },
       { type: 'place_of_worship' }
     );
-  } else if (category.includes('Social events / community groups')) {
+  } else if (category.includes('Social events') || category.includes('social events') || category.includes('community groups')) {
     strategies.push(
       { keyword: 'community centers' },
       { keyword: 'social clubs' },
       { keyword: 'event venues' },
+      { keyword: 'meetup groups' },
       { type: 'community_center' }
     );
   } else if (category.includes('Libraries / Education')) {
@@ -646,8 +647,10 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
     );
   } else if (category.includes('personal care')) {
     strategies.push(
+      { keyword: 'barbershop' },
       { keyword: 'hair salon' },
-      { keyword: 'nail salon' },
+      { keyword: 'beauty salon' },
+      { keyword: 'spa' },
       { keyword: 'barbershop' },
       { keyword: 'beauty salon' },
       { type: 'hair_care' },
