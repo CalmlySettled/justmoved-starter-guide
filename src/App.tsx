@@ -17,6 +17,7 @@ import HowItWorks from "./pages/HowItWorks";
 import FAQ from "./pages/FAQ";
 import Explore from "./pages/Explore";
 import Popular from "./pages/Popular";
+import Events from "./pages/Events";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 
@@ -42,6 +43,7 @@ const AppContent = () => {
             <Route path="/explore" element={<Explore />} />
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
+            <Route path="/events" element={<Events />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />

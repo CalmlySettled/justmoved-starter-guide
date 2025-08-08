@@ -99,11 +99,11 @@ const trendingCategories = [
     description: "Catch local performances"
   },
   { 
-    name: "Local Events", 
+    name: "Nearby Events", 
     icon: "📅", 
     searchTerms: ["event venue", "community center", "entertainment venue"],
     color: "bg-violet-500",
-    description: "Discover what's happening around town"
+    description: "See what's happening nearby"
   },
   { 
     name: "Faith Communities", 
@@ -331,6 +331,16 @@ const Popular = () => {
   };
 
   const navigateToCategory = (categoryName: string) => {
+    // Special handling for Nearby Events - redirect to dedicated events page
+    if (categoryName === "Nearby Events") {
+      trackUIInteraction('nearby_events', 'clicked', 'popular', {
+        category: categoryName,
+        location: location?.city || 'Unknown'
+      });
+      navigate('/events');
+      return;
+    }
+
     // Track popular category click
     const category = trendingCategories.find(cat => cat.name === categoryName);
     trackUIInteraction('popular_category', 'clicked', 'popular', {
@@ -385,49 +395,6 @@ const Popular = () => {
                 </div>
               </div>
 
-              {/* Happening Near You - Events Section */}
-              <div className="mb-16">
-                <div className="flex items-center justify-center gap-2 mb-8">
-                  <Calendar className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold text-center">Happening Near You</h2>
-                </div>
-                
-                {eventsLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <Card key={i} className="h-48">
-                        <CardContent className="p-4">
-                          <Skeleton className="h-4 w-3/4 mb-2" />
-                          <Skeleton className="h-3 w-full mb-2" />
-                          <Skeleton className="h-3 w-2/3 mb-3" />
-                          <Skeleton className="h-3 w-1/2" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : events.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {events.slice(0, 4).map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        onClick={(event) => {
-                          // Track event interaction
-                          console.log('Event clicked:', event.name);
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Events Found</h3>
-                    <p className="text-muted-foreground">
-                      Check back later for upcoming events in your area
-                    </p>
-                  </div>
-                )}
-              </div>
 
 
             </>
