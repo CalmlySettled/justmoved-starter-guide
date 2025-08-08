@@ -92,11 +92,11 @@ const trendingCategories = [
     description: "Explore local dining and culinary experiences"
   },
   { 
-    name: "Shopping & Markets", 
+    name: "Shopping", 
     icon: "🛍️", 
-    searchTerms: ["shopping center", "boutique", "market", "retail store", "farmers market", "mall"],
+    searchTerms: ["boutique", "shopping mall", "clothing store", "department store"],
     color: "bg-cyan-500",
-    description: "Discover unique shopping and local markets"
+    description: "Boutiques and specialty retail"
   },
   { 
     name: "Wellness & Self Care", 
