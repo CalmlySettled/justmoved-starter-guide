@@ -47,7 +47,7 @@ const trendingCategories = [
     icon: "☕🍺", 
     searchTerms: ["coffee shop", "cafe", "specialty coffee", "brewery", "brewpub", "craft beer", "happy hour", "bar"],
     color: "bg-amber-500",
-    description: "Coffee culture and local brews"
+    description: "Coffee Culture and local bars"
   },
   { 
     name: "Food Time", 
