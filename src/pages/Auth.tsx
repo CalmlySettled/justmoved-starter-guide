@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Home, Mail, Eye, EyeOff } from "lucide-react";
@@ -25,8 +25,6 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [address, setAddress] = useState("");
-  const [isValidAddress, setIsValidAddress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
@@ -85,19 +83,10 @@ export default function Auth() {
     try {
       if (isSignUp) {
         // Validate and sanitize inputs
-        if (!email || !password || !displayName || !address) {
+        if (!email || !password || !displayName) {
           toast({
             title: "Error",
             description: "Please fill in all fields",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (!isValidAddress) {
-          toast({
-            title: "Invalid address",
-            description: "Please select a valid address from the suggestions",
             variant: "destructive",
           });
           return;
@@ -123,23 +112,6 @@ export default function Auth() {
         }
 
         const sanitizedDisplayName = sanitizeInput(displayName);
-        const sanitizedAddress = sanitizeInput(address);
-
-        // Geocode the address to get coordinates
-        const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(sanitizedAddress)}&limit=1`, {
-          headers: { 'User-Agent': 'CalmlySettled/1.0' }
-        });
-        
-        let coordinates = { lat: null, lng: null };
-        if (geocodeResponse.ok) {
-          const geocodeData = await geocodeResponse.json();
-          if (geocodeData && geocodeData.length > 0) {
-            coordinates = {
-              lat: parseFloat(geocodeData[0].lat),
-              lng: parseFloat(geocodeData[0].lon)
-            };
-          }
-        }
         
         const { data, error } = await supabase.auth.signUp({
           email: email.toLowerCase().trim(),
@@ -147,10 +119,7 @@ export default function Auth() {
           options: {
             emailRedirectTo: `${window.location.origin}/verify-email`,
             data: {
-              display_name: sanitizedDisplayName,
-              address: sanitizedAddress,
-              latitude: coordinates.lat,
-              longitude: coordinates.lng
+              display_name: sanitizedDisplayName
             }
           }
         });
@@ -179,14 +148,11 @@ export default function Auth() {
           setShowResendButton(true);
           
         } else if (data.user && data.session) {
-          // User was created and auto-confirmed, create profile immediately
+          // User was created and auto-confirmed, create basic profile
           try {
             const profileData = {
               user_id: data.user.id,
               display_name: sanitizedDisplayName,
-              address: sanitizedAddress,
-              latitude: coordinates.lat,
-              longitude: coordinates.lng,
               // Set sensible defaults for other fields
               household_type: 'Not specified',
               priorities: ['Convenience'],
@@ -730,17 +696,6 @@ export default function Auth() {
                   </div>
                 </div>
 
-                {isSignUp && (
-                  <div className="space-y-2">
-                    <AddressAutocomplete
-                      value={address}
-                      onChange={setAddress}
-                      onValidAddressSelected={setIsValidAddress}
-                      label="Address"
-                      placeholder="Enter your address..."
-                    />
-                  </div>
-                )}
                 
                 {!isSignUp && (
                   <div className="text-right">

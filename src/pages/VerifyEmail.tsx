@@ -4,12 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Home, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<'checking' | 'success' | 'failed'>('checking');
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [userHasAddress, setUserHasAddress] = useState(false);
   
   useEffect(() => {
     // Detect mobile
@@ -32,13 +35,35 @@ export default function VerifyEmail() {
             console.log('VerifyEmail: User verified and signed in');
             setVerificationStatus('success');
             
-            // Don't set pendingQuizProcessing flag here - let Auth.tsx handle it
-            // This prevents duplicate processing
-            
-            // Redirect after short delay
-            setTimeout(() => {
-              navigate('/explore', { replace: true });
-            }, 1500);
+            // Check if user already has an address
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('address, latitude, longitude')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              const hasAddress = profile?.address && profile?.latitude && profile?.longitude;
+              setUserHasAddress(!!hasAddress);
+              
+              if (hasAddress) {
+                // User already has address, redirect immediately
+                setTimeout(() => {
+                  navigate('/explore', { replace: true });
+                }, 1500);
+              } else {
+                // User needs to provide address, show modal after short delay
+                setTimeout(() => {
+                  setShowAddressModal(true);
+                }, 1500);
+              }
+            } catch (error) {
+              console.error('Error checking user profile:', error);
+              // Default to showing address modal on error
+              setTimeout(() => {
+                setShowAddressModal(true);
+              }, 1500);
+            }
             
             // Clean up subscription
             subscription.unsubscribe();
@@ -54,11 +79,35 @@ export default function VerifyEmail() {
             console.log('VerifyEmail: User already verified');
             setVerificationStatus('success');
             
-            // Don't set pendingQuizProcessing flag here - let Auth.tsx handle it
-            
-            setTimeout(() => {
-              navigate('/explore', { replace: true });
-            }, 1500);
+            // Check if user already has an address
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('address, latitude, longitude')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              const hasAddress = profile?.address && profile?.latitude && profile?.longitude;
+              setUserHasAddress(!!hasAddress);
+              
+              if (hasAddress) {
+                // User already has address, redirect immediately
+                setTimeout(() => {
+                  navigate('/explore', { replace: true });
+                }, 1500);
+              } else {
+                // User needs to provide address, show modal after short delay
+                setTimeout(() => {
+                  setShowAddressModal(true);
+                }, 1500);
+              }
+            } catch (error) {
+              console.error('Error checking user profile:', error);
+              // Default to showing address modal on error
+              setTimeout(() => {
+                setShowAddressModal(true);
+              }, 1500);
+            }
           } else {
             // Check for URL errors
             const error = searchParams.get('error');
@@ -117,7 +166,7 @@ export default function VerifyEmail() {
           {verificationStatus === 'success' && (
             <div className="flex items-center justify-center space-x-2 text-green-600">
               <CheckCircle className="h-4 w-4" />
-              <span>Redirecting to explore...</span>
+              <span>{userHasAddress ? 'Redirecting to explore...' : 'Account verified! Let\'s get your address...'}</span>
             </div>
           )}
           
@@ -152,6 +201,16 @@ export default function VerifyEmail() {
           </div>
         </CardContent>
       </Card>
+      
+      <AddressCaptureModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onComplete={() => {
+          setShowAddressModal(false);
+          navigate('/explore', { replace: true });
+        }}
+        sourceContext="email_verification"
+      />
     </div>
   );
 }
