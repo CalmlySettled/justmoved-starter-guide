@@ -187,11 +187,11 @@ All colors MUST be HSL.
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 20px;
+    width: 24px;
     z-index: 10;
     pointer-events: none;
     transition: opacity 0.2s ease;
-    right: -1px;
+    right: 0;
     background: linear-gradient(to left, hsl(var(--card)), transparent);
   }
 }
