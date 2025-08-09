@@ -57,25 +57,11 @@ const trendingCategories = [
     description: "Savor the local dining experiences"
   },
   { 
-    name: "Shopping", 
-    icon: "🛍️", 
-    searchTerms: ["boutique", "shopping center", "retail store"],
-    color: "bg-cyan-500",
-    description: "Boutiques and specialty retail"
-  },
-  { 
     name: "Personal Care & Wellness", 
     icon: "💇‍♂️🧘‍♀️", 
     searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
     description: "Haircuts, Styling & Relaxation"
-  },
-  { 
-    name: "Art & Culture", 
-    icon: "🎨", 
-    searchTerms: ["art gallery", "museum", "cultural center"],
-    color: "bg-pink-500",
-    description: "Creative spaces and exhibitions"
   },
   { 
     name: "Outdoor Activities", 
@@ -85,6 +71,13 @@ const trendingCategories = [
     description: "Get active in nature"
   },
   { 
+    name: "Faith Communities", 
+    icon: "⛪", 
+    searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
+    color: "bg-indigo-500",
+    description: "Places of worship"
+  },
+  { 
     name: "Nearby Events", 
     icon: "🎫", 
     searchTerms: ["event venue", "community center", "entertainment venue"],
@@ -92,11 +85,18 @@ const trendingCategories = [
     description: "See what's happening nearby"
   },
   { 
-    name: "Faith Communities", 
-    icon: "⛪", 
-    searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
-    color: "bg-indigo-500",
-    description: "Places of worship"
+    name: "Shopping", 
+    icon: "🛍️", 
+    searchTerms: ["boutique", "shopping center", "retail store"],
+    color: "bg-cyan-500",
+    description: "Boutiques and specialty retail"
+  },
+  { 
+    name: "Art & Culture", 
+    icon: "🎨", 
+    searchTerms: ["art gallery", "museum", "cultural center"],
+    color: "bg-pink-500",
+    description: "Creative spaces and exhibitions"
   }
 ];
 
