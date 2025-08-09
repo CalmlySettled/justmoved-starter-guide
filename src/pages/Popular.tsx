@@ -50,7 +50,7 @@ const trendingCategories = [
     description: "Discover the local coffee culture"
   },
   { 
-    name: "Food Scene", 
+    name: "Food Time", 
     icon: "🍴", 
     searchTerms: ["restaurant", "dining", "food truck", "bistro"],
     color: "bg-red-500",

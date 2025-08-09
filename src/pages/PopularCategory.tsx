@@ -79,7 +79,7 @@ const trendingCategories = [
     description: "Find spiritual communities and places of worship"
   },
   { 
-    name: "Food Scene", 
+    name: "Food Time", 
     icon: "🍽️", 
     searchTerms: ["restaurant", "dining", "food"],
     color: "bg-orange-500",
@@ -158,7 +158,7 @@ const PopularCategory = () => {
     spas: false
   });
 
-  // New state for Food Scene tabs
+  // New state for Food Time tabs
   const [foodSceneTab, setFoodSceneTab] = useState('morning');
   const [foodSceneData, setFoodSceneData] = useState<{
     morning: Business[];
@@ -302,8 +302,8 @@ const PopularCategory = () => {
       if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Personal Care & Wellness') {
         // For Personal Care & Wellness, load the default tab (barbershops) immediately
         fetchSubcategoryData('barbershops');
-      } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Food Scene') {
-        // For Food Scene, load the default tab (morning) immediately
+      } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Food Time') {
+        // For Food Time, load the default tab (morning) immediately
         fetchFoodSceneData('morning');
       } else {
         // For other categories, use the existing flow
@@ -484,7 +484,7 @@ const PopularCategory = () => {
     }
   };
 
-  // Function to fetch Food Scene data by time period
+  // Function to fetch Food Time data by time period
   const fetchFoodSceneData = async (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
     if (!location) return;
 
@@ -509,7 +509,7 @@ const PopularCategory = () => {
         .single();
 
       if (!cacheError && cachedData?.recommendations) {
-        console.log(`Using cached data for ${timeOfDay} food scene`);
+        console.log(`Using cached data for ${timeOfDay} food time`);
         
         const allResults: Business[] = [];
         const cachedRecs = cachedData.recommendations as any;
@@ -535,9 +535,9 @@ const PopularCategory = () => {
         }
       }
 
-      console.log(`No cache found, making fresh API call for ${timeOfDay} food scene`);
+      console.log(`No cache found, making fresh API call for ${timeOfDay} food time`);
       
-      // Make fresh API call with food scene mode
+      // Make fresh API call with food time mode
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           foodSceneMode: true,
@@ -568,7 +568,7 @@ const PopularCategory = () => {
         console.log(`Found ${sortedResults.length} ${timeOfDay} dining options from API`);
       }
     } catch (error) {
-      console.error(`Error fetching ${timeOfDay} food scene:`, error);
+      console.error(`Error fetching ${timeOfDay} food time:`, error);
     } finally {
       setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
     }
@@ -1049,8 +1049,8 @@ const PopularCategory = () => {
                       )}
                  </TabsContent>
             </Tabs>
-          ) : ('name' in categoryConfig && categoryConfig.name === "Food Scene") ? (
-            // Special tabbed layout for Food Scene
+          ) : ('name' in categoryConfig && categoryConfig.name === "Food Time") ? (
+            // Special tabbed layout for Food Time
             <Tabs defaultValue="morning" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
                 <TabsTrigger value="morning" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('morning')}>
