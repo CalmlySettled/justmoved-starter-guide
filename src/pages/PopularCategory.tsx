@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MapPin, Star, ExternalLink, ArrowLeft, Loader2 } from "lucide-react";
+import { MapPin, Star, ExternalLink, ArrowLeft, Loader2, Gamepad2, Target, PartyPopper, Dice6, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartToast } from "@/hooks/useSmartToast";
@@ -98,6 +98,13 @@ const trendingCategories = [
     searchTerms: ["event venue", "community center", "entertainment venue", "theater", "event space"],
     color: "bg-violet-500",
     description: "Find venues hosting local events and activities"
+  },
+  { 
+    name: "Games", 
+    icon: "🎮", 
+    searchTerms: ["bowling alley", "arcade", "entertainment center", "indoor recreation", "game room", "billiards", "mini golf", "laser tag"],
+    color: "bg-purple-500",
+    description: "Entertainment and indoor fun"
   }
 ];
 
