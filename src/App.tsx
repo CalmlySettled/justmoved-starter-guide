@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -51,6 +51,9 @@ const AppContent = () => {
             
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<Auth />} />
+            
+            {/* Redirect old Google search results */}
+            <Route path="/onboarding" element={<Navigate to="/explore" replace />} />
             
             <Route path="/profile" element={<Profile />} />
             
