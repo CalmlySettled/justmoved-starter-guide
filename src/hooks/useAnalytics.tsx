@@ -156,6 +156,48 @@ export const useAnalytics = () => {
     });
   }, [trackEvent]);
 
+  // Track directions click (key conversion event)
+  const trackDirectionsClick = useCallback((businessName: string, address: string, category?: string) => {
+    trackEvent({
+      eventType: 'directions_clicked',
+      eventCategory: category || 'general',
+      eventData: {
+        business_name: businessName,
+        address,
+        category,
+        conversion_type: 'directions',
+      },
+    });
+  }, [trackEvent]);
+
+  // Track website request (conversion intent)
+  const trackWebsiteRequest = useCallback((businessName: string, category?: string, success?: boolean) => {
+    trackEvent({
+      eventType: 'website_requested',
+      eventCategory: category || 'general',
+      eventData: {
+        business_name: businessName,
+        category,
+        success,
+        conversion_type: 'website_request',
+      },
+    });
+  }, [trackEvent]);
+
+  // Track website visit (strong conversion signal)
+  const trackWebsiteVisit = useCallback((businessName: string, websiteUrl: string, category?: string) => {
+    trackEvent({
+      eventType: 'website_visited',
+      eventCategory: category || 'general',
+      eventData: {
+        business_name: businessName,
+        website_url: websiteUrl,
+        category,
+        conversion_type: 'website_visit',
+      },
+    });
+  }, [trackEvent]);
+
   // End session when component unmounts or user leaves
   const endSession = useCallback(async () => {
     if (sessionData.current && user) {
@@ -219,6 +261,9 @@ export const useAnalytics = () => {
     trackFavoriteAction,
     trackSearch,
     trackUIInteraction,
+    trackDirectionsClick,
+    trackWebsiteRequest,
+    trackWebsiteVisit,
     sessionId: sessionData.current?.sessionId,
   };
 };

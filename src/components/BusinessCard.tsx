@@ -5,6 +5,7 @@ import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MapPin, Star, ExternalLink, Phone, Loader2 } from 'lucide-react';
 import { useBusinessDetails } from '@/hooks/useBusinessDetails';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface BusinessCardData {
   name: string;
@@ -39,6 +40,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 }) => {
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
+  const { trackDirectionsClick, trackWebsiteRequest, trackWebsiteVisit, trackFavoriteAction } = useAnalytics();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -49,9 +51,17 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const handleGetWebsite = async () => {
     if (!business.place_id) return;
     
+    // Track website request event
+    trackWebsiteRequest(business.name, business.category, undefined);
+    
     const details = await getBusinessDetails(business.place_id, business.name);
     if (details?.website) {
       setBusinessWebsites(prev => ({ ...prev, [business.place_id!]: details.website! }));
+      // Track successful website request
+      trackWebsiteRequest(business.name, business.category, true);
+    } else {
+      // Track failed website request
+      trackWebsiteRequest(business.name, business.category, false);
     }
   };
 
@@ -103,7 +113,32 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
       });
     }
     
-    return badges.slice(0, 2); // Only show 2 most important badges
+  return badges.slice(0, 2); // Only show 2 most important badges
+  };
+
+  // Handle directions click with tracking
+  const handleDirectionsClick = () => {
+    if (business.address) {
+      trackDirectionsClick(business.name, business.address, business.category);
+    }
+  };
+
+  // Handle website visit with tracking
+  const handleWebsiteVisit = (websiteUrl: string) => {
+    trackWebsiteVisit(business.name, websiteUrl, business.category);
+    window.open(websiteUrl, '_blank');
+  };
+
+  // Handle favorite action with enhanced tracking
+  const handleFavoriteToggle = () => {
+    const action = isFavorited ? 'removed' : 'added';
+    trackFavoriteAction(business.name, business.category || 'general', action);
+    
+    if (variant === 'favorites' && onRemoveFavorite) {
+      onRemoveFavorite();
+    } else {
+      onToggleFavorite();
+    }
   };
 
   return (
@@ -143,7 +178,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={variant === 'favorites' && onRemoveFavorite ? onRemoveFavorite : onToggleFavorite}
+            onClick={handleFavoriteToggle}
             disabled={isToggling}
             className="h-12 w-12 md:h-10 md:w-10 p-0 min-h-[44px] min-w-[44px] hover:bg-primary/10 mobile-touch"
           >
@@ -162,6 +197,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
             href={getGoogleMapsDirectionsUrl(business.address, business.name)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleDirectionsClick}
             className="flex items-start gap-2 text-sm md:text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer mobile-touch"
           >
             <MapPin className="h-4 w-4 md:h-4 md:w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
@@ -179,7 +215,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                    onClick={() => handleWebsiteVisit(business.website || businessWebsites[business.place_id!])}
                     className="inline-flex items-center gap-2 px-4 py-3 md:px-4 md:py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 mobile-touch"
                   >
                     <ExternalLink className="h-4 w-4" />
