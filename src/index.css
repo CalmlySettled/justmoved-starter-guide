@@ -161,4 +161,18 @@ All colors MUST be HSL.
   .mobile-form-input {
     @apply h-12 px-4 text-base rounded-lg;
   }
+
+  /* Custom scrollbar styles */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth horizontal scroll for mobile categories */
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+  }
 }

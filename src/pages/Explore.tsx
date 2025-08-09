@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
 import { useRequestCache } from "@/hooks/useRequestCache";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
@@ -101,6 +102,7 @@ export default function Explore() {
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
   const { showFavoriteToast } = useSmartToast();
+  const isMobile = useIsMobile();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -704,6 +706,15 @@ export default function Explore() {
     <div className="min-h-screen bg-gradient-page">
       <Header />
       
+      {/* Mobile Sticky Location Bar */}
+      {isMobile && location?.city && (
+        <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 py-2">
+          <p className="text-xs text-muted-foreground text-center">
+            📍 <span className="font-medium text-foreground">{location.city}</span>
+          </p>
+        </div>
+      )}
+      
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
@@ -764,12 +775,12 @@ export default function Explore() {
           )}
 
           {/* Explore Essentials - Show for all users */}
-          <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-            <div className="text-center mb-6">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-2">Explore Essentials</h1>
-              <p className="text-lg text-muted-foreground">Nearby necessities for new residents</p>
+          <section className="mb-16 bg-gradient-section rounded-2xl p-4 sm:p-8 shadow-soft">
+            <div className="text-center mb-4 sm:mb-6">
+              <h1 className={`font-bold mb-2 ${isMobile ? 'text-2xl' : 'text-4xl sm:text-5xl md:text-6xl'}`}>Explore Essentials</h1>
+              <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-lg'}`}>Nearby necessities for new residents</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+            <div className={`gap-6 sm:gap-8 ${isMobile ? 'space-y-4' : 'grid grid-cols-1 sm:grid-cols-2'}`}>
               {themedPacks.map((pack) => (
               <Card 
                 key={pack.title}
@@ -777,17 +788,19 @@ export default function Explore() {
                   user 
                     ? "" 
                     : "opacity-75"
-                }`}
+                } ${isMobile ? 'py-3' : ''}`}
               >
-                <CardHeader className="pb-2">
+                <CardHeader className={`${isMobile ? 'pb-2 pt-3' : 'pb-2'}`}>
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
-                      <pack.icon className="h-8 w-8 text-white" />
+                    <div className={`mx-auto mb-3 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow ${
+                      isMobile ? 'w-12 h-12' : 'w-16 h-16 mb-4'
+                    }`}>
+                      <pack.icon className={`text-white ${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
                     </div>
-                    <CardTitle className="text-xl">{pack.title}</CardTitle>
+                    <CardTitle className={`${isMobile ? 'text-lg' : 'text-xl'}`}>{pack.title}</CardTitle>
                   </div>
                 </CardHeader>
-                 <CardContent className="pt-2">
+                 <CardContent className={`${isMobile ? 'pt-1 px-4 pb-3' : 'pt-2'}`}>
                    {pack.description && (
                      <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
                    )}
@@ -800,63 +813,89 @@ export default function Explore() {
                          Explore Popular
                        </Button>
                      </div>
-                   ) : (
-                     <>
-                        <p className="text-sm text-center text-muted-foreground mb-2 font-medium">
-                          Click a category below:
-                        </p>
-                       <div className="space-y-2">
-                         {/* First row - 2 categories */}
-                         <div className="flex flex-wrap gap-2 justify-center">
-                           {pack.categories.slice(0, 2).map((category, index) => (
-                             <Badge 
-                               key={index} 
-                               variant="secondary" 
-                               className={`text-xs transition-all duration-200 shadow-sm ${
-                                 user 
-                                   ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                   : "cursor-not-allowed"
-                               }`}
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                  if (user) {
-                                    handleThemedPackClick(pack, category);
-                                  } else {
-                                    window.location.href = '/auth';
-                                  }
-                               }}
-                             >
-                               {category.charAt(0).toUpperCase() + category.slice(1)}
-                             </Badge>
-                           ))}
-                         </div>
-                         {/* Second row - 3 categories */}
-                         <div className="flex flex-wrap gap-2 justify-center">
-                           {pack.categories.slice(2, 5).map((category, index) => (
-                             <Badge 
-                               key={index + 2} 
-                               variant="secondary" 
-                               className={`text-xs transition-all duration-200 shadow-sm ${
-                                 user 
-                                   ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                   : "cursor-not-allowed"
-                               }`}
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                  if (user) {
-                                    handleThemedPackClick(pack, category);
-                                  } else {
-                                    window.location.href = '/auth';
-                                  }
-                               }}
-                             >
-                               {category.charAt(0).toUpperCase() + category.slice(1)}
-                             </Badge>
-                           ))}
-                         </div>
-                       </div>
-                     </>
-                   )}
+                    ) : (
+                      <>
+                         <p className={`text-center text-muted-foreground mb-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                           Click a category below:
+                         </p>
+                        {isMobile ? (
+                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {pack.categories.map((category, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="secondary" 
+                                className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 ${
+                                  user 
+                                    ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                    : "cursor-not-allowed"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                   if (user) {
+                                     handleThemedPackClick(pack, category);
+                                   } else {
+                                     window.location.href = '/auth';
+                                   }
+                                }}
+                              >
+                                {category.charAt(0).toUpperCase() + category.slice(1)}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {/* First row - 2 categories */}
+                            <div className="flex flex-wrap gap-2 justify-center">
+                              {pack.categories.slice(0, 2).map((category, index) => (
+                                <Badge 
+                                  key={index} 
+                                  variant="secondary" 
+                                  className={`text-xs transition-all duration-200 shadow-sm ${
+                                    user 
+                                      ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                      : "cursor-not-allowed"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                     if (user) {
+                                       handleThemedPackClick(pack, category);
+                                     } else {
+                                       window.location.href = '/auth';
+                                     }
+                                  }}
+                                >
+                                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                                </Badge>
+                              ))}
+                            </div>
+                            {/* Second row - 3 categories */}
+                            <div className="flex flex-wrap gap-2 justify-center">
+                              {pack.categories.slice(2, 5).map((category, index) => (
+                                <Badge 
+                                  key={index + 2} 
+                                  variant="secondary" 
+                                  className={`text-xs transition-all duration-200 shadow-sm ${
+                                    user 
+                                      ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                      : "cursor-not-allowed"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                     if (user) {
+                                       handleThemedPackClick(pack, category);
+                                     } else {
+                                       window.location.href = '/auth';
+                                     }
+                                  }}
+                                >
+                                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                  </CardContent>
               </Card>
               ))}

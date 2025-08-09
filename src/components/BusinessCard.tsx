@@ -27,6 +27,7 @@ interface BusinessCardProps {
   onRemoveFavorite?: () => void;
   showImage?: boolean;
   variant?: 'explore' | 'favorites';
+  compact?: boolean;
 }
 
 export const BusinessCard: React.FC<BusinessCardProps> = ({
@@ -36,7 +37,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   onToggleFavorite,
   onRemoveFavorite,
   showImage = true,
-  variant = 'explore'
+  variant = 'explore',
+  compact = false
 }) => {
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
@@ -147,7 +149,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
     >
       {/* Business Image */}
       {showImage && (
-        <div className="aspect-video overflow-hidden bg-muted">
+        <div className={`overflow-hidden bg-muted ${compact ? 'aspect-[4/3]' : 'aspect-video'}`}>
           <ImageWithFallback
             src={business.image_url || ''}
             alt={business.name}
@@ -158,17 +160,17 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
         </div>
       )}
       
-      <CardHeader className={`mobile-padding ${variant === 'explore' ? "pb-3 md:pb-4" : "pb-2 md:pb-3"}`}>
+      <CardHeader className={`${compact ? 'p-3' : 'mobile-padding'} ${variant === 'explore' ? "pb-3 md:pb-4" : "pb-2 md:pb-3"}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground text-lg md:text-xl mobile-text">
+            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg md:text-xl mobile-text'}`}>
               {business.name}
             </h3>
             <div className="flex items-center gap-2 mt-1">
               {business.distance_miles && (
                 <>
-                  <MapPin className="h-3 w-3 md:h-3 md:w-3 text-muted-foreground" />
-                  <span className="text-sm md:text-xs text-muted-foreground font-medium">
+                  <MapPin className={`text-muted-foreground ${compact ? 'h-3 w-3' : 'h-3 w-3 md:h-3 md:w-3'}`} />
+                  <span className={`text-muted-foreground font-medium ${compact ? 'text-xs' : 'text-sm md:text-xs'}`}>
                     {business.distance_miles} miles away
                   </span>
                 </>
@@ -180,19 +182,19 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
             size="icon"
             onClick={handleFavoriteToggle}
             disabled={isToggling}
-            className="h-12 w-12 md:h-10 md:w-10 p-0 min-h-[44px] min-w-[44px] hover:bg-primary/10 mobile-touch"
+            className={`p-0 hover:bg-primary/10 mobile-touch ${compact ? 'h-8 w-8 min-h-[32px] min-w-[32px]' : 'h-12 w-12 md:h-10 md:w-10 min-h-[44px] min-w-[44px]'}`}
           >
             <Star 
-              className="h-6 w-6 md:h-5 md:w-5 text-yellow-500" 
+              className={`text-yellow-500 ${compact ? 'h-4 w-4' : 'h-6 w-6 md:h-5 md:w-5'}`}
               fill={isFavorited ? "currentColor" : "none"}
             />
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent className={`mobile-padding space-y-3 md:space-y-4 ${variant === 'favorites' ? 'pt-0' : ''}`}>
+      <CardContent className={`space-y-3 md:space-y-4 ${compact ? 'p-3 pt-0' : 'mobile-padding'} ${variant === 'favorites' ? 'pt-0' : ''}`}>
         {/* Address */}
-        {business.address && (
+        {business.address && !compact && (
           <a 
             href={getGoogleMapsDirectionsUrl(business.address, business.name)}
             target="_blank"
@@ -209,46 +211,48 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
         
         {/* Action buttons */}
-        <div className="flex gap-2">
-          <TooltipProvider>
-            {business.website || businessWebsites[business.place_id!] ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => handleWebsiteVisit(business.website || businessWebsites[business.place_id!])}
-                    className="inline-flex items-center gap-2 px-4 py-3 md:px-4 md:py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 mobile-touch"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Website
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Opens in new tab</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : business.place_id ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleGetWebsite}
-                    disabled={loadingStates[business.place_id]}
-                    className="inline-flex items-center gap-2 px-4 py-3 md:px-4 md:py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed mobile-touch"
-                  >
-                    {loadingStates[business.place_id] ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
+        {!compact && (
+          <div className="flex gap-2">
+            <TooltipProvider>
+              {business.website || businessWebsites[business.place_id!] ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleWebsiteVisit(business.website || businessWebsites[business.place_id!])}
+                      className="inline-flex items-center gap-2 px-4 py-3 md:px-4 md:py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 mobile-touch"
+                    >
                       <ExternalLink className="h-4 w-4" />
-                    )}
-                    {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Opens in new tab</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
-          </TooltipProvider>
-        </div>
+                      Website
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Opens in new tab</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : business.place_id ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleGetWebsite}
+                      disabled={loadingStates[business.place_id]}
+                      className="inline-flex items-center gap-2 px-4 py-3 md:px-4 md:py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed mobile-touch"
+                    >
+                      {loadingStates[business.place_id] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
+                      {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Opens in new tab</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+            </TooltipProvider>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

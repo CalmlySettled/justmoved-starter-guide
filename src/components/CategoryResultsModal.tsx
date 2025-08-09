@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { BusinessCard } from '@/components/BusinessCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Business {
   name: string;
@@ -39,6 +40,7 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
   favoritingBusinesses,
   onToggleFavorite,
 }) => {
+  const isMobile = useIsMobile();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,7 +68,11 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
               <p className="mt-4 text-muted-foreground">Loading recommendations...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className={`grid gap-4 md:gap-6 ${
+              isMobile 
+                ? 'grid-cols-2' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
               {businesses.map((business, index) => (
                 <BusinessCard
                   key={index}
@@ -86,6 +92,7 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
                   onToggleFavorite={() => onToggleFavorite(business, categoryName)}
                   showImage={true}
                   variant="explore"
+                  compact={isMobile}
                 />
               ))}
             </div>
