@@ -752,14 +752,6 @@ export default function Explore() {
     <div className="min-h-screen bg-gradient-page">
       <Header />
       
-      {/* Mobile Sticky Location Bar */}
-      {isMobile && location?.city && (
-        <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 py-2">
-          <p className="text-xs text-muted-foreground text-center">
-            📍 <span className="font-medium text-foreground">{location.city}</span>
-          </p>
-        </div>
-      )}
       
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
