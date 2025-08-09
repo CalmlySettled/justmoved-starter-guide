@@ -74,10 +74,10 @@ const trendingCategories = [
   },
   { 
     name: "Food Time", 
-    icon: "🍽️", 
-    searchTerms: ["restaurant", "dining", "food"],
-    color: "bg-orange-500",
-    description: "Discover dining experiences by time of day"
+    icon: "🍴", 
+    searchTerms: ["restaurant", "dining", "food truck", "bistro"],
+    color: "bg-red-500",
+    description: "Savor the local dining experiences"
   },
   { 
     name: "Shopping", 
@@ -88,10 +88,10 @@ const trendingCategories = [
   },
   { 
     name: "Personal Care & Wellness", 
-    icon: "🧘", 
+    icon: "💇‍♂️🧘‍♀️", 
     searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
-    description: "Personal care and wellness services"
+    description: "Haircuts, Styling & Relaxation"
   },
   { 
     name: "Local Events", 
@@ -934,9 +934,6 @@ const PopularCategory = () => {
                   {'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}
                 </h1>
               </div>
-              <p className="text-xl text-muted-foreground mb-8">
-                {categoryConfig.description}
-              </p>
 
             </div>
           </div>
