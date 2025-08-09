@@ -1761,11 +1761,11 @@ const PopularCategory = () => {
       {isMobile && (
         <Button
           onClick={() => navigate('/popular')}
-          className="fixed bottom-4 right-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-full w-14 h-14 p-0"
+          className="fixed bottom-4 right-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-full w-12 h-12 p-0"
           variant="default"
           size="icon"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
       )}
     </div>
