@@ -310,6 +310,9 @@ function getYelpSearchTerms(category: string): string[] {
     return ['beauty salon', 'hair salon', 'spa'];
   } else if (category.includes('Bars')) {
     return ['bars', 'pubs'];
+  } else if (category.includes('brewery') || category.includes('breweries') || category.includes('Happy hours')) {
+    // Specific brewery/bar search terms to avoid restaurant overlap
+    return ['brewery', 'brewpub', 'craft beer', 'taproom', 'bar'];
   } else {
     return [category.toLowerCase()];
   }
@@ -380,8 +383,85 @@ function deduplicateBusinesses(businesses: Business[]): Business[] {
   });
 }
 
+// Helper function to determine primary business type for cross-category deduplication
+function getBusinessPrimaryType(business: Business): 'restaurant' | 'bar' | 'retail' | 'other' {
+  const name = business.name.toLowerCase();
+  const features = business.features ? business.features.join(' ').toLowerCase() : '';
+  const description = business.description ? business.description.toLowerCase() : '';
+  const types = business.types ? business.types.join(' ').toLowerCase() : '';
+  
+  // Restaurant indicators (higher priority for Food Time)
+  const restaurantKeywords = ['kitchen', 'dining', 'grill', 'restaurant', 'bistro', 'eatery', 'food', 'cuisine'];
+  const restaurantTypes = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
+  
+  // Bar/brewery indicators (higher priority for Drink Time)
+  const barKeywords = ['brewery', 'brewpub', 'taproom', 'pub', 'bar', 'tavern', 'lounge', 'craft beer', 'beer garden'];
+  const barTypes = ['bar', 'night_club', 'brewery'];
+  
+  // Check for strong bar/brewery signals
+  if (barKeywords.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    return 'bar';
+  }
+  
+  if (barTypes.some(type => types.includes(type))) {
+    return 'bar';
+  }
+  
+  // Check for strong restaurant signals
+  if (restaurantKeywords.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    return 'restaurant';
+  }
+  
+  if (restaurantTypes.some(type => types.includes(type))) {
+    return 'restaurant';
+  }
+  
+  // Default categorization based on features
+  if (features.includes('alcohol') || features.includes('beer') || features.includes('wine')) {
+    return 'bar';
+  }
+  
+  return 'other';
+}
+
+// Enhanced function to check if a business is a brewery/bar suitable for consumption
+function isBreweryConsumerBusiness(business: Business): boolean {
+  const name = business.name.toLowerCase();
+  const features = business.features ? business.features.join(' ').toLowerCase() : '';
+  const types = business.types ? business.types.join(' ').toLowerCase() : '';
+  
+  // Exclude liquor stores and retail alcohol
+  const retailExclusions = ['liquor store', 'wine shop', 'bottle shop', 'package store', 'beer store'];
+  const retailTypes = ['liquor_store', 'store'];
+  
+  if (retailExclusions.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    console.log(`→ Excluding retail alcohol business: ${business.name}`);
+    return false;
+  }
+  
+  if (retailTypes.some(type => types.includes(type)) && !name.includes('brewery') && !name.includes('brewpub')) {
+    console.log(`→ Excluding retail store from brewery search: ${business.name}`);
+    return false;
+  }
+  
+  // Must have indicators of on-premises consumption
+  const consumptionIndicators = ['brewery', 'brewpub', 'taproom', 'bar', 'pub', 'tavern', 'restaurant', 'dining'];
+  const consumptionTypes = ['bar', 'restaurant', 'brewery', 'night_club'];
+  
+  const hasConsumptionIndicators = consumptionIndicators.some(keyword => 
+    name.includes(keyword) || features.includes(keyword)
+  ) || consumptionTypes.some(type => types.includes(type));
+  
+  if (!hasConsumptionIndicators) {
+    console.log(`→ Excluding non-consumption business from brewery search: ${business.name}`);
+    return false;
+  }
+  
+  return true;
+}
+
 // Cross-API deduplication: check if businesses from different APIs are the same
-function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Business[]): Business[] {
+function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Business[], category?: string): Business[] {
   const allBusinesses = [...yelpBusinesses];
   const yelpNames = new Set(yelpBusinesses.map(b => b.name.toLowerCase()));
   
@@ -389,6 +469,22 @@ function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Bus
     const nameMatch = yelpNames.has(googleBusiness.name.toLowerCase());
     
     if (!nameMatch) {
+      // Cross-category deduplication for overlapping businesses
+      if (category && (category.includes('brewery') || category.includes('Happy hours'))) {
+        // For brewery searches, prioritize bar-type businesses and filter out restaurants
+        if (!isBreweryConsumerBusiness(googleBusiness)) {
+          console.log(`→ Filtering non-brewery business: ${googleBusiness.name}`);
+          continue;
+        }
+        
+        // Check if this business is already recommended in Food Time categories
+        const businessType = getBusinessPrimaryType(googleBusiness);
+        if (businessType === 'restaurant') {
+          console.log(`→ Skipping restaurant-primary business for brewery category: ${googleBusiness.name}`);
+          continue;
+        }
+      }
+      
       // Check for address similarity (within 0.1 miles)
       const isDuplicate = yelpBusinesses.some(yelpBusiness => {
         if (!yelpBusiness.latitude || !yelpBusiness.longitude || 
@@ -697,6 +793,16 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'hauling services' },
       { keyword: 'debris removal' },
       { keyword: 'trash removal' }
+    );
+  } else if (category.includes('brewery') || category.includes('breweries') || category.includes('Happy hours')) {
+    strategies.push(
+      { keyword: 'brewery' },
+      { keyword: 'brewpub' },
+      { keyword: 'craft beer' },
+      { keyword: 'taproom' },
+      { keyword: 'bar and grill' },
+      { type: 'bar' },
+      { type: 'brewery' }
     );
   } else if (category.includes('personal care')) {
     strategies.push(
@@ -1143,7 +1249,7 @@ async function searchBusinesses(category: string, coordinates: { lat: number; ln
       console.log(`Google Places found ${googleBusinesses.length} additional businesses`);
       
       // Deduplicate across APIs and combine
-      businesses = deduplicateAcrossAPIs(yelpBusinesses, googleBusinesses);
+      businesses = deduplicateAcrossAPIs(yelpBusinesses, googleBusinesses, category);
     } else {
       businesses = yelpBusinesses;
     }
