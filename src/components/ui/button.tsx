@@ -20,6 +20,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         hero: "bg-gradient-hero text-white hover:shadow-glow transform hover:scale-105 transition-smooth font-semibold",
         accent: "bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-soft transition-smooth",
+        green: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-soft transition-smooth font-semibold",
       },
       size: {
         default: "h-10 px-4 py-2 min-h-[44px]", // Mobile-friendly touch target
