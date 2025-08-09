@@ -1,6 +1,6 @@
 // App Version Management
 // Increment this version when you need to invalidate all caches
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 
 // Version types for different cache invalidation strategies
 export type CacheInvalidationType = 'major' | 'minor' | 'ui-only' | 'data-only';

@@ -390,37 +390,62 @@ function getBusinessPrimaryType(business: Business): 'restaurant' | 'bar' | 'ret
   const description = business.description ? business.description.toLowerCase() : '';
   const types = business.types ? business.types.join(' ').toLowerCase() : '';
   
-  // Restaurant indicators (higher priority for Food Time)
-  const restaurantKeywords = ['kitchen', 'dining', 'grill', 'restaurant', 'bistro', 'eatery', 'food', 'cuisine'];
-  const restaurantTypes = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
+  console.log(`🔍 Analyzing business type for: ${business.name}`);
+  console.log(`→ Types: ${types}`);
+  console.log(`→ Features: ${features}`);
+  
+  // Strong liquor store indicators - highest priority to exclude from breweries
+  const liquorStoreKeywords = ['liquor', 'wine shop', 'spirits', 'package store', 'wine & spirits', 'bottle shop'];
+  const liquorStoreTypes = ['liquor_store', 'store'];
+  
+  if (liquorStoreKeywords.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    console.log(`→ Classified as: retail (liquor store)`);
+    return 'retail';
+  }
+  
+  if (liquorStoreTypes.some(type => types.includes(type)) && 
+      !name.includes('brewery') && !name.includes('brewpub')) {
+    console.log(`→ Classified as: retail (store type)`);
+    return 'retail';
+  }
   
   // Bar/brewery indicators (higher priority for Drink Time)
-  const barKeywords = ['brewery', 'brewpub', 'taproom', 'pub', 'bar', 'tavern', 'lounge', 'craft beer', 'beer garden'];
+  const barKeywords = ['brewery', 'brewpub', 'taproom', 'pub', 'bar', 'tavern', 'lounge', 'craft beer', 'beer garden', 'alehouse'];
   const barTypes = ['bar', 'night_club', 'brewery'];
   
   // Check for strong bar/brewery signals
   if (barKeywords.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    console.log(`→ Classified as: bar`);
     return 'bar';
   }
   
   if (barTypes.some(type => types.includes(type))) {
+    console.log(`→ Classified as: bar`);
     return 'bar';
   }
   
+  // Restaurant indicators (higher priority for Food Time)
+  const restaurantKeywords = ['kitchen', 'dining', 'grill', 'restaurant', 'bistro', 'eatery', 'food', 'cuisine', 'diner', 'cafe'];
+  const restaurantTypes = ['restaurant', 'meal_takeaway', 'meal_delivery', 'food'];
+  
   // Check for strong restaurant signals
   if (restaurantKeywords.some(keyword => name.includes(keyword) || features.includes(keyword))) {
+    console.log(`→ Classified as: restaurant`);
     return 'restaurant';
   }
   
   if (restaurantTypes.some(type => types.includes(type))) {
+    console.log(`→ Classified as: restaurant`);
     return 'restaurant';
   }
   
   // Default categorization based on features
   if (features.includes('alcohol') || features.includes('beer') || features.includes('wine')) {
+    console.log(`→ Classified as: bar (alcohol features)`);
     return 'bar';
   }
   
+  console.log(`→ Classified as: other`);
   return 'other';
 }
 
@@ -430,33 +455,57 @@ function isBreweryConsumerBusiness(business: Business): boolean {
   const features = business.features ? business.features.join(' ').toLowerCase() : '';
   const types = business.types ? business.types.join(' ').toLowerCase() : '';
   
-  // Exclude liquor stores and retail alcohol
-  const retailExclusions = ['liquor store', 'wine shop', 'bottle shop', 'package store', 'beer store'];
+  console.log(`🍺 Checking brewery eligibility for: ${business.name}`);
+  console.log(`→ Types: ${types}`);
+  console.log(`→ Features: ${features}`);
+  
+  // Strong exclusions - liquor stores and retail establishments
+  const retailExclusions = ['liquor store', 'wine shop', 'bottle shop', 'package store', 'beer store', 'wine & spirits', 'spirits'];
   const retailTypes = ['liquor_store', 'store'];
   
   if (retailExclusions.some(keyword => name.includes(keyword) || features.includes(keyword))) {
-    console.log(`→ Excluding retail alcohol business: ${business.name}`);
+    console.log(`❌ Excluded ${business.name}: Retail alcohol business`);
     return false;
   }
   
-  if (retailTypes.some(type => types.includes(type)) && !name.includes('brewery') && !name.includes('brewpub')) {
-    console.log(`→ Excluding retail store from brewery search: ${business.name}`);
+  if (retailTypes.some(type => types.includes(type)) && 
+      !name.includes('brewery') && !name.includes('brewpub') && !name.includes('taproom')) {
+    console.log(`❌ Excluded ${business.name}: Retail store without brewery indicators`);
     return false;
   }
   
-  // Must have indicators of on-premises consumption
-  const consumptionIndicators = ['brewery', 'brewpub', 'taproom', 'bar', 'pub', 'tavern', 'restaurant', 'dining'];
-  const consumptionTypes = ['bar', 'restaurant', 'brewery', 'night_club'];
+  // Exclude restaurant-primary businesses unless they're clearly brewpubs
+  const businessType = getBusinessPrimaryType(business);
+  if (businessType === 'retail') {
+    console.log(`❌ Excluded ${business.name}: Classified as retail`);
+    return false;
+  }
+  
+  if (businessType === 'restaurant' && 
+      !name.includes('brewery') && 
+      !name.includes('brewpub') &&
+      !name.includes('taphouse') &&
+      !name.includes('taproom')) {
+    console.log(`❌ Excluded ${business.name}: Restaurant-primary, not brewery`);
+    return false;
+  }
+  
+  // Must have indicators of on-premises alcohol consumption
+  const consumptionIndicators = ['brewery', 'brewpub', 'taproom', 'taphouse', 'bar', 'pub', 'tavern', 'alehouse', 'beer garden'];
+  const consumptionTypes = ['bar', 'brewery', 'night_club'];
+  const consumptionFeatures = ['draft beer', 'tap room', 'on-tap', 'craft beer', 'beer on tap'];
   
   const hasConsumptionIndicators = consumptionIndicators.some(keyword => 
-    name.includes(keyword) || features.includes(keyword)
-  ) || consumptionTypes.some(type => types.includes(type));
+    name.includes(keyword)
+  ) || consumptionTypes.some(type => types.includes(type)) ||
+     consumptionFeatures.some(feature => features.includes(feature));
   
   if (!hasConsumptionIndicators) {
-    console.log(`→ Excluding non-consumption business from brewery search: ${business.name}`);
+    console.log(`❌ Excluded ${business.name}: No on-premises consumption indicators`);
     return false;
   }
   
+  console.log(`✅ Included ${business.name}: Valid brewery/bar business`);
   return true;
 }
 
@@ -464,25 +513,62 @@ function isBreweryConsumerBusiness(business: Business): boolean {
 function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Business[], category?: string): Business[] {
   const allBusinesses = [...yelpBusinesses];
   const yelpNames = new Set(yelpBusinesses.map(b => b.name.toLowerCase()));
+  const businessTracker = new Map<string, Business>();
+  
+  console.log(`🔍 Starting cross-API deduplication for ${category || 'unknown'} category`);
+  console.log(`→ Yelp businesses: ${yelpBusinesses.length}`);
+  console.log(`→ Google businesses: ${googleBusinesses.length}`);
+  
+  // Track Yelp businesses
+  yelpBusinesses.forEach(business => {
+    const key = `${business.name.toLowerCase()}-${business.address?.toLowerCase() || ''}`;
+    businessTracker.set(key, business);
+  });
   
   for (const googleBusiness of googleBusinesses) {
     const nameMatch = yelpNames.has(googleBusiness.name.toLowerCase());
+    const businessType = getBusinessPrimaryType(googleBusiness);
+    
+    console.log(`Processing Google business: ${googleBusiness.name} (Type: ${businessType})`);
     
     if (!nameMatch) {
-      // Cross-category deduplication for overlapping businesses
+      // Enhanced brewery category filtering
       if (category && (category.includes('brewery') || category.includes('Happy hours'))) {
-        // For brewery searches, prioritize bar-type businesses and filter out restaurants
+        // For brewery searches, apply strict filtering
         if (!isBreweryConsumerBusiness(googleBusiness)) {
-          console.log(`→ Filtering non-brewery business: ${googleBusiness.name}`);
+          console.log(`→ Filtering non-brewery business from ${category}: ${googleBusiness.name}`);
           continue;
         }
         
-        // Check if this business is already recommended in Food Time categories
-        const businessType = getBusinessPrimaryType(googleBusiness);
-        if (businessType === 'restaurant') {
-          console.log(`→ Skipping restaurant-primary business for brewery category: ${googleBusiness.name}`);
+        // Additional check for retail businesses that might slip through
+        if (businessType === 'retail') {
+          console.log(`→ Skipping retail business for brewery category: ${googleBusiness.name}`);
           continue;
         }
+      }
+      
+      // Check for similar businesses with different names (address-based matching)
+      const googleKey = `${googleBusiness.name.toLowerCase()}-${googleBusiness.address?.toLowerCase() || ''}`;
+      const normalizedGoogleName = googleBusiness.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      let isDuplicate = false;
+      for (const [existingKey, existingBusiness] of businessTracker) {
+        const existingNormalizedName = existingBusiness.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        // Check for name similarity and location proximity
+        if (normalizedGoogleName === existingNormalizedName || 
+            (googleBusiness.address && existingBusiness.address && 
+             googleBusiness.address.toLowerCase().includes(existingBusiness.address.toLowerCase().slice(0, 20)))) {
+          console.log(`🔄 Found duplicate: ${googleBusiness.name} matches ${existingBusiness.name}`);
+          isDuplicate = true;
+          break;
+        }
+      }
+      
+      if (!isDuplicate) {
+        businessTracker.set(googleKey, googleBusiness);
+        allBusinesses.push(googleBusiness);
+        console.log(`✅ Added Google business: ${googleBusiness.name}`);
       }
       
       // Check for address similarity (within 0.1 miles)
