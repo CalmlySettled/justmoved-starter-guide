@@ -891,7 +891,26 @@ const PopularCategory = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
       
-      <main className="pt-24 pb-16">
+      {/* Mobile Header with Back Button */}
+      {isMobile && (
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Button
+              onClick={() => navigate('/popular')}
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-lg font-semibold text-foreground truncate">
+              {'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}
+            </h1>
+          </div>
+        </div>
+      )}
+      
+      <main className={isMobile ? "pb-16" : "pt-24 pb-16"}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Header Section */}
           <div className="mb-8">
@@ -1757,17 +1776,6 @@ const PopularCategory = () => {
         </div>
       </main>
 
-      {/* Mobile Floating Back Button */}
-      {isMobile && (
-        <Button
-          onClick={() => navigate('/popular')}
-          className="fixed bottom-24 left-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-md w-3 h-3 p-0"
-          variant="default"
-          size="icon"
-        >
-          <ArrowLeft className="h-2 w-2" />
-        </Button>
-      )}
     </div>
   );
 };
