@@ -65,10 +65,10 @@ const trendingCategories = [
   },
   { 
     name: "Personal Care & Wellness", 
-    icon: "💇‍♂️✂️🧘‍♀️", 
+    icon: "💇‍♂️🧘‍♀️", 
     searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
-    description: "Personal care and wellness services"
+    description: "Barbershops, salons, spas & wellness centers"
   },
   { 
     name: "Art & Culture", 
