@@ -667,15 +667,21 @@ const PopularCategory = () => {
           {('name' in categoryConfig && categoryConfig.name === "Personal Care & Wellness") ? (
             // Special tabbed layout for Personal Care & Wellness
             <Tabs defaultValue="barbershops" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8">
-                <TabsTrigger value="barbershops" className="flex items-center gap-2" onClick={() => handleTabChange('barbershops')}>
-                  💇‍♂️ Barbershops
+              <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
+                <TabsTrigger value="barbershops" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('barbershops')}>
+                  <span className="text-sm">💇‍♂️</span>
+                  <span className="hidden xs:inline">Barbershops</span>
+                  <span className="xs:hidden">Barber</span>
                 </TabsTrigger>
-                <TabsTrigger value="salons" className="flex items-center gap-2" onClick={() => handleTabChange('salons')}>
-                  💅 Salons & Beauty
+                <TabsTrigger value="salons" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('salons')}>
+                  <span className="text-sm">💅</span>
+                  <span className="hidden xs:inline">Salons & Beauty</span>
+                  <span className="xs:hidden">Salon</span>
                 </TabsTrigger>
-                <TabsTrigger value="spas" className="flex items-center gap-2" onClick={() => handleTabChange('spas')}>
-                  🧘 Spa & Wellness
+                <TabsTrigger value="spas" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('spas')}>
+                  <span className="text-sm">🧘</span>
+                  <span className="hidden xs:inline">Spa & Wellness</span>
+                  <span className="xs:hidden">Spa</span>
                 </TabsTrigger>
               </TabsList>
               
