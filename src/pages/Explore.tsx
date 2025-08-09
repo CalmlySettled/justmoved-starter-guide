@@ -56,19 +56,19 @@ const themedPacks = [
   {
     title: "First 48 Hours",
     description: "",
-    categories: ["doctors", "gas stations", "grocery stores", "junk removal", "pharmacies"],
+    categories: ["grocery stores", "pharmacies", "gas stations", "doctors", "junk removal"],
     icon: Clock,
   },
   {
     title: "First Week",
     description: "",
-    categories: ["banks", "cleaning services", "furniture stores", "hardware stores", "internet providers"],
+    categories: ["internet providers", "banks", "hardware stores", "furniture stores", "cleaning services"],
     icon: Home,
   },
   {
     title: "First Month",
     description: "",
-    categories: ["daycares", "DMV", "Fitness", "post offices", "veterinarians"],
+    categories: ["DMV", "Fitness", "post offices", "veterinarians", "daycares"],
     icon: Zap,
   },
   {
