@@ -85,15 +85,8 @@ const trendingCategories = [
     description: "Get active in nature"
   },
   { 
-    name: "Live Music", 
-    icon: "🎵", 
-    searchTerms: ["live music venue", "concert hall", "music bar"],
-    color: "bg-blue-500",
-    description: "Catch local performances"
-  },
-  { 
     name: "Nearby Events", 
-    icon: "📅", 
+    icon: "🎫", 
     searchTerms: ["event venue", "community center", "entertainment venue"],
     color: "bg-violet-500",
     description: "See what's happening nearby"
