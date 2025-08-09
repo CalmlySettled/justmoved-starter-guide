@@ -446,16 +446,20 @@ export default function Auth() {
       // Get redirect parameter from URL to preserve user intent
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect') || 'explore';
+      const focus = urlParams.get('focus') || 'essentials';
       
-      console.log('🟡 AUTH - Google OAuth redirect param:', redirect);
+      console.log('🟡 AUTH - Google OAuth params:', { redirect, focus });
       
-      // Redirect to the page the user came from with OAuth parameters
-      const redirectPage = redirect === 'popular' ? 'popular' : 'explore';
+      // Mobile browsers sometimes have issues with complex redirect URLs
+      // Use a simpler approach: redirect to auth page with parameters that we can handle
+      const redirectUrl = `${window.location.origin}/auth?oauth=true&redirect=${redirect}&focus=${focus}`;
+      
+      console.log('🟡 AUTH - Mobile redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/${redirectPage}?oauth=true&redirect=${redirect}&focus=essentials`,
+          redirectTo: redirectUrl,
         }
       });
 
