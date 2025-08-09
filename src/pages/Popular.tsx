@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { EventCard } from "@/components/EventCard";
-import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church } from "lucide-react";
+import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church, Gamepad2, Target, PartyPopper, Dice6, Flag } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -97,6 +97,13 @@ const trendingCategories = [
     searchTerms: ["art gallery", "museum", "cultural center"],
     color: "bg-pink-500",
     description: "Creative spaces and exhibitions"
+  },
+  { 
+    name: "Games", 
+    icon: "🎮", 
+    searchTerms: ["bowling alley", "arcade", "entertainment center", "indoor recreation", "game room", "billiards", "mini golf", "laser tag"],
+    color: "bg-purple-500",
+    description: "Entertainment and indoor fun"
   }
 ];
 
