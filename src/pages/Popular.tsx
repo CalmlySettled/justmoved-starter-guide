@@ -101,7 +101,7 @@ const trendingCategories = [
   { 
     name: "Games", 
     icon: "🎮", 
-    searchTerms: ["bowling alley", "arcade", "entertainment center", "indoor recreation", "game room", "billiards", "mini golf", "laser tag"],
+    searchTerms: ["bowling alley", "arcade", "mini golf", "billiards"],
     color: "bg-purple-500",
     description: "Entertainment and indoor fun"
   }
