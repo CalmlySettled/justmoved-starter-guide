@@ -105,25 +105,46 @@ export default function Explore() {
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Check overflow for all scroll containers
-  const checkScrollOverflow = () => {
-    scrollContainerRefs.current.forEach((el) => {
-      if (el) {
-        const hasOverflow = el.scrollWidth > el.clientWidth;
-        if (hasOverflow) {
-          el.classList.add('has-overflow');
-        } else {
-          el.classList.remove('has-overflow');
-        }
-      }
-    });
+  // Check if there's more content to scroll to the right
+  const checkScrollState = (el: HTMLDivElement) => {
+    const hasMoreContentToRight = (el.scrollLeft + el.clientWidth) < el.scrollWidth;
+    if (hasMoreContentToRight) {
+      el.classList.add('has-overflow');
+    } else {
+      el.classList.remove('has-overflow');
+    }
   };
 
-  // Check overflow on window resize and content load
+  // Throttle function for performance
+  const throttle = (func: Function, limit: number) => {
+    let inThrottle: boolean;
+    return function(this: any, ...args: any[]) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    }
+  };
+
+  // Initial check and resize handler
   useEffect(() => {
-    checkScrollOverflow();
-    window.addEventListener('resize', checkScrollOverflow);
-    return () => window.removeEventListener('resize', checkScrollOverflow);
+    scrollContainerRefs.current.forEach((el) => {
+      if (el) {
+        checkScrollState(el);
+      }
+    });
+    
+    const handleResize = () => {
+      scrollContainerRefs.current.forEach((el) => {
+        if (el) {
+          checkScrollState(el);
+        }
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [themedPacks]);
 
   // Helper function to create Google Maps search URL
@@ -843,19 +864,26 @@ export default function Explore() {
                           {isMobile ? (
                             <div className="relative">
                               <div 
-                                ref={(el) => {
-                                  scrollContainerRefs.current[themedPacks.indexOf(pack)] = el;
-                                  // Check for overflow and apply class
-                                  if (el) {
-                                    const hasOverflow = el.scrollWidth > el.clientWidth;
-                                    if (hasOverflow) {
-                                      el.classList.add('has-overflow');
-                                    } else {
-                                      el.classList.remove('has-overflow');
-                                    }
-                                  }
-                                }}
-                                className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory"
+                                 ref={(el) => {
+                                   scrollContainerRefs.current[themedPacks.indexOf(pack)] = el;
+                                   if (el) {
+                                     // Initial check
+                                     checkScrollState(el);
+                                     
+                                     // Add scroll event listener with throttling
+                                     const throttledScrollHandler = throttle(() => {
+                                       checkScrollState(el);
+                                     }, 50);
+                                     
+                                     el.addEventListener('scroll', throttledScrollHandler);
+                                     
+                                     // Cleanup function
+                                     return () => {
+                                       el.removeEventListener('scroll', throttledScrollHandler);
+                                     };
+                                   }
+                                 }}
+                                 className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory"
                               >
                                {pack.categories.map((category, index) => (
                                  <Badge 
