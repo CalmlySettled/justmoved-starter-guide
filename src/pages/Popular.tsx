@@ -298,7 +298,7 @@ const Popular = () => {
                 Popular Near You
               </h1>
             </div>
-
+            <p className="text-lg text-muted-foreground">Top-rated local favorites</p>
           </div>
 
           {location ? (

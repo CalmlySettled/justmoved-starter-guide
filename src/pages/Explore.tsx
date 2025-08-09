@@ -763,9 +763,12 @@ export default function Explore() {
             <div className="space-y-4"></div>
           )}
 
-          {/* Just Moved Collections - Show for all users */}
+          {/* Explore Essentials - Show for all users */}
           <section className="mb-16 bg-gradient-section rounded-2xl p-8 shadow-soft">
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-center">Just Moved Collections</h2>
+            <div className="text-center mb-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-2">Explore Essentials</h1>
+              <p className="text-lg text-muted-foreground">Nearby necessities for new residents</p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
               {themedPacks.map((pack) => (
               <Card 
