@@ -71,11 +71,11 @@ const trendingCategories = [
     description: "Boutiques and specialty retail"
   },
   { 
-    name: "Wellness & Self Care", 
+    name: "Personal Care & Wellness", 
     icon: "🧘", 
-    searchTerms: ["spa", "wellness center", "massage therapy", "meditation"],
+    searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
-    description: "Relax and rejuvenate yourself"
+    description: "Personal care and wellness services"
   },
   { 
     name: "Art & Culture", 

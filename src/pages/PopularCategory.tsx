@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MapPin, Star, ExternalLink, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,11 +93,11 @@ const trendingCategories = [
     description: "Boutiques and specialty retail"
   },
   { 
-    name: "Wellness & Self Care", 
+    name: "Personal Care & Wellness", 
     icon: "🧘", 
-    searchTerms: ["spa", "wellness center", "massage therapy", "meditation center", "yoga studio", "health spa"],
+    searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
-    description: "Rejuvenate your mind and body"
+    description: "Personal care and wellness services"
   },
   { 
     name: "Local Events", 
@@ -343,6 +344,31 @@ const PopularCategory = () => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
+  const categorizeBusinesses = (businesses: Business[]) => {
+    const categorized = {
+      barbershops: [] as Business[],
+      salons: [] as Business[], 
+      spas: [] as Business[]
+    };
+
+    businesses.forEach(business => {
+      const name = business.name.toLowerCase();
+      const description = business.description?.toLowerCase() || '';
+      const features = business.features?.join(' ').toLowerCase() || '';
+      const combined = `${name} ${description} ${features}`;
+
+      if (combined.includes('barber') || combined.includes('barbershop') || combined.includes("men's cut")) {
+        categorized.barbershops.push(business);
+      } else if (combined.includes('spa') || combined.includes('massage') || combined.includes('wellness') || combined.includes('yoga') || combined.includes('meditation')) {
+        categorized.spas.push(business);
+      } else {
+        categorized.salons.push(business);
+      }
+    });
+
+    return categorized;
+  };
+
   const handleGetWebsite = async (business: Business) => {
     if (!business.place_id) return;
     
@@ -512,132 +538,399 @@ const PopularCategory = () => {
           </div>
 
           {/* Results Section */}
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <Skeleton className="h-48 w-full" />
-                    <div className="p-4 space-y-2">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : businesses.length > 0 ? (
-            <>
-              <div className="flex items-center gap-2 mb-6">
-                <h2 className="text-2xl font-bold">{'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}</h2>
-                <Badge variant="secondary">{businesses.length} places</Badge>
-              </div>
+          {('name' in categoryConfig && categoryConfig.name === "Personal Care & Wellness") ? (
+            // Special tabbed layout for Personal Care & Wellness
+            <Tabs defaultValue="barbershops" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="barbershops" className="flex items-center gap-2">
+                  💇‍♂️ Barbershops
+                </TabsTrigger>
+                <TabsTrigger value="salons" className="flex items-center gap-2">
+                  💅 Salons & Beauty
+                </TabsTrigger>
+                <TabsTrigger value="spas" className="flex items-center gap-2">
+                  🧘 Spa & Wellness
+                </TabsTrigger>
+              </TabsList>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {businesses.map((business) => (
-                  <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                    <CardContent className="p-0">
-                      {business.image_url && (
-                        <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
-                          <img 
-                            src={business.image_url} 
-                            alt={business.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
+              {(() => {
+                const categorized = categorizeBusinesses(businesses);
+                return (
+                  <>
+                    <TabsContent value="barbershops">
+                      {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : categorized.barbershops.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {categorized.barbershops.slice(0, 4).map((business) => (
+                            <Card key={`barbershop-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">💇‍♂️</div>
+                          <h3 className="text-xl font-semibold mb-2">No barbershops found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
                         </div>
                       )}
-                      
-                        <div className="p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-lg font-semibold">{business.name}</h3>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleFavorite(business)}
-                              disabled={favoritingBusinesses.has(business.name)}
-                              className="p-1 hover:bg-background/80"
-                            >
-                              <Star 
-                                className={`h-4 w-4 transition-colors ${
-                                  favoriteBusinesses.has(business.name)
-                                    ? 'fill-current text-yellow-500' 
-                                    : 'text-muted-foreground hover:text-yellow-500'
-                                }`} 
-                              />
-                            </Button>
-                          </div>
-                        
-                          <div className="space-y-2">
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
-                            >
-                              <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="line-clamp-1 hover:underline">{business.address}</span>
-                            </a>
-                            
-                            <div className="text-sm font-medium text-primary">
-                              {business.distance_miles?.toFixed(1)} miles away
-                            </div>
-                            
-                            <div className="flex gap-2 mt-3">
-                              <TooltipProvider>
-                                {business.website || businessWebsites[business.place_id!] ? (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
-                                      >
-                                        <ExternalLink className="h-4 w-4" />
-                                        Website
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Opens in new tab</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : business.place_id ? (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => handleGetWebsite(business)}
-                                        disabled={loadingStates[business.place_id]}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        {loadingStates[business.place_id] ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <ExternalLink className="h-4 w-4" />
-                                        )}
-                                        {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Opens in new tab</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : null}
-                              </TooltipProvider>
-                            </div>
+                    </TabsContent>
+
+                    <TabsContent value="salons">
+                      {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
+                      ) : categorized.salons.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {categorized.salons.slice(0, 4).map((business) => (
+                            <Card key={`salon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">💅</div>
+                          <h3 className="text-xl font-semibold mb-2">No salons found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="spas">
+                      {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : categorized.spas.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {categorized.spas.slice(0, 4).map((business) => (
+                            <Card key={`spa-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">🧘</div>
+                          <h3 className="text-xl font-semibold mb-2">No spas found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </>
+                );
+              })()}
+            </Tabs>
           ) : (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-semibold mb-2">No places found</h3>
-              <p className="text-muted-foreground">
-                Try checking back later or explore other categories.
-              </p>
-            </div>
+            // Regular layout for other categories
+            <>
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <CardContent className="p-0">
+                        <Skeleton className="h-48 w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-6 w-3/4" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-2/3" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : businesses.length > 0 ? (
+                <>
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="text-2xl font-bold">{'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}</h2>
+                    <Badge variant="secondary">{businesses.length} places</Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {businesses.map((business) => (
+                      <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                        <CardContent className="p-0">
+                          {business.image_url && (
+                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          
+                            <div className="p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="text-lg font-semibold">{business.name}</h3>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleFavorite(business)}
+                                  disabled={favoritingBusinesses.has(business.name)}
+                                  className="p-1 hover:bg-background/80"
+                                >
+                                  <Star 
+                                    className={`h-4 w-4 transition-colors ${
+                                      favoriteBusinesses.has(business.name)
+                                        ? 'fill-current text-yellow-500' 
+                                        : 'text-muted-foreground hover:text-yellow-500'
+                                    }`} 
+                                  />
+                                </Button>
+                              </div>
+                            
+                              <div className="space-y-2">
+                                <a 
+                                  href={getGoogleMapsUrl(business.address)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                                >
+                                  <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                  <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                </a>
+                                
+                                <div className="text-sm font-medium text-primary">
+                                  {business.distance_miles?.toFixed(1)} miles away
+                                </div>
+                                
+                                <div className="flex gap-2 mt-3">
+                                  <TooltipProvider>
+                                    {business.website || businessWebsites[business.place_id!] ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
+                                          >
+                                            <ExternalLink className="h-4 w-4" />
+                                            Website
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Opens in new tab</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : business.place_id ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() => handleGetWebsite(business)}
+                                            disabled={loadingStates[business.place_id]}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            {loadingStates[business.place_id] ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <ExternalLink className="h-4 w-4" />
+                                            )}
+                                            {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Opens in new tab</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : null}
+                                  </TooltipProvider>
+                                </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-xl font-semibold mb-2">No places found</h3>
+                  <p className="text-muted-foreground">
+                    Try checking back later or explore other categories.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
