@@ -773,7 +773,7 @@ export default function Explore() {
           )}
 
           {/* Location Section */}
-          {!isLoadingProfile && !isProcessingSavedAddress && !location && user ? (
+          {!isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
