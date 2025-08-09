@@ -310,14 +310,29 @@ const PopularCategory = () => {
   useEffect(() => {
     if (location && categoryConfig) {
       if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Personal Care & Wellness') {
-        // For Personal Care & Wellness, load the default tab (barbershops) immediately
+        // For Personal Care & Wellness, load the default tab (barbershops) immediately and prepare other tabs
+        console.log('🔄 Initializing Personal Care & Wellness data...');
         fetchSubcategoryData('barbershops');
+        // Preload other tabs to prevent empty states
+        setTimeout(() => {
+          if (subcategoryData.salons.length === 0 && !subcategoryLoading.salons) fetchSubcategoryData('salons');
+          if (subcategoryData.spas.length === 0 && !subcategoryLoading.spas) fetchSubcategoryData('spas');
+        }, 1000);
       } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Food Time') {
         // For Food Time, load the default tab (morning) immediately
+        console.log('🔄 Initializing Food Time data...');
         fetchFoodSceneData('morning');
       } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Drink Time') {
-        // For Drink Time, load the default tab (coffee) immediately
+        // For Drink Time, load both coffee AND brewery data immediately to prevent empty states
+        console.log('🔄 Initializing Drink Time data...');
         fetchDrinkTimeData('coffee');
+        // Preload brewery data to ensure it's available when tab is clicked
+        setTimeout(() => {
+          if (drinkTimeData.breweries.length === 0 && !drinkTimeLoading.breweries) {
+            console.log('🔄 Preloading brewery data...');
+            fetchDrinkTimeData('breweries');
+          }
+        }, 1000);
       } else {
         // For other categories, use the existing flow
         fetchCategoryPlaces();
@@ -678,9 +693,14 @@ const PopularCategory = () => {
     setActiveTab(value);
     const subcategory = value as 'barbershops' | 'salons' | 'spas';
     
-    // Only fetch if we don't have data for this subcategory yet
+    // Always fetch if data doesn't exist, and force refresh if tab appears empty but should have data
     if (subcategoryData[subcategory].length === 0 && !subcategoryLoading[subcategory]) {
+      console.log(`🔄 Loading ${subcategory} data for tab change`);
       fetchSubcategoryData(subcategory);
+    } else if (subcategoryData[subcategory].length === 0 && subcategoryLoading[subcategory]) {
+      console.log(`⏳ Already loading ${subcategory} data...`);
+    } else {
+      console.log(`✅ Using existing ${subcategory} data: ${subcategoryData[subcategory].length} items`);
     }
   };
 
@@ -698,9 +718,14 @@ const PopularCategory = () => {
     setDrinkTimeTab(value);
     const drinkType = value as 'coffee' | 'breweries';
     
-    // Only fetch if we don't have data for this drink type yet
+    // Always fetch if data doesn't exist, and force refresh if tab appears empty but should have data
     if (drinkTimeData[drinkType].length === 0 && !drinkTimeLoading[drinkType]) {
+      console.log(`🔄 Loading ${drinkType} data for tab change`);
       fetchDrinkTimeData(drinkType);
+    } else if (drinkTimeData[drinkType].length === 0 && drinkTimeLoading[drinkType]) {
+      console.log(`⏳ Already loading ${drinkType} data...`);
+    } else {
+      console.log(`✅ Using existing ${drinkType} data: ${drinkTimeData[drinkType].length} items`);
     }
   };
 

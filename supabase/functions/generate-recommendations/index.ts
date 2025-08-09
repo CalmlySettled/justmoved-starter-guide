@@ -311,8 +311,8 @@ function getYelpSearchTerms(category: string): string[] {
   } else if (category.includes('Bars')) {
     return ['bars', 'pubs'];
   } else if (category.includes('brewery') || category.includes('breweries') || category.includes('Happy hours')) {
-    // Specific brewery/bar search terms to avoid restaurant overlap
-    return ['brewery', 'brewpub', 'craft beer', 'taproom', 'bar'];
+    // Specific brewery/bar search terms - NO food terms to prevent restaurant contamination
+    return ['brewery', 'brewpub', 'craft beer', 'taproom'];
   } else {
     return [category.toLowerCase()];
   }
@@ -549,45 +549,13 @@ function deduplicateAcrossAPIs(yelpBusinesses: Business[], googleBusinesses: Bus
       
       // Check for similar businesses with different names (address-based matching)
       const googleKey = `${googleBusiness.name.toLowerCase()}-${googleBusiness.address?.toLowerCase() || ''}`;
-      const normalizedGoogleName = googleBusiness.name.toLowerCase().replace(/[^a-z0-9]/g, '');
       
-      let isDuplicate = false;
-      for (const [existingKey, existingBusiness] of businessTracker) {
-        const existingNormalizedName = existingBusiness.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        
-        // Check for name similarity and location proximity
-        if (normalizedGoogleName === existingNormalizedName || 
-            (googleBusiness.address && existingBusiness.address && 
-             googleBusiness.address.toLowerCase().includes(existingBusiness.address.toLowerCase().slice(0, 20)))) {
-          console.log(`🔄 Found duplicate: ${googleBusiness.name} matches ${existingBusiness.name}`);
-          isDuplicate = true;
-          break;
-        }
-      }
-      
-      if (!isDuplicate) {
+      if (!businessTracker.has(googleKey)) {
         businessTracker.set(googleKey, googleBusiness);
         allBusinesses.push(googleBusiness);
         console.log(`✅ Added Google business: ${googleBusiness.name}`);
-      }
-      
-      // Check for address similarity (within 0.1 miles)
-      const isDuplicate = yelpBusinesses.some(yelpBusiness => {
-        if (!yelpBusiness.latitude || !yelpBusiness.longitude || 
-            !googleBusiness.latitude || !googleBusiness.longitude) {
-          return false;
-        }
-        const distance = calculateDistance(
-          yelpBusiness.latitude, yelpBusiness.longitude,
-          googleBusiness.latitude, googleBusiness.longitude
-        );
-        return distance < 0.1; // Within 0.1 miles = likely same business
-      });
-      
-      if (!isDuplicate) {
-        allBusinesses.push(googleBusiness);
       } else {
-        console.log(`→ Skipping duplicate business across APIs: ${googleBusiness.name}`);
+        console.log(`→ Skipping duplicate business: ${googleBusiness.name}`);
       }
     } else {
       console.log(`→ Skipping duplicate business across APIs: ${googleBusiness.name}`);
