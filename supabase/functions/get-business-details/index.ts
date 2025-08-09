@@ -48,7 +48,7 @@ serve(async (req) => {
       throw new Error('Google Places API key not configured');
     }
 
-    const fields = 'website,formatted_phone_number,opening_hours,business_status';
+    const fields = 'website,opening_hours,business_status';
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=${fields}&key=${googleApiKey}`;
     
     console.log(`Making Google Places Details API call for ${business_name}`);
@@ -63,7 +63,6 @@ serve(async (req) => {
     const result = data.result;
     const businessDetails = {
       website: result.website || null,
-      phone: result.formatted_phone_number || null,
       opening_hours: result.opening_hours?.weekday_text || null,
       business_status: result.business_status || null,
       fetched_at: new Date().toISOString()

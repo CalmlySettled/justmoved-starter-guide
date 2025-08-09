@@ -214,7 +214,6 @@ export default function Favorites() {
                           business={{
                             name: business.business_name,
                             address: business.business_address,
-                            phone: business.business_phone,
                             website: business.business_website,
                             features: business.business_features,
                             image_url: business.business_image,

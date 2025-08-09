@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface BusinessDetails {
   website: string | null;
-  phone: string | null;
   opening_hours: string[] | null;
   business_status: string | null;
   fetched_at: string;

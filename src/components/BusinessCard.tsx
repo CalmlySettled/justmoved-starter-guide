@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { MapPin, Star, ExternalLink, Phone, Loader2, Navigation } from 'lucide-react';
+import { MapPin, Star, ExternalLink, Loader2, Navigation } from 'lucide-react';
 import { useBusinessDetails } from '@/hooks/useBusinessDetails';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface BusinessCardData {
   name: string;
   address?: string;
-  phone?: string;
   website?: string;
   image_url?: string;
   features?: string[];
@@ -243,48 +242,26 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
         
         {/* Action buttons - compact mobile actions */}
-        {compact && (
-          <div className="flex items-center justify-between gap-1 pt-2 border-t border-border/50">
+        {compact && business.address && (
+          <div className="pt-2 border-t border-border/50">
             <TooltipProvider>
-              {/* Directions Button */}
-              {business.address && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={getGoogleMapsDirectionsUrl(business.address, business.name)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleDirectionsClick}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20 hover:border-primary/30 min-h-[36px]"
-                    >
-                      <Navigation className="h-3 w-3" />
-                      <span>Directions</span>
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Open in Google Maps</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-
-              {/* Phone Button */}
-              {business.phone && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={`tel:${business.phone}`}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20 hover:border-primary/30 min-h-[36px]"
-                    >
-                      <Phone className="h-3 w-3" />
-                      <span>Call</span>
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Call {business.phone}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={getGoogleMapsDirectionsUrl(business.address, business.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleDirectionsClick}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20 hover:border-primary/30 min-h-[36px]"
+                  >
+                    <Navigation className="h-3 w-3" />
+                    <span>Directions</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Open in Google Maps</p>
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         )}

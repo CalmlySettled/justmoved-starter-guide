@@ -79,7 +79,6 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
                   business={{
                     name: business.name,
                     address: business.address,
-                    phone: business.phone,
                     website: business.website,
                     image_url: business.image_url,
                     features: business.features,
