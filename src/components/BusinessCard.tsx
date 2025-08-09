@@ -145,7 +145,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
   return (
     <Card 
-      className="group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden h-fit"
+      className={`group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden ${compact ? 'h-[320px] flex flex-col' : 'h-fit'}`}
     >
       {/* Business Image */}
       {showImage && (
@@ -163,7 +163,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
       <CardHeader className={`${compact ? 'p-3' : 'mobile-padding'} ${variant === 'explore' ? "pb-3 md:pb-4" : "pb-2 md:pb-3"}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg md:text-xl mobile-text'}`}>
+            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm truncate' : 'text-lg md:text-xl mobile-text'}`}>
               {business.name}
             </h3>
             <div className="flex items-center gap-2 mt-1">
@@ -192,7 +192,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className={`space-y-3 md:space-y-4 ${compact ? 'p-3 pt-0' : 'mobile-padding'} ${variant === 'favorites' ? 'pt-0' : ''}`}>
+      <CardContent className={`space-y-3 md:space-y-4 ${compact ? 'p-3 pt-0 flex-1 flex flex-col justify-end' : 'mobile-padding'} ${variant === 'favorites' ? 'pt-0' : ''}`}>
         {/* Address */}
         {business.address && !compact && (
           <a 
