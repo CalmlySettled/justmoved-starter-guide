@@ -835,10 +835,10 @@ export default function Explore() {
                    <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
                    {pack.title === "First 90 Days" ? (
                      <div className="flex justify-center">
-                       <Button 
-                         onClick={() => navigate('/popular')}
-                         className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-glow-hover transition-all duration-300"
-                       >
+                        <Button 
+                          variant="green"
+                          onClick={() => navigate('/popular')}
+                        >
                          Explore Popular
                        </Button>
                      </div>
