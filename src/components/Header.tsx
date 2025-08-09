@@ -7,7 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
+import { LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
+import logoTransparent from "@/assets/calmlysettled-logo-transparent.png";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -45,9 +46,13 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <img 
-            src="/lovable-uploads/d35beb65-98d6-4bc2-a878-f947b674b569.png" 
+            src={logoTransparent}
             alt="CalmlySettled Logo" 
             className="w-10 h-10 rounded-lg shadow-soft object-contain"
+            onError={(e) => {
+              // Fallback to a simple div if logo fails to load
+              e.currentTarget.style.display = 'none';
+            }}
           />
           <span className="text-xl sm:text-2xl font-bold text-foreground">CalmlySettled</span>
         </Link>
