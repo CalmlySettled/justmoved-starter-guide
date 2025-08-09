@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
-import logoExact from "@/assets/calmlysettled-logo-exact.png";
+// Using the perfect house icon from uploads
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -46,7 +46,7 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <img 
-            src={logoExact}
+            src="/lovable-uploads/a90134dc-335f-46e3-9e86-b603dec79681.png"
             alt="CalmlySettled Logo" 
             className="w-10 h-10 rounded-lg shadow-soft object-contain"
             onError={(e) => {
