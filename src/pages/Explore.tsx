@@ -779,7 +779,7 @@ export default function Explore() {
                     : "opacity-75"
                 }`}
               >
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-glow">
                       <pack.icon className="h-8 w-8 text-white" />
@@ -787,8 +787,10 @@ export default function Explore() {
                     <CardTitle className="text-xl">{pack.title}</CardTitle>
                   </div>
                 </CardHeader>
-                 <CardContent>
-                   <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
+                 <CardContent className="pt-2">
+                   {pack.description && (
+                     <p className="text-muted-foreground text-center mb-4">{pack.description}</p>
+                   )}
                    {pack.title === "First 90 Days" ? (
                      <div className="flex justify-center">
                         <Button 
@@ -800,9 +802,9 @@ export default function Explore() {
                      </div>
                    ) : (
                      <>
-                       <p className="text-sm text-center text-muted-foreground mb-3 font-medium">
-                         Click a category below:
-                       </p>
+                        <p className="text-sm text-center text-muted-foreground mb-2 font-medium">
+                          Click a category below:
+                        </p>
                        <div className="space-y-2">
                          {/* First row - 2 categories */}
                          <div className="flex flex-wrap gap-2 justify-center">
