@@ -75,14 +75,14 @@ export const useSmartToast = () => {
     if (currentCount <= 5) {
       // Full toast with action button for first 5 favorites - celebratory!
       toast({
-        title: "⭐ Added to favorites!",
-        description: "Building your local favorites collection",
+        title: "⭐ Added to favorites",
+        description: "Building your local favorites collection!",
         duration: 2500,
-        className: "border-l-4 border-l-secondary bg-gradient-card shadow-soft",
+        className: "border-l-4 border-l-secondary bg-gradient-card shadow-soft md:max-w-sm md:p-3",
         action: (
           <button 
             onClick={() => navigate('/favorites')}
-            className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-gradient-accent px-3 text-xs font-semibold text-accent-foreground transition-all duration-200 hover:scale-105 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-gradient-accent px-3 text-xs font-semibold text-accent-foreground transition-all duration-200 hover:scale-105 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 md:h-7 md:px-2 md:text-xs"
           >
             View Collection
           </button>
@@ -91,10 +91,10 @@ export const useSmartToast = () => {
     } else if (currentCount <= 10) {
       // Quick toast, no action for favorites 6-10 - more subtle
       toast({
-        title: "⭐ Favorited!",
-        description: "Added to your collection",
+        title: "⭐ Favorited",
+        description: "Added to your collection!",
         duration: 1500,
-        className: "border-l-4 border-l-primary bg-card shadow-soft",
+        className: "border-l-4 border-l-primary bg-card shadow-soft md:max-w-xs md:p-3",
       });
     }
     // No toast after 10 favorites - user understands the pattern
