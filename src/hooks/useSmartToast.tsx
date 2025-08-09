@@ -61,35 +61,40 @@ export const useSmartToast = () => {
     const currentCount = sessionRef.current?.favoritesAdded || 0;
 
     if (action === 'removed') {
-      // Always show removed toast, no action button needed
+      // Removed toast with subtle styling
       toast({
-        title: "Removed from favorites",
+        title: "💔 Removed from favorites",
+        description: "You can add it back anytime",
         duration: 2000,
+        className: "border-l-4 border-l-destructive bg-gradient-card",
       });
       return;
     }
 
     // Smart logic for "added" toasts
     if (currentCount <= 5) {
-      // Full toast with action button for first 5 favorites
+      // Full toast with action button for first 5 favorites - celebratory!
       toast({
-        title: "Added to favorites",
-        description: "Business saved to your favorites list",
-        duration: 3000,
+        title: "❤️ Added to favorites!",
+        description: "Great choice! Building your local favorites collection",
+        duration: 2500,
+        className: "border-l-4 border-l-secondary bg-gradient-card shadow-soft",
         action: (
           <button 
             onClick={() => navigate('/favorites')}
-            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-gradient-accent px-4 text-sm font-semibold text-accent-foreground transition-all duration-200 hover:scale-105 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
-            View favorites
+            View Collection
           </button>
         ),
       });
     } else if (currentCount <= 10) {
-      // Quick toast, no action for favorites 6-10
+      // Quick toast, no action for favorites 6-10 - more subtle
       toast({
-        title: "Added to favorites",
+        title: "❤️ Favorited!",
+        description: "Added to your collection",
         duration: 1500,
+        className: "border-l-4 border-l-primary bg-card shadow-soft",
       });
     }
     // No toast after 10 favorites - user understands the pattern
