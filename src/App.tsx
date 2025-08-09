@@ -23,6 +23,7 @@ import Profile from "./pages/Profile";
 
 import PopularCategory from "./pages/PopularCategory";
 import ResetPassword from "./pages/ResetPassword";
+import Sitemap from "./pages/Sitemap";
 import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
@@ -68,6 +69,7 @@ const AppContent = () => {
                 <Analytics />
               </ProtectedRoute>
             } />
+            <Route path="/sitemap.xml" element={<Sitemap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
         </Routes>
