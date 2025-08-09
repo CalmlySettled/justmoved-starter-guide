@@ -68,7 +68,7 @@ const trendingCategories = [
     icon: "💇‍♂️🧘‍♀️", 
     searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
     color: "bg-emerald-500",
-    description: "Barbershops, salons, spas & wellness centers"
+    description: "Haircuts, Styling & Relaxation"
   },
   { 
     name: "Art & Culture", 
