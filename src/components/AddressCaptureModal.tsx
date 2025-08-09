@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/utils/notificationRemover";
-import { MapPin, ArrowRight, SkipForward } from "lucide-react";
+import { MapPin, ArrowRight, LogOut } from "lucide-react";
 
 interface AddressCaptureModalProps {
   isOpen: boolean;
@@ -18,25 +19,25 @@ const getContextualContent = (source: string | null) => {
     case "explore":
       return {
         title: "Almost ready to explore!",
-        description: "We need your location to personalize your recommendations and show you the best places nearby.",
+        description: "To find great places near you, we need your address. Don't worry - we keep your information private and secure.",
         buttonText: "Start Exploring"
       };
     case "popular":
       return {
         title: "Discover popular spots in your area!",
-        description: "Where should we find the most popular places for you?",
+        description: "To show you popular places nearby, we need your address. Your location data stays private.",
         buttonText: "Show Popular Places"
       };
     case "oauth":
       return {
         title: "Welcome! One more step...",
-        description: "To personalize your experience and show you the best places nearby, we need your location.",
+        description: "To personalize your experience and show you the best places nearby, we need your address. This helps us provide better recommendations.",
         buttonText: "Complete Setup"
       };
     default:
       return {
         title: "Let's find great places for you!",
-        description: "We need your address to show you personalized recommendations in your area.",
+        description: "An address is required to show you personalized recommendations. You can always come back and sign up again later if you prefer.",
         buttonText: "Get Started"
       };
   }
@@ -46,6 +47,8 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
   const [address, setAddress] = useState("");
   const [isValidAddress, setIsValidAddress] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const navigate = useNavigate();
 
   const content = getContextualContent(sourceContext);
 
@@ -139,21 +142,32 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
     }
   };
 
-  const handleSkip = () => {
-    toast({
-      title: "Address skipped",
-      description: "You can add your address later in settings for personalized recommendations.",
-    });
-    
-    // Determine redirect path based on source
-    let redirectPath = "/explore"; // default
-    if (sourceContext === "popular") {
-      redirectPath = "/popular";
-    } else if (sourceContext === "explore") {
-      redirectPath = "/explore";
+  const handleSignOut = async () => {
+    if (!showSignOutConfirm) {
+      setShowSignOutConfirm(true);
+      return;
     }
 
-    onComplete(redirectPath);
+    try {
+      setLoading(true);
+      await supabase.auth.signOut();
+      toast({
+        title: "Signed out",
+        description: "You can come back and sign up again anytime!",
+      });
+      navigate("/");
+      onClose();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setShowSignOutConfirm(false);
+    }
   };
 
   const handleUseLocation = async () => {
@@ -266,7 +280,7 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={handleSignOut}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
@@ -317,17 +331,15 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
                 Use My Current Location
               </Button>
 
-              {sourceContext !== "oauth" && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkip}
-                  disabled={loading}
-                  className="w-full text-muted-foreground"
-                >
-                  <SkipForward className="mr-2 h-4 w-4" />
-                  Skip for now
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                disabled={loading}
+                className="w-full text-muted-foreground"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                {showSignOutConfirm ? "Are you sure? You'll need to sign up again" : "Sign Out & Go Home"}
+              </Button>
             </div>
           </div>
         </div>
