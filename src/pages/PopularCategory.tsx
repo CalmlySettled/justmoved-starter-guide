@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartToast } from "@/hooks/useSmartToast";
 import { useBusinessDetails } from "@/hooks/useBusinessDetails";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LocationData {
   latitude: number;
@@ -130,6 +131,7 @@ const PopularCategory = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1754,6 +1756,18 @@ const PopularCategory = () => {
           )}
         </div>
       </main>
+
+      {/* Mobile Floating Back Button */}
+      {isMobile && (
+        <Button
+          onClick={() => navigate('/popular')}
+          className="fixed bottom-4 right-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-full w-14 h-14 p-0"
+          variant="default"
+          size="icon"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 };
