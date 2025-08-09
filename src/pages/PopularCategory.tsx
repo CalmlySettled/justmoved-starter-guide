@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MapPin, Star, ExternalLink, ArrowLeft, Loader2, Gamepad2, Target, PartyPopper, Dice6, Flag, Navigation } from "lucide-react";
+import { MapPin, Star, ExternalLink, ArrowLeft, Loader2, Gamepad2, Target, PartyPopper, Dice6, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartToast } from "@/hooks/useSmartToast";
@@ -23,442 +23,758 @@ interface LocationData {
 interface Business {
   name: string;
   address: string;
-  description?: string;
-  place_id?: string;
-  rating?: number;
-  user_ratings_total?: number;
-  price_level?: number;
-  types?: string[];
-  business_status?: string;
-  opening_hours?: {
-    open_now?: boolean;
-    weekday_text?: string[];
-  };
-  geometry?: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
-  photos?: Array<{
-    photo_reference: string;
-    height: number;
-    width: number;
-  }>;
+  description: string;
+  phone?: string;
   website?: string;
-  formatted_phone_number?: string;
-  features?: string[];
   image_url?: string;
-  distance_miles?: number;
-  category?: string;
+  features: string[];
+  latitude: number;
+  longitude: number;
+  distance_miles: number;
+  rating?: number;
+  is_favorite?: boolean;
+  place_id?: string;
 }
 
 const trendingCategories = [
   { 
-    name: "Restaurants & Dining", 
-    icon: "🍽️", 
-    searchTerm: "restaurant", 
-    color: "bg-orange-100 dark:bg-orange-900/30",
-    description: "Discover amazing restaurants and dining experiences near you"
+    name: "Drink Time", 
+    icon: "☕🍺", 
+    searchTerms: ["coffee shop", "cafe", "specialty coffee", "brewery", "brewpub", "craft beer", "happy hour", "bar"],
+    color: "bg-amber-500",
+    description: "Coffee culture and local brews"
   },
   { 
-    name: "Coffee & Cafés", 
-    icon: "☕", 
-    searchTerm: "coffee shop", 
-    color: "bg-amber-100 dark:bg-amber-900/30",
-    description: "Find your perfect coffee spot or cozy café"
+    name: "Art & Culture", 
+    icon: "🎨", 
+    searchTerms: ["art gallery", "museum", "cultural center"],
+    color: "bg-pink-500",
+    description: "Creative spaces and exhibitions"
   },
   { 
-    name: "Shopping Centers", 
-    icon: "🛍️", 
-    searchTerm: "shopping mall", 
-    color: "bg-pink-100 dark:bg-pink-900/30",
-    description: "Explore shopping centers and retail destinations"
+    name: "Outdoor Activities", 
+    icon: "🏃", 
+    searchTerms: ["park", "hiking trail", "outdoor recreation"],
+    color: "bg-green-500",
+    description: "Get active in nature"
   },
   { 
-    name: "Grocery Stores", 
-    icon: "🛒", 
-    searchTerm: "grocery store", 
-    color: "bg-green-100 dark:bg-green-900/30",
-    description: "Find grocery stores and supermarkets nearby"
+    name: "Live Music", 
+    icon: "🎵", 
+    searchTerms: ["live music venue", "concert hall", "music bar"],
+    color: "bg-blue-500",
+    description: "Catch local performances"
   },
   { 
-    name: "Gas Stations", 
-    icon: "⛽", 
-    searchTerm: "gas station", 
-    color: "bg-blue-100 dark:bg-blue-900/30",
-    description: "Locate gas stations and fuel services"
-  },
-  { 
-    name: "Pharmacies", 
-    icon: "💊", 
-    searchTerm: "pharmacy", 
-    color: "bg-red-100 dark:bg-red-900/30",
-    description: "Find pharmacies and drugstores"
-  },
-  { 
-    name: "Personal Care & Wellness", 
-    icon: "💅", 
-    searchTerm: "beauty salon", 
-    color: "bg-purple-100 dark:bg-purple-900/30",
-    description: "Discover beauty salons, spas, and wellness centers"
-  },
-  { 
-    name: "Banks & ATMs", 
-    icon: "🏦", 
-    searchTerm: "bank", 
-    color: "bg-indigo-100 dark:bg-indigo-900/30",
-    description: "Find banks, ATMs, and financial services"
-  },
-  { 
-    name: "Gyms & Fitness", 
-    icon: "💪", 
-    searchTerm: "gym", 
-    color: "bg-cyan-100 dark:bg-cyan-900/30",
-    description: "Locate gyms, fitness centers, and sports facilities"
-  },
-  { 
-    name: "Hotels & Lodging", 
-    icon: "🏨", 
-    searchTerm: "hotel", 
-    color: "bg-emerald-100 dark:bg-emerald-900/30",
-    description: "Find hotels and accommodation options"
-  },
-  { 
-    name: "Automotive Services", 
-    icon: "🚗", 
-    searchTerm: "car repair", 
-    color: "bg-slate-100 dark:bg-slate-900/30",
-    description: "Discover car repair shops and automotive services"
-  },
-  { 
-    name: "Entertainment", 
-    icon: "🎬", 
-    searchTerm: "movie theater", 
-    color: "bg-violet-100 dark:bg-violet-900/30",
-    description: "Find entertainment venues and movie theaters"
+    name: "Faith Communities", 
+    icon: "⛪", 
+    searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
+    color: "bg-indigo-500",
+    description: "Find spiritual communities and places of worship"
   },
   { 
     name: "Food Time", 
-    icon: "⏰", 
-    searchTerm: "restaurant open now", 
-    color: "bg-yellow-100 dark:bg-yellow-900/30",
-    description: "Find the perfect meal for any time of day"
+    icon: "🍴", 
+    searchTerms: ["restaurant", "dining", "food truck", "bistro"],
+    color: "bg-red-500",
+    description: "Savor the local dining experiences"
   },
   { 
-    name: "Drink Time", 
-    icon: "🍹", 
-    searchTerm: "bar", 
-    color: "bg-rose-100 dark:bg-rose-900/30",
-    description: "Discover bars, breweries, and drink spots"
+    name: "Shopping", 
+    icon: "🛍️", 
+    searchTerms: ["boutique", "shopping mall", "clothing store", "department store"],
+    color: "bg-cyan-500",
+    description: "Boutiques and specialty retail"
   },
+  { 
+    name: "Personal Care & Wellness", 
+    icon: "💇‍♂️🧘‍♀️", 
+    searchTerms: ["barbershop", "hair salon", "nail salon", "spa", "wellness center", "massage therapy", "beauty salon", "barber shop"],
+    color: "bg-emerald-500",
+    description: "Haircuts, Styling & Relaxation"
+  },
+  { 
+    name: "Local Events", 
+    icon: "📅", 
+    searchTerms: ["event venue", "community center", "entertainment venue", "theater", "event space"],
+    color: "bg-violet-500",
+    description: "Find venues hosting local events and activities"
+  },
+  { 
+    name: "Games", 
+    icon: "🎮", 
+    searchTerms: ["bowling alley", "arcade", "mini golf", "billiards"],
+    color: "bg-purple-500",
+    description: "Entertainment and indoor fun"
+  }
 ];
 
 const spotlightSections = [
   {
-    title: "Gaming & Entertainment",
-    description: "Level up your fun with gaming lounges, arcades, and entertainment venues",
-    searchTerm: "arcade gaming entertainment",
-    icon: <Gamepad2 className="w-8 h-8" />,
-    color: "bg-blue-100 dark:bg-blue-900/30"
+    title: "Weekend Hotspots",
+    description: "Where locals spend their weekends",
+    searchTerms: ["popular restaurant", "weekend market", "entertainment venue"]
   },
   {
-    title: "Sports & Recreation",
-    description: "Get active with sports facilities, courts, and recreational activities",
-    searchTerm: "sports recreation facility",
-    icon: <Target className="w-8 h-8" />,
-    color: "bg-green-100 dark:bg-green-900/30"
+    title: "Late Night Eats",
+    description: "Open when hunger strikes after hours",
+    searchTerms: ["late night food", "24 hour restaurant", "midnight snack"]
   },
   {
-    title: "Events & Celebrations",
-    description: "Celebrate life's moments at event venues and party destinations",
-    searchTerm: "event venue party hall",
-    icon: <PartyPopper className="w-8 h-8" />,
-    color: "bg-pink-100 dark:bg-pink-900/30"
-  },
-  {
-    title: "Lucky Finds",
-    description: "Discover hidden gems and unexpected treasures in your area",
-    searchTerm: "unique local specialty",
-    icon: <Dice6 className="w-8 h-8" />,
-    color: "bg-purple-100 dark:bg-purple-900/30"
-  },
-  {
-    title: "Must-Visit Destinations",
-    description: "Explore iconic landmarks and must-see attractions",
-    searchTerm: "tourist attraction landmark",
-    icon: <Flag className="w-8 h-8" />,
-    color: "bg-orange-100 dark:bg-orange-900/30"
+    title: "Social Scene",
+    description: "Meet new people and make connections",
+    searchTerms: ["social club", "meetup space", "community center"]
   }
 ];
 
-const PopularCategory: React.FC = () => {
+const PopularCategory = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const toast = useSmartToast();
-  const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const isMobile = useIsMobile();
-
   const [location, setLocation] = useState<LocationData | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState<Set<string>>(new Set());
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
   
-  // Subcategory state for special categories
+  // New state for Personal Care & Wellness tabs
+  const [activeTab, setActiveTab] = useState('barbershops');
   const [subcategoryData, setSubcategoryData] = useState<{
     barbershops: Business[];
     salons: Business[];
     spas: Business[];
-    morning: Business[];
-    afternoon: Business[];
-    evening: Business[];
-    happy_hour: Business[];
-    late_night: Business[];
-    wine_bar: Business[];
   }>({
     barbershops: [],
     salons: [],
-    spas: [],
-    morning: [],
-    afternoon: [],
-    evening: [],
-    happy_hour: [],
-    late_night: [],
-    wine_bar: []
+    spas: []
   });
-  
   const [subcategoryLoading, setSubcategoryLoading] = useState<{
     barbershops: boolean;
     salons: boolean;
     spas: boolean;
-    morning: boolean;
-    afternoon: boolean;
-    evening: boolean;
-    happy_hour: boolean;
-    late_night: boolean;
-    wine_bar: boolean;
   }>({
     barbershops: false,
     salons: false,
-    spas: false,
-    morning: false,
-    afternoon: false,
-    evening: false,
-    happy_hour: false,
-    late_night: false,
-    wine_bar: false
+    spas: false
   });
 
-  const getUserLocation = () => {
-    return new Promise<LocationData>((resolve, reject) => {
+  // New state for Food Time tabs
+  const [foodSceneTab, setFoodSceneTab] = useState('morning');
+  const [foodSceneData, setFoodSceneData] = useState<{
+    morning: Business[];
+    afternoon: Business[];
+    evening: Business[];
+  }>({
+    morning: [],
+    afternoon: [],
+    evening: []
+  });
+  const [foodSceneLoading, setFoodSceneLoading] = useState<{
+    morning: boolean;
+    afternoon: boolean;
+    evening: boolean;
+  }>({
+    morning: false,
+    afternoon: false,
+    evening: false
+  });
+
+  // New state for Drink Time tabs
+  const [drinkTimeTab, setDrinkTimeTab] = useState('coffee');
+  const [drinkTimeData, setDrinkTimeData] = useState<{
+    coffee: Business[];
+    breweries: Business[];
+  }>({
+    coffee: [],
+    breweries: []
+  });
+  const [drinkTimeLoading, setDrinkTimeLoading] = useState<{
+    coffee: boolean;
+    breweries: boolean;
+  }>({
+    coffee: false,
+    breweries: false
+  });
+  
+  const { getBusinessDetails, loadingStates } = useBusinessDetails();
+  const { showFavoriteToast } = useSmartToast();
+
+  // Find category config
+  const categoryConfig = trendingCategories.find(cat => 
+    cat.name.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and') === category
+  ) || spotlightSections.find(section => 
+    section.title.toLowerCase().replace(/\s+/g, '-') === category
+  );
+
+  useEffect(() => {
+    const loadLocation = async () => {
+      if (user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('address')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile?.address) {
+            // Geocode the saved address to get coordinates and city
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+              {
+                headers: {
+                  'User-Agent': 'CalmlySettled/1.0'
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.length > 0) {
+                setLocation({
+                  latitude: parseFloat(data[0].lat),
+                  longitude: parseFloat(data[0].lon),
+                  city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
+                });
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading saved location:', error);
+        }
+      }
+      
+      // If no saved location, try to get current location
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
+          async (position) => {
+            try {
+              // Reverse geocode to get city name
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`,
+                {
+                  headers: {
+                    'User-Agent': 'CalmlySettled/1.0'
+                  }
+                }
+              );
+
+              if (response.ok) {
+                const data = await response.json();
+                const city = data.address?.city || data.address?.town || data.address?.village || 'Your Location';
+                
+                setLocation({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                  city
+                });
+              }
+            } catch (error) {
+              console.error('Error reverse geocoding:', error);
+              setLocation({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                city: 'Your Location'
+              });
+            }
           },
           (error) => {
-            console.error("Error getting location:", error);
-            reject(error);
+            console.error('Error getting location:', error);
           }
         );
-      } else {
-        reject(new Error("Geolocation is not supported by this browser"));
       }
-    });
-  };
+    };
 
-  const fetchFavoriteBusinesses = async () => {
-    if (!user) return;
+    const loadFavorites = async () => {
+      if (!user) {
+        setFavoriteBusinesses(new Set());
+        return;
+      }
+      
+      try {
+        const { data: favorites, error } = await supabase
+          .from('user_recommendations')
+          .select('business_name')
+          .eq('user_id', user.id)
+          .eq('is_favorite', true);
 
-    try {
-      const { data, error } = await supabase
-        .from('user_favorite_businesses')
-        .select('business_name')
-        .eq('user_id', user.id);
+        if (error) {
+          console.error('Error loading favorites:', error);
+          return;
+        }
 
-      if (error) throw error;
+        const favoriteNames = new Set(favorites?.map(fav => fav.business_name) || []);
+        setFavoriteBusinesses(favoriteNames);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    };
 
-      const favoriteNames = new Set(data.map(fav => fav.business_name));
-      setFavoriteBusinesses(favoriteNames);
-    } catch (error) {
-      console.error('Error fetching favorites:', error);
+    loadLocation();
+    loadFavorites();
+  }, [user]);
+
+  useEffect(() => {
+    if (location && categoryConfig) {
+      if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Personal Care & Wellness') {
+        // For Personal Care & Wellness, load the default tab (barbershops) immediately and prepare other tabs
+        console.log('🔄 Initializing Personal Care & Wellness data...');
+        fetchSubcategoryData('barbershops');
+        // Preload other tabs to prevent empty states
+        setTimeout(() => {
+          if (subcategoryData.salons.length === 0 && !subcategoryLoading.salons) fetchSubcategoryData('salons');
+          if (subcategoryData.spas.length === 0 && !subcategoryLoading.spas) fetchSubcategoryData('spas');
+        }, 1000);
+      } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Food Time') {
+        // For Food Time, load the default tab (morning) immediately
+        console.log('🔄 Initializing Food Time data...');
+        fetchFoodSceneData('morning');
+      } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Drink Time') {
+        // For Drink Time, load both coffee AND brewery data immediately to prevent empty states
+        console.log('🔄 Initializing Drink Time data...');
+        fetchDrinkTimeData('coffee');
+        // Preload brewery data to ensure it's available when tab is clicked
+        setTimeout(() => {
+          if (drinkTimeData.breweries.length === 0 && !drinkTimeLoading.breweries) {
+            console.log('🔄 Preloading brewery data...');
+            fetchDrinkTimeData('breweries');
+          }
+        }, 1000);
+      } else {
+        // For other categories, use the existing flow
+        fetchCategoryPlaces();
+      }
     }
-  };
+  }, [location, categoryConfig]);
 
-  const fetchCategoryPlaces = async (
-    searchTerm: string, 
-    location: LocationData, 
-    subcategory?: 'barbershops' | 'salons' | 'spas' | 'morning' | 'afternoon' | 'evening' | 'happy_hour' | 'late_night' | 'wine_bar'
-  ) => {
+  const fetchCategoryPlaces = async () => {
+    if (!location || !categoryConfig) return;
+
+    setLoading(true);
+
     try {
-      if (subcategory) {
-        setSubcategoryLoading(prev => ({ ...prev, [subcategory]: true }));
-      } else {
-        setIsLoading(true);
+      const searchTerms = categoryConfig.searchTerms;
+      
+      // First, try to get cached recommendations
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log('Using cached data for popular category');
+        
+        // Extract businesses from cached data that match our search terms
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 12);
+
+          setBusinesses(sortedResults);
+          console.log(`Found ${sortedResults.length} popular places from cache`);
+          setLoading(false);
+          return;
+        }
       }
 
+      console.log('No cache found, making fresh API call for popular category');
+      
+      // Fallback to fresh API call if no cache
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: { 
-          latitude: location.latitude, 
+        body: {
+          popularMode: true,
+          latitude: location.latitude,
           longitude: location.longitude,
-          searchTerm: searchTerm,
-          radiusInMiles: 25,
-          maxResults: subcategory ? 8 : 12
+          categories: searchTerms
         }
       });
 
-      if (error) {
-        console.error('Error fetching places:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      const placesWithDistance = data?.businesses || [];
-      
-      if (subcategory) {
-        setSubcategoryData(prev => ({ ...prev, [subcategory]: placesWithDistance }));
-        setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
-      } else {
-        setBusinesses(placesWithDistance);
-        setIsLoading(false);
+      if (data?.recommendations) {
+        // Flatten results from all search terms
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        // Sort by distance and take top results
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 12); // Limit to 12 results
+
+        setBusinesses(sortedResults);
+        console.log(`Found ${sortedResults.length} popular places from API`);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
-      if (subcategory) {
-        setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
-      } else {
-        setIsLoading(false);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to load places. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Failed to load places. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getGoogleMapsUrl = (address: string) => {
-    const encodedAddress = encodeURIComponent(address);
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
 
-  const handlePersonalCareTabChange = (tab: string) => {
+  // New function to fetch subcategory data individually for Personal Care & Wellness
+  const fetchSubcategoryData = async (subcategory: 'barbershops' | 'salons' | 'spas') => {
     if (!location) return;
-    
-    const searchTerms = {
-      barbershops: "barbershop hair cut men",
-      salons: "hair salon beauty",
-      spas: "spa massage wellness"
-    };
-    
-    const searchTerm = searchTerms[tab as keyof typeof searchTerms];
-    if (searchTerm) {
-      fetchCategoryPlaces(searchTerm, location, tab as 'barbershops' | 'salons' | 'spas');
+
+    setSubcategoryLoading(prev => ({ ...prev, [subcategory]: true }));
+
+    try {
+      const searchTermsMap = {
+        barbershops: ['barbershop', 'barber', "men's haircut"],
+        salons: ['hair salon', 'beauty salon', 'nail salon'],
+        spas: ['spa', 'massage', 'wellness center']
+      };
+
+      const searchTerms = searchTermsMap[subcategory];
+
+      // Check cache first
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log(`Using cached data for ${subcategory}`);
+        
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 4);
+
+          setSubcategoryData(prev => ({
+            ...prev,
+            [subcategory]: sortedResults
+          }));
+          
+          setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
+          return;
+        }
+      }
+
+      console.log(`No cache found, making fresh API call for ${subcategory}`);
+      
+      // Make fresh API call with distance-only scoring
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: {
+          personalCareMode: true,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 4);
+
+        setSubcategoryData(prev => ({
+          ...prev,
+          [subcategory]: sortedResults
+        }));
+        
+        console.log(`Found ${sortedResults.length} ${subcategory} from API`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${subcategory}:`, error);
+    } finally {
+      setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
     }
   };
 
-  const handleFoodSceneTabChange = (tab: string) => {
+  // Function to fetch Food Time data by time period
+  const fetchFoodSceneData = async (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
     if (!location) return;
-    
-    const searchTerms = {
-      morning: "breakfast brunch coffee shop",
-      afternoon: "lunch restaurant casual dining",
-      evening: "dinner restaurant fine dining"
-    };
-    
-    const searchTerm = searchTerms[tab as keyof typeof searchTerms];
-    if (searchTerm) {
-      fetchCategoryPlaces(searchTerm, location, tab as 'morning' | 'afternoon' | 'evening');
+
+    setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: true }));
+
+    try {
+      const searchTermsMap = {
+        morning: ['breakfast', 'brunch', 'coffee shop'],
+        afternoon: ['lunch', 'casual dining', 'quick service'],
+        evening: ['dinner', 'restaurant', 'fine dining']
+      };
+
+      const searchTerms = searchTermsMap[timeOfDay];
+
+      // Check cache first
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log(`Using cached data for ${timeOfDay} food time`);
+        
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 6);
+
+          setFoodSceneData(prev => ({
+            ...prev,
+            [timeOfDay]: sortedResults
+          }));
+          
+          setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
+          return;
+        }
+      }
+
+      console.log(`No cache found, making fresh API call for ${timeOfDay} food time`);
+      
+      // Make fresh API call with food time mode
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: {
+          foodSceneMode: true,
+          timeOfDay: timeOfDay,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 6);
+
+        setFoodSceneData(prev => ({
+          ...prev,
+          [timeOfDay]: sortedResults
+        }));
+        
+        console.log(`Found ${sortedResults.length} ${timeOfDay} dining options from API`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${timeOfDay} food time:`, error);
+    } finally {
+      setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
     }
   };
 
-  const handleDrinkSceneTabChange = (tab: string) => {
+  // Function to fetch Drink Time data by drink type
+  const fetchDrinkTimeData = async (drinkType: 'coffee' | 'breweries') => {
     if (!location) return;
+
+    setDrinkTimeLoading(prev => ({ ...prev, [drinkType]: true }));
+
+    try {
+      const searchTermsMap = {
+        coffee: ['coffee shop', 'cafe', 'specialty coffee'],
+        breweries: ['brewery', 'brewpub', 'craft beer', 'happy hour', 'bar']
+      };
+
+      const searchTerms = searchTermsMap[drinkType];
+
+      // Check cache first
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log(`Using cached data for ${drinkType} drink time`);
+        
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 6);
+
+          setDrinkTimeData(prev => ({
+            ...prev,
+            [drinkType]: sortedResults
+          }));
+          
+          setDrinkTimeLoading(prev => ({ ...prev, [drinkType]: false }));
+          return;
+        }
+      }
+
+      console.log(`No cache found, making fresh API call for ${drinkType} drink time`);
+      
+      // Make fresh API call
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 6);
+
+        setDrinkTimeData(prev => ({
+          ...prev,
+          [drinkType]: sortedResults
+        }));
+        
+        console.log(`Found ${sortedResults.length} ${drinkType} options from API`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${drinkType} drink time:`, error);
+    } finally {
+      setDrinkTimeLoading(prev => ({ ...prev, [drinkType]: false }));
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const subcategory = value as 'barbershops' | 'salons' | 'spas';
     
-    const searchTerms = {
-      happy_hour: "bar happy hour sports bar",
-      late_night: "late night bar pub nightclub",
-      wine_bar: "wine bar cocktail lounge"
-    };
+    // Always fetch if data doesn't exist, and force refresh if tab appears empty but should have data
+    if (subcategoryData[subcategory].length === 0 && !subcategoryLoading[subcategory]) {
+      console.log(`🔄 Loading ${subcategory} data for tab change`);
+      fetchSubcategoryData(subcategory);
+    } else if (subcategoryData[subcategory].length === 0 && subcategoryLoading[subcategory]) {
+      console.log(`⏳ Already loading ${subcategory} data...`);
+    } else {
+      console.log(`✅ Using existing ${subcategory} data: ${subcategoryData[subcategory].length} items`);
+    }
+  };
+
+  const handleFoodSceneTabChange = (value: string) => {
+    setFoodSceneTab(value);
+    const timeOfDay = value as 'morning' | 'afternoon' | 'evening';
     
-    const searchTerm = searchTerms[tab as keyof typeof searchTerms];
-    if (searchTerm) {
-      fetchCategoryPlaces(searchTerm, location, tab as 'happy_hour' | 'late_night' | 'wine_bar');
+    // Only fetch if we don't have data for this time period yet
+    if (foodSceneData[timeOfDay].length === 0 && !foodSceneLoading[timeOfDay]) {
+      fetchFoodSceneData(timeOfDay);
+    }
+  };
+
+  const handleDrinkTimeTabChange = (value: string) => {
+    setDrinkTimeTab(value);
+    const drinkType = value as 'coffee' | 'breweries';
+    
+    // Always fetch if data doesn't exist, and force refresh if tab appears empty but should have data
+    if (drinkTimeData[drinkType].length === 0 && !drinkTimeLoading[drinkType]) {
+      console.log(`🔄 Loading ${drinkType} data for tab change`);
+      fetchDrinkTimeData(drinkType);
+    } else if (drinkTimeData[drinkType].length === 0 && drinkTimeLoading[drinkType]) {
+      console.log(`⏳ Already loading ${drinkType} data...`);
+    } else {
+      console.log(`✅ Using existing ${drinkType} data: ${drinkTimeData[drinkType].length} items`);
     }
   };
 
   const categorizeBusinesses = (businesses: Business[]) => {
-    const categories = {
-      restaurants: [] as Business[],
-      cafes: [] as Business[],
-      retail: [] as Business[],
-      services: [] as Business[],
-      entertainment: [] as Business[],
-      other: [] as Business[]
+    const categorized = {
+      barbershops: [] as Business[],
+      salons: [] as Business[], 
+      spas: [] as Business[]
     };
 
     businesses.forEach(business => {
-      const types = business.types || [];
       const name = business.name.toLowerCase();
-      
-      if (types.includes('restaurant') || types.includes('meal_takeaway') || types.includes('meal_delivery')) {
-        categories.restaurants.push(business);
-      } else if (types.includes('cafe') || name.includes('coffee') || name.includes('café')) {
-        categories.cafes.push(business);
-      } else if (types.includes('store') || types.includes('shopping_mall') || types.includes('clothing_store')) {
-        categories.retail.push(business);
-      } else if (types.includes('beauty_salon') || types.includes('spa') || types.includes('gym')) {
-        categories.services.push(business);
-      } else if (types.includes('movie_theater') || types.includes('amusement_park') || types.includes('bowling_alley')) {
-        categories.entertainment.push(business);
+      const description = business.description?.toLowerCase() || '';
+      const features = business.features?.join(' ').toLowerCase() || '';
+      const combined = `${name} ${description} ${features}`;
+
+      if (combined.includes('barber') || combined.includes('barbershop') || combined.includes("men's cut")) {
+        categorized.barbershops.push(business);
+      } else if (combined.includes('spa') || combined.includes('massage') || combined.includes('wellness') || combined.includes('yoga') || combined.includes('meditation')) {
+        categorized.spas.push(business);
       } else {
-        categories.other.push(business);
+        categorized.salons.push(business);
       }
     });
 
-    return categories;
+    return categorized;
   };
 
   const handleGetWebsite = async (business: Business) => {
     if (!business.place_id) return;
     
-    try {
-      const details = await getBusinessDetails(business.place_id, business.name);
-      if (details?.website) {
-        setBusinessWebsites(prev => ({
-          ...prev,
-          [business.place_id!]: details.website!
-        }));
-        window.open(details.website, '_blank');
-      } else {
-        toast({
-          title: "No website found",
-          description: "This business doesn't have a website listed.",
-          variant: "default",
-        });
-      }
-    } catch (error) {
-      console.error('Error getting website:', error);
-      toast({
-        title: "Error",
-        description: "Failed to get website information.",
-        variant: "destructive",
-      });
+    const details = await getBusinessDetails(business.place_id, business.name);
+    if (details?.website) {
+      setBusinessWebsites(prev => ({ ...prev, [business.place_id!]: details.website! }));
     }
   };
 
   const toggleFavorite = async (business: Business) => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save favorites.",
-        variant: "destructive",
-      });
+      console.error("Please log in to favorite businesses.");
       return;
     }
 
@@ -466,53 +782,85 @@ const PopularCategory: React.FC = () => {
     setFavoritingBusinesses(prev => new Set(prev).add(businessKey));
 
     try {
-      const isFavorited = favoriteBusinesses.has(businessKey);
+      const category = 'name' in categoryConfig ? categoryConfig.name : categoryConfig.title;
       
-      if (isFavorited) {
-        const { error } = await supabase
-          .from('user_favorite_businesses')
-          .delete()
+      // First check if the business is already saved
+      const { data: existingRecommendations, error: fetchError } = await supabase
+        .from('user_recommendations')
+        .select('id, is_favorite')
+        .eq('user_id', user.id)
+        .eq('business_name', business.name)
+        .eq('business_address', business.address)
+        .eq('category', category);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingRecommendations && existingRecommendations.length > 0) {
+        // Check if ANY record is currently favorited
+        const anyFavorited = existingRecommendations.some(rec => rec.is_favorite);
+        const newFavoriteStatus = !anyFavorited;
+        
+        // Update ALL matching records to have the same favorite status
+        const { error: updateError } = await supabase
+          .from('user_recommendations')
+          .update({ is_favorite: newFavoriteStatus })
           .eq('user_id', user.id)
-          .eq('business_name', businessKey);
+          .eq('business_name', business.name)
+          .eq('business_address', business.address)
+          .eq('category', category);
 
-        if (error) throw error;
+        if (updateError) {
+          throw updateError;
+        }
 
+        // Update local state
         setFavoriteBusinesses(prev => {
           const newSet = new Set(prev);
-          newSet.delete(businessKey);
+          if (newFavoriteStatus) {
+            newSet.add(businessKey);
+          } else {
+            newSet.delete(businessKey);
+          }
           return newSet;
         });
 
-        toast({
-          title: "Removed from favorites",
-          description: `${business.name} has been removed from your favorites.`,
-        });
+        showFavoriteToast(newFavoriteStatus ? 'added' : 'removed');
       } else {
-        const { error } = await supabase
-          .from('user_favorite_businesses')
+        // Save as new recommendation with favorite status
+        const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
+        
+        const { error: insertError } = await supabase
+          .from('user_recommendations')
           .insert({
             user_id: user.id,
-            business_name: businessKey,
+            category: category,
+            business_name: business.name,
             business_address: business.address,
-            business_place_id: business.place_id
+            business_description: business.description || `Great ${category} option`,
+            business_phone: business.phone,
+            business_website: business.website,
+            business_image: imageUrl,
+            business_features: business.features || [],
+            business_latitude: business.latitude,
+            business_longitude: business.longitude,
+            distance_miles: business.distance_miles,
+            is_favorite: true
           });
 
-        if (error) throw error;
+        if (insertError) {
+          throw insertError;
+        }
 
+        // Update local state
         setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
 
-        toast({
-          title: "Added to favorites",
-          description: `${business.name} has been added to your favorites.`,
-        });
+        showFavoriteToast('added');
       }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update favorites. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Error favoriting business:', error);
+      console.error("Failed to update favorites");
     } finally {
       setFavoritingBusinesses(prev => {
         const newSet = new Set(prev);
@@ -521,56 +869,6 @@ const PopularCategory: React.FC = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const locationData = await getUserLocation();
-        setLocation(locationData);
-        await fetchFavoriteBusinesses();
-      } catch (error) {
-        console.error('Error getting location:', error);
-        toast({
-          title: "Location required",
-          description: "Please enable location services to see nearby places.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    initializeData();
-  }, [user]);
-
-  useEffect(() => {
-    if (location && category) {
-      const categoryConfig = [...trendingCategories, ...spotlightSections].find(
-        cat => ('name' in cat ? cat.name : cat.title).toLowerCase().replace(/\s+/g, '-') === category
-      );
-      
-      if (categoryConfig) {
-        fetchCategoryPlaces(categoryConfig.searchTerm, location);
-        
-        // Fetch subcategory data for special categories
-        if ('name' in categoryConfig && categoryConfig.name === "Personal Care & Wellness") {
-          handlePersonalCareTabChange('barbershops');
-          handlePersonalCareTabChange('salons');
-          handlePersonalCareTabChange('spas');
-        } else if ('name' in categoryConfig && categoryConfig.name === "Food Time") {
-          handleFoodSceneTabChange('morning');
-          handleFoodSceneTabChange('afternoon');
-          handleFoodSceneTabChange('evening');
-        } else if ('name' in categoryConfig && categoryConfig.name === "Drink Time") {
-          handleDrinkSceneTabChange('happy_hour');
-          handleDrinkSceneTabChange('late_night');
-          handleDrinkSceneTabChange('wine_bar');
-        }
-      }
-    }
-  }, [location, category]);
-
-  const categoryConfig = [...trendingCategories, ...spotlightSections].find(
-    cat => ('name' in cat ? cat.name : cat.title).toLowerCase().replace(/\s+/g, '-') === category
-  );
 
   if (!categoryConfig) {
     return (
@@ -622,7 +920,7 @@ const PopularCategory: React.FC = () => {
               className="mb-6 hover:bg-background/80"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Popular
+              Return to Popular
             </Button>
 
             <div className="text-center">
@@ -636,243 +934,264 @@ const PopularCategory: React.FC = () => {
             </div>
           </div>
 
-          {/* Content based on category type */}
+          {/* Results Section */}
           {('name' in categoryConfig && categoryConfig.name === "Personal Care & Wellness") ? (
             // Special tabbed layout for Personal Care & Wellness
             <Tabs defaultValue="barbershops" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
-                <TabsTrigger value="barbershops" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handlePersonalCareTabChange('barbershops')}>
-                  💇‍♂️ <span className="hidden xs:inline">Barbershops</span>
+                <TabsTrigger value="barbershops" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('barbershops')}>
+                  <span className="hidden xs:inline">Barbershops</span>
+                  <span className="xs:hidden">Barber</span>
                 </TabsTrigger>
-                <TabsTrigger value="salons" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handlePersonalCareTabChange('salons')}>
-                  💅 <span className="hidden xs:inline">Salons</span>
+                <TabsTrigger value="salons" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('salons')}>
+                  <span className="hidden xs:inline">Salons & Beauty</span>
+                  <span className="xs:hidden">Salon</span>
                 </TabsTrigger>
-                <TabsTrigger value="spas" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handlePersonalCareTabChange('spas')}>
-                  🧘 <span className="hidden xs:inline">Spas</span>
+                <TabsTrigger value="spas" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleTabChange('spas')}>
+                  <span className="hidden xs:inline">Spa & Wellness</span>
+                  <span className="xs:hidden">Spa</span>
                 </TabsTrigger>
               </TabsList>
-
+              
               <TabsContent value="barbershops">
                 {subcategoryLoading.barbershops ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {[...Array(4)].map((_, i) => (
-                      <Card key={i} className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <Skeleton className="h-48 w-full" />
-                          <div className="p-4 space-y-2">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : subcategoryData.barbershops.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {subcategoryData.barbershops.map((business) => (
-                      <Card key={`barbershop-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                        <CardContent className="p-0">
-                          {business.image_url && (
-                            <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business)}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="p-1 hover:bg-background/80"
-                              >
-                                <Star 
-                                  className={`h-3 w-3 transition-colors ${
-                                    favoriteBusinesses.has(business.name)
-                                      ? 'fill-current text-yellow-500' 
-                                      : 'text-muted-foreground hover:text-yellow-500'
-                                  }`} 
-                                />
-                              </Button>
-                            </div>
-                          
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-xs text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">💇‍♂️</div>
-                    <h3 className="text-xl font-semibold mb-2">No barbershops found</h3>
-                    <p className="text-muted-foreground">Try the other tabs for more options.</p>
-                  </div>
-                )}
-              </TabsContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : subcategoryData.barbershops.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {subcategoryData.barbershops.map((business) => (
+                            <Card key={`barbershop-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">💇‍♂️</div>
+                          <h3 className="text-xl font-semibold mb-2">No barbershops found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
+                        </div>
+                      )}
+                    </TabsContent>
 
-              <TabsContent value="salons">
-                {subcategoryLoading.salons ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {[...Array(4)].map((_, i) => (
-                      <Card key={i} className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <Skeleton className="h-48 w-full" />
-                          <div className="p-4 space-y-2">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : subcategoryData.salons.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {subcategoryData.salons.map((business) => (
-                      <Card key={`salon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                        <CardContent className="p-0">
-                          {business.image_url && (
-                            <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business)}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="p-1 hover:bg-background/80"
-                              >
-                                <Star 
-                                  className={`h-3 w-3 transition-colors ${
-                                    favoriteBusinesses.has(business.name)
-                                      ? 'fill-current text-yellow-500' 
-                                      : 'text-muted-foreground hover:text-yellow-500'
-                                  }`} 
-                                />
-                              </Button>
-                            </div>
-                          
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-xs text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">💅</div>
-                    <h3 className="text-xl font-semibold mb-2">No salons found</h3>
-                    <p className="text-muted-foreground">Try the other tabs for more options.</p>
-                  </div>
-                )}
-              </TabsContent>
+                    <TabsContent value="salons">
+                      {subcategoryLoading.salons ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : subcategoryData.salons.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {subcategoryData.salons.map((business) => (
+                            <Card key={`salon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">💅</div>
+                          <h3 className="text-xl font-semibold mb-2">No salons found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
+                        </div>
+                      )}
+                    </TabsContent>
 
-              <TabsContent value="spas">
-                {subcategoryLoading.spas ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {[...Array(4)].map((_, i) => (
-                      <Card key={i} className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <Skeleton className="h-48 w-full" />
-                          <div className="p-4 space-y-2">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : subcategoryData.spas.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {subcategoryData.spas.map((business) => (
-                      <Card key={`spa-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                        <CardContent className="p-0">
-                          {business.image_url && (
-                            <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business)}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="p-1 hover:bg-background/80"
-                              >
-                                <Star 
-                                  className={`h-3 w-3 transition-colors ${
-                                    favoriteBusinesses.has(business.name)
-                                      ? 'fill-current text-yellow-500' 
-                                      : 'text-muted-foreground hover:text-yellow-500'
-                                  }`} 
-                                />
-                              </Button>
-                            </div>
-                          
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-xs text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">🧘</div>
-                    <h3 className="text-xl font-semibold mb-2">No spas found</h3>
-                    <p className="text-muted-foreground">Try the other tabs for more options.</p>
-                  </div>
-                )}
-              </TabsContent>
+                    <TabsContent value="spas">
+                      {subcategoryLoading.spas ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {[...Array(4)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                              <CardContent className="p-0">
+                                <Skeleton className="h-48 w-full" />
+                                <div className="p-4 space-y-2">
+                                  <Skeleton className="h-6 w-3/4" />
+                                  <Skeleton className="h-4 w-full" />
+                                  <Skeleton className="h-4 w-2/3" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : subcategoryData.spas.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {subcategoryData.spas.map((business) => (
+                            <Card key={`spa-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                              <CardContent className="p-0">
+                                {business.image_url && (
+                                  <div className="h-32 bg-muted rounded-t-lg overflow-hidden">
+                                    <img 
+                                      src={business.image_url} 
+                                      alt={business.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-semibold leading-tight">{business.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleFavorite(business)}
+                                      disabled={favoritingBusinesses.has(business.name)}
+                                      className="p-1 hover:bg-background/80"
+                                    >
+                                      <Star 
+                                        className={`h-3 w-3 transition-colors ${
+                                          favoriteBusinesses.has(business.name)
+                                            ? 'fill-current text-yellow-500' 
+                                            : 'text-muted-foreground hover:text-yellow-500'
+                                        }`} 
+                                      />
+                                    </Button>
+                                  </div>
+                                
+                                  <div className="space-y-1">
+                                    <a 
+                                      href={getGoogleMapsUrl(business.address)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                    >
+                                      <MapPin className="mr-1 h-2 w-2 transition-transform group-hover:scale-110" />
+                                      <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                    </a>
+                                    
+                                    <div className="text-xs font-medium text-primary">
+                                      {business.distance_miles?.toFixed(1)} miles away
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-4xl mb-4">🧘</div>
+                          <h3 className="text-xl font-semibold mb-2">No spas found</h3>
+                          <p className="text-muted-foreground">Try the other tabs for more options.</p>
+                        </div>
+                      )}
+                 </TabsContent>
             </Tabs>
           ) : ('name' in categoryConfig && categoryConfig.name === "Food Time") ? (
             // Special tabbed layout for Food Time
@@ -891,10 +1210,10 @@ const PopularCategory: React.FC = () => {
                   <span className="xs:hidden">Night</span>
                 </TabsTrigger>
               </TabsList>
-
+              
               <TabsContent value="morning">
-                {subcategoryLoading.morning ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {foodSceneLoading.morning ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-0">
@@ -908,9 +1227,9 @@ const PopularCategory: React.FC = () => {
                       </Card>
                     ))}
                   </div>
-                ) : subcategoryData.morning.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.morning.map((business) => (
+                ) : foodSceneData.morning.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.morning.map((business) => (
                       <Card key={`morning-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
                           {business.image_url && (
@@ -926,7 +1245,6 @@ const PopularCategory: React.FC = () => {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -944,15 +1262,21 @@ const PopularCategory: React.FC = () => {
                               </Button>
                             </div>
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -962,14 +1286,14 @@ const PopularCategory: React.FC = () => {
                   <div className="text-center py-12">
                     <div className="text-4xl mb-4">🌅</div>
                     <h3 className="text-xl font-semibold mb-2">No breakfast spots found</h3>
-                    <p className="text-muted-foreground">Try the other time periods for more options.</p>
+                    <p className="text-muted-foreground">Try the other tabs for lunch or dinner options.</p>
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="afternoon">
-                {subcategoryLoading.afternoon ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {foodSceneLoading.afternoon ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-0">
@@ -983,9 +1307,9 @@ const PopularCategory: React.FC = () => {
                       </Card>
                     ))}
                   </div>
-                ) : subcategoryData.afternoon.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.afternoon.map((business) => (
+                ) : foodSceneData.afternoon.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.afternoon.map((business) => (
                       <Card key={`afternoon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
                           {business.image_url && (
@@ -1001,7 +1325,6 @@ const PopularCategory: React.FC = () => {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1019,15 +1342,21 @@ const PopularCategory: React.FC = () => {
                               </Button>
                             </div>
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -1037,14 +1366,14 @@ const PopularCategory: React.FC = () => {
                   <div className="text-center py-12">
                     <div className="text-4xl mb-4">☀️</div>
                     <h3 className="text-xl font-semibold mb-2">No lunch spots found</h3>
-                    <p className="text-muted-foreground">Try the other time periods for more options.</p>
+                    <p className="text-muted-foreground">Try the other tabs for breakfast or dinner options.</p>
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="evening">
-                {subcategoryLoading.evening ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {foodSceneLoading.evening ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-0">
@@ -1058,9 +1387,9 @@ const PopularCategory: React.FC = () => {
                       </Card>
                     ))}
                   </div>
-                ) : subcategoryData.evening.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.evening.map((business) => (
+                ) : foodSceneData.evening.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.evening.map((business) => (
                       <Card key={`evening-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
                           {business.image_url && (
@@ -1076,7 +1405,6 @@ const PopularCategory: React.FC = () => {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1094,15 +1422,21 @@ const PopularCategory: React.FC = () => {
                               </Button>
                             </div>
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -1112,32 +1446,28 @@ const PopularCategory: React.FC = () => {
                   <div className="text-center py-12">
                     <div className="text-4xl mb-4">🌙</div>
                     <h3 className="text-xl font-semibold mb-2">No dinner spots found</h3>
-                    <p className="text-muted-foreground">Try the other time periods for more options.</p>
+                    <p className="text-muted-foreground">Try the other tabs for breakfast or lunch options.</p>
                   </div>
                 )}
               </TabsContent>
-            </Tabs>
+             </Tabs>
           ) : ('name' in categoryConfig && categoryConfig.name === "Drink Time") ? (
-            // Special tabbed layout for Drink Time  
-            <Tabs defaultValue="happy_hour" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
-                <TabsTrigger value="happy_hour" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleDrinkSceneTabChange('happy_hour')}>
-                  <span className="hidden xs:inline">Happy Hour</span>
-                  <span className="xs:hidden">🍻</span>
+            // Special tabbed layout for Drink Time
+            <Tabs defaultValue="coffee" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8 h-auto py-2">
+                <TabsTrigger value="coffee" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleDrinkTimeTabChange('coffee')}>
+                  <span className="hidden xs:inline">Coffee & Cafes</span>
+                  <span className="xs:hidden">Coffee</span>
                 </TabsTrigger>
-                <TabsTrigger value="late_night" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleDrinkSceneTabChange('late_night')}>
-                  <span className="hidden xs:inline">Late Night</span>
-                  <span className="xs:hidden">🌙</span>
-                </TabsTrigger>
-                <TabsTrigger value="wine_bar" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleDrinkSceneTabChange('wine_bar')}>
-                  <span className="hidden xs:inline">Wine & Cocktails</span>
-                  <span className="xs:hidden">🍷</span>
+                <TabsTrigger value="breweries" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleDrinkTimeTabChange('breweries')}>
+                  <span className="hidden xs:inline">Happy Hours & Breweries</span>
+                  <span className="xs:hidden">Breweries</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="happy_hour">
-                {subcategoryLoading.happy_hour ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <TabsContent value="coffee">
+                {drinkTimeLoading.coffee ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-0">
@@ -1151,10 +1481,10 @@ const PopularCategory: React.FC = () => {
                       </Card>
                     ))}
                   </div>
-                ) : subcategoryData.happy_hour.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.happy_hour.map((business) => (
-                      <Card key={`happy_hour-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                ) : drinkTimeData.coffee.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {drinkTimeData.coffee.map((business) => (
+                      <Card key={`coffee-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
                           {business.image_url && (
                             <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
@@ -1169,7 +1499,6 @@ const PopularCategory: React.FC = () => {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1187,15 +1516,21 @@ const PopularCategory: React.FC = () => {
                               </Button>
                             </div>
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -1203,16 +1538,16 @@ const PopularCategory: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-4xl mb-4">🍻</div>
-                    <h3 className="text-xl font-semibold mb-2">No happy hour spots found</h3>
-                    <p className="text-muted-foreground">Try the other drink categories for more options.</p>
+                    <div className="text-4xl mb-4">☕</div>
+                    <h3 className="text-xl font-semibold mb-2">No coffee shops found</h3>
+                    <p className="text-muted-foreground">Try the brewery tab for more options.</p>
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="late_night">
-                {subcategoryLoading.late_night ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <TabsContent value="breweries">
+                {drinkTimeLoading.breweries ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[...Array(6)].map((_, i) => (
                       <Card key={i} className="overflow-hidden">
                         <CardContent className="p-0">
@@ -1226,10 +1561,10 @@ const PopularCategory: React.FC = () => {
                       </Card>
                     ))}
                   </div>
-                ) : subcategoryData.late_night.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.late_night.map((business) => (
-                      <Card key={`late_night-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                ) : drinkTimeData.breweries.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {drinkTimeData.breweries.map((business) => (
+                      <Card key={`brewery-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                         <CardContent className="p-0">
                           {business.image_url && (
                             <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
@@ -1244,7 +1579,6 @@ const PopularCategory: React.FC = () => {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1262,90 +1596,21 @@ const PopularCategory: React.FC = () => {
                               </Button>
                             </div>
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">🌙</div>
-                    <h3 className="text-xl font-semibold mb-2">No late night spots found</h3>
-                    <p className="text-muted-foreground">Try the other drink categories for more options.</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="wine_bar">
-                {subcategoryLoading.wine_bar ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                      <Card key={i} className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <Skeleton className="h-48 w-full" />
-                          <div className="p-4 space-y-2">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : subcategoryData.wine_bar.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subcategoryData.wine_bar.map((business) => (
-                      <Card key={`wine_bar-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                        <CardContent className="p-0">
-                          {business.image_url && (
-                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
-                              <img 
-                                src={business.image_url} 
-                                alt={business.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business)}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="p-1 hover:bg-background/80"
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
                               >
-                                <Star 
-                                  className={`h-4 w-4 transition-colors ${
-                                    favoriteBusinesses.has(business.name)
-                                      ? 'fill-current text-yellow-500' 
-                                      : 'text-muted-foreground hover:text-yellow-500'
-                                  }`} 
-                                />
-                              </Button>
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
                             </div>
-                          
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
                           </div>
                         </CardContent>
                       </Card>
@@ -1353,18 +1618,18 @@ const PopularCategory: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-4xl mb-4">🍷</div>
-                    <h3 className="text-xl font-semibold mb-2">No wine bars found</h3>
-                    <p className="text-muted-foreground">Try the other drink categories for more options.</p>
+                    <div className="text-4xl mb-4">🍺</div>
+                    <h3 className="text-xl font-semibold mb-2">No breweries found</h3>
+                    <p className="text-muted-foreground">Try the coffee tab for more options.</p>
                   </div>
                 )}
               </TabsContent>
             </Tabs>
           ) : (
-            // Regular category display
+            // Regular layout for other categories
             <>
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {[...Array(6)].map((_, i) => (
                     <Card key={i} className="overflow-hidden">
                       <CardContent className="p-0">
@@ -1379,96 +1644,109 @@ const PopularCategory: React.FC = () => {
                   ))}
                 </div>
               ) : businesses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {businesses.map((business) => (
-                    <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
-                      <CardContent className="p-0">
-                        {business.image_url && (
-                          <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
-                            <img 
-                              src={business.image_url} 
-                              alt={business.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        )}
-                        
-                          <div className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-lg font-semibold">{business.name}</h3>
-                              
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleFavorite(business)}
-                                disabled={favoritingBusinesses.has(business.name)}
-                                className="p-1 hover:bg-background/80"
-                              >
-                                <Star 
-                                  className={`h-4 w-4 transition-colors ${
-                                    favoriteBusinesses.has(business.name)
-                                      ? 'fill-current text-yellow-500' 
-                                      : 'text-muted-foreground hover:text-yellow-500'
-                                  }`} 
-                                />
-                              </Button>
+                <>
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="text-2xl font-bold">{'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}</h2>
+                    <Badge variant="secondary">{businesses.length} places</Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {businesses.map((business) => (
+                      <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                        <CardContent className="p-0">
+                          {business.image_url && (
+                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
                             </div>
+                          )}
                           
-                            <a 
-                              href={getGoogleMapsUrl(business.address)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors group font-medium mb-3"
-                            >
-                              <Navigation className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                              <span className="hover:underline">{business.distance_miles?.toFixed(1)} miles away</span>
-                            </a>
-                              
-                              <div className="flex gap-2 mt-3">
-                                <TooltipProvider>
-                                  {business.website || businessWebsites[business.place_id!] ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
-                                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
-                                        >
-                                          <ExternalLink className="h-4 w-4" />
-                                          Website
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Opens in new tab</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : business.place_id ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={() => handleGetWebsite(business)}
-                                          disabled={loadingStates[business.place_id]}
-                                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                          {loadingStates[business.place_id] ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                          ) : (
-                                            <ExternalLink className="h-4 w-4" />
-                                          )}
-                                          {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Opens in new tab</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : null}
-                                </TooltipProvider>
+                            <div className="p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="text-lg font-semibold">{business.name}</h3>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleFavorite(business)}
+                                  disabled={favoritingBusinesses.has(business.name)}
+                                  className="p-1 hover:bg-background/80"
+                                >
+                                  <Star 
+                                    className={`h-4 w-4 transition-colors ${
+                                      favoriteBusinesses.has(business.name)
+                                        ? 'fill-current text-yellow-500' 
+                                        : 'text-muted-foreground hover:text-yellow-500'
+                                    }`} 
+                                  />
+                                </Button>
                               </div>
+                            
+                              <div className="space-y-2">
+                                <a 
+                                  href={getGoogleMapsUrl(business.address)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                                >
+                                  <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                  <span className="line-clamp-1 hover:underline">{business.address}</span>
+                                </a>
+                                
+                                <div className="text-sm font-medium text-primary">
+                                  {business.distance_miles?.toFixed(1)} miles away
+                                </div>
+                                
+                                <div className="flex gap-2 mt-3">
+                                  <TooltipProvider>
+                                    {business.website || businessWebsites[business.place_id!] ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() => window.open(business.website || businessWebsites[business.place_id!], '_blank')}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30"
+                                          >
+                                            <ExternalLink className="h-4 w-4" />
+                                            Website
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Opens in new tab</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : business.place_id ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() => handleGetWebsite(business)}
+                                            disabled={loadingStates[business.place_id]}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/5 hover:bg-primary/10 hover:font-semibold rounded-full shadow-soft hover:shadow-card transition-all duration-200 border border-primary/20 hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            {loadingStates[business.place_id] ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <ExternalLink className="h-4 w-4" />
+                                            )}
+                                            {loadingStates[business.place_id] ? 'Loading...' : 'Get Website'}
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Opens in new tab</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : null}
+                                  </TooltipProvider>
+                                </div>
+                            </div>
                           </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-12">
                   <h3 className="text-xl font-semibold mb-2">No places found</h3>
@@ -1481,6 +1759,7 @@ const PopularCategory: React.FC = () => {
           )}
         </div>
       </main>
+
     </div>
   );
 };
