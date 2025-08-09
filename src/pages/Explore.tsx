@@ -1,4 +1,4 @@
-import { toast } from "@/utils/notificationRemover";
+import { useSmartToast } from "@/hooks/useSmartToast";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,7 @@ export default function Explore() {
   const { trackUIInteraction } = useAnalytics();
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
+  const { showFavoriteToast } = useSmartToast();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -273,11 +274,7 @@ export default function Explore() {
       setLocation(locationData);
     } catch (error) {
       console.error("Error getting location:", error);
-      toast({
-        title: "Location access denied",
-        description: "Please enter your city or zip code manually",
-        variant: "destructive",
-      });
+      console.error("Location access denied. Please enter your city or zip code manually");
     } finally {
       setIsLoadingLocation(false);
     }
@@ -318,11 +315,7 @@ export default function Explore() {
       setLocation(locationData);
     } catch (error) {
       console.error("Error geocoding location:", error);
-      toast({
-        title: "Location not found",
-        description: "Please try a different city or zip code",
-        variant: "destructive",
-      });
+      console.error("Location not found. Please try a different city or zip code");
     } finally {
       setIsLoadingLocation(false);
     }
@@ -332,11 +325,7 @@ export default function Explore() {
   // Handle category selection
   const handleCategoryClick = async (category: { searchTerm: string; name: string }) => {
     if (!location) {
-      toast({
-        title: "Location required",
-        description: "Please allow location access or enter your location first",
-        variant: "destructive",
-      });
+      console.error("Location required. Please allow location access or enter your location first");
       return;
     }
 
@@ -353,18 +342,12 @@ export default function Explore() {
       if (statePath) {
         const usNewsURL = getUSNewsHealthURL(statePath);
         window.open(usNewsURL, '_blank');
-        toast({
-          title: "Redirecting to US News Health",
-          description: `Opening ${location.city} medical directory`,
-        });
+        console.log(`Redirecting to US News Health. Opening ${location.city} medical directory`);
         return;
       } else {
         // Fallback to general US News doctor finder
         window.open('https://health.usnews.com/doctors', '_blank');
-        toast({
-          title: "Redirecting to US News Health",
-          description: "Opening general medical directory",
-        });
+        console.log("Redirecting to US News Health. Opening general medical directory");
         return;
       }
     }
@@ -453,11 +436,7 @@ export default function Explore() {
       }
     } catch (error) {
       console.error("Error loading category results:", error);
-      toast({
-        title: "Error loading results",
-        description: "Please try again later",
-        variant: "destructive",
-      });
+      console.error("Error loading results. Please try again later");
     } finally {
       setIsLoadingCategory(false);
     }
@@ -466,11 +445,7 @@ export default function Explore() {
   // Handle themed pack selection  
   const handleThemedPackClick = async (pack: typeof themedPacks[0], specificCategory?: string) => {
     if (!location) {
-      toast({
-        title: "Location required",
-        description: "Please allow location access or enter your location first",
-        variant: "destructive",
-      });
+      console.error("Location required. Please allow location access or enter your location first");
       return;
     }
 
@@ -488,18 +463,12 @@ export default function Explore() {
       if (statePath) {
         const usNewsURL = getUSNewsHealthURL(statePath);
         window.open(usNewsURL, '_blank');
-        toast({
-          title: "Redirecting to US News Health",
-          description: `Opening ${location.city} medical directory`,
-        });
+        console.log(`Redirecting to US News Health. Opening ${location.city} medical directory`);
         return;
       } else {
         // Fallback to general US News doctor finder
         window.open('https://health.usnews.com/doctors', '_blank');
-        toast({
-          title: "Redirecting to US News Health",
-          description: "Opening general medical directory",
-        });
+        console.log("Redirecting to US News Health. Opening general medical directory");
         return;
       }
     }
@@ -629,11 +598,7 @@ export default function Explore() {
       }
     } catch (error) {
       console.error("Error loading themed pack results:", error);
-      toast({
-        title: "Error loading results",
-        description: "Please try again later",
-        variant: "destructive",
-      });
+      console.error("Error loading results. Please try again later");
     } finally {
       setIsLoadingCategory(false);
     }
@@ -641,11 +606,7 @@ export default function Explore() {
 
   const toggleFavorite = async (business: Business, category: string) => {
     if (!user) {
-      toast({
-        title: "Please log in",
-        description: "You need to be logged in to favorite businesses.",
-        variant: "destructive"
-      });
+      console.error("Please log in. You need to be logged in to favorite businesses.");
       return;
     }
 
@@ -695,10 +656,7 @@ export default function Explore() {
           return newSet;
         });
 
-        toast({
-          title: newFavoriteStatus ? "Added to favorites" : "Removed from favorites",
-          description: `${business.name} has been ${newFavoriteStatus ? 'added to' : 'removed from'} your favorites.`,
-        });
+        showFavoriteToast(newFavoriteStatus ? 'added' : 'removed');
       } else {
         // Save as new recommendation with favorite status
         const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
@@ -728,18 +686,11 @@ export default function Explore() {
         // Update local state
         setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
 
-        toast({
-          title: "Added to favorites",
-          description: `${business.name} has been saved and added to your favorites.`,
-        });
+        showFavoriteToast('added');
       }
     } catch (error: any) {
       console.error('Error favoriting business:', error);
-      toast({
-        title: "Error updating favorite",
-        description: "We couldn't update your favorite. Please try again.",
-        variant: "destructive"
-      });
+      console.error("Error updating favorite. We couldn't update your favorite. Please try again.");
     } finally {
       setFavoritingBusinesses(prev => {
         const newSet = new Set(prev);

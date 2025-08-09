@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { MapPin, Star, ExternalLink, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { useSmartToast } from "@/hooks/useSmartToast";
 import { useBusinessDetails } from "@/hooks/useBusinessDetails";
 
 interface LocationData {
@@ -137,6 +137,7 @@ const PopularCategory = () => {
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
   
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
+  const { showFavoriteToast } = useSmartToast();
 
   // Find category config
   const categoryConfig = trendingCategories.find(cat => 
@@ -332,7 +333,7 @@ const PopularCategory = () => {
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
-      toast.error('Failed to load places. Please try again.');
+      console.error('Failed to load places. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -353,7 +354,7 @@ const PopularCategory = () => {
 
   const toggleFavorite = async (business: Business) => {
     if (!user) {
-      toast.error("Please log in to favorite businesses.");
+      console.error("Please log in to favorite businesses.");
       return;
     }
 
@@ -405,7 +406,7 @@ const PopularCategory = () => {
           return newSet;
         });
 
-        toast.success(newFavoriteStatus ? "Added to favorites" : "Removed from favorites");
+        showFavoriteToast(newFavoriteStatus ? 'added' : 'removed');
       } else {
         // Save as new recommendation with favorite status
         const imageUrl = business.image_url && business.image_url.trim() !== '' ? business.image_url : null;
@@ -435,11 +436,11 @@ const PopularCategory = () => {
         // Update local state
         setFavoriteBusinesses(prev => new Set(prev).add(businessKey));
 
-        toast.success("Added to favorites");
+        showFavoriteToast('added');
       }
     } catch (error: any) {
       console.error('Error favoriting business:', error);
-      toast.error("Failed to update favorites");
+      console.error("Failed to update favorites");
     } finally {
       setFavoritingBusinesses(prev => {
         const newSet = new Set(prev);
