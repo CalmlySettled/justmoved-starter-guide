@@ -96,7 +96,7 @@ const trendingCategories = [
     icon: "⛪", 
     searchTerms: ["church", "synagogue", "mosque", "temple", "faith community", "religious services"],
     color: "bg-indigo-500",
-    description: "Places of Worship"
+    description: "Places of worship"
   }
 ];
 
