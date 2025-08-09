@@ -44,9 +44,11 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border/50 shadow-soft">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
-            <Home className="h-6 w-6 text-white" />
-          </div>
+          <img 
+            src="/lovable-uploads/d35beb65-98d6-4bc2-a878-f947b674b569.png" 
+            alt="CalmlySettled Logo" 
+            className="w-10 h-10 rounded-lg shadow-soft object-contain"
+          />
           <span className="text-xl sm:text-2xl font-bold text-foreground">CalmlySettled</span>
         </Link>
         
