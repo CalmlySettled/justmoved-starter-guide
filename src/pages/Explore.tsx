@@ -896,13 +896,56 @@ export default function Explore() {
       <AddressCaptureModal
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}
-        onComplete={() => {
+        onComplete={async () => {
           setShowAddressModal(false);
           // Clear OAuth params from URL
           const newUrl = window.location.pathname;
           window.history.replaceState({}, '', newUrl);
-          // Reload the component to fetch user profile with new address
-          window.location.reload();
+          
+          // Manually reload user location data instead of full page reload
+          if (user) {
+            setIsLoadingProfile(true);
+            setIsProcessingSavedAddress(true);
+            
+            try {
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('address')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+              if (!error && profile?.address) {
+                // Geocode the stored address to get coordinates
+                const response = await fetch(
+                  `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
+                  {
+                    headers: {
+                      'User-Agent': 'CalmlySettled/1.0'
+                    }
+                  }
+                );
+
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data.length > 0) {
+                    const locationData: LocationData = {
+                      latitude: parseFloat(data[0].lat),
+                      longitude: parseFloat(data[0].lon),
+                      city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address.split(',')[0],
+                      state: data[0].address?.state || data[0].address?.['ISO3166-2-lvl4']?.split('-')[1],
+                    };
+
+                    setLocation(locationData);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error reloading user location:', error);
+            } finally {
+              setIsLoadingProfile(false);
+              setIsProcessingSavedAddress(false);
+            }
+          }
         }}
         sourceContext={sourceContext}
       />
