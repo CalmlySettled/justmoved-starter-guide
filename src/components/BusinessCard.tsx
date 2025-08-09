@@ -160,7 +160,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
   return (
     <Card 
-      className={`group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden ${compact ? 'h-[320px] flex flex-col' : 'h-fit'}`}
+      className={`group hover:shadow-card-hover transition-all duration-300 border-0 shadow-card bg-gradient-card rounded-2xl overflow-hidden ${compact ? 'flex flex-col' : 'h-fit'}`}
     >
       {/* Business Image */}
       {showImage && (
@@ -229,25 +229,25 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className={`space-y-3 md:space-y-4 ${compact ? 'p-3 pt-0 flex-1 flex flex-col justify-end' : 'mobile-padding'} ${variant === 'favorites' ? 'pt-0' : ''}`}>
-        {/* Address */}
-        {business.address && !compact && (
-          <a 
-            href={getGoogleMapsDirectionsUrl(business.address, business.name)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleDirectionsClick}
-            className="flex items-start gap-2 text-sm md:text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer mobile-touch"
-          >
-            <MapPin className="h-4 w-4 md:h-4 md:w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-            <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
-              {business.address}
-            </span>
-          </a>
-        )}
-
-
-      </CardContent>
+      {!compact && (
+        <CardContent className={`space-y-3 md:space-y-4 mobile-padding ${variant === 'favorites' ? 'pt-0' : ''}`}>
+          {/* Address */}
+          {business.address && (
+            <a 
+              href={getGoogleMapsDirectionsUrl(business.address, business.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleDirectionsClick}
+              className="flex items-start gap-2 text-sm md:text-sm text-primary hover:text-primary/80 transition-colors group cursor-pointer mobile-touch"
+            >
+              <MapPin className="h-4 w-4 md:h-4 md:w-4 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="underline-offset-2 hover:underline hover:text-blue-600 transition-colors">
+                {business.address}
+              </span>
+            </a>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 };
