@@ -54,25 +54,25 @@ const trendingCategories = [
 const themedPacks = [
   {
     title: "First 48 Hours",
-    description: "Immediate essentials for your first days in a new city",
+    description: "",
     categories: ["doctors", "gas stations", "grocery stores", "junk removal", "pharmacies"],
     icon: Clock,
   },
   {
     title: "First Week",
-    description: "Everything you need to make your new place feel like home",
+    description: "",
     categories: ["banks", "cleaning services", "furniture stores", "hardware stores", "internet providers"],
     icon: Home,
   },
   {
     title: "First Month",
-    description: "Essential services to get your life organized",
+    description: "",
     categories: ["daycares", "DMV", "Fitness", "post offices", "veterinarians"],
     icon: Zap,
   },
   {
     title: "First 90 Days",
-    description: "Ready to explore your community? Head to Popular to discover local favorites and start settling in",
+    description: "Ready to explore your community? Explore top-rated local favorites",
     categories: [],
     icon: Users,
   },
