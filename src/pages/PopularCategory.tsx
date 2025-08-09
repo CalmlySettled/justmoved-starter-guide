@@ -1054,17 +1054,14 @@ const PopularCategory = () => {
             <Tabs defaultValue="morning" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
                 <TabsTrigger value="morning" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('morning')}>
-                  <span className="text-sm">🌅</span>
                   <span className="hidden xs:inline">Morning</span>
                   <span className="xs:hidden">AM</span>
                 </TabsTrigger>
                 <TabsTrigger value="afternoon" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('afternoon')}>
-                  <span className="text-sm">☀️</span>
                   <span className="hidden xs:inline">Afternoon</span>
                   <span className="xs:hidden">PM</span>
                 </TabsTrigger>
                 <TabsTrigger value="evening" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('evening')}>
-                  <span className="text-sm">🌙</span>
                   <span className="hidden xs:inline">Evening</span>
                   <span className="xs:hidden">Night</span>
                 </TabsTrigger>

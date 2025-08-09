@@ -2204,6 +2204,78 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Handle food scene mode requests with caching
+    if (foodSceneMode) {
+      if (!latitude || !longitude || !timeOfDay) {
+        return new Response(JSON.stringify({ error: 'Food Scene mode requires latitude, longitude, and timeOfDay' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const coordinates = { lat: latitude, lng: longitude };
+      
+      // Create cache key for food scene requests
+      const cacheKey = `foodscene_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${timeOfDay}`;
+      
+      // Check for cached food scene results (30 day cache)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (cachedData) {
+        console.log('✅ Returning cached food scene recommendations (30-day cache)');
+        trackAPIUsage('cache', 1);
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      console.log(`Finding food scene businesses for time: "${timeOfDay}"`);
+      
+      // Get search terms for the time of day
+      const searchTerms = getFoodSceneSearchTerms(timeOfDay);
+      const allBusinesses: Business[] = [];
+      
+      // Search for each term and collect results
+      for (const term of searchTerms) {
+        const businesses = await searchBusinesses(term, coordinates, undefined, false); // false = rating-based sorting
+        allBusinesses.push(...businesses);
+      }
+      
+      // Apply cuisine diversity (max 2 per cuisine type)
+      const diverseBusinesses = applyCuisineDiversity(allBusinesses);
+      
+      // Limit to top 12 businesses for food scene
+      const finalBusinesses = diverseBusinesses.slice(0, 12);
+      
+      console.log(`Found ${allBusinesses.length} total food businesses, ${diverseBusinesses.length} after diversity filter, showing top ${finalBusinesses.length}`);
+
+      // Cache food scene results for 30 days
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          user_coordinates: `(${coordinates.lat}, ${coordinates.lng})`,
+          categories: [timeOfDay],
+          recommendations: { [timeOfDay]: finalBusinesses },
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+        });
+      
+      return new Response(JSON.stringify({ recommendations: { [timeOfDay]: finalBusinesses } }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // If dynamic filter is provided, fetch additional specific results
     if (dynamicFilter) {
