@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { getVersionedCacheKey, APP_VERSION } from '@/lib/appVersion';
 
 interface CacheEntry {
   data: any;
@@ -33,16 +34,20 @@ class RequestCacheManager {
       };
     }
     
-    const cacheKey = `${type}-${JSON.stringify(params)}`;
-    console.log(`🔑 CACHE KEY GENERATED:`, {
+    const baseKey = `${type}-${JSON.stringify(params)}`;
+    const versionedKey = getVersionedCacheKey(baseKey);
+    
+    console.log(`🔑 VERSIONED CACHE KEY GENERATED:`, {
       type,
+      version: APP_VERSION,
       originalParams: arguments[1], // Keep original params for debugging
       normalizedParams: params,
-      finalKey: cacheKey,
-      keyLength: cacheKey.length
+      baseKey,
+      versionedKey,
+      keyLength: versionedKey.length
     });
     
-    return cacheKey;
+    return versionedKey;
   }
 
   get(type: string, params: any): any | null {
@@ -85,7 +90,8 @@ class RequestCacheManager {
       timestamp: Date.now(),
       expiry: Date.now() + ttl
     });
-    console.log(`💾 CACHED: ${type}`, {
+    console.log(`💾 VERSIONED CACHED: ${type}`, {
+      version: APP_VERSION,
       key,
       dataSize: Array.isArray(data) ? data.length : 'not-array',
       ttlMinutes: Math.round(ttl / 60000),
@@ -105,6 +111,22 @@ class RequestCacheManager {
 
   clearAll(): void {
     this.cache.clear();
+    console.log(`🧹 ALL CACHE CLEARED for version ${APP_VERSION}`);
+  }
+
+  // Clear only old version entries
+  clearOldVersions(): void {
+    const currentVersionPrefix = `v${APP_VERSION}-`;
+    const keysToDelete: string[] = [];
+    
+    for (const [key] of this.cache.entries()) {
+      if (key.startsWith('v') && key.includes('-') && !key.startsWith(currentVersionPrefix)) {
+        keysToDelete.push(key);
+      }
+    }
+    
+    keysToDelete.forEach(key => this.cache.delete(key));
+    console.log(`🧹 OLD VERSION CACHE CLEARED: ${keysToDelete.length} entries removed`);
   }
 
   getStats(): { size: number; keys: string[] } {
@@ -180,5 +202,9 @@ export function useRequestCache() {
     }
   }, []);
 
-  return { getCached, setCached, clearCache, getCacheStats, checkBackendCache };
+  const clearOldVersions = useCallback(() => {
+    cacheManager.current.clearOldVersions();
+  }, []);
+
+  return { getCached, setCached, clearCache, getCacheStats, checkBackendCache, clearOldVersions };
 }

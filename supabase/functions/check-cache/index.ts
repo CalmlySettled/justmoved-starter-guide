@@ -15,11 +15,12 @@ function roundCoordinates(lat: number, lng: number): { lat: number; lng: number 
 }
 
 // Generate simplified cache key for backend lookup
-function generateSimpleCacheKey(coordinates: { lat: number; lng: number }, categories: string[]): string {
+function generateSimpleCacheKey(coordinates: { lat: number; lng: number }, categories: string[], version?: string): string {
   const rounded = roundCoordinates(coordinates.lat, coordinates.lng);
   const categoryString = categories.sort().join(',');
+  const baseKey = `explore_${rounded.lat.toFixed(2)}_${rounded.lng.toFixed(2)}_${categoryString}`;
   
-  return `explore_${rounded.lat.toFixed(2)}_${rounded.lng.toFixed(2)}_${categoryString}`;
+  return version ? `v${version}-${baseKey}` : baseKey;
 }
 
 serve(async (req) => {
@@ -29,6 +30,7 @@ serve(async (req) => {
 
   try {
     const { coordinates, categories } = await req.json();
+    const appVersion = req.headers.get('x-app-version') || '1.0.0';
     
     if (!coordinates?.lat || !coordinates?.lng || !categories?.length) {
       return new Response(
@@ -42,14 +44,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const cacheKey = generateSimpleCacheKey(coordinates, categories);
+    const cacheKey = generateSimpleCacheKey(coordinates, categories, appVersion);
     const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
     
-    console.log(`🔍 BACKEND CACHE CHECK:`, {
+    console.log(`🔍 VERSIONED BACKEND CACHE CHECK:`, {
       cacheKey,
       coordinates,
       roundedCoords,
-      categories
+      categories,
+      version: appVersion
     });
 
     // Check for exact cache match
