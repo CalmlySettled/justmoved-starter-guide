@@ -154,7 +154,9 @@ export default function Explore() {
         }
 
         if (!profile?.address) {
-          console.log('No address found in profile, not showing modal for non-OAuth users');
+          console.log('No address found in profile, showing address modal');
+          setShowAddressModal(true);
+          setSourceContext("explore");
           setIsLoadingProfile(false);
           return;
         }

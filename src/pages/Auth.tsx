@@ -117,7 +117,6 @@ export default function Auth() {
           email: email.toLowerCase().trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/verify-email`,
             data: {
               display_name: sanitizedDisplayName
             }
@@ -140,12 +139,11 @@ export default function Auth() {
             });
           }
         } else if (data.user && !data.session) {
-          // User was created but needs email verification
+          // This shouldn't happen with email verification disabled
           toast({
             title: "Account created!",
-            description: "Please check your email (including spam folder) for a verification link to complete your registration."
+            description: "Your account has been created successfully."
           });
-          setShowResendButton(true);
           
         } else if (data.user && data.session) {
           // User was created and auto-confirmed, create basic profile

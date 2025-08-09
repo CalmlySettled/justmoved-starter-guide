@@ -51,7 +51,7 @@ const AppContent = () => {
             
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/confirm" element={<Auth />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
+            
             <Route path="/profile" element={<Profile />} />
             
             <Route path="/reset-password" element={<ResetPassword />} />
