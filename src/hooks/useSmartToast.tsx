@@ -63,7 +63,7 @@ export const useSmartToast = () => {
     if (action === 'removed') {
       // Removed toast with subtle styling
       toast({
-        title: "💔 Removed from favorites",
+        title: "⭐ Removed from favorites",
         description: "You can add it back anytime",
         duration: 2000,
         className: "border-l-4 border-l-destructive bg-gradient-card",
@@ -75,14 +75,14 @@ export const useSmartToast = () => {
     if (currentCount <= 5) {
       // Full toast with action button for first 5 favorites - celebratory!
       toast({
-        title: "❤️ Added to favorites!",
-        description: "Great choice! Building your local favorites collection",
+        title: "⭐ Added to favorites!",
+        description: "Building your local favorites collection",
         duration: 2500,
         className: "border-l-4 border-l-secondary bg-gradient-card shadow-soft",
         action: (
           <button 
             onClick={() => navigate('/favorites')}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-gradient-accent px-4 text-sm font-semibold text-accent-foreground transition-all duration-200 hover:scale-105 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-gradient-accent px-3 text-xs font-semibold text-accent-foreground transition-all duration-200 hover:scale-105 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             View Collection
           </button>
@@ -91,7 +91,7 @@ export const useSmartToast = () => {
     } else if (currentCount <= 10) {
       // Quick toast, no action for favorites 6-10 - more subtle
       toast({
-        title: "❤️ Favorited!",
+        title: "⭐ Favorited!",
         description: "Added to your collection",
         duration: 1500,
         className: "border-l-4 border-l-primary bg-card shadow-soft",
