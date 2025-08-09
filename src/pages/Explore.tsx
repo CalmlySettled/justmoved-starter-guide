@@ -104,6 +104,9 @@ export default function Explore() {
   const { showFavoriteToast } = useSmartToast();
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  // Get URL params for OAuth and focus handling
+  const urlParams = new URLSearchParams(window.location.search);
 
   // Check if there's more content to scroll to the right
   const checkScrollState = (el: HTMLDivElement) => {
@@ -777,8 +780,8 @@ export default function Explore() {
             </div>
           )}
 
-          {/* Location Section */}
-          {!isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal ? (
+          {/* Location Section - Hidden when address modal will show */}
+          {!isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal && !(urlParams.get('oauth') === 'true' && !location) ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
