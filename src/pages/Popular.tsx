@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { EventCard } from "@/components/EventCard";
 import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
-import { AddressCaptureModal } from "@/components/AddressCaptureModal";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -143,25 +143,17 @@ const Popular = () => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
+  
 
-  // Handle OAuth redirect and show address modal for new users
+  // Clean up URL parameters on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(routerLocation.search);
-    const isOAuth = urlParams.get('oauth') === 'true';
-    const redirect = urlParams.get('redirect');
-    
-    console.log('🟡 POPULAR - OAuth check:', { isOAuth, redirect, user: !!user });
-    
-    if (isOAuth && user && redirect === 'popular') {
-      console.log('🟡 POPULAR - Showing address modal for OAuth user');
-      setShowAddressModal(true);
-      
-      // Clean up URL
+    if (urlParams.has('oauth') || urlParams.has('redirect')) {
+      // Clean up URL without triggering modal
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [user, routerLocation]);
+  }, [routerLocation]);
 
   // Clear all data when user signs out
   useEffect(() => {
@@ -169,7 +161,6 @@ const Popular = () => {
       setLocation(null);
       setEvents([]);
       setEventsLoading(false);
-      setShowAddressModal(false);
     }
   }, [user]);
 
@@ -448,17 +439,6 @@ const Popular = () => {
         </div>
       </main>
 
-      {/* Address Modal for OAuth users */}
-      <AddressCaptureModal
-        isOpen={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        onComplete={(redirectPath) => {
-          setShowAddressModal(false);
-          // Since we're already on the popular page, just reload location
-          window.location.reload();
-        }}
-        sourceContext="popular"
-      />
     </div>
   );
 };
