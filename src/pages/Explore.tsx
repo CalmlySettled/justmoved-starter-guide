@@ -818,30 +818,42 @@ export default function Explore() {
                          <p className={`text-center text-muted-foreground mb-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
                            Click a category below:
                          </p>
-                        {isMobile ? (
-                          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {pack.categories.map((category, index) => (
-                              <Badge 
-                                key={index} 
-                                variant="secondary" 
-                                className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 ${
-                                  user 
-                                    ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                    : "cursor-not-allowed"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                   if (user) {
-                                     handleThemedPackClick(pack, category);
-                                   } else {
-                                     window.location.href = '/auth';
-                                   }
-                                }}
-                              >
-                                {category.charAt(0).toUpperCase() + category.slice(1)}
-                              </Badge>
-                            ))}
-                          </div>
+                         {isMobile ? (
+                           <div className="relative">
+                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory">
+                               {pack.categories.map((category, index) => (
+                                 <Badge 
+                                   key={index} 
+                                   variant="secondary" 
+                                   className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 snap-start ${
+                                     index === pack.categories.length - 1 ? 'mr-8' : ''
+                                   } ${
+                                     user 
+                                       ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                       : "cursor-not-allowed"
+                                   }`}
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                      if (user) {
+                                        handleThemedPackClick(pack, category);
+                                      } else {
+                                        window.location.href = '/auth';
+                                      }
+                                   }}
+                                 >
+                                   {category.charAt(0).toUpperCase() + category.slice(1)}
+                                 </Badge>
+                               ))}
+                             </div>
+                             {pack.categories.length > 3 && (
+                               <p className="text-xs text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
+                                 <span>Scroll for more</span>
+                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                 </svg>
+                               </p>
+                             )}
+                           </div>
                         ) : (
                           <div className="space-y-2">
                             {/* First row - 2 categories */}

@@ -175,4 +175,32 @@ All colors MUST be HSL.
   .overflow-x-auto {
     scroll-behavior: smooth;
   }
+
+  /* Scroll fade container with gradient indicators */
+  .scroll-fade-container {
+    position: relative;
+    scroll-snap-type: x mandatory;
+  }
+
+  .scroll-fade-container::before,
+  .scroll-fade-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .scroll-fade-container::before {
+    left: -1px;
+    background: linear-gradient(to right, hsl(var(--card)), transparent);
+  }
+
+  .scroll-fade-container::after {
+    right: -1px;
+    background: linear-gradient(to left, hsl(var(--card)), transparent);
+  }
 }
