@@ -179,8 +179,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 
-                className={`font-semibold text-foreground ${compact ? 'text-sm truncate' : 'text-lg md:text-xl mobile-text'} ${business.place_id ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+            <h3 
+                className={`font-semibold text-foreground ${compact ? 'text-sm leading-tight' : 'text-lg md:text-xl mobile-text'} ${business.place_id ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
                 onClick={business.place_id ? handleBusinessNameClick : undefined}
               >
                 {business.name}
@@ -198,13 +198,19 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
               )}
             </div>
             <div className="flex items-center gap-2 mt-1">
-              {business.distance_miles && (
-                <>
-                  <MapPin className={`text-muted-foreground ${compact ? 'h-3 w-3' : 'h-3 w-3 md:h-3 md:w-3'}`} />
-                  <span className={`text-muted-foreground font-medium ${compact ? 'text-xs' : 'text-sm md:text-xs'}`}>
+              {business.distance_miles && business.address && (
+                <a
+                  href={getGoogleMapsDirectionsUrl(business.address, business.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleDirectionsClick}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+                >
+                  <Navigation className={`${compact ? 'h-3 w-3' : 'h-3 w-3 md:h-3 md:w-3'} group-hover:scale-110 transition-transform`} />
+                  <span className={`font-medium hover:underline ${compact ? 'text-xs' : 'text-sm md:text-xs'}`}>
                     {business.distance_miles} miles away
                   </span>
-                </>
+                </a>
               )}
             </div>
           </div>
@@ -240,31 +246,6 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
           </a>
         )}
 
-        
-        {/* Action buttons - compact mobile actions */}
-        {compact && business.address && (
-          <div className="pt-2 border-t border-border/50">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={getGoogleMapsDirectionsUrl(business.address, business.name)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleDirectionsClick}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20 hover:border-primary/30 min-h-[36px]"
-                  >
-                    <Navigation className="h-3 w-3" />
-                    <span>Directions</span>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Open in Google Maps</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
 
       </CardContent>
     </Card>
