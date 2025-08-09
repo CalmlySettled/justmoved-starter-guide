@@ -1761,7 +1761,7 @@ const PopularCategory = () => {
       {isMobile && (
         <Button
           onClick={() => navigate('/popular')}
-          className="fixed bottom-4 right-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-full w-12 h-12 p-0"
+          className="fixed bottom-4 left-4 z-50 shadow-elegant hover:shadow-glow transition-all duration-300 rounded-full w-10 h-10 p-0"
           variant="default"
           size="icon"
         >
