@@ -924,17 +924,13 @@ const PopularCategory = () => {
             </Button>
 
             <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="flex items-center justify-center mb-6">
                 {'icon' in categoryConfig && (
                   <div className={`w-16 h-16 rounded-full ${trendingCategories.find(cat => cat.name === categoryConfig.name)?.color || 'bg-primary'} flex items-center justify-center text-2xl`}>
                     {categoryConfig.icon}
                   </div>
                 )}
-                <h1 className="text-4xl md:text-5xl font-bold">
-                  {'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}
-                </h1>
               </div>
-
             </div>
           </div>
 
