@@ -182,7 +182,6 @@ All colors MUST be HSL.
     scroll-snap-type: x mandatory;
   }
 
-  .scroll-fade-container::before,
   .scroll-fade-container::after {
     content: '';
     position: absolute;
@@ -192,14 +191,6 @@ All colors MUST be HSL.
     z-index: 10;
     pointer-events: none;
     transition: opacity 0.2s ease;
-  }
-
-  .scroll-fade-container::before {
-    left: -1px;
-    background: linear-gradient(to right, hsl(var(--card)), transparent);
-  }
-
-  .scroll-fade-container::after {
     right: -1px;
     background: linear-gradient(to left, hsl(var(--card)), transparent);
   }
