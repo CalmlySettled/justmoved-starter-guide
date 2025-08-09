@@ -1978,7 +1978,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
-    const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, latitude, longitude, categories, userId } = requestBody;
+    const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, foodSceneMode, timeOfDay, latitude, longitude, categories, userId } = requestBody;
     
     // Handle explore mode requests with caching (distance-based sorting)
     if (exploreMode) {
@@ -3154,4 +3154,86 @@ async function generateRecommendations(quizResponse: QuizResponse, coordinates: 
   }
 
   return recommendations;
+}
+
+// Food Scene helper functions
+function getFoodSceneSearchTerms(timeOfDay: string, category: string): string[] {
+  const baseTerms = {
+    morning: ['breakfast', 'brunch', 'coffee', 'cafe'],
+    afternoon: ['lunch', 'casual dining', 'quick service', 'sandwich'],
+    evening: ['dinner', 'restaurant', 'fine dining', 'cuisine']
+  };
+  
+  return baseTerms[timeOfDay as keyof typeof baseTerms] || ['restaurant'];
+}
+
+function detectCuisineType(business: Business): string {
+  const name = business.name.toLowerCase();
+  const description = business.description?.toLowerCase() || '';
+  const features = business.features?.join(' ').toLowerCase() || '';
+  const combined = `${name} ${description} ${features}`;
+  
+  // Define cuisine patterns
+  const cuisinePatterns = {
+    'Italian': ['italian', 'pizza', 'pasta', 'pizzeria', 'trattoria'],
+    'Mexican': ['mexican', 'taco', 'burrito', 'cantina', 'mexican food'],
+    'Asian': ['chinese', 'thai', 'japanese', 'sushi', 'korean', 'vietnamese', 'asian'],
+    'American': ['american', 'burger', 'grill', 'steakhouse', 'bbq', 'barbecue'],
+    'Indian': ['indian', 'curry', 'tandoor', 'indian food'],
+    'Mediterranean': ['mediterranean', 'greek', 'middle eastern', 'hummus'],
+    'French': ['french', 'bistro', 'brasserie', 'french food'],
+    'Cafe': ['cafe', 'coffee', 'espresso', 'latte', 'cappuccino'],
+    'Fast Food': ['fast food', 'quick service', 'drive thru', 'fast casual'],
+    'Bakery': ['bakery', 'pastry', 'bread', 'croissant', 'baked goods']
+  };
+  
+  for (const [cuisine, patterns] of Object.entries(cuisinePatterns)) {
+    if (patterns.some(pattern => combined.includes(pattern))) {
+      return cuisine;
+    }
+  }
+  
+  return 'Other';
+}
+
+function applyCuisineDiversity(businesses: Business[]): Business[] {
+  if (businesses.length <= 6) return businesses;
+  
+  const cuisineGroups: Record<string, Business[]> = {};
+  
+  // Group businesses by cuisine type
+  businesses.forEach(business => {
+    const cuisine = detectCuisineType(business);
+    if (!cuisineGroups[cuisine]) {
+      cuisineGroups[cuisine] = [];
+    }
+    cuisineGroups[cuisine].push(business);
+  });
+  
+  // Sort each cuisine group by distance (closest first)
+  Object.keys(cuisineGroups).forEach(cuisine => {
+    cuisineGroups[cuisine].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+  });
+  
+  const result: Business[] = [];
+  const maxPerCuisine = 2;
+  
+  // First pass: Take up to 2 from each cuisine type
+  Object.values(cuisineGroups).forEach(businesses => {
+    result.push(...businesses.slice(0, maxPerCuisine));
+  });
+  
+  // If we don't have enough, fill with remaining businesses sorted by distance
+  if (result.length < 6) {
+    const remaining = businesses
+      .filter(b => !result.some(r => r.name === b.name))
+      .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+    
+    result.push(...remaining.slice(0, 6 - result.length));
+  }
+  
+  // Sort final result by distance
+  return result
+    .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+    .slice(0, 6);
 }

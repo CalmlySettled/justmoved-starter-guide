@@ -80,10 +80,10 @@ const trendingCategories = [
   },
   { 
     name: "Food Scene", 
-    icon: "🍴", 
-    searchTerms: ["restaurant", "dining", "food truck", "eatery", "cuisine", "fine dining", "casual dining"],
-    color: "bg-red-500",
-    description: "Explore local dining and culinary experiences"
+    icon: "🍽️", 
+    searchTerms: ["restaurant", "dining", "food"],
+    color: "bg-orange-500",
+    description: "Discover dining experiences by time of day"
   },
   { 
     name: "Shopping", 
@@ -156,6 +156,27 @@ const PopularCategory = () => {
     barbershops: false,
     salons: false,
     spas: false
+  });
+
+  // New state for Food Scene tabs
+  const [foodSceneTab, setFoodSceneTab] = useState('morning');
+  const [foodSceneData, setFoodSceneData] = useState<{
+    morning: Business[];
+    afternoon: Business[];
+    evening: Business[];
+  }>({
+    morning: [],
+    afternoon: [],
+    evening: []
+  });
+  const [foodSceneLoading, setFoodSceneLoading] = useState<{
+    morning: boolean;
+    afternoon: boolean;
+    evening: boolean;
+  }>({
+    morning: false,
+    afternoon: false,
+    evening: false
   });
   
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
@@ -281,6 +302,9 @@ const PopularCategory = () => {
       if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Personal Care & Wellness') {
         // For Personal Care & Wellness, load the default tab (barbershops) immediately
         fetchSubcategoryData('barbershops');
+      } else if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Food Scene') {
+        // For Food Scene, load the default tab (morning) immediately
+        fetchFoodSceneData('morning');
       } else {
         // For other categories, use the existing flow
         fetchCategoryPlaces();
@@ -460,6 +484,96 @@ const PopularCategory = () => {
     }
   };
 
+  // Function to fetch Food Scene data by time period
+  const fetchFoodSceneData = async (timeOfDay: 'morning' | 'afternoon' | 'evening') => {
+    if (!location) return;
+
+    setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: true }));
+
+    try {
+      const searchTermsMap = {
+        morning: ['breakfast', 'brunch', 'coffee shop'],
+        afternoon: ['lunch', 'casual dining', 'quick service'],
+        evening: ['dinner', 'restaurant', 'fine dining']
+      };
+
+      const searchTerms = searchTermsMap[timeOfDay];
+
+      // Check cache first
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log(`Using cached data for ${timeOfDay} food scene`);
+        
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 6);
+
+          setFoodSceneData(prev => ({
+            ...prev,
+            [timeOfDay]: sortedResults
+          }));
+          
+          setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
+          return;
+        }
+      }
+
+      console.log(`No cache found, making fresh API call for ${timeOfDay} food scene`);
+      
+      // Make fresh API call with food scene mode
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: {
+          foodSceneMode: true,
+          timeOfDay: timeOfDay,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 6);
+
+        setFoodSceneData(prev => ({
+          ...prev,
+          [timeOfDay]: sortedResults
+        }));
+        
+        console.log(`Found ${sortedResults.length} ${timeOfDay} dining options from API`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${timeOfDay} food scene:`, error);
+    } finally {
+      setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
+    }
+  };
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     const subcategory = value as 'barbershops' | 'salons' | 'spas';
@@ -467,6 +581,16 @@ const PopularCategory = () => {
     // Only fetch if we don't have data for this subcategory yet
     if (subcategoryData[subcategory].length === 0 && !subcategoryLoading[subcategory]) {
       fetchSubcategoryData(subcategory);
+    }
+  };
+
+  const handleFoodSceneTabChange = (value: string) => {
+    setFoodSceneTab(value);
+    const timeOfDay = value as 'morning' | 'afternoon' | 'evening';
+    
+    // Only fetch if we don't have data for this time period yet
+    if (foodSceneData[timeOfDay].length === 0 && !foodSceneLoading[timeOfDay]) {
+      fetchFoodSceneData(timeOfDay);
     }
   };
 
@@ -923,7 +1047,268 @@ const PopularCategory = () => {
                           <p className="text-muted-foreground">Try the other tabs for more options.</p>
                         </div>
                       )}
-                </TabsContent>
+                 </TabsContent>
+            </Tabs>
+          ) : ('name' in categoryConfig && categoryConfig.name === "Food Scene") ? (
+            // Special tabbed layout for Food Scene
+            <Tabs defaultValue="morning" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8 h-auto py-2">
+                <TabsTrigger value="morning" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('morning')}>
+                  <span className="text-sm">🌅</span>
+                  <span className="hidden xs:inline">Morning</span>
+                  <span className="xs:hidden">AM</span>
+                </TabsTrigger>
+                <TabsTrigger value="afternoon" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('afternoon')}>
+                  <span className="text-sm">☀️</span>
+                  <span className="hidden xs:inline">Afternoon</span>
+                  <span className="xs:hidden">PM</span>
+                </TabsTrigger>
+                <TabsTrigger value="evening" className="flex items-center gap-1 text-xs sm:text-sm px-2 py-2 sm:px-3 sm:py-1.5" onClick={() => handleFoodSceneTabChange('evening')}>
+                  <span className="text-sm">🌙</span>
+                  <span className="hidden xs:inline">Evening</span>
+                  <span className="xs:hidden">Night</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="morning">
+                {foodSceneLoading.morning ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <Card key={i} className="overflow-hidden">
+                        <CardContent className="p-0">
+                          <Skeleton className="h-48 w-full" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : foodSceneData.morning.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.morning.map((business) => (
+                      <Card key={`morning-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                        <CardContent className="p-0">
+                          {business.image_url && (
+                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold">{business.name}</h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleFavorite(business)}
+                                disabled={favoritingBusinesses.has(business.name)}
+                                className="p-1 hover:bg-background/80"
+                              >
+                                <Star 
+                                  className={`h-4 w-4 transition-colors ${
+                                    favoriteBusinesses.has(business.name)
+                                      ? 'fill-current text-yellow-500' 
+                                      : 'text-muted-foreground hover:text-yellow-500'
+                                  }`} 
+                                />
+                              </Button>
+                            </div>
+                          
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">🌅</div>
+                    <h3 className="text-xl font-semibold mb-2">No breakfast spots found</h3>
+                    <p className="text-muted-foreground">Try the other tabs for lunch or dinner options.</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="afternoon">
+                {foodSceneLoading.afternoon ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <Card key={i} className="overflow-hidden">
+                        <CardContent className="p-0">
+                          <Skeleton className="h-48 w-full" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : foodSceneData.afternoon.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.afternoon.map((business) => (
+                      <Card key={`afternoon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                        <CardContent className="p-0">
+                          {business.image_url && (
+                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold">{business.name}</h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleFavorite(business)}
+                                disabled={favoritingBusinesses.has(business.name)}
+                                className="p-1 hover:bg-background/80"
+                              >
+                                <Star 
+                                  className={`h-4 w-4 transition-colors ${
+                                    favoriteBusinesses.has(business.name)
+                                      ? 'fill-current text-yellow-500' 
+                                      : 'text-muted-foreground hover:text-yellow-500'
+                                  }`} 
+                                />
+                              </Button>
+                            </div>
+                          
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">☀️</div>
+                    <h3 className="text-xl font-semibold mb-2">No lunch spots found</h3>
+                    <p className="text-muted-foreground">Try the other tabs for breakfast or dinner options.</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="evening">
+                {foodSceneLoading.evening ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <Card key={i} className="overflow-hidden">
+                        <CardContent className="p-0">
+                          <Skeleton className="h-48 w-full" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : foodSceneData.evening.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {foodSceneData.evening.map((business) => (
+                      <Card key={`evening-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
+                        <CardContent className="p-0">
+                          {business.image_url && (
+                            <div className="h-48 bg-muted rounded-t-lg overflow-hidden">
+                              <img 
+                                src={business.image_url} 
+                                alt={business.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold">{business.name}</h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleFavorite(business)}
+                                disabled={favoritingBusinesses.has(business.name)}
+                                className="p-1 hover:bg-background/80"
+                              >
+                                <Star 
+                                  className={`h-4 w-4 transition-colors ${
+                                    favoriteBusinesses.has(business.name)
+                                      ? 'fill-current text-yellow-500' 
+                                      : 'text-muted-foreground hover:text-yellow-500'
+                                  }`} 
+                                />
+                              </Button>
+                            </div>
+                          
+                            <div className="space-y-2">
+                              <a 
+                                href={getGoogleMapsUrl(business.address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                              >
+                                <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="line-clamp-1 hover:underline">{business.address}</span>
+                              </a>
+                              
+                              <div className="text-sm font-medium text-primary">
+                                {business.distance_miles?.toFixed(1)} miles away
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">🌙</div>
+                    <h3 className="text-xl font-semibold mb-2">No dinner spots found</h3>
+                    <p className="text-muted-foreground">Try the other tabs for breakfast or lunch options.</p>
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           ) : (
             // Regular layout for other categories
