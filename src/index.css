@@ -182,7 +182,8 @@ All colors MUST be HSL.
     scroll-snap-type: x mandatory;
   }
 
-  .scroll-fade-container::after {
+  /* Only show fade when content is actually scrollable */
+  .scroll-fade-container.has-overflow::after {
     content: '';
     position: absolute;
     top: 0;

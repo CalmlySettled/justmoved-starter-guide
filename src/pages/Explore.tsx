@@ -1,5 +1,5 @@
 import { useSmartToast } from "@/hooks/useSmartToast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,6 +103,28 @@ export default function Explore() {
   const { getCached, setCached, checkBackendCache } = useRequestCache();
   const { showFavoriteToast } = useSmartToast();
   const isMobile = useIsMobile();
+  const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Check overflow for all scroll containers
+  const checkScrollOverflow = () => {
+    scrollContainerRefs.current.forEach((el) => {
+      if (el) {
+        const hasOverflow = el.scrollWidth > el.clientWidth;
+        if (hasOverflow) {
+          el.classList.add('has-overflow');
+        } else {
+          el.classList.remove('has-overflow');
+        }
+      }
+    });
+  };
+
+  // Check overflow on window resize and content load
+  useEffect(() => {
+    checkScrollOverflow();
+    window.addEventListener('resize', checkScrollOverflow);
+    return () => window.removeEventListener('resize', checkScrollOverflow);
+  }, [themedPacks]);
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -818,9 +840,23 @@ export default function Explore() {
                          <p className={`text-center text-muted-foreground mb-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
                            Click a category below:
                          </p>
-                         {isMobile ? (
-                           <div className="relative">
-                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory">
+                          {isMobile ? (
+                            <div className="relative">
+                              <div 
+                                ref={(el) => {
+                                  scrollContainerRefs.current[themedPacks.indexOf(pack)] = el;
+                                  // Check for overflow and apply class
+                                  if (el) {
+                                    const hasOverflow = el.scrollWidth > el.clientWidth;
+                                    if (hasOverflow) {
+                                      el.classList.add('has-overflow');
+                                    } else {
+                                      el.classList.remove('has-overflow');
+                                    }
+                                  }
+                                }}
+                                className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory"
+                              >
                                {pack.categories.map((category, index) => (
                                  <Badge 
                                    key={index} 
