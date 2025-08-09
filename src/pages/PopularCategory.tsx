@@ -137,6 +137,27 @@ const PopularCategory = () => {
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
   
+  // New state for Personal Care & Wellness tabs
+  const [activeTab, setActiveTab] = useState('barbershops');
+  const [subcategoryData, setSubcategoryData] = useState<{
+    barbershops: Business[];
+    salons: Business[];
+    spas: Business[];
+  }>({
+    barbershops: [],
+    salons: [],
+    spas: []
+  });
+  const [subcategoryLoading, setSubcategoryLoading] = useState<{
+    barbershops: boolean;
+    salons: boolean;
+    spas: boolean;
+  }>({
+    barbershops: false,
+    salons: false,
+    spas: false
+  });
+  
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const { showFavoriteToast } = useSmartToast();
 
@@ -257,7 +278,13 @@ const PopularCategory = () => {
 
   useEffect(() => {
     if (location && categoryConfig) {
-      fetchCategoryPlaces();
+      if (categoryConfig && 'name' in categoryConfig && categoryConfig.name === 'Personal Care & Wellness') {
+        // For Personal Care & Wellness, load the default tab (barbershops) immediately
+        fetchSubcategoryData('barbershops');
+      } else {
+        // For other categories, use the existing flow
+        fetchCategoryPlaces();
+      }
     }
   }, [location, categoryConfig]);
 
@@ -342,6 +369,105 @@ const PopularCategory = () => {
 
   const getGoogleMapsUrl = (address: string) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  };
+
+  // New function to fetch subcategory data individually for Personal Care & Wellness
+  const fetchSubcategoryData = async (subcategory: 'barbershops' | 'salons' | 'spas') => {
+    if (!location) return;
+
+    setSubcategoryLoading(prev => ({ ...prev, [subcategory]: true }));
+
+    try {
+      const searchTermsMap = {
+        barbershops: ['barbershop', 'barber', "men's haircut"],
+        salons: ['hair salon', 'beauty salon', 'nail salon'],
+        spas: ['spa', 'massage', 'wellness center']
+      };
+
+      const searchTerms = searchTermsMap[subcategory];
+
+      // Check cache first
+      const { data: cachedData, error: cacheError } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, expires_at')
+        .gte('expires_at', new Date().toISOString())
+        .overlaps('categories', searchTerms)
+        .limit(1)
+        .single();
+
+      if (!cacheError && cachedData?.recommendations) {
+        console.log(`Using cached data for ${subcategory}`);
+        
+        const allResults: Business[] = [];
+        const cachedRecs = cachedData.recommendations as any;
+        
+        searchTerms.forEach(term => {
+          if (cachedRecs[term]) {
+            allResults.push(...cachedRecs[term]);
+          }
+        });
+
+        if (allResults.length > 0) {
+          const sortedResults = allResults
+            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+            .slice(0, 4);
+
+          setSubcategoryData(prev => ({
+            ...prev,
+            [subcategory]: sortedResults
+          }));
+          
+          setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
+          return;
+        }
+      }
+
+      console.log(`No cache found, making fresh API call for ${subcategory}`);
+      
+      // Make fresh API call with distance-only scoring
+      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+        body: {
+          personalCareMode: true,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        const allResults: Business[] = [];
+        Object.values(data.recommendations).forEach((businesses: Business[]) => {
+          allResults.push(...businesses);
+        });
+        
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 4);
+
+        setSubcategoryData(prev => ({
+          ...prev,
+          [subcategory]: sortedResults
+        }));
+        
+        console.log(`Found ${sortedResults.length} ${subcategory} from API`);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${subcategory}:`, error);
+    } finally {
+      setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const subcategory = value as 'barbershops' | 'salons' | 'spas';
+    
+    // Only fetch if we don't have data for this subcategory yet
+    if (subcategoryData[subcategory].length === 0 && !subcategoryLoading[subcategory]) {
+      fetchSubcategoryData(subcategory);
+    }
   };
 
   const categorizeBusinesses = (businesses: Business[]) => {
@@ -542,23 +668,19 @@ const PopularCategory = () => {
             // Special tabbed layout for Personal Care & Wellness
             <Tabs defaultValue="barbershops" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8">
-                <TabsTrigger value="barbershops" className="flex items-center gap-2">
+                <TabsTrigger value="barbershops" className="flex items-center gap-2" onClick={() => handleTabChange('barbershops')}>
                   💇‍♂️ Barbershops
                 </TabsTrigger>
-                <TabsTrigger value="salons" className="flex items-center gap-2">
+                <TabsTrigger value="salons" className="flex items-center gap-2" onClick={() => handleTabChange('salons')}>
                   💅 Salons & Beauty
                 </TabsTrigger>
-                <TabsTrigger value="spas" className="flex items-center gap-2">
+                <TabsTrigger value="spas" className="flex items-center gap-2" onClick={() => handleTabChange('spas')}>
                   🧘 Spa & Wellness
                 </TabsTrigger>
               </TabsList>
               
-              {(() => {
-                const categorized = categorizeBusinesses(businesses);
-                return (
-                  <>
-                    <TabsContent value="barbershops">
-                      {loading ? (
+              <TabsContent value="barbershops">
+                {subcategoryLoading.barbershops ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                           {[...Array(4)].map((_, i) => (
                             <Card key={i} className="overflow-hidden">
@@ -573,9 +695,9 @@ const PopularCategory = () => {
                             </Card>
                           ))}
                         </div>
-                      ) : categorized.barbershops.length > 0 ? (
+                      ) : subcategoryData.barbershops.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                          {categorized.barbershops.slice(0, 4).map((business) => (
+                          {subcategoryData.barbershops.map((business) => (
                             <Card key={`barbershop-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                               <CardContent className="p-0">
                                 {business.image_url && (
@@ -638,7 +760,7 @@ const PopularCategory = () => {
                     </TabsContent>
 
                     <TabsContent value="salons">
-                      {loading ? (
+                      {subcategoryLoading.salons ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                           {[...Array(4)].map((_, i) => (
                             <Card key={i} className="overflow-hidden">
@@ -653,9 +775,9 @@ const PopularCategory = () => {
                             </Card>
                           ))}
                         </div>
-                      ) : categorized.salons.length > 0 ? (
+                      ) : subcategoryData.salons.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                          {categorized.salons.slice(0, 4).map((business) => (
+                          {subcategoryData.salons.map((business) => (
                             <Card key={`salon-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                               <CardContent className="p-0">
                                 {business.image_url && (
@@ -718,7 +840,7 @@ const PopularCategory = () => {
                     </TabsContent>
 
                     <TabsContent value="spas">
-                      {loading ? (
+                      {subcategoryLoading.spas ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                           {[...Array(4)].map((_, i) => (
                             <Card key={i} className="overflow-hidden">
@@ -733,9 +855,9 @@ const PopularCategory = () => {
                             </Card>
                           ))}
                         </div>
-                      ) : categorized.spas.length > 0 ? (
+                      ) : subcategoryData.spas.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                          {categorized.spas.slice(0, 4).map((business) => (
+                          {subcategoryData.spas.map((business) => (
                             <Card key={`spa-${business.name}`} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                               <CardContent className="p-0">
                                 {business.image_url && (
@@ -795,10 +917,7 @@ const PopularCategory = () => {
                           <p className="text-muted-foreground">Try the other tabs for more options.</p>
                         </div>
                       )}
-                    </TabsContent>
-                  </>
-                );
-              })()}
+                </TabsContent>
             </Tabs>
           ) : (
             // Regular layout for other categories

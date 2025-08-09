@@ -1978,7 +1978,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
-    const { quizResponse, dynamicFilter, exploreMode, popularMode, latitude, longitude, categories, userId } = requestBody;
+    const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, latitude, longitude, categories, userId } = requestBody;
     
     // Handle explore mode requests with caching (distance-based sorting)
     if (exploreMode) {
@@ -2057,6 +2057,80 @@ serve(async (req) => {
       });
     }
     
+    // Handle personal care mode requests with distance-only scoring
+    if (personalCareMode) {
+      if (!latitude || !longitude || !categories) {
+        return new Response(JSON.stringify({ error: 'Personal care mode requires latitude, longitude, and categories' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const coordinates = { lat: latitude, lng: longitude };
+      
+      // Create cache key for personal care requests based on location and categories
+      const cacheKey = `personalcare_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;
+      
+      // Check for cached personal care results (7 day cache)
+      const { data: cachedData } = await supabase
+        .from('recommendations_cache')
+        .select('recommendations, created_at')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (cachedData) {
+        console.log('✅ Returning cached personal care recommendations (7-day cache)');
+        trackAPIUsage('cache', categories.length);
+        return new Response(
+          JSON.stringify({ 
+            recommendations: cachedData.recommendations,
+            fromCache: true 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      const recommendations: { [key: string]: Business[] } = {};
+      const globalSeenBusinesses = new Set();
+      
+      for (const category of categories) {
+        console.log(`Finding distance-based businesses for personal care category: "${category}"`);
+        const businesses = await searchBusinesses(category, coordinates, undefined, true); // true = distance-based sorting
+        
+        // Filter out businesses we've already seen globally
+        const uniqueBusinesses = businesses.filter(business => {
+          const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
+          if (globalSeenBusinesses.has(businessKey)) {
+            console.log(`→ Skipping duplicate business across categories: ${business.name}`);
+            return false;
+          }
+          globalSeenBusinesses.add(businessKey);
+          return true;
+        });
+        
+        recommendations[category] = uniqueBusinesses.slice(0, 4); // Limit to 4 per category
+        console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication, showing top 4`);
+      }
+
+      // Cache personal care results for 7 days
+      await supabase
+        .from('recommendations_cache')
+        .insert({
+          cache_key: cacheKey,
+          user_coordinates: `(${coordinates.lat}, ${coordinates.lng})`,
+          categories: categories,
+          recommendations: recommendations,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        });
+      
+      return new Response(JSON.stringify({ recommendations }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Handle popular mode requests with caching (rating-based sorting)
     if (popularMode) {
       if (!latitude || !longitude || !categories) {
