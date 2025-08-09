@@ -42,13 +42,25 @@ export default function Auth() {
       if (session) {
         const urlParams = new URLSearchParams(window.location.search);
         const redirect = urlParams.get('redirect');
+        const oauth = urlParams.get('oauth');
+        const focus = urlParams.get('focus');
         
-        // Redirect based on the context they came from
+        // Build redirect URL with preserved parameters
+        let redirectUrl = "/explore"; // Default
         if (redirect === 'popular') {
-          navigate("/popular");
-        } else {
-          navigate("/explore"); // Default to explore for all other cases
+          redirectUrl = "/popular";
         }
+        
+        // Preserve OAuth and focus parameters for proper mobile flow
+        const params = new URLSearchParams();
+        if (oauth) params.set('oauth', oauth);
+        if (focus) params.set('focus', focus);
+        if (redirect) params.set('redirect', redirect);
+        
+        const queryString = params.toString();
+        const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
+        
+        navigate(finalUrl);
       }
     };
     checkUser();
@@ -62,13 +74,26 @@ export default function Auth() {
           console.log('🟡 AUTH - Session detected, checking redirect...');
           const urlParams = new URLSearchParams(window.location.search);
           const redirect = urlParams.get('redirect');
+          const oauth = urlParams.get('oauth');
+          const focus = urlParams.get('focus');
           
-          // Redirect based on the context they came from
+          // Build redirect URL with preserved parameters
+          let redirectUrl = "/explore"; // Default
           if (redirect === 'popular') {
-            navigate("/popular");
-          } else {
-            navigate("/explore"); // Default to explore for all other cases
+            redirectUrl = "/popular";
           }
+          
+          // Preserve OAuth and focus parameters for proper mobile flow
+          const params = new URLSearchParams();
+          if (oauth) params.set('oauth', oauth);
+          if (focus) params.set('focus', focus);
+          if (redirect) params.set('redirect', redirect);
+          
+          const queryString = params.toString();
+          const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
+          
+          console.log('🟡 AUTH - Redirecting to:', finalUrl);
+          navigate(finalUrl);
         }
       }
     );
