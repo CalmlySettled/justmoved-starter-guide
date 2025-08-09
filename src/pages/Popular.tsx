@@ -218,55 +218,8 @@ const Popular = () => {
         console.error('Error loading saved location:', error);
       }
       
-      // If no saved location, try to get current location (only for authenticated users)
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            // Check if user is still authenticated before setting location
-            if (!user) return;
-            
-            try {
-              // Reverse geocode to get city name
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`,
-                {
-                  headers: {
-                    'User-Agent': 'CalmlySettled/1.0'
-                  }
-                }
-              );
-
-              if (response.ok) {
-                const data = await response.json();
-                const city = data.address?.city || data.address?.town || data.address?.village || 'Your Location';
-                
-                // Check again after async operation in case user signed out
-                if (!user) return;
-                
-                setLocation({
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-                  city
-                });
-              }
-            } catch (error) {
-              console.error('Error reverse geocoding:', error);
-              // Check if user is still authenticated before setting fallback location
-              if (!user) return;
-              
-              setLocation({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                city: 'Your Location'
-              });
-            }
-          },
-          (error) => {
-            console.error('Error getting location:', error);
-            // No need to set location on error - user will see location sharing prompt
-          }
-        );
-      }
+      // Security: Do not use browser geolocation as fallback
+      // User must have saved address in profile to access location-based features
     };
 
     loadLocation();
@@ -417,7 +370,7 @@ const Popular = () => {
                   ))}
                 </div>
                 <Button 
-                  onClick={() => window.location.href = '/auth?mode=signup&redirect=popular'}
+                  onClick={() => window.location.href = '/auth?mode=signup&redirect=explore'}
                   size="lg"
                   className="mt-6 bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all"
                 >
