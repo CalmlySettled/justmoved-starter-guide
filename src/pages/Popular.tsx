@@ -43,11 +43,11 @@ interface PopularRecommendations {
 
 const trendingCategories = [
   { 
-    name: "Coffee & Cafes", 
-    icon: "☕", 
-    searchTerms: ["coffee shop", "cafe", "specialty coffee"],
+    name: "Drink Time", 
+    icon: "☕🍺", 
+    searchTerms: ["coffee shop", "cafe", "specialty coffee", "brewery", "brewpub", "craft beer", "happy hour", "bar"],
     color: "bg-amber-500",
-    description: "Discover the local coffee culture"
+    description: "Coffee culture and local brews"
   },
   { 
     name: "Food Time", 
@@ -55,13 +55,6 @@ const trendingCategories = [
     searchTerms: ["restaurant", "dining", "food truck", "bistro"],
     color: "bg-red-500",
     description: "Savor the local dining experiences"
-  },
-  { 
-    name: "Happy Hours & Breweries", 
-    icon: "🍺", 
-    searchTerms: ["brewery", "brewpub", "craft beer", "happy hour", "bar"],
-    color: "bg-orange-500",
-    description: "Local brews and after-work spots"
   },
   { 
     name: "Shopping", 
