@@ -105,8 +105,10 @@ export default function Explore() {
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
   
-  // Get URL params for OAuth and focus handling
+  // Get URL params for OAuth, focus handling, and property manager customization
   const urlParams = new URLSearchParams(window.location.search);
+  const propertyName = urlParams.get('property');
+  const propertyAddress = urlParams.get('address');
 
   // Check if there's more content to scroll to the right
   const checkScrollState = (el: HTMLDivElement) => {
@@ -156,9 +158,47 @@ export default function Explore() {
     return `https://www.google.com/maps/search/?api=1&query=${query}`;
   };
 
-  // Load user's profile address on mount
+  // Load user's profile address on mount or from URL params
   useEffect(() => {
     const loadUserLocation = async () => {
+      // Check for property manager URL parameters first
+      if (propertyAddress) {
+        console.log('Property manager address from URL:', propertyAddress);
+        setIsProcessingSavedAddress(true);
+        
+        try {
+          // Geocode the property address
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(propertyAddress)}&countrycodes=us`,
+            {
+              headers: {
+                'User-Agent': 'CalmlySettled/1.0'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.length > 0) {
+              const locationData: LocationData = {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+                city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || propertyAddress.split(',')[0],
+                state: data[0].address?.state || data[0].address?.['ISO3166-2-lvl4']?.split('-')[1],
+              };
+
+              setLocation(locationData);
+            }
+          }
+        } catch (error) {
+          console.error('Error geocoding property address:', error);
+        } finally {
+          setIsProcessingSavedAddress(false);
+          setIsLoadingProfile(false);
+        }
+        return;
+      }
+
       if (!user) {
         setIsLoadingProfile(false);
         return;
@@ -276,7 +316,7 @@ export default function Explore() {
 
     loadUserLocation();
     loadFavorites();
-  }, [user]);
+  }, [user, propertyAddress]);
 
   // Get user's current location
   const getCurrentLocation = async () => {
@@ -750,7 +790,7 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen bg-gradient-page">
-      <Header />
+      <Header propertyName={propertyName} />
       
       
       <main className="pt-24 pb-16">

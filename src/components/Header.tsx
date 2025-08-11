@@ -15,7 +15,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
 
-export function Header() {
+interface HeaderProps {
+  propertyName?: string | null;
+}
+
+export function Header({ propertyName }: HeaderProps = {}) {
   const { user, signOut } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminAuth();
   const isMobile = useIsMobile();
@@ -47,7 +51,14 @@ export function Header() {
           <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
             <Home className="h-6 w-6 text-white" />
           </div>
-          <span className="text-xl sm:text-2xl font-bold text-foreground">CalmlySettled</span>
+          <div className="flex flex-col">
+            <span className="text-xl sm:text-2xl font-bold text-foreground">CalmlySettled</span>
+            {propertyName && (
+              <span className="text-sm text-muted-foreground font-medium">
+                {propertyName}
+              </span>
+            )}
+          </div>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-8">

@@ -26,6 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Sitemap from "./pages/Sitemap";
 import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
+import PropertyManager from "./pages/PropertyManager";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -45,6 +46,7 @@ const AppContent = () => {
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/events" element={<Events />} />
+            <Route path="/property-manager" element={<PropertyManager />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
