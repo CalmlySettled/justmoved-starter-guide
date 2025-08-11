@@ -90,20 +90,58 @@ serve(async (req) => {
     }
 
     // Try fuzzy geographic matching within region
-    const latRange = 0.01; // ~1km range
-    const lngRange = 0.01;
+    const latRange = 0.02; // Use same precision as rounding for consistency
+    const lngRange = 0.02;
+    
+    // Generate geographic pattern for cache key matching
+    const minLat = roundedCoords.lat - latRange;
+    const maxLat = roundedCoords.lat + latRange;
+    const minLng = roundedCoords.lng - lngRange;
+    const maxLng = roundedCoords.lng + lngRange;
+    
+    console.log(`🔍 GEOGRAPHIC FUZZY SEARCH:`, {
+      center: roundedCoords,
+      bounds: { minLat, maxLat, minLng, maxLng },
+      searchPattern: `explore_${roundedCoords.lat.toFixed(2)}_${roundedCoords.lng.toFixed(2)}`
+    });
     
     const { data: fuzzyMatches, error: fuzzyError } = await supabase
       .from('recommendations_cache')
       .select('recommendations, cache_key, created_at, expires_at')
       .overlaps('categories', categories)
+      .like('cache_key', `%explore_%`) // Only explore cache entries
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10); // Get more candidates for geographic filtering
 
     if (fuzzyMatches && fuzzyMatches.length > 0 && !fuzzyError) {
-      // Find the best geographic match
+      // Filter by geographic proximity
       for (const match of fuzzyMatches) {
+        // Extract coordinates from cache key (format: v1.0.0-explore_41.86_-72.76_category)
+        const keyMatch = match.cache_key.match(/explore_([-\d.]+)_([-\d.]+)_/);
+        if (!keyMatch) {
+          console.log(`⚠️ INVALID CACHE KEY FORMAT:`, match.cache_key);
+          continue;
+        }
+        
+        const cacheLat = parseFloat(keyMatch[1]);
+        const cacheLng = parseFloat(keyMatch[2]);
+        
+        // Check if cache coordinates are within geographic bounds
+        const isWithinBounds = 
+          cacheLat >= minLat && cacheLat <= maxLat &&
+          cacheLng >= minLng && cacheLng <= maxLng;
+          
+        if (!isWithinBounds) {
+          console.log(`🚫 CACHE OUTSIDE GEOGRAPHIC BOUNDS:`, {
+            cacheCoords: { lat: cacheLat, lng: cacheLng },
+            requestCoords: roundedCoords,
+            bounds: { minLat, maxLat, minLng, maxLng },
+            cacheKey: match.cache_key.substring(0, 50) + '...'
+          });
+          continue;
+        }
+        
         const results: any = {};
         let hasResults = false;
         
@@ -117,6 +155,8 @@ serve(async (req) => {
         if (hasResults) {
           console.log(`💰 BACKEND FUZZY CACHE HIT!`, {
             cacheKey: match.cache_key.substring(0, 50) + '...',
+            cacheCoords: { lat: cacheLat, lng: cacheLng },
+            requestCoords: roundedCoords,
             foundCategories: Object.keys(results),
             cacheAgeHours: Math.floor((new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60))
           });
