@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useRequestCache } from "./useRequestCache";
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [authRetryAttempts, setAuthRetryAttempts] = useState(0);
+  const { clearUserCache, setCurrentUserId } = useRequestCache();
 
   // Detect mobile devices
   useEffect(() => {
@@ -46,8 +48,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Clear any pending retries
         if (retryTimeout) clearTimeout(retryTimeout);
         
+        // Handle user authentication changes
+        const newUser = session?.user ?? null;
+        const previousUserId = user?.id;
+        const newUserId = newUser?.id;
+        
+        // Clear cache if user changed (sign in/out or user switch)
+        if (previousUserId !== newUserId) {
+          console.log('🔄 USER CHANGED: Clearing frontend cache', { 
+            previousUserId, 
+            newUserId, 
+            event 
+          });
+          clearUserCache(previousUserId);
+          setCurrentUserId(newUserId);
+        }
+        
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(newUser);
         
         // Simplified loading state management for all devices
         setLoading(false);
@@ -95,9 +113,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Sign out initiated...');
       
+      // Clear user-specific cache before signing out
+      const currentUserId = user?.id;
+      if (currentUserId) {
+        console.log('🧹 Clearing user cache on sign out:', currentUserId);
+        clearUserCache(currentUserId);
+      }
+      
       // Explicitly clear local state first
       setUser(null);
       setSession(null);
+      setCurrentUserId(null);
       
       // Sign out with 'local' scope to clear all local session data
       const { error } = await supabase.auth.signOut({ scope: 'local' });
@@ -111,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if server sign out fails, clear local state
       setUser(null);
       setSession(null);
+      setCurrentUserId(null);
     }
   };
 

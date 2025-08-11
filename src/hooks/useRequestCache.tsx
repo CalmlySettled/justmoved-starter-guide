@@ -12,6 +12,7 @@ class RequestCacheManager {
   private cache: Map<string, CacheEntry> = new Map();
   private readonly DEFAULT_TTL = 1800000; // 30 minutes
   private readonly CLEANUP_INTERVAL = 600000; // 10 minutes
+  private currentUserId: string | null = null;
 
   static getInstance(): RequestCacheManager {
     if (!RequestCacheManager.instance) {
@@ -37,17 +38,29 @@ class RequestCacheManager {
     const baseKey = `${type}-${JSON.stringify(params)}`;
     const versionedKey = getVersionedCacheKey(baseKey);
     
-    console.log(`🔑 VERSIONED CACHE KEY GENERATED:`, {
+    // Add user context for authenticated users to prevent cross-contamination
+    const userAwareKey = this.currentUserId 
+      ? `user:${this.currentUserId}:${versionedKey}`
+      : `anon:${versionedKey}`;
+    
+    console.log(`🔑 USER-AWARE CACHE KEY GENERATED:`, {
       type,
       version: APP_VERSION,
+      userId: this.currentUserId,
       originalParams: arguments[1], // Keep original params for debugging
       normalizedParams: params,
       baseKey,
       versionedKey,
-      keyLength: versionedKey.length
+      userAwareKey,
+      keyLength: userAwareKey.length
     });
     
-    return versionedKey;
+    return userAwareKey;
+  }
+
+  setCurrentUserId(userId: string | null): void {
+    this.currentUserId = userId;
+    console.log(`👤 CURRENT USER SET:`, { userId });
   }
 
   get(type: string, params: any): any | null {
@@ -129,6 +142,25 @@ class RequestCacheManager {
     console.log(`🧹 OLD VERSION CACHE CLEARED: ${keysToDelete.length} entries removed`);
   }
 
+  // Clear cache for a specific user
+  clearUserCache(userId: string | null): void {
+    const userPrefix = userId ? `user:${userId}:` : 'anon:';
+    const keysToDelete: string[] = [];
+    
+    for (const [key] of this.cache.entries()) {
+      if (key.startsWith(userPrefix)) {
+        keysToDelete.push(key);
+      }
+    }
+    
+    keysToDelete.forEach(key => this.cache.delete(key));
+    console.log(`🧹 USER CACHE CLEARED:`, { 
+      userId, 
+      entriesRemoved: keysToDelete.length,
+      totalCacheSize: this.cache.size 
+    });
+  }
+
   getStats(): { size: number; keys: string[] } {
     return {
       size: this.cache.size,
@@ -206,5 +238,13 @@ export function useRequestCache() {
     cacheManager.current.clearOldVersions();
   }, []);
 
-  return { getCached, setCached, clearCache, getCacheStats, checkBackendCache, clearOldVersions };
+  const clearUserCache = useCallback((userId: string | null) => {
+    cacheManager.current.clearUserCache(userId);
+  }, []);
+
+  const setCurrentUserId = useCallback((userId: string | null) => {
+    cacheManager.current.setCurrentUserId(userId);
+  }, []);
+
+  return { getCached, setCached, clearCache, getCacheStats, checkBackendCache, clearOldVersions, clearUserCache, setCurrentUserId };
 }
