@@ -119,6 +119,7 @@ interface Business {
   website?: string;
   latitude?: number;
   longitude?: number;
+  place_id?: string;
   distance_miles?: number;
   image_url?: string;
   rating?: number;
@@ -354,7 +355,8 @@ function convertYelpToBusiness(yelpBusiness: any, userLat: number, userLng: numb
     distance_miles: distance,
     image_url: yelpBusiness.image_url || '',
     rating: yelpBusiness.rating,
-    review_count: yelpBusiness.review_count
+    review_count: yelpBusiness.review_count,
+    place_id: undefined // Yelp doesn't provide Google Places IDs
   };
 }
 
@@ -1060,7 +1062,8 @@ async function searchGooglePlaces(
           website: website,
           image_url: imageUrl || staticMapUrl, // Use static map as fallback
           rating: place.rating || 0,
-          review_count: place.user_ratings_total || 0
+          review_count: place.user_ratings_total || 0,
+          place_id: place.place_id
         };
       })
     );
@@ -3086,6 +3089,7 @@ async function saveRecommendationsToDatabase(userId: string, recommendations: { 
           distance_miles: business.distance_miles,
           business_features: business.features,
           business_image: business.image_url,
+          place_id: business.place_id,
           is_favorite: false,
           relevance_score: relevanceScore,
           is_displayed: index < 6, // Only first 6 are displayed by default

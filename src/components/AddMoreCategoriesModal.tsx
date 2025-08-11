@@ -149,7 +149,8 @@ export function AddMoreCategoriesModal({ userProfile, onNewRecommendations }: Ad
               business_features: business.features || [],
               distance_miles: business.distance_miles,
               business_latitude: business.latitude,
-              business_longitude: business.longitude
+              business_longitude: business.longitude,
+              place_id: business.place_id
             });
           });
         });

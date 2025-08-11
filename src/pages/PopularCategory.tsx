@@ -846,6 +846,7 @@ const PopularCategory = () => {
             business_latitude: business.latitude,
             business_longitude: business.longitude,
             distance_miles: business.distance_miles,
+            place_id: business.place_id,
             is_favorite: true
           });
 

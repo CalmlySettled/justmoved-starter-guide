@@ -310,6 +310,7 @@ export type Database = {
           interaction_count: number | null
           is_displayed: boolean | null
           is_favorite: boolean
+          place_id: string | null
           recommendation_engine: string | null
           relevance_score: number | null
           updated_at: string
@@ -334,6 +335,7 @@ export type Database = {
           interaction_count?: number | null
           is_displayed?: boolean | null
           is_favorite?: boolean
+          place_id?: string | null
           recommendation_engine?: string | null
           relevance_score?: number | null
           updated_at?: string
@@ -358,6 +360,7 @@ export type Database = {
           interaction_count?: number | null
           is_displayed?: boolean | null
           is_favorite?: boolean
+          place_id?: string | null
           recommendation_engine?: string | null
           relevance_score?: number | null
           updated_at?: string

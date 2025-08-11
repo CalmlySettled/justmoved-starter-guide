@@ -37,6 +37,7 @@ interface Business {
   latitude: number;
   longitude: number;
   distance_miles: number;
+  place_id?: string;
 }
 
 interface ExploreRecommendations {
@@ -764,6 +765,7 @@ export default function Explore() {
             business_latitude: business.latitude,
             business_longitude: business.longitude,
             distance_miles: business.distance_miles,
+            place_id: business.place_id,
             is_favorite: true
           });
 
