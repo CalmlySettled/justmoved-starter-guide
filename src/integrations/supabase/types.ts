@@ -436,7 +436,7 @@ export type Database = {
       }
     }
     Views: {
-      business_cache_public: {
+      business_cache_public_safe: {
         Row: {
           address: string | null
           business_name: string | null
@@ -453,7 +453,6 @@ export type Database = {
           place_id: string | null
           rating: number | null
           updated_at: string | null
-          website: string | null
         }
         Insert: {
           address?: string | null
@@ -471,7 +470,6 @@ export type Database = {
           place_id?: string | null
           rating?: number | null
           updated_at?: string | null
-          website?: string | null
         }
         Update: {
           address?: string | null
@@ -489,7 +487,6 @@ export type Database = {
           place_id?: string | null
           rating?: number | null
           updated_at?: string | null
-          website?: string | null
         }
         Relationships: []
       }
