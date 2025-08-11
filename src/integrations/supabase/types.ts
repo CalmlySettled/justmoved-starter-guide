@@ -436,7 +436,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      business_cache_public: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          business_status: string | null
+          created_at: string | null
+          expires_at: string | null
+          features: string[] | null
+          id: string | null
+          latitude: number | null
+          location: unknown | null
+          longitude: number | null
+          opening_hours: Json | null
+          photo_url: string | null
+          place_id: string | null
+          rating: number | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          business_status?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          features?: string[] | null
+          id?: string | null
+          latitude?: number | null
+          location?: unknown | null
+          longitude?: number | null
+          opening_hours?: Json | null
+          photo_url?: string | null
+          place_id?: string | null
+          rating?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          business_status?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          features?: string[] | null
+          id?: string | null
+          latitude?: number | null
+          location?: unknown | null
+          longitude?: number | null
+          opening_hours?: Json | null
+          photo_url?: string | null
+          place_id?: string | null
+          rating?: number | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       aggregate_daily_analytics: {
