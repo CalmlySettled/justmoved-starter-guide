@@ -104,22 +104,65 @@ export type Database = {
         }
         Relationships: []
       }
+      micro_survey_questions: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          options: Json | null
+          priority: number | null
+          question_key: string
+          question_text: string
+          question_type: string
+          trigger_conditions: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          options?: Json | null
+          priority?: number | null
+          question_key: string
+          question_text: string
+          question_type?: string
+          trigger_conditions?: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          options?: Json | null
+          priority?: number | null
+          question_key?: string
+          question_text?: string
+          question_type?: string
+          trigger_conditions?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
           avatar_url: string | null
+          behavioral_triggers: Json | null
           budget_preference: string | null
           created_at: string
           display_name: string | null
           distance_priority: boolean | null
           household_type: string | null
           id: string
+          last_survey_shown_at: string | null
           latitude: number | null
           life_stage: string | null
           longitude: number | null
+          micro_survey_responses: Json | null
           priorities: string[] | null
           priority_preferences: Json | null
           settling_tasks: string[] | null
+          total_surveys_completed: number | null
           transportation_style: string | null
           updated_at: string
           user_id: string
@@ -127,18 +170,22 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          behavioral_triggers?: Json | null
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
           distance_priority?: boolean | null
           household_type?: string | null
           id?: string
+          last_survey_shown_at?: string | null
           latitude?: number | null
           life_stage?: string | null
           longitude?: number | null
+          micro_survey_responses?: Json | null
           priorities?: string[] | null
           priority_preferences?: Json | null
           settling_tasks?: string[] | null
+          total_surveys_completed?: number | null
           transportation_style?: string | null
           updated_at?: string
           user_id: string
@@ -146,18 +193,22 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          behavioral_triggers?: Json | null
           budget_preference?: string | null
           created_at?: string
           display_name?: string | null
           distance_priority?: boolean | null
           household_type?: string | null
           id?: string
+          last_survey_shown_at?: string | null
           latitude?: number | null
           life_stage?: string | null
           longitude?: number | null
+          micro_survey_responses?: Json | null
           priorities?: string[] | null
           priority_preferences?: Json | null
           settling_tasks?: string[] | null
+          total_surveys_completed?: number | null
           transportation_style?: string | null
           updated_at?: string
           user_id?: string
