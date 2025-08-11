@@ -174,6 +174,7 @@ export type Database = {
           preferences: Json
           recommendations: Json
           user_coordinates: unknown
+          user_id: string | null
         }
         Insert: {
           cache_key: string
@@ -184,6 +185,7 @@ export type Database = {
           preferences?: Json
           recommendations: Json
           user_coordinates: unknown
+          user_id?: string | null
         }
         Update: {
           cache_key?: string
@@ -194,6 +196,7 @@ export type Database = {
           preferences?: Json
           recommendations?: Json
           user_coordinates?: unknown
+          user_id?: string | null
         }
         Relationships: []
       }
