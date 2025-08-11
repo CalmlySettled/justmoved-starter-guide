@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { MapPin, Star, ExternalLink, Loader2, Navigation } from 'lucide-react';
 import { useBusinessDetails } from '@/hooks/useBusinessDetails';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMicroSurveyContext } from './MicroSurveyProvider';
 
 interface BusinessCardData {
   name: string;
@@ -42,6 +43,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const [businessWebsites, setBusinessWebsites] = useState<Record<string, string>>({});
   const { trackDirectionsClick, trackWebsiteRequest, trackWebsiteVisit, trackFavoriteAction } = useAnalytics();
+  const { triggerSurveyCheck } = useMicroSurveyContext();
 
   // Helper function to create Google Maps search URL
   const getGoogleMapsDirectionsUrl = (address: string, businessName: string) => {
@@ -70,6 +72,14 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const handleBusinessNameClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const websiteUrl = business.website || businessWebsites[business.place_id!];
+    
+    // Track click and trigger survey check
+    triggerSurveyCheck('recommendation_click', {
+      businessName: business.name,
+      category: business.category || 'general',
+      source: 'business_name_click'
+    });
+    
     if (websiteUrl) {
       handleWebsiteVisit(websiteUrl);
     } else if (business.place_id && !loadingStates[business.place_id]) {
@@ -137,6 +147,11 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const handleDirectionsClick = () => {
     if (business.address) {
       trackDirectionsClick(business.name, business.address, business.category);
+      triggerSurveyCheck('directions_clicked', { 
+        businessName: business.name, 
+        address: business.address,
+        category: business.category 
+      });
     }
   };
 
@@ -150,6 +165,13 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const handleFavoriteToggle = () => {
     const action = isFavorited ? 'removed' : 'added';
     trackFavoriteAction(business.name, business.category || 'general', action);
+    
+    // Trigger micro-survey after favorite action
+    triggerSurveyCheck(`favorite_${action}`, {
+      businessName: business.name,
+      category: business.category,
+      action
+    });
     
     if (variant === 'favorites' && onRemoveFavorite) {
       onRemoveFavorite();

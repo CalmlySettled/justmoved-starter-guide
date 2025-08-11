@@ -17,7 +17,7 @@ interface SessionData {
   favoritesAdded: number;
 }
 
-export const useAnalytics = () => {
+export const useAnalytics = (triggerSurveyCheck?: (eventType: string, eventData: Record<string, any>) => void) => {
   const { user } = useAuth();
   const sessionData = useRef<SessionData | null>(null);
   const lastActivityTime = useRef<number>(Date.now());

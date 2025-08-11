@@ -28,6 +28,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import PropertyManager from "./pages/PropertyManager";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { MicroSurveyProvider } from "@/components/MicroSurveyProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -38,7 +39,8 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <AnalyticsProvider>
+      <MicroSurveyProvider>
+        <AnalyticsProvider>
         <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<AboutUs />} />
@@ -75,7 +77,8 @@ const AppContent = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
         </Routes>
-      </AnalyticsProvider>
+        </AnalyticsProvider>
+      </MicroSurveyProvider>
     </BrowserRouter>
     );
 };

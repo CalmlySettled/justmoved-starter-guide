@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMicroSurveyContext } from './MicroSurveyProvider';
 
 const routeCategories: Record<string, string> = {
   '/': 'home',
@@ -19,7 +20,8 @@ const routeCategories: Record<string, string> = {
 
 export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { trackPageView } = useAnalytics();
+  const { triggerSurveyCheck } = useMicroSurveyContext();
+  const { trackPageView } = useAnalytics(triggerSurveyCheck);
 
   useEffect(() => {
     // Track page view whenever route changes
