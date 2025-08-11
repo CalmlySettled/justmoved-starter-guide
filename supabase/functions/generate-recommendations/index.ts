@@ -233,7 +233,8 @@ async function searchYelp(
   limit: number = 15
 ): Promise<Business[]> {
   if (!yelpApiKey) {
-    console.log('Yelp API key not found, skipping Yelp search');
+    console.error('❌ CRITICAL: Yelp API key not found! This will cause 0 results for coffee shops, breweries, restaurants, and other consumer categories.');
+    console.error('Please add YELP_API_KEY to Supabase secrets to fix this issue.');
     return [];
   }
 
@@ -266,7 +267,9 @@ async function searchYelp(
       });
 
       if (!response.ok) {
-        console.error(`Yelp API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ Yelp API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`Yelp API error details: ${errorText}`);
         continue;
       }
 
@@ -921,7 +924,8 @@ async function searchGooglePlaces(
 ): Promise<Business[]> {
   const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
   if (!googleApiKey) {
-    console.log('Google Places API key not found, skipping Google search');
+    console.error('❌ CRITICAL: Google Places API key not found! This will cause 0 results for all business searches.');
+    console.error('Please add GOOGLE_PLACES_API_KEY to Supabase secrets to fix this issue.');
     return [];
   }
   
