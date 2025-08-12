@@ -41,16 +41,10 @@ class RequestCacheManager {
       console.warn(`⚠️ POTENTIAL ISSUE: Geographic data (${type}) being processed with user ID present. This might create user-specific keys for shared data.`);
     }
 
-    // Normalize coordinates for better cache hits (~2 mile precision)
-    if (params.latitude && params.longitude) {
-      params = {
-        ...params,
-        latitude: Math.round(params.latitude / 0.02) * 0.02,
-        longitude: Math.round(params.longitude / 0.02) * 0.02
-      };
-    }
+    // Deep clone and normalize parameters for deterministic key generation
+    const normalizedParams = this.normalizeParams(params);
     
-    const baseKey = `${type}-${JSON.stringify(params)}`;
+    const baseKey = `${type}-${this.deterministicStringify(normalizedParams)}`;
     const versionedKey = getVersionedCacheKey(baseKey);
     
     // Geographic data is shared across all users, personal data is user-specific
@@ -87,7 +81,7 @@ class RequestCacheManager {
       version: APP_VERSION,
       userId: this.currentUserId,
       originalParams: arguments[1],
-      normalizedParams: params,
+      normalizedParams: normalizedParams,
       baseKey,
       versionedKey,
       finalKey,
@@ -96,6 +90,48 @@ class RequestCacheManager {
     });
     
     return finalKey;
+  }
+
+  private normalizeParams(params: any): any {
+    if (!params) return {};
+    
+    const normalized = { ...params };
+    
+    // Normalize coordinates for consistent cache hits (~2 mile precision)
+    if (normalized.latitude && normalized.longitude) {
+      normalized.latitude = Math.round(normalized.latitude / 0.02) * 0.02;
+      normalized.longitude = Math.round(normalized.longitude / 0.02) * 0.02;
+    }
+    
+    // Sort arrays for consistent ordering
+    if (normalized.categories && Array.isArray(normalized.categories)) {
+      normalized.categories = [...normalized.categories].sort();
+    }
+    
+    // Sort any other arrays that might exist
+    Object.keys(normalized).forEach(key => {
+      if (Array.isArray(normalized[key]) && key !== 'coordinates') {
+        normalized[key] = [...normalized[key]].sort();
+      }
+    });
+    
+    return normalized;
+  }
+
+  private deterministicStringify(obj: any): string {
+    if (obj === null || obj === undefined) return 'null';
+    if (typeof obj !== 'object') return String(obj);
+    if (Array.isArray(obj)) {
+      return '[' + obj.map(item => this.deterministicStringify(item)).join(',') + ']';
+    }
+    
+    // Sort object keys for consistent ordering
+    const sortedKeys = Object.keys(obj).sort();
+    const parts = sortedKeys.map(key => 
+      `"${key}":${this.deterministicStringify(obj[key])}`
+    );
+    
+    return '{' + parts.join(',') + '}';
   }
 
   setCurrentUserId(userId: string | null): void {
@@ -108,12 +144,34 @@ class RequestCacheManager {
     const entry = this.cache.get(key);
     
     if (!entry) {
+      // Enhanced debugging for cache misses
+      const availableKeys = Array.from(this.cache.keys());
+      const similarKeys = availableKeys.filter(k => k.includes(type));
+      
       console.log(`❌ CACHE MISS: ${type}`, {
         key,
+        keyLength: key.length,
         reason: 'Entry not found',
-        availableKeys: Array.from(this.cache.keys()),
-        cacheSize: this.cache.size
+        availableKeys,
+        similarKeys,
+        cacheSize: this.cache.size,
+        normalizedParams: this.normalizeParams(params)
       });
+      
+      // Log potential key matches for debugging
+      if (similarKeys.length > 0) {
+        console.log(`🔍 SIMILAR KEYS FOUND:`, {
+          type,
+          requestedKey: key,
+          similarKeys,
+          keyComparison: similarKeys.map(sk => ({
+            key: sk,
+            matches: sk === key,
+            difference: this.compareKeys(key, sk)
+          }))
+        });
+      }
+      
       return null;
     }
 
@@ -199,6 +257,20 @@ class RequestCacheManager {
       entriesRemoved: keysToDelete.length,
       totalCacheSize: this.cache.size 
     });
+  }
+
+  private compareKeys(key1: string, key2: string): string {
+    if (key1 === key2) return 'identical';
+    if (key1.length !== key2.length) return `length differs: ${key1.length} vs ${key2.length}`;
+    
+    // Find first difference
+    for (let i = 0; i < Math.min(key1.length, key2.length); i++) {
+      if (key1[i] !== key2[i]) {
+        return `differs at position ${i}: '${key1.substring(i-5, i+5)}' vs '${key2.substring(i-5, i+5)}'`;
+      }
+    }
+    
+    return 'unknown difference';
   }
 
   getStats(): { size: number; keys: string[] } {
