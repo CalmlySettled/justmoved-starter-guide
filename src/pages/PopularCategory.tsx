@@ -365,9 +365,8 @@ const PopularCategory = () => {
       const searchTerms = categoryConfig.searchTerms;
       const cacheKey = `popular-${searchTerms.join('-').toLowerCase()}-${location.latitude.toFixed(2)}-${location.longitude.toFixed(2)}`;
       
-      // Check frontend cache first with category-specific cache type
-      const categoryName = categoryConfig && 'name' in categoryConfig ? categoryConfig.name : 'unknown';
-      const cacheType = `popular_category_${categoryName.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and')}`;
+      // Check frontend cache first with standardized cache type
+      const cacheType = 'popular_category_results';
       
       const cachedData = getCached(cacheType, { 
         latitude: location.latitude,
@@ -376,7 +375,7 @@ const PopularCategory = () => {
       }, true);
       
       if (cachedData) {
-        console.log(`💰 FRONTEND CACHE HIT for ${categoryName}`);
+        console.log(`💰 FRONTEND CACHE HIT for popular category`);
         setBusinesses(cachedData);
         setLoading(false);
         return;
@@ -389,7 +388,7 @@ const PopularCategory = () => {
       }, searchTerms);
       
       if (backendCached) {
-        console.log(`💰 BACKEND CACHE HIT for ${categoryName}`);
+        console.log(`💰 BACKEND CACHE HIT for popular category`);
         const allResults: Business[] = [];
         searchTerms.forEach(term => {
           if (backendCached[term]) {
@@ -413,7 +412,7 @@ const PopularCategory = () => {
         }
       }
 
-      console.log(`🔄 CACHE MISS - Making fresh API call for ${categoryName}`);
+      console.log(`🔄 CACHE MISS - Making fresh API call for popular category`);
       
       // Fresh API call
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
@@ -443,7 +442,7 @@ const PopularCategory = () => {
           longitude: location.longitude,
           categories: searchTerms 
         }, sortedResults, true);
-        console.log(`💾 Cached ${sortedResults.length} ${categoryName} places`);
+        console.log(`💾 Cached ${sortedResults.length} popular category places`);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
@@ -459,21 +458,21 @@ const PopularCategory = () => {
 
   // Unified function to fetch tab data with caching
   const fetchTabData = async (
-    type: 'personal-care' | 'food-time' | 'drink-time',
+    type: 'personal_care' | 'food_time' | 'drink_time',
     subcategory: string,
     searchTerms: string[]
   ) => {
     if (!location) return [];
 
     // Check frontend cache first
-    const cachedData = getCached(`${type}-${subcategory}`, { 
+    const cachedData = getCached(`${type}_${subcategory}`, {
       latitude: location.latitude,
       longitude: location.longitude,
       categories: searchTerms 
     }, true);
     
     if (cachedData) {
-      console.log(`💰 FRONTEND CACHE HIT for ${type}-${subcategory}`);
+      console.log(`💰 FRONTEND CACHE HIT for ${type}_${subcategory}`);
       return cachedData;
     }
 
@@ -484,7 +483,7 @@ const PopularCategory = () => {
     }, searchTerms);
     
     if (backendCached) {
-      console.log(`💰 BACKEND CACHE HIT for ${type}-${subcategory}`);
+      console.log(`💰 BACKEND CACHE HIT for ${type}_${subcategory}`);
       const allResults: Business[] = [];
       searchTerms.forEach(term => {
         if (backendCached[term]) {
@@ -497,7 +496,7 @@ const PopularCategory = () => {
           .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
           .slice(0, 4);
 
-        setCached(`${type}-${subcategory}`, { 
+        setCached(`${type}_${subcategory}`, {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
@@ -506,19 +505,19 @@ const PopularCategory = () => {
       }
     }
 
-    console.log(`🔄 CACHE MISS - Making fresh API call for ${type}-${subcategory}`);
+    console.log(`🔄 CACHE MISS - Making fresh API call for ${type}_${subcategory}`);
     
     // Fresh API call
     const modeMap = {
-      'personal-care': 'personalCareMode',
-      'food-time': 'foodSceneMode', 
-      'drink-time': 'popularMode'
+      'personal_care': 'personalCareMode',
+      'food_time': 'foodSceneMode', 
+      'drink_time': 'popularMode'
     };
 
     const { data, error } = await supabase.functions.invoke('generate-recommendations', {
       body: {
         [modeMap[type]]: true,
-        timeOfDay: type === 'food-time' ? subcategory : undefined,
+        timeOfDay: type === 'food_time' ? subcategory : undefined,
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms
@@ -537,12 +536,12 @@ const PopularCategory = () => {
         .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
         .slice(0, 4);
 
-      setCached(`${type}-${subcategory}`, { 
+      setCached(`${type}_${subcategory}`, { 
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms 
       }, sortedResults, true);
-      console.log(`💾 Cached ${sortedResults.length} ${type}-${subcategory} places`);
+      console.log(`💾 Cached ${sortedResults.length} ${type}_${subcategory} places`);
       return sortedResults;
     }
 
@@ -563,7 +562,7 @@ const PopularCategory = () => {
       };
 
       const searchTerms = searchTermsMap[subcategory];
-      const results = await fetchTabData('personal-care', subcategory, searchTerms);
+      const results = await fetchTabData('personal_care', subcategory, searchTerms);
       
       setSubcategoryData(prev => ({
         ...prev,
@@ -591,7 +590,7 @@ const PopularCategory = () => {
       };
 
       const searchTerms = searchTermsMap[timeOfDay];
-      const results = await fetchTabData('food-time', timeOfDay, searchTerms);
+      const results = await fetchTabData('food_time', timeOfDay, searchTerms);
       
       setFoodSceneData(prev => ({
         ...prev,
@@ -618,7 +617,7 @@ const PopularCategory = () => {
       };
 
       const searchTerms = searchTermsMap[drinkType];
-      const results = await fetchTabData('drink-time', drinkType, searchTerms);
+      const results = await fetchTabData('drink_time', drinkType, searchTerms);
       
       setDrinkTimeData(prev => ({
         ...prev,
