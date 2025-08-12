@@ -2147,10 +2147,48 @@ serve(async (req) => {
     } else {
       rateLimiter.set(clientIP, { count: 1, resetTime: now + RATE_WINDOW });
     }
-    const requestBody = await req.json();
-    console.log('Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
+    // Parse and validate request body with robust error handling
+    let requestBody;
+    try {
+      const rawBody = await req.text();
+      console.log('🔍 RAW REQUEST BODY:', rawBody.substring(0, 200) + (rawBody.length > 200 ? '...' : ''));
+      
+      if (!rawBody || rawBody.trim() === '') {
+        return new Response(JSON.stringify({ error: 'Request body is empty' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      requestBody = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('❌ JSON PARSE ERROR:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    console.log('✅ Generating recommendations for:', JSON.stringify(requestBody, null, 2));
+    
+    // Validate required fields
     const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, foodSceneMode, timeOfDay, latitude, longitude, categories, userId } = requestBody;
+    
+    // Basic validation for coordinate-based requests
+    if ((exploreMode || popularMode || personalCareMode || foodSceneMode || categories) && 
+        (typeof latitude !== 'number' || typeof longitude !== 'number')) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid coordinates: latitude and longitude must be numbers',
+        received: { latitude: typeof latitude, longitude: typeof longitude }
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Handle explore mode requests with caching (distance-based sorting)
     if (exploreMode) {
@@ -2170,12 +2208,24 @@ serve(async (req) => {
       console.log(`🔍 EXPLORE CACHE LOOKUP: ${cacheKey}`);
       
       // Check for cached explore results (180 day cache for essentials - 6 months)
-      const { data: cachedData } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, created_at')
-        .eq('cache_key', cacheKey)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      let cachedData = null;
+      try {
+        const { data, error } = await supabase
+          .from('recommendations_cache')
+          .select('recommendations, created_at')
+          .eq('cache_key', cacheKey)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+          
+        if (error) {
+          console.error('🚨 CACHE QUERY ERROR:', error);
+        } else {
+          cachedData = data;
+        }
+      } catch (cacheError) {
+        console.error('🚨 CACHE LOOKUP FAILED:', cacheError);
+        // Continue without cache - don't fail the entire request
+      }
 
       if (cachedData) {
         console.log('💰 EXPLORE CACHE HIT! Returning cached recommendations - NO API COSTS!');
