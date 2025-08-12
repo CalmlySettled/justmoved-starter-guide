@@ -9,18 +9,23 @@ interface CacheEntry {
 
 class RequestCacheManager {
   private static instance: RequestCacheManager;
-  private cache: Map<string, CacheEntry> = new Map();
+  private cache: Map<string, CacheEntry> = new Map(); // User-specific data only
   public readonly DEFAULT_TTL = 1800000; // 30 minutes
   public readonly GEOGRAPHIC_TTL = 2592000000; // 30 days
   private readonly CLEANUP_INTERVAL = 600000; // 10 minutes
+  private readonly LOCAL_STORAGE_PREFIX = 'geo_cache_';
+  private readonly MAX_LOCAL_STORAGE_SIZE = 50; // Max number of geographic entries
   private currentUserId: string | null = null;
 
   static getInstance(): RequestCacheManager {
     if (!RequestCacheManager.instance) {
       RequestCacheManager.instance = new RequestCacheManager();
-      // Start periodic cleanup
+      // Hydrate geographic cache from localStorage on startup
+      RequestCacheManager.instance.hydrateFromLocalStorage();
+      // Start periodic cleanup for both memory and localStorage
       setInterval(() => {
         RequestCacheManager.instance.cleanup();
+        RequestCacheManager.instance.cleanupLocalStorage();
       }, RequestCacheManager.instance.CLEANUP_INTERVAL);
     }
     return RequestCacheManager.instance;
@@ -141,30 +146,42 @@ class RequestCacheManager {
 
   get(type: string, params: any, isGeographic: boolean): any | null {
     const key = this.generateCacheKey(type, params, isGeographic);
-    const entry = this.cache.get(key);
+    let entry: CacheEntry | undefined;
+
+    if (isGeographic) {
+      // Check localStorage for geographic data
+      entry = this.getFromLocalStorage(key);
+    } else {
+      // Check memory for user-specific data
+      entry = this.cache.get(key);
+    }
     
     if (!entry) {
       // Enhanced debugging for cache misses
-      const availableKeys = Array.from(this.cache.keys());
+      const storageType = isGeographic ? 'localStorage' : 'memory';
+      const availableKeys = isGeographic 
+        ? this.getLocalStorageKeys() 
+        : Array.from(this.cache.keys());
       const similarKeys = availableKeys.filter(k => k.includes(type));
       
-      console.log(`❌ CACHE MISS: ${type}`, {
+      console.log(`❌ CACHE MISS (${storageType}): ${type}`, {
         key,
         keyLength: key.length,
         reason: 'Entry not found',
-        availableKeys,
+        storageType,
+        availableKeys: availableKeys.slice(0, 10), // Limit for readability
         similarKeys,
-        cacheSize: this.cache.size,
+        cacheSize: isGeographic ? availableKeys.length : this.cache.size,
         normalizedParams: this.normalizeParams(params)
       });
       
       // Log potential key matches for debugging
       if (similarKeys.length > 0) {
-        console.log(`🔍 SIMILAR KEYS FOUND:`, {
+        console.log(`🔍 SIMILAR KEYS FOUND (${storageType}):`, {
           type,
           requestedKey: key,
-          similarKeys,
-          keyComparison: similarKeys.map(sk => ({
+          similarKeys: similarKeys.slice(0, 5), // Limit for readability
+          keyComparison: similarKeys.slice(0, 3).map(sk => ({
             key: sk,
             matches: sk === key,
             difference: this.compareKeys(key, sk)
@@ -176,8 +193,12 @@ class RequestCacheManager {
     }
 
     if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
-      console.log(`⏰ CACHE EXPIRED: ${type}`, {
+      if (isGeographic) {
+        this.removeFromLocalStorage(key);
+      } else {
+        this.cache.delete(key);
+      }
+      console.log(`⏰ CACHE EXPIRED (${isGeographic ? 'localStorage' : 'memory'}): ${type}`, {
         key,
         expiredAt: new Date(entry.expiry).toISOString(),
         now: new Date().toISOString()
@@ -185,34 +206,53 @@ class RequestCacheManager {
       return null;
     }
 
-    console.log(`💰 CACHE HIT: ${type}`, {
+    console.log(`💰 CACHE HIT (${isGeographic ? 'localStorage' : 'memory'}): ${type}`, {
       key,
       dataSize: Array.isArray(entry.data) ? entry.data.length : 'not-array',
       cachedAt: new Date(entry.timestamp).toISOString(),
-      expiresAt: new Date(entry.expiry).toISOString()
+      expiresAt: new Date(entry.expiry).toISOString(),
+      shared: isGeographic
     });
     return entry.data;
   }
 
   set(type: string, params: any, data: any, isGeographic: boolean, ttl: number = this.DEFAULT_TTL): void {
     const key = this.generateCacheKey(type, params, isGeographic);
-    this.cache.set(key, {
+    const entry: CacheEntry = {
       data,
       timestamp: Date.now(),
       expiry: Date.now() + ttl
-    });
-    console.log(`💾 VERSIONED CACHED: ${type}`, {
+    };
+
+    if (isGeographic) {
+      // Store geographic data in localStorage (shared across sessions/users)
+      this.setToLocalStorage(key, entry);
+    } else {
+      // Store user-specific data in memory (session-only)
+      this.cache.set(key, entry);
+    }
+
+    const storageType = isGeographic ? 'localStorage' : 'memory';
+    const totalSize = isGeographic 
+      ? this.getLocalStorageKeys().length 
+      : this.cache.size;
+
+    console.log(`💾 CACHED (${storageType}): ${type}`, {
       version: APP_VERSION,
       key,
       dataSize: Array.isArray(data) ? data.length : 'not-array',
       ttlMinutes: Math.round(ttl / 60000),
+      ttlDays: Math.round(ttl / (24 * 60 * 60 * 1000)),
       expiresAt: new Date(Date.now() + ttl).toISOString(),
-      totalCacheSize: this.cache.size
+      totalCacheSize: totalSize,
+      shared: isGeographic,
+      persistentAcrossSessions: isGeographic
     });
   }
 
   private cleanup(): void {
     const now = Date.now();
+    // Clean up memory cache (user-specific data)
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiry) {
         this.cache.delete(key);
@@ -220,24 +260,141 @@ class RequestCacheManager {
     }
   }
 
+  private cleanupLocalStorage(): void {
+    // Clean up expired geographic data from localStorage
+    const keys = this.getLocalStorageKeys();
+    let cleanedCount = 0;
+
+    keys.forEach(key => {
+      const entry = this.getFromLocalStorage(key);
+      if (entry && Date.now() > entry.expiry) {
+        this.removeFromLocalStorage(key);
+        cleanedCount++;
+      }
+    });
+
+    if (cleanedCount > 0) {
+      console.log(`🧹 LOCALSTORAGE CLEANUP: ${cleanedCount} expired entries removed`);
+    }
+
+    // Implement LRU eviction if we exceed max size
+    this.enforceLRULimit();
+  }
+
+  private hydrateFromLocalStorage(): void {
+    const keys = this.getLocalStorageKeys();
+    console.log(`🌊 HYDRATING GEOGRAPHIC CACHE: Found ${keys.length} localStorage entries`);
+  }
+
+  private getFromLocalStorage(key: string): CacheEntry | undefined {
+    try {
+      const item = localStorage.getItem(this.LOCAL_STORAGE_PREFIX + key);
+      if (!item) return undefined;
+      
+      const entry = JSON.parse(item) as CacheEntry;
+      return entry;
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return undefined;
+    }
+  }
+
+  private setToLocalStorage(key: string, entry: CacheEntry): void {
+    try {
+      localStorage.setItem(this.LOCAL_STORAGE_PREFIX + key, JSON.stringify(entry));
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+      // If localStorage is full, clean up and try again
+      this.enforceLRULimit();
+      try {
+        localStorage.setItem(this.LOCAL_STORAGE_PREFIX + key, JSON.stringify(entry));
+      } catch (retryError) {
+        console.error('Failed to write to localStorage after cleanup:', retryError);
+      }
+    }
+  }
+
+  private removeFromLocalStorage(key: string): void {
+    try {
+      localStorage.removeItem(this.LOCAL_STORAGE_PREFIX + key);
+    } catch (error) {
+      console.error('Error removing from localStorage:', error);
+    }
+  }
+
+  private getLocalStorageKeys(): string[] {
+    const keys: string[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(this.LOCAL_STORAGE_PREFIX)) {
+          keys.push(key.substring(this.LOCAL_STORAGE_PREFIX.length));
+        }
+      }
+    } catch (error) {
+      console.error('Error reading localStorage keys:', error);
+    }
+    return keys;
+  }
+
+  private enforceLRULimit(): void {
+    const keys = this.getLocalStorageKeys();
+    if (keys.length <= this.MAX_LOCAL_STORAGE_SIZE) return;
+
+    // Get all entries with their timestamps
+    const entries = keys.map(key => ({
+      key,
+      entry: this.getFromLocalStorage(key)
+    })).filter(item => item.entry);
+
+    // Sort by timestamp (oldest first)
+    entries.sort((a, b) => a.entry!.timestamp - b.entry!.timestamp);
+
+    // Remove oldest entries until we're under the limit
+    const toRemove = entries.length - this.MAX_LOCAL_STORAGE_SIZE;
+    for (let i = 0; i < toRemove; i++) {
+      this.removeFromLocalStorage(entries[i].key);
+    }
+
+    console.log(`🗑️ LRU EVICTION: Removed ${toRemove} oldest geographic cache entries`);
+  }
+
   clearAll(): void {
+    // Clear memory cache
     this.cache.clear();
-    console.log(`🧹 ALL CACHE CLEARED for version ${APP_VERSION}`);
+    
+    // Clear geographic cache from localStorage
+    const keys = this.getLocalStorageKeys();
+    keys.forEach(key => this.removeFromLocalStorage(key));
+    
+    console.log(`🧹 ALL CACHE CLEARED for version ${APP_VERSION}: ${keys.length} localStorage + memory entries`);
   }
 
   // Clear only old version entries
   clearOldVersions(): void {
     const currentVersionPrefix = `v${APP_VERSION}-`;
-    const keysToDelete: string[] = [];
     
+    // Clear old versions from memory
+    const memoryKeysToDelete: string[] = [];
     for (const [key] of this.cache.entries()) {
       if (key.startsWith('v') && key.includes('-') && !key.startsWith(currentVersionPrefix)) {
-        keysToDelete.push(key);
+        memoryKeysToDelete.push(key);
       }
     }
+    memoryKeysToDelete.forEach(key => this.cache.delete(key));
     
-    keysToDelete.forEach(key => this.cache.delete(key));
-    console.log(`🧹 OLD VERSION CACHE CLEARED: ${keysToDelete.length} entries removed`);
+    // Clear old versions from localStorage
+    const localStorageKeysToDelete: string[] = [];
+    const allLocalKeys = this.getLocalStorageKeys();
+    for (const key of allLocalKeys) {
+      if (key.startsWith('v') && key.includes('-') && !key.startsWith(currentVersionPrefix)) {
+        localStorageKeysToDelete.push(key);
+      }
+    }
+    localStorageKeysToDelete.forEach(key => this.removeFromLocalStorage(key));
+    
+    const totalCleared = memoryKeysToDelete.length + localStorageKeysToDelete.length;
+    console.log(`🧹 OLD VERSION CACHE CLEARED: ${totalCleared} entries removed (${memoryKeysToDelete.length} memory + ${localStorageKeysToDelete.length} localStorage)`);
   }
 
   // Clear cache for a specific user
@@ -273,10 +430,15 @@ class RequestCacheManager {
     return 'unknown difference';
   }
 
-  getStats(): { size: number; keys: string[] } {
+  getStats(): { size: number; keys: string[]; localStorage: { size: number; keys: string[] } } {
+    const localKeys = this.getLocalStorageKeys();
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys())
+      keys: Array.from(this.cache.keys()),
+      localStorage: {
+        size: localKeys.length,
+        keys: localKeys
+      }
     };
   }
 }
