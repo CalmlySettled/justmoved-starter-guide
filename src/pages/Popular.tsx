@@ -13,6 +13,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useRequestCache } from "@/hooks/useRequestCache";
 import { toast } from "sonner";
 
 interface LocationData {
@@ -131,12 +132,18 @@ const spotlightSections = [
 const Popular = () => {
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
+  const { getCached, setCached, setCurrentUserId } = useRequestCache();
   const routerLocation = useLocation();
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   
+
+  // Set user context for caching
+  useEffect(() => {
+    setCurrentUserId(user?.id || null);
+  }, [user, setCurrentUserId]);
 
   // Clean up URL parameters on mount
   useEffect(() => {
@@ -179,6 +186,14 @@ const Popular = () => {
         if (!user) return;
 
         if (profile?.address) {
+          // Check cache for geocoded address first
+          const cachedLocation = getCached('geocoded_address', { address: profile.address });
+          if (cachedLocation) {
+            console.log('💰 Using cached geocoded location');
+            setLocation(cachedLocation);
+            return;
+          }
+
           // Geocode the saved address to get coordinates and city
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${encodeURIComponent(profile.address)}&countrycodes=us`,
@@ -198,11 +213,16 @@ const Popular = () => {
               // Final check before setting location
               if (!user) return;
               
-              setLocation({
+              const locationData = {
                 latitude: parseFloat(data[0].lat),
                 longitude: parseFloat(data[0].lon),
                 city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
-              });
+              };
+              
+              // Cache geocoded address for 24 hours
+              setCached('geocoded_address', { address: profile.address }, locationData, 24 * 60 * 60 * 1000);
+              
+              setLocation(locationData);
               return;
             }
           }
@@ -222,6 +242,15 @@ const Popular = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       if (!location || !user) return;
+      
+      // Check cache for events first
+      const eventsCacheKey = { latitude: location.latitude, longitude: location.longitude };
+      const cachedEvents = getCached('popular_events', eventsCacheKey);
+      if (cachedEvents) {
+        console.log('💰 Using cached events data');
+        setEvents(cachedEvents);
+        return;
+      }
       
       setEventsLoading(true);
       try {
@@ -249,7 +278,11 @@ const Popular = () => {
           toast.error('Failed to load events');
           setEvents([]);
         } else {
-          setEvents(data?.events || []);
+          const eventsData = data?.events || [];
+          setEvents(eventsData);
+          
+          // Cache events for session duration (1 hour)
+          setCached('popular_events', eventsCacheKey, eventsData, 60 * 60 * 1000);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -261,7 +294,7 @@ const Popular = () => {
     };
 
     fetchEvents();
-  }, [location, user]);
+  }, [location, user, getCached, setCached]);
 
   const handleLocationSelect = (selectedLocation: LocationData) => {
     setLocation(selectedLocation);

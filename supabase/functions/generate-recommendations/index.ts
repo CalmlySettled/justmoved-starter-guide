@@ -15,7 +15,7 @@ const RATE_WINDOW = 60000; // 1 minute in milliseconds
 const AI_RECOMMENDATION_PERCENTAGE = 0.5; // 50% of users get AI recommendations for A/B testing
 
 // Cost Optimization Configuration
-const CACHE_DURATION_DAYS = 180; // Extended cache duration for static business data
+const CACHE_DURATION_DAYS = 30; // Default cache duration for popular categories
 const GEOGRAPHIC_PRECISION = 2; // Round coordinates to 2 decimals for better caching
 const YELP_ONLY_CATEGORIES = ['restaurants', 'dining', 'food', 'bars']; // High-value Yelp categories
 
@@ -372,15 +372,46 @@ function isQualityYelpBusiness(business: any): boolean {
   return true;
 }
 
-// Deduplicate businesses by name and address
+// Enhanced deduplicate businesses by name, address, and coordinates
 function deduplicateBusinesses(businesses: Business[]): Business[] {
   const seen = new Set<string>();
+  const coordinatesSeen = new Set<string>();
+  
   return businesses.filter(business => {
-    const key = `${business.name.toLowerCase()}-${business.address.toLowerCase()}`;
-    if (seen.has(key)) {
+    // Primary key: name + address
+    const nameAddressKey = `${business.name.toLowerCase().trim()}-${business.address.toLowerCase().trim()}`;
+    
+    // Secondary key: name + coordinates (for businesses with different addresses but same location)
+    const coordsKey = `${business.name.toLowerCase().trim()}-${business.latitude.toFixed(4)}-${business.longitude.toFixed(4)}`;
+    
+    // Third key: just coordinates (for exact same location businesses)
+    const locationKey = `${business.latitude.toFixed(4)}-${business.longitude.toFixed(4)}`;
+    
+    if (seen.has(nameAddressKey) || seen.has(coordsKey)) {
+      console.log(`→ Removing duplicate business: ${business.name} (${business.address})`);
       return false;
     }
-    seen.add(key);
+    
+    // Check for businesses at exact same coordinates with similar names
+    if (coordinatesSeen.has(locationKey)) {
+      const existingNames = Array.from(seen)
+        .filter(key => key.includes(locationKey.replace(/\./g, '\\.')))
+        .map(key => key.split('-')[0]);
+      
+      const normalizedCurrentName = business.name.toLowerCase().trim();
+      if (existingNames.some(name => 
+        areBusinessNamesSimilar(name, normalizedCurrentName) || 
+        normalizedCurrentName.includes(name) || 
+        name.includes(normalizedCurrentName)
+      )) {
+        console.log(`→ Removing duplicate business at same location: ${business.name}`);
+        return false;
+      }
+    }
+    
+    seen.add(nameAddressKey);
+    seen.add(coordsKey);
+    coordinatesSeen.add(locationKey);
     return true;
   });
 }
@@ -2271,7 +2302,7 @@ serve(async (req) => {
           user_coordinates: `(${latitude}, ${longitude})`, // Required field
           categories: categories, // Required field
           recommendations: recommendations,
-          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days = 6 months
+          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days for explore mode
         });
       
       return new Response(JSON.stringify({ recommendations }), {
