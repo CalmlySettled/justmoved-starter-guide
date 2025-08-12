@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.check-cache]
 verify_jwt = false
+
+[functions.get-eligible-survey-question]
+verify_jwt = false

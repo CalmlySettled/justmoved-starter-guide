@@ -85,84 +85,40 @@ export const useMicroSurvey = () => {
         .update({ behavioral_triggers: behavioralTriggers as any })
         .eq('user_id', user.id);
 
-      // Find eligible questions based on triggers
-      const { data: questions } = await supabase
-        .from('micro_survey_questions')
-        .select('*')
-        .eq('is_active', true)
-        .order('priority', { ascending: true });
+      // Call secure edge function to get eligible survey question
+      const { data, error } = await supabase.functions.invoke('get-eligible-survey-question', {
+        body: {
+          behavioralTriggers,
+          userId: user.id
+        }
+      });
 
-      if (!questions?.length) return;
+      if (error) {
+        console.error('Error fetching eligible survey question:', error);
+        return;
+      }
 
-      // Filter questions based on trigger conditions and survey history
-      const surveyResponses = profile.micro_survey_responses || {};
-      
-      for (const question of questions) {
-        // Skip if already answered
-        if (surveyResponses[question.question_key]) continue;
-
-        const conditions = question.trigger_conditions as any;
-        let shouldTrigger = true;
-
-        // Check if conditions are met
-        if (conditions.min_restaurant_interactions && 
-            (behavioralTriggers.restaurant_interactions || 0) < conditions.min_restaurant_interactions) {
-          shouldTrigger = false;
-        }
-        if (conditions.min_grocery_interactions && 
-            (behavioralTriggers.grocery_interactions || 0) < conditions.min_grocery_interactions) {
-          shouldTrigger = false;
-        }
-        if (conditions.min_direction_clicks && 
-            (behavioralTriggers.direction_clicks || 0) < conditions.min_direction_clicks) {
-          shouldTrigger = false;
-        }
-        if (conditions.min_total_interactions && 
-            (behavioralTriggers.total_interactions || 0) < conditions.min_total_interactions) {
-          shouldTrigger = false;
-        }
-        if (conditions.min_favorite_actions && 
-            (behavioralTriggers.favorite_actions || 0) < conditions.min_favorite_actions) {
-          shouldTrigger = false;
-        }
-
-        // Check category-specific conditions
-        if (conditions.categories?.length) {
-          const hasRelevantCategory = conditions.categories.some((cat: string) => 
-            (behavioralTriggers.category_interactions?.[cat] || 0) > 0
-          );
-          if (!hasRelevantCategory) shouldTrigger = false;
-        }
-
-        if (shouldTrigger) {
-          console.log('🎯 MICRO-SURVEY TRIGGERED:', {
-            question: question.question_key,
-            triggers: behavioralTriggers,
-            conditions
-          });
-          
-          const typedQuestion: SurveyQuestion = {
-            id: question.id,
-            question_key: question.question_key,
-            question_text: question.question_text,
-            question_type: question.question_type as 'single_choice' | 'multiple_choice' | 'text',
-            options: (question.options as string[]) || [],
-            trigger_conditions: question.trigger_conditions as Record<string, any>,
-            category: question.category,
-            priority: question.priority
-          };
-          
-          setCurrentQuestion(typedQuestion);
-          setShowSurvey(true);
-          
-          // Update last survey shown timestamp
-          await supabase
-            .from('profiles')
-            .update({ last_survey_shown_at: new Date().toISOString() })
-            .eq('user_id', user.id);
-          
-          break;
-        }
+      // Show the question if one was returned
+      if (data?.question) {
+        console.log('🎯 MICRO-SURVEY TRIGGERED:', {
+          question: data.question.question_key,
+          triggers: behavioralTriggers,
+          debug: data.debug
+        });
+        
+        const typedQuestion: SurveyQuestion = {
+          id: data.question.id,
+          question_key: data.question.question_key,
+          question_text: data.question.question_text,
+          question_type: data.question.question_type as 'single_choice' | 'multiple_choice' | 'text',
+          options: data.question.options || [],
+          trigger_conditions: data.question.trigger_conditions,
+          category: data.question.category,
+          priority: data.question.priority
+        };
+        
+        setCurrentQuestion(typedQuestion);
+        setShowSurvey(true);
       }
     } catch (error) {
       console.error('Error checking survey trigger:', error);
