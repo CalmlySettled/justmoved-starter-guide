@@ -149,7 +149,6 @@ export type Database = {
           avatar_url: string | null
           behavioral_triggers: Json | null
           budget_preference: string | null
-          city_state: string | null
           created_at: string
           display_name: string | null
           distance_priority: boolean | null
@@ -173,7 +172,6 @@ export type Database = {
           avatar_url?: string | null
           behavioral_triggers?: Json | null
           budget_preference?: string | null
-          city_state?: string | null
           created_at?: string
           display_name?: string | null
           distance_priority?: boolean | null
@@ -197,7 +195,6 @@ export type Database = {
           avatar_url?: string | null
           behavioral_triggers?: Json | null
           budget_preference?: string | null
-          city_state?: string | null
           created_at?: string
           display_name?: string | null
           distance_priority?: boolean | null
@@ -456,10 +453,6 @@ export type Database = {
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      extract_city_state: {
-        Args: { full_address: string }
-        Returns: string
       }
       get_cache_stats: {
         Args: Record<PropertyKey, never>
