@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { EventCard } from "@/components/EventCard";
 import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church, Gamepad2, Target, PartyPopper, Dice6, Flag } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -138,6 +139,7 @@ const Popular = () => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
 
   // Set user context for caching
@@ -236,7 +238,29 @@ const Popular = () => {
     };
 
     loadLocation();
+    loadUserProfile();
   }, [user]);
+
+  const loadUserProfile = async () => {
+    if (!user) {
+      setUserProfile(null);
+      return;
+    }
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!error && profile) {
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
 
   // Fetch events when location changes
   useEffect(() => {
@@ -343,6 +367,16 @@ const Popular = () => {
 
           {location ? (
             <>
+              {/* Category Management for authenticated users */}
+              {user && userProfile && (
+                <div className="text-center mb-8">
+                  <AddMoreCategoriesModal 
+                    userProfile={userProfile} 
+                    onNewRecommendations={() => loadUserProfile()}
+                  />
+                </div>
+              )}
+
               {/* Trending Categories Grid */}
               <div className="mb-16">
                 

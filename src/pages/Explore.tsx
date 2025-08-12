@@ -17,6 +17,7 @@ import { useRequestCache } from "@/hooks/useRequestCache";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
+import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
 
 interface LocationData {
@@ -97,6 +98,7 @@ export default function Explore() {
   const [favoritingBusinesses, setFavoritingBusinesses] = useState<Set<string>>(new Set());
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [sourceContext, setSourceContext] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
@@ -105,6 +107,27 @@ export default function Explore() {
   const { showFavoriteToast } = useSmartToast();
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const loadUserProfile = async () => {
+    if (!user) {
+      setUserProfile(null);
+      return;
+    }
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!error && profile) {
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
   
   // Get URL params for OAuth, focus handling, and property manager customization
   const urlParams = new URLSearchParams(window.location.search);
@@ -315,8 +338,10 @@ export default function Explore() {
       }
     };
 
+
     loadUserLocation();
     loadFavorites();
+    loadUserProfile();
   }, [user, propertyAddress]);
 
   // Get user's current location
@@ -811,6 +836,16 @@ export default function Explore() {
               >
                 Get Started
               </Button>
+            </div>
+          )}
+
+          {/* Category Management for authenticated users */}
+          {user && userProfile && (
+            <div className="text-center mb-8">
+              <AddMoreCategoriesModal 
+                userProfile={userProfile} 
+                onNewRecommendations={() => loadUserProfile()}
+              />
             </div>
           )}
 
