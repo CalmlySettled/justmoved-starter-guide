@@ -214,14 +214,11 @@ function getOptimalRadius(coordinates: { lat: number; lng: number }): number {
 const googleMapsApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
 const yelpApiKey = Deno.env.get('YELP_API_KEY');
 
-// API routing logic: determine which API to use for each category
+// API routing logic: Use Google Places for all categories (no Yelp dependency)
 function shouldUseYelpPrimary(category: string): boolean {
-  const yelpPrimaryCategories = [
-    'Restaurants', 'Coffee shops', 'Bakeries', 'Grocery stores', 
-    'Shopping', 'Beauty', 'Salon', 'Spa', 'Retail', 'Entertainment',
-    'Fitness options', 'Bars'
-  ];
-  return yelpPrimaryCategories.some(cat => category.includes(cat));
+  // Always return false to route ALL categories through Google Places
+  // This eliminates the need for Yelp API key and maintains all cache protocols
+  return false;
 }
 
 // Yelp API integration
@@ -727,6 +724,10 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
     strategies.push(
       { keyword: 'coffee shops' },
       { keyword: 'cafes' },
+      { keyword: 'specialty coffee' },
+      { keyword: 'roastery' },
+      { keyword: 'coffee roasters' },
+      { keyword: 'espresso bar' },
       { type: 'cafe' }
     );
   } else if (category.includes('Restaurants')) {
@@ -858,7 +859,11 @@ function getSearchStrategies(category: string): Array<{ keyword?: string; type?:
       { keyword: 'brewery' },
       { keyword: 'brewpub' },
       { keyword: 'craft beer' },
+      { keyword: 'craft brewery' },
       { keyword: 'taproom' },
+      { keyword: 'beer garden' },
+      { keyword: 'microbrewery' },
+      { keyword: 'happy hour' },
       { keyword: 'bar and grill' },
       { type: 'bar' },
       { type: 'brewery' }
