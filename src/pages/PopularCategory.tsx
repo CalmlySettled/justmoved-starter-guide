@@ -365,15 +365,18 @@ const PopularCategory = () => {
       const searchTerms = categoryConfig.searchTerms;
       const cacheKey = `popular-${searchTerms.join('-').toLowerCase()}-${location.latitude.toFixed(2)}-${location.longitude.toFixed(2)}`;
       
-      // Check frontend cache first
-      const cachedData = getCached('popular', { 
+      // Check frontend cache first with category-specific cache type
+      const categoryName = categoryConfig && 'name' in categoryConfig ? categoryConfig.name : 'unknown';
+      const cacheType = `popular_category_${categoryName.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and')}`;
+      
+      const cachedData = getCached(cacheType, { 
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms 
       }, true);
       
       if (cachedData) {
-        console.log('💰 FRONTEND CACHE HIT for popular category');
+        console.log(`💰 FRONTEND CACHE HIT for ${categoryName}`);
         setBusinesses(cachedData);
         setLoading(false);
         return;
@@ -386,7 +389,7 @@ const PopularCategory = () => {
       }, searchTerms);
       
       if (backendCached) {
-        console.log('💰 BACKEND CACHE HIT for popular category');
+        console.log(`💰 BACKEND CACHE HIT for ${categoryName}`);
         const allResults: Business[] = [];
         searchTerms.forEach(term => {
           if (backendCached[term]) {
@@ -400,7 +403,7 @@ const PopularCategory = () => {
             .slice(0, 12);
 
           setBusinesses(sortedResults);
-          setCached('popular', { 
+          setCached(cacheType, { 
             latitude: location.latitude,
             longitude: location.longitude,
             categories: searchTerms 
@@ -410,7 +413,7 @@ const PopularCategory = () => {
         }
       }
 
-      console.log('🔄 CACHE MISS - Making fresh API call for popular category');
+      console.log(`🔄 CACHE MISS - Making fresh API call for ${categoryName}`);
       
       // Fresh API call
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
@@ -435,12 +438,12 @@ const PopularCategory = () => {
           .slice(0, 12);
 
         setBusinesses(sortedResults);
-        setCached('popular', { 
+        setCached(cacheType, { 
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
         }, sortedResults, true);
-        console.log(`💾 Cached ${sortedResults.length} popular places`);
+        console.log(`💾 Cached ${sortedResults.length} ${categoryName} places`);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
