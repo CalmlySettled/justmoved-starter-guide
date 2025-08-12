@@ -184,13 +184,25 @@ const Profile = () => {
         .eq('user_id', user.id)
         .single();
 
-      const addressChanged = currentProfile?.address !== profileData.address;
+      // Extract city/state from address for privacy
+      const extractCityState = (fullAddress: string) => {
+        if (!fullAddress) return fullAddress;
+        const parts = fullAddress.split(',');
+        if (parts.length >= 2) {
+          return parts.slice(-2).map(part => part.trim()).join(', ');
+        }
+        return fullAddress;
+      };
+
+      const sanitizedAddress = extractCityState(profileData.address);
+      const addressChanged = currentProfile?.address !== sanitizedAddress;
 
       const { error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
           ...profileData,
+          address: sanitizedAddress,
           display_name: sanitizedDisplayName,
           updated_at: new Date().toISOString()
         });
@@ -198,7 +210,7 @@ const Profile = () => {
       if (error) throw error;
 
       // If address changed, clear old recommendations and generate new ones
-      if (addressChanged && profileData.address) {
+      if (addressChanged && sanitizedAddress) {
         console.log('Address changed, clearing old recommendations and generating new ones');
         
         // Clear old recommendations
@@ -216,7 +228,7 @@ const Profile = () => {
           const { error: recError } = await supabase.functions.invoke('generate-recommendations', {
             body: {
               quizResponse: {
-                address: profileData.address,
+                address: sanitizedAddress,
                 priorities: profileData.priorities,
                 household: profileData.household_type,
                 transportation: profileData.transportation_style,

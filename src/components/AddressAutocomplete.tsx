@@ -118,7 +118,17 @@ export function AddressAutocomplete({ value, onChange, onValidAddressSelected, p
   };
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    onChange(suggestion.description);
+    // Extract city/state from full address for privacy
+    const extractCityState = (fullAddress: string) => {
+      const parts = fullAddress.split(',');
+      if (parts.length >= 2) {
+        return parts.slice(-2).map(part => part.trim()).join(', ');
+      }
+      return fullAddress;
+    };
+    
+    const cityStateAddress = extractCityState(suggestion.description);
+    onChange(cityStateAddress);
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
@@ -214,7 +224,18 @@ export function AddressAutocomplete({ value, onChange, onValidAddressSelected, p
               }
               
               const formattedAddress = components.join(', ');
-              onChange(formattedAddress);
+              
+              // For current location, extract city/state for privacy
+              const extractCityState = (fullAddress: string) => {
+                const parts = fullAddress.split(',');
+                if (parts.length >= 2) {
+                  return parts.slice(-2).map(part => part.trim()).join(', ');
+                }
+                return fullAddress;
+              };
+              
+              const cityStateAddress = extractCityState(formattedAddress);
+              onChange(cityStateAddress);
               setValidAddressSelected(true);
               onValidAddressSelected?.(true);
             }

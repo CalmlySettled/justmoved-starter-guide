@@ -86,10 +86,22 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
         }
       }
 
-      // Update user profile with address
+      // Extract city/state from full address for privacy
+      const extractCityState = (fullAddress: string) => {
+        const parts = fullAddress.split(',');
+        if (parts.length >= 2) {
+          return parts.slice(-2).map(part => part.trim()).join(', ');
+        }
+        return fullAddress;
+      };
+
+      const cityStateAddress = extractCityState(address);
+
+      // Update user profile with sanitized address (city/state only)
       console.log('Attempting to save address:', { 
         userId: user.id, 
-        address, 
+        fullAddress: address,
+        sanitizedAddress: cityStateAddress,
         coordinates,
         sourceContext 
       });
@@ -98,7 +110,7 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
         .from('profiles')
         .upsert({
           user_id: user.id,
-          address: address,
+          address: cityStateAddress,
           latitude: coordinates.lat,
           longitude: coordinates.lng,
           updated_at: new Date().toISOString(),
@@ -206,10 +218,22 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
             throw new Error("No authenticated user found");
           }
 
-          // Update profile with location
+          // Extract city/state from full address for privacy
+          const extractCityState = (fullAddress: string) => {
+            const parts = fullAddress.split(',');
+            if (parts.length >= 2) {
+              return parts.slice(-2).map(part => part.trim()).join(', ');
+            }
+            return fullAddress;
+          };
+
+          const cityStateAddress = extractCityState(addressFromCoords);
+
+          // Update profile with sanitized location (city/state only)
           console.log('Attempting to save location:', { 
             userId: user.id, 
-            address: addressFromCoords, 
+            fullAddress: addressFromCoords,
+            sanitizedAddress: cityStateAddress,
             latitude, 
             longitude,
             sourceContext 
@@ -219,7 +243,7 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
             .from('profiles')
             .upsert({
               user_id: user.id,
-              address: addressFromCoords,
+              address: cityStateAddress,
               latitude: latitude,
               longitude: longitude,
               updated_at: new Date().toISOString(),
