@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      business_access_logs: {
+        Row: {
+          access_type: string
+          business_name: string | null
+          created_at: string
+          id: string
+          ip_hash: string | null
+          place_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type: string
+          business_name?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          place_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          business_name?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          place_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       business_cache: {
         Row: {
           address: string | null
@@ -101,6 +131,33 @@ export type Database = {
           rating?: number | null
           updated_at?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      location_access_logs: {
+        Row: {
+          access_type: string
+          accessed_user_id: string | null
+          created_at: string
+          id: string
+          ip_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_type: string
+          accessed_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          accessed_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -483,9 +540,12 @@ export type Database = {
           favorites_added: number | null
           id: string
           ip_address: unknown | null
+          ip_hash: string | null
+          is_suspicious: boolean | null
           page_views: number | null
           recommendations_clicked: number | null
           recommendations_viewed: number | null
+          security_score: number | null
           session_id: string
           started_at: string
           user_agent: string | null
@@ -497,9 +557,12 @@ export type Database = {
           favorites_added?: number | null
           id?: string
           ip_address?: unknown | null
+          ip_hash?: string | null
+          is_suspicious?: boolean | null
           page_views?: number | null
           recommendations_clicked?: number | null
           recommendations_viewed?: number | null
+          security_score?: number | null
           session_id: string
           started_at?: string
           user_agent?: string | null
@@ -511,9 +574,12 @@ export type Database = {
           favorites_added?: number | null
           id?: string
           ip_address?: unknown | null
+          ip_hash?: string | null
+          is_suspicious?: boolean | null
           page_views?: number | null
           recommendations_clicked?: number | null
           recommendations_viewed?: number | null
+          security_score?: number | null
           session_id?: string
           started_at?: string
           user_agent?: string | null
@@ -542,6 +608,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      detect_suspicious_activity: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       extract_city_state: {
         Args: { full_address: string }
         Returns: string
@@ -567,6 +637,14 @@ export type Database = {
       }
       increment_interaction: {
         Args: { p_user_id: string; p_business_name: string; p_category: string }
+        Returns: undefined
+      }
+      log_business_access: {
+        Args: {
+          p_business_name: string
+          p_place_id?: string
+          p_access_type?: string
+        }
         Returns: undefined
       }
       log_cache_access: {
