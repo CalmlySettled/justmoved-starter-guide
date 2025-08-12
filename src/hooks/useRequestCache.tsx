@@ -26,7 +26,7 @@ class RequestCacheManager {
     return RequestCacheManager.instance;
   }
 
-  private generateCacheKey(type: string, params: any, isGeographic: boolean = false): string {
+  private generateCacheKey(type: string, params: any, isGeographic: boolean): string {
     console.log(`🔍 GENERATE CACHE KEY ENTRY:`, {
       type,
       isGeographic,
@@ -103,7 +103,7 @@ class RequestCacheManager {
     console.log(`👤 CURRENT USER SET:`, { userId });
   }
 
-  get(type: string, params: any, isGeographic: boolean = false): any | null {
+  get(type: string, params: any, isGeographic: boolean): any | null {
     const key = this.generateCacheKey(type, params, isGeographic);
     const entry = this.cache.get(key);
     
@@ -136,7 +136,7 @@ class RequestCacheManager {
     return entry.data;
   }
 
-  set(type: string, params: any, data: any, ttl: number = this.DEFAULT_TTL, isGeographic: boolean = false): void {
+  set(type: string, params: any, data: any, isGeographic: boolean, ttl: number = this.DEFAULT_TTL): void {
     const key = this.generateCacheKey(type, params, isGeographic);
     this.cache.set(key, {
       data,
@@ -212,15 +212,15 @@ class RequestCacheManager {
 export function useRequestCache() {
   const cacheManager = useRef(RequestCacheManager.getInstance());
 
-  const getCached = useCallback((type: string, params: any, isGeographic: boolean = false) => {
+  const getCached = useCallback((type: string, params: any, isGeographic: boolean) => {
     console.log(`🔍 getCached called:`, { type, isGeographic, params });
     return cacheManager.current.get(type, params, isGeographic);
   }, []);
 
-  const setCached = useCallback((type: string, params: any, data: any, ttl?: number, isGeographic: boolean = false) => {
+  const setCached = useCallback((type: string, params: any, data: any, isGeographic: boolean, ttl?: number) => {
     console.log(`🔧 setCached called:`, { type, isGeographic, ttl, params });
     const finalTtl = isGeographic ? cacheManager.current.GEOGRAPHIC_TTL : (ttl || cacheManager.current.DEFAULT_TTL);
-    cacheManager.current.set(type, params, data, finalTtl, isGeographic);
+    cacheManager.current.set(type, params, data, isGeographic, finalTtl);
   }, []);
 
   const clearCache = useCallback(() => {

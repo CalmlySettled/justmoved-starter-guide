@@ -493,7 +493,7 @@ export default function Explore() {
         const results = backendCacheResults[category.searchTerm];
         setCategoryResults(results);
         // Store in L1 frontend cache for faster future access
-        setCached('category_results', cacheKey, results, undefined, true); // Cache for 30 days
+        setCached('category_results', cacheKey, results, true); // Cache for 30 days
         return;
       }
 
@@ -517,7 +517,7 @@ export default function Explore() {
       
       // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
       if (results.length > 0) {
-        setCached('category_results', cacheKey, results, undefined, true); // Cache for 30 days
+        setCached('category_results', cacheKey, results, true); // Cache for 30 days
         console.log(`💾 L1 FRONTEND CACHED after API call:`, {
           resultCount: results.length,
           category: category.name
@@ -640,7 +640,7 @@ export default function Explore() {
           const sortedResults = results.sort((a, b) => a.distance_miles - b.distance_miles);
           setCategoryResults(sortedResults);
           // Store in L1 frontend cache for faster future access
-          setCached('themed_pack_results', cacheKey, sortedResults, undefined, true); // Cache for 30 days
+          setCached('themed_pack_results', cacheKey, sortedResults, true); // Cache for 30 days
           return;
         }
       }
@@ -679,7 +679,7 @@ export default function Explore() {
       
       // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
       if (sortedResults.length > 0) {
-        setCached('themed_pack_results', cacheKey, sortedResults, undefined, true); // Cache for 30 days
+        setCached('themed_pack_results', cacheKey, sortedResults, true); // Cache for 30 days
         console.log(`💾 L1 FRONTEND CACHED after API call (Themed Pack):`, {
           resultCount: sortedResults.length,
           pack: pack.title

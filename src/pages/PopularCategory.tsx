@@ -404,7 +404,7 @@ const PopularCategory = () => {
             latitude: location.latitude,
             longitude: location.longitude,
             categories: searchTerms 
-          }, sortedResults, undefined, true);
+          }, sortedResults, true);
           setLoading(false);
           return;
         }
@@ -439,7 +439,7 @@ const PopularCategory = () => {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
-        }, sortedResults, undefined, true);
+        }, sortedResults, true);
         console.log(`💾 Cached ${sortedResults.length} popular places`);
       }
     } catch (error) {
@@ -498,7 +498,7 @@ const PopularCategory = () => {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
-        }, sortedResults, undefined, true);
+        }, sortedResults, true);
         return sortedResults;
       }
     }
@@ -538,7 +538,7 @@ const PopularCategory = () => {
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms 
-      }, sortedResults, undefined, true);
+      }, sortedResults, true);
       console.log(`💾 Cached ${sortedResults.length} ${type}-${subcategory} places`);
       return sortedResults;
     }

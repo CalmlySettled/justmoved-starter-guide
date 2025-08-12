@@ -187,7 +187,7 @@ const Popular = () => {
 
         if (profile?.address) {
           // Check cache for geocoded address first
-          const cachedLocation = getCached('geocoded_address', { address: profile.address });
+          const cachedLocation = getCached('geocoded_address', { address: profile.address }, true);
           if (cachedLocation) {
             console.log('💰 Using cached geocoded location');
             setLocation(cachedLocation);
@@ -220,7 +220,7 @@ const Popular = () => {
               };
               
               // Cache geocoded address for 24 hours (geographic data - shared across users)
-              setCached('geocoded_address', { address: profile.address }, locationData, 24 * 60 * 60 * 1000, true);
+              setCached('geocoded_address', { address: profile.address }, locationData, true, 24 * 60 * 60 * 1000);
               
               setLocation(locationData);
               return;
@@ -282,7 +282,7 @@ const Popular = () => {
           setEvents(eventsData);
           
           // Cache events for 30 days
-          setCached('popular_events', eventsCacheKey, eventsData, undefined, true);
+          setCached('popular_events', eventsCacheKey, eventsData, true);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
