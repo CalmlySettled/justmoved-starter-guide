@@ -177,10 +177,12 @@ export function useRequestCache() {
   const cacheManager = useRef(RequestCacheManager.getInstance());
 
   const getCached = useCallback((type: string, params: any, isGeographic: boolean = false) => {
+    console.log(`🔍 getCached called:`, { type, isGeographic, params });
     return cacheManager.current.get(type, params, isGeographic);
   }, []);
 
   const setCached = useCallback((type: string, params: any, data: any, ttl?: number, isGeographic: boolean = false) => {
+    console.log(`🔧 setCached called:`, { type, isGeographic, ttl, params });
     const finalTtl = isGeographic ? cacheManager.current.GEOGRAPHIC_TTL : (ttl || cacheManager.current.DEFAULT_TTL);
     cacheManager.current.set(type, params, data, finalTtl, isGeographic);
   }, []);

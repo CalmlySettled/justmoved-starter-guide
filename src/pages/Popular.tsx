@@ -219,8 +219,8 @@ const Popular = () => {
                 city: data[0].address?.city || data[0].address?.town || data[0].address?.village || data[0].display_name.split(',')[1]?.trim() || profile.address
               };
               
-              // Cache geocoded address for 24 hours
-              setCached('geocoded_address', { address: profile.address }, locationData, 24 * 60 * 60 * 1000);
+              // Cache geocoded address for 24 hours (geographic data - shared across users)
+              setCached('geocoded_address', { address: profile.address }, locationData, 24 * 60 * 60 * 1000, true);
               
               setLocation(locationData);
               return;
