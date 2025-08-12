@@ -271,18 +271,6 @@ const PopularCategory = () => {
     const hour = new Date().getHours();
     
     switch (categoryName) {
-      case 'Personal Care & Wellness':
-        if (hour >= 6 && hour < 11) {
-          setCurrentTimeContext('morning appointments');
-          return ["barbershop", "barber shop"];
-        } else if (hour >= 11 && hour < 17) {
-          setCurrentTimeContext('afternoon services');
-          return ["hair salon", "nail salon", "beauty salon"];
-        } else {
-          setCurrentTimeContext('evening relaxation');
-          return ["spa", "wellness center", "massage therapy"];
-        }
-      
       case 'Food Time':
         if (hour >= 6 && hour < 11) {
           setCurrentTimeContext('breakfast spots');
@@ -312,7 +300,7 @@ const PopularCategory = () => {
   useEffect(() => {
     if (location && categoryConfig && 'name' in categoryConfig) {
       const categoryName = categoryConfig.name;
-      const timeBasedCategories = ['Personal Care & Wellness', 'Food Time', 'Drink Time'];
+      const timeBasedCategories = ['Food Time', 'Drink Time'];
       
       if (timeBasedCategories.includes(categoryName)) {
         setIsTimeBasedCategory(true);
