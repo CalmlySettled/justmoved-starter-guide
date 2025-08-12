@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users, X, Edit3 } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
@@ -100,7 +100,7 @@ export default function Explore() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [sourceContext, setSourceContext] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  
   
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
@@ -108,73 +108,6 @@ export default function Explore() {
   const { getCached, setCached, checkBackendCache } = useRequestCache();
   const { showFavoriteToast } = useSmartToast();
   
-  // Function to remove category from user's preferences
-  const removeCategory = async (categorySearchTerm: string, categoryName: string) => {
-    if (!user || !userProfile) return;
-    
-    try {
-      // Remove from priorities array if it exists
-      const updatedPriorities = userProfile.priorities ? 
-        userProfile.priorities.filter((priority: string) => 
-          priority.toLowerCase() !== categorySearchTerm.toLowerCase() &&
-          priority.toLowerCase() !== categoryName.toLowerCase()
-        ) : [];
-      
-      // Update user profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({ priorities: updatedPriorities })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUserProfile({ ...userProfile, priorities: updatedPriorities });
-      
-      // Show confirmation toast with undo option
-      toast.success(`Removed "${categoryName}" from your recommendations`, {
-        action: {
-          label: "Undo",
-          onClick: () => undoRemoveCategory(categorySearchTerm, categoryName),
-        },
-      });
-      
-    } catch (error) {
-      console.error('Error removing category:', error);
-      toast.error('Failed to remove category. Please try again.');
-    }
-  };
-
-  // Function to undo category removal
-  const undoRemoveCategory = async (categorySearchTerm: string, categoryName: string) => {
-    if (!user || !userProfile) return;
-    
-    try {
-      const updatedPriorities = [...(userProfile.priorities || []), categorySearchTerm];
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ priorities: updatedPriorities })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      setUserProfile({ ...userProfile, priorities: updatedPriorities });
-      toast.success(`Restored "${categoryName}" to your recommendations`);
-      
-    } catch (error) {
-      console.error('Error restoring category:', error);
-      toast.error('Failed to restore category.');
-    }
-  };
-
-  // Toggle edit mode for a specific pack
-  const toggleEditMode = (packTitle: string) => {
-    setEditMode(prev => ({
-      ...prev,
-      [packTitle]: !prev[packTitle]
-    }));
-  };
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -974,15 +907,6 @@ export default function Explore() {
                       <pack.icon className={`text-white ${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
                     </div>
                     <CardTitle className={`${isMobile ? 'text-lg' : 'text-xl'}`}>{pack.title}</CardTitle>
-                    {user && pack.title !== "First 90 Days" && (
-                      <button
-                        onClick={() => toggleEditMode(pack.title)}
-                        className="absolute top-0 right-0 w-8 h-8 bg-muted/80 hover:bg-muted rounded-full flex items-center justify-center transition-colors"
-                        title={editMode[pack.title] ? "Exit edit mode" : "Edit categories"}
-                      >
-                        <Edit3 className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    )}
                   </div>
                 </CardHeader>
                  <CardContent className={`${isMobile ? 'pt-1 px-4 pb-3' : 'pt-2'}`}>
@@ -1001,7 +925,7 @@ export default function Explore() {
                     ) : (
                       <>
                           <p className={`text-center text-muted-foreground mb-2 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                            {editMode[pack.title] ? "Tap X to remove categories:" : "Click a category below:"}
+                            Click a category below:
                           </p>
                           {isMobile ? (
                             <div className="relative">
@@ -1031,37 +955,23 @@ export default function Explore() {
                                  <Badge 
                                    key={index} 
                                    variant="secondary" 
-                                   className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 snap-start relative group ${
-                                     index === pack.categories.length - 1 ? 'mr-8' : ''
-                                   } ${
-                                     editMode[pack.title]
-                                       ? "cursor-default border-2 border-dashed border-muted-foreground/30"
-                                       : user 
-                                         ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                         : "cursor-not-allowed"
-                                   }`}
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     if (!editMode[pack.title] && user) {
-                                       handleThemedPackClick(pack, category);
-                                     } else if (!user) {
-                                       window.location.href = '/auth';
-                                     }
-                                   }}
+                                    className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 snap-start relative group ${
+                                      index === pack.categories.length - 1 ? 'mr-8' : ''
+                                    } ${
+                                      user 
+                                        ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                        : "cursor-not-allowed"
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (user) {
+                                        handleThemedPackClick(pack, category);
+                                      } else {
+                                        window.location.href = '/auth';
+                                      }
+                                    }}
                                  >
-                                   {category.charAt(0).toUpperCase() + category.slice(1)}
-                                   {user && editMode[pack.title] && (
-                                     <button
-                                       className="ml-2 w-4 h-4 bg-muted hover:bg-destructive/80 text-muted-foreground hover:text-destructive-foreground rounded-full flex items-center justify-center text-xs transition-colors"
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         removeCategory(category, category);
-                                       }}
-                                       title={`Remove ${category}`}
-                                     >
-                                       <X className="h-2 w-2" />
-                                     </button>
-                                   )}
+                                    {category.charAt(0).toUpperCase() + category.slice(1)}
                                  </Badge>
                                ))}
                              </div>
@@ -1082,35 +992,21 @@ export default function Explore() {
                                 <Badge 
                                   key={index} 
                                   variant="secondary" 
-                                  className={`text-xs transition-all duration-200 shadow-sm relative group ${
-                                    editMode[pack.title]
-                                      ? "cursor-default border-2 border-dashed border-muted-foreground/30"
-                                      : user 
-                                        ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                        : "cursor-not-allowed"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!editMode[pack.title] && user) {
-                                      handleThemedPackClick(pack, category);
-                                    } else if (!user) {
-                                      window.location.href = '/auth';
-                                    }
-                                  }}
+                                   className={`text-xs transition-all duration-200 shadow-sm relative group ${
+                                     user 
+                                       ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                       : "cursor-not-allowed"
+                                   }`}
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     if (user) {
+                                       handleThemedPackClick(pack, category);
+                                     } else {
+                                       window.location.href = '/auth';
+                                     }
+                                   }}
                                 >
-                                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                                  {user && editMode[pack.title] && (
-                                    <button
-                                      className="ml-2 w-4 h-4 bg-muted hover:bg-destructive/80 text-muted-foreground hover:text-destructive-foreground rounded-full flex items-center justify-center text-xs transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeCategory(category, category);
-                                      }}
-                                      title={`Remove ${category}`}
-                                    >
-                                      <X className="h-2 w-2" />
-                                    </button>
-                                  )}
+                                   {category.charAt(0).toUpperCase() + category.slice(1)}
                                 </Badge>
                               ))}
                             </div>
@@ -1120,35 +1016,21 @@ export default function Explore() {
                                 <Badge 
                                   key={index + 2} 
                                   variant="secondary" 
-                                  className={`text-xs transition-all duration-200 shadow-sm relative group ${
-                                    editMode[pack.title]
-                                      ? "cursor-default border-2 border-dashed border-muted-foreground/30"
-                                      : user 
-                                        ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                        : "cursor-not-allowed"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!editMode[pack.title] && user) {
-                                      handleThemedPackClick(pack, category);
-                                    } else if (!user) {
-                                      window.location.href = '/auth';
-                                    }
-                                  }}
+                                   className={`text-xs transition-all duration-200 shadow-sm relative group ${
+                                     user 
+                                       ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                       : "cursor-not-allowed"
+                                   }`}
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     if (user) {
+                                       handleThemedPackClick(pack, category);
+                                     } else {
+                                       window.location.href = '/auth';
+                                     }
+                                   }}
                                 >
-                                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                                  {user && editMode[pack.title] && (
-                                    <button
-                                      className="ml-2 w-4 h-4 bg-muted hover:bg-destructive/80 text-muted-foreground hover:text-destructive-foreground rounded-full flex items-center justify-center text-xs transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeCategory(category, category);
-                                      }}
-                                      title={`Remove ${category}`}
-                                    >
-                                      <X className="h-2 w-2" />
-                                    </button>
-                                  )}
+                                   {category.charAt(0).toUpperCase() + category.slice(1)}
                                 </Badge>
                               ))}
                             </div>

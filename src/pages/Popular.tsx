@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { EventCard } from "@/components/EventCard";
-import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church, Gamepad2, Target, PartyPopper, Dice6, Flag, X } from "lucide-react";
+import { MapPin, Phone, Star, ExternalLink, Sparkles, TrendingUp, Clock, Calendar, Church, Gamepad2, Target, PartyPopper, Dice6, Flag } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 
@@ -141,39 +141,6 @@ const Popular = () => {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   
-  // Function to remove category from user's preferences
-  const removeCategory = async (categorySearchTerms: string[], categoryName: string) => {
-    if (!user || !userProfile) return;
-    
-    try {
-      // Remove from priorities array if it exists
-      const updatedPriorities = userProfile.priorities ? 
-        userProfile.priorities.filter((priority: string) => 
-          !categorySearchTerms.some(term => 
-            priority.toLowerCase().includes(term.toLowerCase()) ||
-            term.toLowerCase().includes(priority.toLowerCase())
-          ) && priority.toLowerCase() !== categoryName.toLowerCase()
-        ) : [];
-      
-      // Update user profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({ priorities: updatedPriorities })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUserProfile({ ...userProfile, priorities: updatedPriorities });
-      
-      // Show confirmation toast
-      toast.success(`Removed "${categoryName}" from your recommendations`);
-      
-    } catch (error) {
-      console.error('Error removing category:', error);
-      toast.error('Failed to remove category. Please try again.');
-    }
-  };
   
 
   // Set user context for caching
@@ -412,19 +379,6 @@ const Popular = () => {
                       className="group cursor-pointer transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 border-border/50 relative"
                       onClick={() => navigateToCategory(category.name)}
                     >
-                      {user && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2 h-6 w-6 p-0 bg-background/80 hover:bg-destructive hover:text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeCategory(category.searchTerms, category.name);
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
                       <CardContent className="p-6 text-center">
                         <div className={`w-16 h-16 mx-auto mb-4 rounded-full ${category.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
                           {category.icon}
