@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSmartToast } from "@/hooks/useSmartToast";
 import { useBusinessDetails } from "@/hooks/useBusinessDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRequestCache } from "@/hooks/useRequestCache";
 
 interface LocationData {
   latitude: number;
@@ -200,6 +201,12 @@ const PopularCategory = () => {
   
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const { showFavoriteToast } = useSmartToast();
+  const { getCached, setCached, checkBackendCache, setCurrentUserId } = useRequestCache();
+
+  // Set current user for cache
+  useEffect(() => {
+    setCurrentUserId(user?.id || null);
+  }, [user?.id, setCurrentUserId]);
 
   // Find category config
   const categoryConfig = trendingCategories.find(cat => 
@@ -356,26 +363,34 @@ const PopularCategory = () => {
 
     try {
       const searchTerms = categoryConfig.searchTerms;
+      const cacheKey = `popular-${searchTerms.join('-').toLowerCase()}-${location.latitude.toFixed(2)}-${location.longitude.toFixed(2)}`;
       
-      // First, try to get cached recommendations
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', searchTerms)
-        .limit(1)
-        .single();
+      // Check frontend cache first
+      const cachedData = getCached('popular', { 
+        latitude: location.latitude,
+        longitude: location.longitude,
+        categories: searchTerms 
+      });
+      
+      if (cachedData) {
+        console.log('💰 FRONTEND CACHE HIT for popular category');
+        setBusinesses(cachedData);
+        setLoading(false);
+        return;
+      }
 
-      if (!cacheError && cachedData?.recommendations) {
-        console.log('Using cached data for popular category');
-        
-        // Extract businesses from cached data that match our search terms
+      // Check backend cache
+      const backendCached = await checkBackendCache({ 
+        lat: location.latitude, 
+        lng: location.longitude 
+      }, searchTerms);
+      
+      if (backendCached) {
+        console.log('💰 BACKEND CACHE HIT for popular category');
         const allResults: Business[] = [];
-        const cachedRecs = cachedData.recommendations as any;
-        
         searchTerms.forEach(term => {
-          if (cachedRecs[term]) {
-            allResults.push(...cachedRecs[term]);
+          if (backendCached[term]) {
+            allResults.push(...backendCached[term]);
           }
         });
 
@@ -385,15 +400,19 @@ const PopularCategory = () => {
             .slice(0, 12);
 
           setBusinesses(sortedResults);
-          console.log(`Found ${sortedResults.length} popular places from cache`);
+          setCached('popular', { 
+            latitude: location.latitude,
+            longitude: location.longitude,
+            categories: searchTerms 
+          }, sortedResults);
           setLoading(false);
           return;
         }
       }
 
-      console.log('No cache found, making fresh API call for popular category');
+      console.log('🔄 CACHE MISS - Making fresh API call for popular category');
       
-      // Fallback to fresh API call if no cache
+      // Fresh API call
       const { data, error } = await supabase.functions.invoke('generate-recommendations', {
         body: {
           popularMode: true,
@@ -406,19 +425,22 @@ const PopularCategory = () => {
       if (error) throw error;
 
       if (data?.recommendations) {
-        // Flatten results from all search terms
         const allResults: Business[] = [];
         Object.values(data.recommendations).forEach((businesses: Business[]) => {
           allResults.push(...businesses);
         });
         
-        // Sort by distance and take top results
         const sortedResults = allResults
           .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 12); // Limit to 12 results
+          .slice(0, 12);
 
         setBusinesses(sortedResults);
-        console.log(`Found ${sortedResults.length} popular places from API`);
+        setCached('popular', { 
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms 
+        }, sortedResults);
+        console.log(`💾 Cached ${sortedResults.length} popular places`);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
@@ -430,6 +452,98 @@ const PopularCategory = () => {
 
   const getGoogleMapsUrl = (address: string) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  };
+
+  // Unified function to fetch tab data with caching
+  const fetchTabData = async (
+    type: 'personal-care' | 'food-time' | 'drink-time',
+    subcategory: string,
+    searchTerms: string[]
+  ) => {
+    if (!location) return [];
+
+    // Check frontend cache first
+    const cachedData = getCached(`${type}-${subcategory}`, { 
+      latitude: location.latitude,
+      longitude: location.longitude,
+      categories: searchTerms 
+    });
+    
+    if (cachedData) {
+      console.log(`💰 FRONTEND CACHE HIT for ${type}-${subcategory}`);
+      return cachedData;
+    }
+
+    // Check backend cache
+    const backendCached = await checkBackendCache({ 
+      lat: location.latitude, 
+      lng: location.longitude 
+    }, searchTerms);
+    
+    if (backendCached) {
+      console.log(`💰 BACKEND CACHE HIT for ${type}-${subcategory}`);
+      const allResults: Business[] = [];
+      searchTerms.forEach(term => {
+        if (backendCached[term]) {
+          allResults.push(...backendCached[term]);
+        }
+      });
+
+      if (allResults.length > 0) {
+        const sortedResults = allResults
+          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+          .slice(0, 4);
+
+        setCached(`${type}-${subcategory}`, { 
+          latitude: location.latitude,
+          longitude: location.longitude,
+          categories: searchTerms 
+        }, sortedResults);
+        return sortedResults;
+      }
+    }
+
+    console.log(`🔄 CACHE MISS - Making fresh API call for ${type}-${subcategory}`);
+    
+    // Fresh API call
+    const modeMap = {
+      'personal-care': 'personalCareMode',
+      'food-time': 'foodSceneMode', 
+      'drink-time': 'popularMode'
+    };
+
+    const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+      body: {
+        [modeMap[type]]: true,
+        timeOfDay: type === 'food-time' ? subcategory : undefined,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        categories: searchTerms
+      }
+    });
+
+    if (error) throw error;
+
+    if (data?.recommendations) {
+      const allResults: Business[] = [];
+      Object.values(data.recommendations).forEach((businesses: Business[]) => {
+        allResults.push(...businesses);
+      });
+      
+      const sortedResults = allResults
+        .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+        .slice(0, 4);
+
+      setCached(`${type}-${subcategory}`, { 
+        latitude: location.latitude,
+        longitude: location.longitude,
+        categories: searchTerms 
+      }, sortedResults);
+      console.log(`💾 Cached ${sortedResults.length} ${type}-${subcategory} places`);
+      return sortedResults;
+    }
+
+    return [];
   };
 
   // New function to fetch subcategory data individually for Personal Care & Wellness
@@ -446,76 +560,15 @@ const PopularCategory = () => {
       };
 
       const searchTerms = searchTermsMap[subcategory];
-
-      // Check cache first
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', searchTerms)
-        .limit(1)
-        .single();
-
-      if (!cacheError && cachedData?.recommendations) {
-        console.log(`Using cached data for ${subcategory}`);
-        
-        const allResults: Business[] = [];
-        const cachedRecs = cachedData.recommendations as any;
-        
-        searchTerms.forEach(term => {
-          if (cachedRecs[term]) {
-            allResults.push(...cachedRecs[term]);
-          }
-        });
-
-        if (allResults.length > 0) {
-          const sortedResults = allResults
-            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-            .slice(0, 4);
-
-          setSubcategoryData(prev => ({
-            ...prev,
-            [subcategory]: sortedResults
-          }));
-          
-          setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
-          return;
-        }
-      }
-
-      console.log(`No cache found, making fresh API call for ${subcategory}`);
+      const results = await fetchTabData('personal-care', subcategory, searchTerms);
       
-      // Make fresh API call with distance-only scoring
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          personalCareMode: true,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.recommendations) {
-        const allResults: Business[] = [];
-        Object.values(data.recommendations).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
-        });
-        
-        const sortedResults = allResults
-          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 4);
-
-        setSubcategoryData(prev => ({
-          ...prev,
-          [subcategory]: sortedResults
-        }));
-        
-        console.log(`Found ${sortedResults.length} ${subcategory} from API`);
-      }
+      setSubcategoryData(prev => ({
+        ...prev,
+        [subcategory]: results
+      }));
+      
     } catch (error) {
-      console.error(`Error fetching ${subcategory}:`, error);
+      console.error(`Error fetching ${subcategory} data:`, error);
     } finally {
       setSubcategoryLoading(prev => ({ ...prev, [subcategory]: false }));
     }
@@ -529,89 +582,27 @@ const PopularCategory = () => {
 
     try {
       const searchTermsMap = {
-        morning: ['breakfast', 'brunch', 'coffee shop'],
-        afternoon: ['lunch', 'casual dining', 'quick service'],
-        evening: ['dinner', 'restaurant', 'fine dining']
+        morning: ['breakfast', 'coffee shop', 'bakery', 'brunch'],
+        afternoon: ['lunch', 'casual dining', 'sandwich shop', 'food truck'],
+        evening: ['dinner', 'restaurant', 'fine dining', 'steakhouse']
       };
 
       const searchTerms = searchTermsMap[timeOfDay];
-
-      // Check cache first
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', searchTerms)
-        .limit(1)
-        .single();
-
-      if (!cacheError && cachedData?.recommendations) {
-        console.log(`Using cached data for ${timeOfDay} food time`);
-        
-        const allResults: Business[] = [];
-        const cachedRecs = cachedData.recommendations as any;
-        
-        searchTerms.forEach(term => {
-          if (cachedRecs[term]) {
-            allResults.push(...cachedRecs[term]);
-          }
-        });
-
-        if (allResults.length > 0) {
-          const sortedResults = allResults
-            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-            .slice(0, 6);
-
-          setFoodSceneData(prev => ({
-            ...prev,
-            [timeOfDay]: sortedResults
-          }));
-          
-          setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
-          return;
-        }
-      }
-
-      console.log(`No cache found, making fresh API call for ${timeOfDay} food time`);
+      const results = await fetchTabData('food-time', timeOfDay, searchTerms);
       
-      // Make fresh API call with food time mode
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          foodSceneMode: true,
-          timeOfDay: timeOfDay,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.recommendations) {
-        const allResults: Business[] = [];
-        Object.values(data.recommendations).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
-        });
-        
-        const sortedResults = allResults
-          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 6);
-
-        setFoodSceneData(prev => ({
-          ...prev,
-          [timeOfDay]: sortedResults
-        }));
-        
-        console.log(`Found ${sortedResults.length} ${timeOfDay} dining options from API`);
-      }
+      setFoodSceneData(prev => ({
+        ...prev,
+        [timeOfDay]: results
+      }));
+      
     } catch (error) {
-      console.error(`Error fetching ${timeOfDay} food time:`, error);
+      console.error(`Error fetching ${timeOfDay} food data:`, error);
     } finally {
       setFoodSceneLoading(prev => ({ ...prev, [timeOfDay]: false }));
     }
   };
 
-  // Function to fetch Drink Time data by drink type
+  // Function to fetch Drink Time data (coffee vs breweries)
   const fetchDrinkTimeData = async (drinkType: 'coffee' | 'breweries') => {
     if (!location) return;
 
@@ -624,75 +615,15 @@ const PopularCategory = () => {
       };
 
       const searchTerms = searchTermsMap[drinkType];
-
-      // Check cache first
-      const { data: cachedData, error: cacheError } = await supabase
-        .from('recommendations_cache')
-        .select('recommendations, expires_at')
-        .gte('expires_at', new Date().toISOString())
-        .overlaps('categories', searchTerms)
-        .limit(1)
-        .single();
-
-      if (!cacheError && cachedData?.recommendations) {
-        console.log(`Using cached data for ${drinkType} drink time`);
-        
-        const allResults: Business[] = [];
-        const cachedRecs = cachedData.recommendations as any;
-        
-        searchTerms.forEach(term => {
-          if (cachedRecs[term]) {
-            allResults.push(...cachedRecs[term]);
-          }
-        });
-
-        if (allResults.length > 0) {
-          const sortedResults = allResults
-            .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-            .slice(0, 6);
-
-          setDrinkTimeData(prev => ({
-            ...prev,
-            [drinkType]: sortedResults
-          }));
-          
-          setDrinkTimeLoading(prev => ({ ...prev, [drinkType]: false }));
-          return;
-        }
-      }
-
-      console.log(`No cache found, making fresh API call for ${drinkType} drink time`);
+      const results = await fetchTabData('drink-time', drinkType, searchTerms);
       
-      // Make fresh API call
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.recommendations) {
-        const allResults: Business[] = [];
-        Object.values(data.recommendations).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
-        });
-        
-        const sortedResults = allResults
-          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 6);
-
-        setDrinkTimeData(prev => ({
-          ...prev,
-          [drinkType]: sortedResults
-        }));
-        
-        console.log(`Found ${sortedResults.length} ${drinkType} options from API`);
-      }
+      setDrinkTimeData(prev => ({
+        ...prev,
+        [drinkType]: results
+      }));
+      
     } catch (error) {
-      console.error(`Error fetching ${drinkType} drink time:`, error);
+      console.error(`Error fetching ${drinkType}:`, error);
     } finally {
       setDrinkTimeLoading(prev => ({ ...prev, [drinkType]: false }));
     }
