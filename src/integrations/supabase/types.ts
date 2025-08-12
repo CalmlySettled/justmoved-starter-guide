@@ -222,10 +222,12 @@ export type Database = {
         Row: {
           cache_key: string
           categories: string[]
+          coordinate_hash: string | null
           created_at: string
           expires_at: string
           id: string
           preferences: Json
+          privacy_level: string | null
           recommendations: Json
           user_coordinates: unknown
           user_id: string | null
@@ -233,10 +235,12 @@ export type Database = {
         Insert: {
           cache_key: string
           categories: string[]
+          coordinate_hash?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           preferences?: Json
+          privacy_level?: string | null
           recommendations: Json
           user_coordinates: unknown
           user_id?: string | null
@@ -244,12 +248,89 @@ export type Database = {
         Update: {
           cache_key?: string
           categories?: string[]
+          coordinate_hash?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           preferences?: Json
+          privacy_level?: string | null
           recommendations?: Json
           user_coordinates?: unknown
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      secure_sessions: {
+        Row: {
+          created_at: string
+          fingerprint_hash: string | null
+          id: string
+          ip_hash: string | null
+          is_suspicious: boolean | null
+          last_activity_at: string
+          security_score: number | null
+          session_id: string
+          user_agent_hash: string | null
+          user_id: string | null
+          validation_failures: number | null
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          is_suspicious?: boolean | null
+          last_activity_at?: string
+          security_score?: number | null
+          session_id: string
+          user_agent_hash?: string | null
+          user_id?: string | null
+          validation_failures?: number | null
+        }
+        Update: {
+          created_at?: string
+          fingerprint_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          is_suspicious?: boolean | null
+          last_activity_at?: string
+          security_score?: number | null
+          session_id?: string
+          user_agent_hash?: string | null
+          user_id?: string | null
+          validation_failures?: number | null
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          ip_hash: string | null
+          session_id: string | null
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json
+          event_type: string
+          id?: string
+          ip_hash?: string | null
+          session_id?: string | null
+          severity?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          ip_hash?: string | null
+          session_id?: string | null
+          severity?: string
           user_id?: string | null
         }
         Relationships: []
@@ -457,6 +538,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_security_events: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       extract_city_state: {
         Args: { full_address: string }
         Returns: string
@@ -476,9 +561,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_user_coordinates: {
+        Args: { lat: number; lng: number; user_id: string }
+        Returns: string
+      }
       increment_interaction: {
         Args: { p_user_id: string; p_business_name: string; p_category: string }
         Returns: undefined
+      }
+      log_cache_access: {
+        Args: {
+          p_cache_type: string
+          p_access_pattern: string
+          p_metadata?: Json
+        }
+        Returns: undefined
+      }
+      validate_session_security: {
+        Args: {
+          p_session_id: string
+          p_user_agent: string
+          p_ip_address: unknown
+        }
+        Returns: Json
       }
     }
     Enums: {

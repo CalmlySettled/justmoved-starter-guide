@@ -112,7 +112,7 @@ export const authRateLimiter = new RateLimiter(5, 60000); // 5 attempts per minu
 export const apiRateLimiter = new RateLimiter(30, 60000); // 30 requests per minute
 export const uploadRateLimiter = new RateLimiter(10, 300000); // 10 uploads per 5 minutes
 
-// Enhanced security logging with anomaly detection
+// Enhanced security logging with anomaly detection and backend integration
 export const logSecurityEvent = async (
   event: string,
   details: Record<string, any>,
@@ -148,11 +148,21 @@ export const logSecurityEvent = async (
     // Check for suspicious patterns
     checkForAnomalies(existingLogs, event, userId);
     
-    // In production, you might want to send this to a logging service
-    // await fetch('/api/security-log', { 
-    //   method: 'POST', 
-    //   body: JSON.stringify(securityLog) 
-    // });
+    // NEW: Send to backend security monitoring (async, no blocking)
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.rpc('log_cache_access', {
+        p_cache_type: 'security_event',
+        p_access_pattern: event,
+        p_metadata: {
+          ...details,
+          event_type: event,
+          timestamp: securityLog.timestamp
+        }
+      });
+    } catch (backendError) {
+      console.warn('Failed to send security event to backend:', backendError);
+    }
   } catch (error) {
     console.error('Failed to log security event:', error);
   }

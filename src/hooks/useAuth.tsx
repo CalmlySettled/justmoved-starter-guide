@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequestCache } from "./useRequestCache";
+import { logSecurityEvent } from "@/lib/security";
 
 interface AuthContextType {
   user: User | null;
@@ -113,6 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Sign out initiated...');
       
+      // Log security event for sign out
+      logSecurityEvent('user_signout', { 
+        user_id: user?.id,
+        timestamp: new Date().toISOString()
+      });
+      
       // Clear user-specific cache before signing out
       const currentUserId = user?.id;
       if (currentUserId) {
@@ -134,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Sign out successful');
     } catch (error) {
       console.error('Failed to sign out:', error);
+      logSecurityEvent('signout_error', { error: String(error) });
       // Even if server sign out fails, clear local state
       setUser(null);
       setSession(null);
