@@ -27,6 +27,20 @@ class RequestCacheManager {
   }
 
   private generateCacheKey(type: string, params: any, isGeographic: boolean = false): string {
+    console.log(`🔍 GENERATE CACHE KEY ENTRY:`, {
+      type,
+      isGeographic,
+      isGeographicType: typeof isGeographic,
+      isGeographicValue: String(isGeographic),
+      currentUserId: this.currentUserId,
+      paramsKeys: Object.keys(params || {})
+    });
+
+    // ASSERTION: Geographic data should NEVER get user-prefixed keys
+    if (isGeographic && this.currentUserId) {
+      console.warn(`⚠️ POTENTIAL ISSUE: Geographic data (${type}) being processed with user ID present. This might create user-specific keys for shared data.`);
+    }
+
     // Normalize coordinates for better cache hits (~2 mile precision)
     if (params.latitude && params.longitude) {
       params = {
@@ -45,6 +59,27 @@ class RequestCacheManager {
       : this.currentUserId 
         ? `user:${this.currentUserId}:${versionedKey}`
         : `anon:${versionedKey}`;
+
+    // ASSERTION: Verify geographic data doesn't get user prefix
+    if (isGeographic && (finalKey.startsWith('user:') || finalKey.startsWith('anon:'))) {
+      console.error(`❌ CRITICAL ERROR: Geographic data got user-prefixed key!`, {
+        type,
+        isGeographic,
+        finalKey,
+        shouldBeShared: true
+      });
+      throw new Error(`Geographic cache key incorrectly prefixed: ${finalKey}`);
+    }
+
+    // ASSERTION: Verify non-geographic data gets proper prefix when user exists
+    if (!isGeographic && this.currentUserId && !finalKey.startsWith('user:')) {
+      console.error(`❌ CRITICAL ERROR: Personal data didn't get user prefix!`, {
+        type,
+        isGeographic,
+        finalKey,
+        shouldHaveUserPrefix: true
+      });
+    }
     
     console.log(`🔑 CACHE KEY GENERATED:`, {
       type,
@@ -56,7 +91,8 @@ class RequestCacheManager {
       baseKey,
       versionedKey,
       finalKey,
-      keyLength: finalKey.length
+      keyLength: finalKey.length,
+      isSharedKey: !finalKey.includes('user:') && !finalKey.includes('anon:')
     });
     
     return finalKey;
