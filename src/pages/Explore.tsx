@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users } from "lucide-react";
+import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissors, Search, Clock, Home, Zap, Link, Users, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
@@ -17,8 +17,9 @@ import { useRequestCache } from "@/hooks/useRequestCache";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryResultsModal } from "@/components/CategoryResultsModal";
 import { AddressCaptureModal } from "@/components/AddressCaptureModal";
-import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
+
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
+import { toast } from "sonner";
 
 interface LocationData {
   latitude: number;
@@ -105,6 +106,38 @@ export default function Explore() {
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
   const { showFavoriteToast } = useSmartToast();
+  
+  // Function to remove category from user's preferences
+  const removeCategory = async (categorySearchTerm: string, categoryName: string) => {
+    if (!user || !userProfile) return;
+    
+    try {
+      // Remove from priorities array if it exists
+      const updatedPriorities = userProfile.priorities ? 
+        userProfile.priorities.filter((priority: string) => 
+          priority.toLowerCase() !== categorySearchTerm.toLowerCase() &&
+          priority.toLowerCase() !== categoryName.toLowerCase()
+        ) : [];
+      
+      // Update user profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ priorities: updatedPriorities })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUserProfile({ ...userProfile, priorities: updatedPriorities });
+      
+      // Show confirmation toast
+      toast.success(`Removed "${categoryName}" from your recommendations`);
+      
+    } catch (error) {
+      console.error('Error removing category:', error);
+      toast.error('Failed to remove category. Please try again.');
+    }
+  };
   const isMobile = useIsMobile();
   const scrollContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -839,15 +872,6 @@ export default function Explore() {
             </div>
           )}
 
-          {/* Category Management for authenticated users */}
-          {user && userProfile && (
-            <div className="text-center mb-8">
-              <AddMoreCategoriesModal 
-                userProfile={userProfile} 
-                onNewRecommendations={() => loadUserProfile()}
-              />
-            </div>
-          )}
 
           {/* Location Section - Hidden when address modal will show */}
           {!isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal && !(urlParams.get('oauth') === 'true' && !location) ? (
@@ -958,27 +982,38 @@ export default function Explore() {
                                  className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-fade-container snap-x snap-mandatory"
                               >
                                {pack.categories.map((category, index) => (
-                                 <Badge 
-                                   key={index} 
-                                   variant="secondary" 
-                                   className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 snap-start ${
-                                     index === pack.categories.length - 1 ? 'mr-8' : ''
-                                   } ${
-                                     user 
-                                       ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                       : "cursor-not-allowed"
-                                   }`}
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                      if (user) {
-                                        handleThemedPackClick(pack, category);
-                                      } else {
-                                        window.location.href = '/auth';
-                                      }
-                                   }}
-                                 >
-                                   {category.charAt(0).toUpperCase() + category.slice(1)}
-                                 </Badge>
+                                <Badge 
+                                  key={index} 
+                                  variant="secondary" 
+                                  className={`text-xs transition-all duration-200 shadow-sm whitespace-nowrap flex-shrink-0 snap-start relative group ${
+                                    index === pack.categories.length - 1 ? 'mr-8' : ''
+                                  } ${
+                                    user 
+                                      ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                      : "cursor-not-allowed"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                     if (user) {
+                                       handleThemedPackClick(pack, category);
+                                     } else {
+                                       window.location.href = '/auth';
+                                     }
+                                  }}
+                                >
+                                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                                  {user && (
+                                    <button
+                                      className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeCategory(category, category);
+                                      }}
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
+                                  )}
+                                </Badge>
                                ))}
                              </div>
                              {pack.categories.length > 3 && (
@@ -995,49 +1030,71 @@ export default function Explore() {
                             {/* First row - 2 categories */}
                             <div className="flex flex-wrap gap-2 justify-center">
                               {pack.categories.slice(0, 2).map((category, index) => (
-                                <Badge 
-                                  key={index} 
-                                  variant="secondary" 
-                                  className={`text-xs transition-all duration-200 shadow-sm ${
-                                    user 
-                                      ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                      : "cursor-not-allowed"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                     if (user) {
-                                       handleThemedPackClick(pack, category);
-                                     } else {
-                                       window.location.href = '/auth';
-                                     }
-                                  }}
-                                >
-                                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                                </Badge>
+                               <Badge 
+                                 key={index} 
+                                 variant="secondary" 
+                                 className={`text-xs transition-all duration-200 shadow-sm relative group ${
+                                   user 
+                                     ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                     : "cursor-not-allowed"
+                                 }`}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                    if (user) {
+                                      handleThemedPackClick(pack, category);
+                                    } else {
+                                      window.location.href = '/auth';
+                                    }
+                                 }}
+                               >
+                                 {category.charAt(0).toUpperCase() + category.slice(1)}
+                                 {user && (
+                                   <button
+                                     className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       removeCategory(category, category);
+                                     }}
+                                   >
+                                     <X className="h-2 w-2" />
+                                   </button>
+                                 )}
+                               </Badge>
                               ))}
                             </div>
                             {/* Second row - 3 categories */}
                             <div className="flex flex-wrap gap-2 justify-center">
                               {pack.categories.slice(2, 5).map((category, index) => (
-                                <Badge 
-                                  key={index + 2} 
-                                  variant="secondary" 
-                                  className={`text-xs transition-all duration-200 shadow-sm ${
-                                    user 
-                                      ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
-                                      : "cursor-not-allowed"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                     if (user) {
-                                       handleThemedPackClick(pack, category);
-                                     } else {
-                                       window.location.href = '/auth';
-                                     }
-                                  }}
-                                >
-                                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                                </Badge>
+                               <Badge 
+                                 key={index + 2} 
+                                 variant="secondary" 
+                                 className={`text-xs transition-all duration-200 shadow-sm relative group ${
+                                   user 
+                                     ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
+                                     : "cursor-not-allowed"
+                                 }`}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                    if (user) {
+                                      handleThemedPackClick(pack, category);
+                                    } else {
+                                      window.location.href = '/auth';
+                                    }
+                                 }}
+                               >
+                                 {category.charAt(0).toUpperCase() + category.slice(1)}
+                                 {user && (
+                                   <button
+                                     className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       removeCategory(category, category);
+                                     }}
+                                   >
+                                     <X className="h-2 w-2" />
+                                   </button>
+                                 )}
+                               </Badge>
                               ))}
                             </div>
                           </div>
