@@ -245,7 +245,7 @@ const Popular = () => {
       
       // Check cache for events first
       const eventsCacheKey = { latitude: location.latitude, longitude: location.longitude };
-      const cachedEvents = getCached('popular_events', eventsCacheKey);
+      const cachedEvents = getCached('popular_events', eventsCacheKey, true);
       if (cachedEvents) {
         console.log('💰 Using cached events data');
         setEvents(cachedEvents);
@@ -281,8 +281,8 @@ const Popular = () => {
           const eventsData = data?.events || [];
           setEvents(eventsData);
           
-          // Cache events for session duration (1 hour)
-          setCached('popular_events', eventsCacheKey, eventsData, 60 * 60 * 1000);
+          // Cache events for 30 days
+          setCached('popular_events', eventsCacheKey, eventsData, undefined, true);
         }
       } catch (error) {
         console.error('Error fetching events:', error);

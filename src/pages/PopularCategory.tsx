@@ -370,7 +370,7 @@ const PopularCategory = () => {
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms 
-      });
+      }, true);
       
       if (cachedData) {
         console.log('💰 FRONTEND CACHE HIT for popular category');
@@ -404,7 +404,7 @@ const PopularCategory = () => {
             latitude: location.latitude,
             longitude: location.longitude,
             categories: searchTerms 
-          }, sortedResults);
+          }, sortedResults, undefined, true);
           setLoading(false);
           return;
         }
@@ -439,7 +439,7 @@ const PopularCategory = () => {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
-        }, sortedResults);
+        }, sortedResults, undefined, true);
         console.log(`💾 Cached ${sortedResults.length} popular places`);
       }
     } catch (error) {
@@ -467,7 +467,7 @@ const PopularCategory = () => {
       latitude: location.latitude,
       longitude: location.longitude,
       categories: searchTerms 
-    });
+    }, true);
     
     if (cachedData) {
       console.log(`💰 FRONTEND CACHE HIT for ${type}-${subcategory}`);
@@ -498,7 +498,7 @@ const PopularCategory = () => {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: searchTerms 
-        }, sortedResults);
+        }, sortedResults, undefined, true);
         return sortedResults;
       }
     }
@@ -538,7 +538,7 @@ const PopularCategory = () => {
         latitude: location.latitude,
         longitude: location.longitude,
         categories: searchTerms 
-      }, sortedResults);
+      }, sortedResults, undefined, true);
       console.log(`💾 Cached ${sortedResults.length} ${type}-${subcategory} places`);
       return sortedResults;
     }

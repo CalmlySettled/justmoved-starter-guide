@@ -10,7 +10,8 @@ interface CacheEntry {
 class RequestCacheManager {
   private static instance: RequestCacheManager;
   private cache: Map<string, CacheEntry> = new Map();
-  private readonly DEFAULT_TTL = 1800000; // 30 minutes
+  public readonly DEFAULT_TTL = 1800000; // 30 minutes
+  public readonly GEOGRAPHIC_TTL = 2592000000; // 30 days
   private readonly CLEANUP_INTERVAL = 600000; // 10 minutes
   private currentUserId: string | null = null;
 
@@ -25,7 +26,7 @@ class RequestCacheManager {
     return RequestCacheManager.instance;
   }
 
-  private generateCacheKey(type: string, params: any): string {
+  private generateCacheKey(type: string, params: any, isGeographic: boolean = false): string {
     // Normalize coordinates for better cache hits (~2 mile precision)
     if (params.latitude && params.longitude) {
       params = {
@@ -38,24 +39,27 @@ class RequestCacheManager {
     const baseKey = `${type}-${JSON.stringify(params)}`;
     const versionedKey = getVersionedCacheKey(baseKey);
     
-    // Add user context for authenticated users to prevent cross-contamination
-    const userAwareKey = this.currentUserId 
-      ? `user:${this.currentUserId}:${versionedKey}`
-      : `anon:${versionedKey}`;
+    // Geographic data is shared across all users, personal data is user-specific
+    const finalKey = isGeographic 
+      ? versionedKey  // No user prefix for geographic data
+      : this.currentUserId 
+        ? `user:${this.currentUserId}:${versionedKey}`
+        : `anon:${versionedKey}`;
     
-    console.log(`🔑 USER-AWARE CACHE KEY GENERATED:`, {
+    console.log(`🔑 CACHE KEY GENERATED:`, {
       type,
+      isGeographic,
       version: APP_VERSION,
       userId: this.currentUserId,
-      originalParams: arguments[1], // Keep original params for debugging
+      originalParams: arguments[1],
       normalizedParams: params,
       baseKey,
       versionedKey,
-      userAwareKey,
-      keyLength: userAwareKey.length
+      finalKey,
+      keyLength: finalKey.length
     });
     
-    return userAwareKey;
+    return finalKey;
   }
 
   setCurrentUserId(userId: string | null): void {
@@ -63,8 +67,8 @@ class RequestCacheManager {
     console.log(`👤 CURRENT USER SET:`, { userId });
   }
 
-  get(type: string, params: any): any | null {
-    const key = this.generateCacheKey(type, params);
+  get(type: string, params: any, isGeographic: boolean = false): any | null {
+    const key = this.generateCacheKey(type, params, isGeographic);
     const entry = this.cache.get(key);
     
     if (!entry) {
@@ -96,8 +100,8 @@ class RequestCacheManager {
     return entry.data;
   }
 
-  set(type: string, params: any, data: any, ttl: number = this.DEFAULT_TTL): void {
-    const key = this.generateCacheKey(type, params);
+  set(type: string, params: any, data: any, ttl: number = this.DEFAULT_TTL, isGeographic: boolean = false): void {
+    const key = this.generateCacheKey(type, params, isGeographic);
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -172,12 +176,13 @@ class RequestCacheManager {
 export function useRequestCache() {
   const cacheManager = useRef(RequestCacheManager.getInstance());
 
-  const getCached = useCallback((type: string, params: any) => {
-    return cacheManager.current.get(type, params);
+  const getCached = useCallback((type: string, params: any, isGeographic: boolean = false) => {
+    return cacheManager.current.get(type, params, isGeographic);
   }, []);
 
-  const setCached = useCallback((type: string, params: any, data: any, ttl?: number) => {
-    cacheManager.current.set(type, params, data, ttl);
+  const setCached = useCallback((type: string, params: any, data: any, ttl?: number, isGeographic: boolean = false) => {
+    const finalTtl = isGeographic ? cacheManager.current.GEOGRAPHIC_TTL : (ttl || cacheManager.current.DEFAULT_TTL);
+    cacheManager.current.set(type, params, data, finalTtl, isGeographic);
   }, []);
 
   const clearCache = useCallback(() => {
