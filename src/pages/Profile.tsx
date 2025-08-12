@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Camera, Shield, Bell, Download, Trash2, Eye, Mail, MapPin } from "lucide-react";
 import { sanitizeInput, displayNameSchema, logSecurityEvent } from "@/lib/security";
+import { AddMoreCategoriesModal } from "@/components/AddMoreCategoriesModal";
 
 interface ProfileData {
   display_name: string;
@@ -361,6 +362,34 @@ const Profile = () => {
                     />
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Category Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Category Preferences</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Manage the categories that interest you to get personalized recommendations.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {profileData.priorities.map((priority) => (
+                    <span
+                      key={priority}
+                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                    >
+                      {priority}
+                    </span>
+                  ))}
+                </div>
+                <AddMoreCategoriesModal 
+                  userProfile={profileData} 
+                  onNewRecommendations={handleProfileUpdate}
+                />
               </div>
             </CardContent>
           </Card>
