@@ -20,9 +20,14 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
     // Don't redirect while still loading
     if (authLoading) return;
 
-    // If no user, redirect to auth
+    // If no user, redirect to auth with source context
     if (!user) {
-      navigate('/auth', { replace: true });
+      const currentPath = window.location.pathname;
+      if (currentPath === '/property-manager') {
+        navigate('/auth?from=property-manager', { replace: true });
+      } else {
+        navigate('/auth', { replace: true });
+      }
       return;
     }
 

@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp } from 'lucide-react';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, LogOut } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
+import { Link } from 'react-router-dom';
 
 interface Property {
   id: string;
@@ -40,7 +41,7 @@ interface TenantLink {
 }
 
 const PropertyManager: React.FC = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenantLinks, setTenantLinks] = useState<TenantLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,6 +296,43 @@ const PropertyManager: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                <img 
+                  src="/calmlysettled-logo.png" 
+                  alt="CalmlySettled" 
+                  className="h-8 w-auto"
+                />
+                <span className="font-semibold text-lg">CalmlySettled</span>
+              </Link>
+              <div className="hidden sm:block">
+                <Badge variant="secondary">Property Manager</Badge>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                Welcome, {user?.user_metadata?.full_name || user?.email}
+              </span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/">
+                  <Home className="h-4 w-4 mr-2" />
+                  View Main Site
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Property Manager Dashboard</h1>

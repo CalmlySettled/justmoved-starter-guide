@@ -20,7 +20,7 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
   
   // Check if this is property manager route
-  const isPropertyManagerRoute = window.location.pathname === '/property-manager';
+  const isPropertyManagerRoute = window.location.pathname === '/property-manager' || urlParams.get('from') === 'property-manager';
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
