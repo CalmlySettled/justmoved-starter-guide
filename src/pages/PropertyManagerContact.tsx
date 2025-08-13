@@ -47,7 +47,7 @@ const PropertyManagerContact = () => {
 
     try {
       // Store inquiry in database
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('property_manager_inquiries')
         .insert([{
           company_name: formData.companyName,
