@@ -27,6 +27,7 @@ import Sitemap from "./pages/Sitemap";
 import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import PropertyManager from "./pages/PropertyManager";
+import PropertyManagerLanding from "./pages/PropertyManagerLanding";
 import PropertyManagerContact from "./pages/PropertyManagerContact";
 import PropertyManagerInquiries from "./pages/PropertyManagerInquiries";
 import TenantWelcome from "./pages/TenantWelcome";
@@ -51,7 +52,8 @@ const AppContent = () => {
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/property-manager" element={
+            <Route path="/property-manager" element={<PropertyManagerLanding />} />
+            <Route path="/property-manager/dashboard" element={
               <ProtectedRoute requirePropertyManager={true}>
                 <PropertyManager />
               </ProtectedRoute>
