@@ -17,12 +17,30 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
   const navigate = useNavigate();
 
   useEffect(() => {
+    const currentPath = window.location.pathname;
+    console.log('🛡️ ProtectedRoute - Check:', { 
+      currentPath,
+      user: !!user, 
+      authLoading, 
+      requireAdmin, 
+      requirePropertyManager,
+      isAdmin,
+      isPropertyManager,
+      adminLoading,
+      pmLoading,
+      adminError,
+      pmError
+    });
+
     // Don't redirect while still loading
-    if (authLoading) return;
+    if (authLoading) {
+      console.log('🛡️ ProtectedRoute - Auth loading, waiting...');
+      return;
+    }
 
     // If no user, redirect to auth with source context
     if (!user) {
-      const currentPath = window.location.pathname;
+      console.log('🛡️ ProtectedRoute - No user, redirecting to auth');
       if (currentPath === '/property-manager') {
         navigate('/auth?from=property-manager', { replace: true });
       } else {
@@ -34,7 +52,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
     // If admin required, check admin status after admin loading is complete
     if (requireAdmin && !adminLoading) {
       if (adminError || !isAdmin) {
-        // Redirect non-admin users to home page
+        console.log('🛡️ ProtectedRoute - Admin required but user not admin, redirecting home');
         navigate('/', { replace: true });
         return;
       }
@@ -43,9 +61,12 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
     // If property manager required, check PM status after PM loading is complete
     if (requirePropertyManager && !pmLoading) {
       if (pmError || !isPropertyManager) {
-        // Redirect non-PM users to home page
+        console.log('🛡️ ProtectedRoute - Property manager required but user not PM:', { pmError, isPropertyManager });
+        console.log('🛡️ ProtectedRoute - Redirecting to home');
         navigate('/', { replace: true });
         return;
+      } else {
+        console.log('✅ ProtectedRoute - Property manager verified, allowing access');
       }
     }
   }, [user, isAdmin, isPropertyManager, authLoading, adminLoading, pmLoading, adminError, pmError, requireAdmin, requirePropertyManager, navigate]);
