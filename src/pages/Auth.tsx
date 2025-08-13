@@ -19,8 +19,8 @@ export default function Auth() {
   const mode = urlParams.get('mode');
   const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
   
-  // Check if this is property manager route
-  const isPropertyManagerRoute = window.location.pathname === '/property-manager' || urlParams.get('from') === 'property-manager';
+  // Property manager signup is now handled via contact sales
+  const isPropertyManagerRoute = false;
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
