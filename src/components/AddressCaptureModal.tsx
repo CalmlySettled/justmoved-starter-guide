@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/utils/notificationRemover";
 import { MapPin, ArrowRight, LogOut } from "lucide-react";
+import { usePropertyManagerAuth } from "@/hooks/usePropertyManagerAuth";
 
 interface AddressCaptureModalProps {
   isOpen: boolean;
@@ -49,8 +50,18 @@ export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext
   const [loading, setLoading] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const navigate = useNavigate();
+  const { isPropertyManager, loading: propertyManagerLoading } = usePropertyManagerAuth();
 
   const content = getContextualContent(sourceContext);
+
+  // Skip modal for property managers - redirect them to their dashboard
+  useEffect(() => {
+    if (!propertyManagerLoading && isPropertyManager && isOpen) {
+      console.log('Property manager detected, redirecting to dashboard instead of address modal');
+      navigate("/property-manager");
+      onClose();
+    }
+  }, [isPropertyManager, propertyManagerLoading, isOpen, navigate, onClose]);
 
   const handleSubmit = async () => {
     if (!address || !isValidAddress) {

@@ -18,6 +18,9 @@ export default function Auth() {
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
   const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
+  
+  // Check if this is property manager route
+  const isPropertyManagerRoute = window.location.pathname === '/property-manager';
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,29 +42,40 @@ export default function Auth() {
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirect = urlParams.get('redirect');
-        const oauth = urlParams.get('oauth');
-        const focus = urlParams.get('focus');
-        
-        // Build redirect URL with preserved parameters
-        let redirectUrl = "/explore"; // Default
-        if (redirect === 'popular') {
-          redirectUrl = "/popular";
+        if (session) {
+          // Check if user is a property manager
+          const { data: hasRole } = await supabase.rpc('has_role', {
+            _user_id: session.user.id,
+            _role: 'property_manager'
+          });
+          
+          if (hasRole || isPropertyManagerRoute) {
+            navigate("/property-manager");
+            return;
+          }
+          
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirect = urlParams.get('redirect');
+          const oauth = urlParams.get('oauth');
+          const focus = urlParams.get('focus');
+          
+          // Build redirect URL with preserved parameters
+          let redirectUrl = "/explore"; // Default
+          if (redirect === 'popular') {
+            redirectUrl = "/popular";
+          }
+          
+          // Preserve OAuth and focus parameters for proper mobile flow
+          const params = new URLSearchParams();
+          if (oauth) params.set('oauth', oauth);
+          if (focus) params.set('focus', focus);
+          if (redirect) params.set('redirect', redirect);
+          
+          const queryString = params.toString();
+          const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
+          
+          navigate(finalUrl);
         }
-        
-        // Preserve OAuth and focus parameters for proper mobile flow
-        const params = new URLSearchParams();
-        if (oauth) params.set('oauth', oauth);
-        if (focus) params.set('focus', focus);
-        if (redirect) params.set('redirect', redirect);
-        
-        const queryString = params.toString();
-        const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
-        
-        navigate(finalUrl);
-      }
     };
     checkUser();
 
@@ -72,6 +86,19 @@ export default function Auth() {
         
         if (session) {
           console.log('🟡 AUTH - Session detected, checking redirect...');
+          
+          // Check if user is a property manager
+          const { data: hasRole } = await supabase.rpc('has_role', {
+            _user_id: session.user.id,
+            _role: 'property_manager'
+          });
+          
+          if (hasRole || isPropertyManagerRoute) {
+            console.log('🟡 AUTH - Property manager detected, redirecting to dashboard');
+            navigate("/property-manager");
+            return;
+          }
+          
           const urlParams = new URLSearchParams(window.location.search);
           const redirect = urlParams.get('redirect');
           const oauth = urlParams.get('oauth');
@@ -143,7 +170,8 @@ export default function Auth() {
           password,
           options: {
             data: {
-              display_name: sanitizedDisplayName
+              display_name: sanitizedDisplayName,
+              signup_source: isPropertyManagerRoute ? 'property_manager' : 'regular'
             }
           }
         });
@@ -170,7 +198,7 @@ export default function Auth() {
             description: "Your account has been created successfully."
           });
           
-        } else if (data.user && data.session) {
+          } else if (data.user && data.session) {
           // User was created and auto-confirmed, create basic profile
           try {
             const profileData = {
@@ -195,10 +223,17 @@ export default function Auth() {
               console.error('Profile creation error:', profileError);
             }
 
-            toast({
-              title: "Welcome to CalmlySettled!",
-              description: "Your account has been created successfully. Start exploring local businesses!"
-            });
+            if (isPropertyManagerRoute) {
+              toast({
+                title: "Welcome to CalmlySettled Property Manager!",
+                description: "Your property manager account has been created successfully."
+              });
+            } else {
+              toast({
+                title: "Welcome to CalmlySettled!",
+                description: "Your account has been created successfully. Start exploring local businesses!"
+              });
+            }
           } catch (error) {
             console.error('Error creating profile:', error);
           }
@@ -505,7 +540,9 @@ export default function Auth() {
             </div>
             <span className="text-3xl font-bold text-white">CalmlySettled</span>
           </button>
-          <p className="text-white/90">Let's personalize your move 🌍</p>
+          <p className="text-white/90">
+            {isPropertyManagerRoute ? "Join Our Property Manager Network 🏢" : "Let's personalize your move 🌍"}
+          </p>
         </div>
 
         <Card className="shadow-2xl border-white/20 backdrop-blur-sm bg-white/95 dark:bg-black/90">
@@ -519,9 +556,13 @@ export default function Auth() {
                 : (isForgotPassword 
                   ? "Enter your email to receive a password reset link"
                   : (isSignUp 
-                     ? "Sign up to explore local businesses and services" 
-                     : "Sign in to access your saved favorites"
-                  )
+                     ? (isPropertyManagerRoute 
+                        ? "Create your property manager account to start helping tenants discover local businesses"
+                        : "Sign up to explore local businesses and services")
+                     : (isPropertyManagerRoute 
+                        ? "Sign in to your property manager dashboard"
+                        : "Sign in to access your saved favorites")
+                   )
                 )
               }
             </CardDescription>
