@@ -56,6 +56,7 @@ const AppContent = () => {
                 <PropertyManager />
               </ProtectedRoute>
             } />
+            <Route path="/property-managers" element={<Navigate to="/property-manager" replace />} />
             <Route path="/property-manager-contact" element={<PropertyManagerContact />} />
             <Route path="/welcome/:token" element={<TenantWelcome />} />
             <Route path="/favorites" element={<Favorites />} />
