@@ -63,6 +63,28 @@ const PropertyManagerContact = () => {
 
       if (error) throw error;
 
+      // Send email notification (don't block form submission if this fails)
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-property-manager-notification', {
+          body: {
+            company_name: formData.companyName,
+            contact_name: formData.contactName,
+            email: formData.email,
+            phone: formData.phone,
+            property_count: formData.propertyCount,
+            property_type: formData.propertyType,
+            current_solution: formData.currentSolution,
+            message: formData.message,
+          },
+        });
+
+        if (emailError) {
+          console.error('Email notification failed:', emailError);
+        }
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+      }
+
       setSubmitted(true);
       toast({
         title: "Inquiry Submitted",

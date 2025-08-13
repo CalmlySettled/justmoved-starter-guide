@@ -28,6 +28,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import PropertyManager from "./pages/PropertyManager";
 import PropertyManagerContact from "./pages/PropertyManagerContact";
+import PropertyManagerInquiries from "./pages/PropertyManagerInquiries";
 import TenantWelcome from "./pages/TenantWelcome";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { MicroSurveyProvider } from "@/components/MicroSurveyProvider";
@@ -74,6 +75,11 @@ const AppContent = () => {
             <Route path="/admin/ai-dashboard" element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/property-inquiries" element={
+              <ProtectedRoute requireAdmin={true}>
+                <PropertyManagerInquiries />
               </ProtectedRoute>
             } />
             <Route path="/admin/analytics" element={

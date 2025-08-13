@@ -358,8 +358,10 @@ export type Database = {
       }
       property_manager_inquiries: {
         Row: {
+          admin_notes: string | null
           company_name: string
           contact_name: string
+          contacted_at: string | null
           created_at: string
           current_solution: string | null
           email: string
@@ -368,12 +370,15 @@ export type Database = {
           phone: string | null
           property_count: string | null
           property_type: string | null
+          resolved_at: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           company_name: string
           contact_name: string
+          contacted_at?: string | null
           created_at?: string
           current_solution?: string | null
           email: string
@@ -382,12 +387,15 @@ export type Database = {
           phone?: string | null
           property_count?: string | null
           property_type?: string | null
+          resolved_at?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           company_name?: string
           contact_name?: string
+          contacted_at?: string | null
           created_at?: string
           current_solution?: string | null
           email?: string
@@ -396,6 +404,7 @@ export type Database = {
           phone?: string | null
           property_count?: string | null
           property_type?: string | null
+          resolved_at?: string | null
           status?: string
           updated_at?: string
         }

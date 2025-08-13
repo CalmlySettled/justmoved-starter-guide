@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.send-custom-auth-email]
 verify_jwt = false
 
+[functions.send-property-manager-notification]
+verify_jwt = false
+
 [functions.geocode-address]
 verify_jwt = false
 
