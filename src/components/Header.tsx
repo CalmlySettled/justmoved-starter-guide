@@ -7,10 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star } from "lucide-react";
+import { Home, LogOut, LayoutDashboard, ChevronDown, User, Settings, Menu, Star, Building } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { usePropertyManagerAuth } from "@/hooks/usePropertyManagerAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
@@ -22,6 +23,7 @@ interface HeaderProps {
 export function Header({ propertyName }: HeaderProps = {}) {
   const { user, signOut } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminAuth();
+  const { isPropertyManager, loading: propertyManagerLoading } = usePropertyManagerAuth();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -126,6 +128,14 @@ export function Header({ propertyName }: HeaderProps = {}) {
                             My Favorites
                           </Button>
                         </Link>
+                        {isPropertyManager && (
+                          <Link to="/property-manager" onClick={() => setIsOpen(false)}>
+                            <Button variant="ghost" size="mobile" className="w-full justify-start">
+                              <Building className="h-4 w-4 mr-2" />
+                              Property Manager Dashboard
+                            </Button>
+                          </Link>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="mobile"
@@ -181,6 +191,14 @@ export function Header({ propertyName }: HeaderProps = {}) {
                           My Favorites
                         </Link>
                       </DropdownMenuItem>
+                      {isPropertyManager && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/property-manager" className="flex items-center">
+                            <Building className="h-4 w-4 mr-2" />
+                            Property Manager Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       {isAdmin && (
                         <DropdownMenuItem asChild>
                           <Link to="/admin/analytics" className="flex items-center">
