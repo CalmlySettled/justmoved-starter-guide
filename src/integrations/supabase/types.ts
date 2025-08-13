@@ -275,6 +275,87 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          address: string
+          branding: Json | null
+          contact_info: Json | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          manager_id: string
+          property_name: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          branding?: Json | null
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          manager_id: string
+          property_name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          branding?: Json | null
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          manager_id?: string
+          property_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      property_analytics: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          property_id: string
+          tenant_link_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          property_id: string
+          tenant_link_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          property_id?: string
+          tenant_link_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_analytics_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_analytics_tenant_link_id_fkey"
+            columns: ["tenant_link_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recommendations_cache: {
         Row: {
           cache_key: string
@@ -391,6 +472,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      tenant_links: {
+        Row: {
+          cache_warmed_at: string | null
+          contact_info: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_accessed_at: string | null
+          move_in_date: string | null
+          property_id: string
+          tenant_name: string
+          tenant_token: string
+          unit_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          cache_warmed_at?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          move_in_date?: string | null
+          property_id: string
+          tenant_name: string
+          tenant_token: string
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cache_warmed_at?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          move_in_date?: string | null
+          property_id?: string
+          tenant_name?: string
+          tenant_token?: string
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_links_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_activity_events: {
         Row: {
