@@ -287,13 +287,16 @@ const PropertyManager: React.FC = () => {
   };
 
   // Show loading while auth is loading or while fetching initial data
-  if (authLoading || (loading && properties.length === 0)) {
+  console.log('🔍 PM RENDER - Auth loading:', authLoading, 'Data loading:', loading, 'Properties:', properties.length);
+  
+  if (authLoading || loading) {
+    console.log('🔄 PM RENDER - Showing loading state');
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">
-            {authLoading ? 'Authenticating...' : 'Loading your properties...'}
+            {authLoading ? 'Authenticating...' : 'Loading your dashboard...'}
           </p>
         </div>
       </div>
