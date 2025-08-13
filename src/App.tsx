@@ -49,7 +49,11 @@ const AppContent = () => {
             <Route path="/popular" element={<Popular />} />
             <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/property-manager" element={<PropertyManager />} />
+            <Route path="/property-manager" element={
+              <ProtectedRoute requirePropertyManager={true}>
+                <PropertyManager />
+              </ProtectedRoute>
+            } />
             <Route path="/welcome/:token" element={<TenantWelcome />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
