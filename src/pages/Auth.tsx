@@ -91,7 +91,7 @@ export default function Auth() {
           const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager';
           
           if (shouldRedirectToPM) {
-            navigate("/property-manager/dashboard");
+            navigate("/property-manager");
             return;
           }
           

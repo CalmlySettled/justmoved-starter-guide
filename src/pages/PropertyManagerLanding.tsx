@@ -4,10 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Header } from "@/components/Header";
 import { Building, Users, Star, Clock, LogIn, Mail } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { usePropertyManagerAuth } from '@/hooks/usePropertyManagerAuth';
 import heroImage from "@/assets/hero-moving.jpg";
 
 const PropertyManagerLanding = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isPropertyManager, loading: pmLoading } = usePropertyManagerAuth();
 
   const handleSignIn = () => {
     navigate('/auth?mode=signin&redirect=/property-manager/dashboard');
@@ -16,6 +20,28 @@ const PropertyManagerLanding = () => {
   const handleContactSales = () => {
     navigate('/property-manager-contact');
   };
+
+  const handleDashboardAccess = () => {
+    navigate('/property-manager/dashboard');
+  };
+
+  // Determine button text and action based on auth state
+  const getSignInButtonConfig = () => {
+    if (user && isPropertyManager && !pmLoading) {
+      return {
+        text: "Continue to Dashboard",
+        action: handleDashboardAccess,
+        icon: Building
+      };
+    }
+    return {
+      text: "Sign In to Dashboard", 
+      action: handleSignIn,
+      icon: LogIn
+    };
+  };
+
+  const buttonConfig = getSignInButtonConfig();
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,12 +68,12 @@ const PropertyManagerLanding = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
             <Button 
-              onClick={handleSignIn}
+              onClick={buttonConfig.action}
               size="lg"
               className="bg-white text-primary hover:bg-white/90 min-w-[200px]"
             >
-              <LogIn className="h-5 w-5 mr-2" />
-              Sign In to Dashboard
+              <buttonConfig.icon className="h-5 w-5 mr-2" />
+              {buttonConfig.text}
             </Button>
             
             <div className="text-white/70 text-sm">or</div>
@@ -134,11 +160,11 @@ const PropertyManagerLanding = () => {
               </CardHeader>
               <CardContent className="text-center">
                 <Button 
-                  onClick={handleSignIn}
+                  onClick={buttonConfig.action}
                   className="w-full bg-gradient-hero text-white"
                   size="lg"
                 >
-                  Sign In to Dashboard
+                  {buttonConfig.text}
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
                   Access your tenant management tools, analytics, and customization options.

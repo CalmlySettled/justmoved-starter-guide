@@ -178,7 +178,7 @@ export function Header({ propertyName }: HeaderProps = {}) {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
+                    <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border border-border shadow-lg z-[100]">
                       <DropdownMenuItem asChild>
                         <Link to="/profile" className="flex items-center">
                           <User className="h-4 w-4 mr-2" />
