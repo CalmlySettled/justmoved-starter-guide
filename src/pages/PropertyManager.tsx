@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, LogOut } from 'lucide-react';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
-import { Link } from 'react-router-dom';
+import PropertyManagerHeader from '@/components/PropertyManagerHeader';
 
 interface Property {
   id: string;
@@ -314,44 +314,21 @@ const PropertyManager: React.FC = () => {
     );
   }
 
+  const getUserName = (): string => {
+    const metadata = user?.user_metadata;
+    if (metadata?.display_name) return metadata.display_name.split(' ')[0];
+    if (metadata?.full_name) return metadata.full_name.split(' ')[0];
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                <img 
-                  src="/calmlysettled-logo.png" 
-                  alt="CalmlySettled" 
-                  className="h-8 w-auto"
-                />
-                <span className="font-semibold text-lg">CalmlySettled</span>
-              </Link>
-              <div className="hidden sm:block">
-                <Badge variant="secondary">Property Manager</Badge>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-muted-foreground hidden sm:inline">
-                Welcome, {user?.user_metadata?.full_name || user?.email}
-              </span>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/">
-                  <Home className="h-4 w-4 mr-2" />
-                  View Main Site
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PropertyManagerHeader
+        onSignOut={signOut}
+        userName={getUserName()}
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

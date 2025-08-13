@@ -146,11 +146,11 @@ export default function Auth() {
             // If we have role or this is clearly a PM route, redirect to PM dashboard
             if (hasRole || shouldRedirectToPM) {
               console.log('🎯 AUTH - Redirecting to property manager dashboard');
-              navigate("/property-manager");
+              navigate("/property-manager/dashboard");
               return;
             } else {
               console.warn('⚠️ AUTH - Role check failed but PM context detected. Redirecting anyway.');
-              navigate("/property-manager");
+              navigate("/property-manager/dashboard");
               return;
             }
           }
