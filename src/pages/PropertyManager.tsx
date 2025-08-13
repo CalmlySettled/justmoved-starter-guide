@@ -1,266 +1,672 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Users, ExternalLink, Copy, Check } from "lucide-react";
-import { Header } from "@/components/Header";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp } from 'lucide-react';
+import QRCodeGenerator from 'qrcode';
 
-const PropertyManager = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [propertyName, setPropertyName] = useState("");
-  const [propertyAddress, setPropertyAddress] = useState("");
-  const [contactInfo, setContactInfo] = useState("");
-  const [specialNotes, setSpecialNotes] = useState("");
-  const [generatedUrl, setGeneratedUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+interface Property {
+  id: string;
+  property_name: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  contact_info: any;
+  branding: any;
+  created_at: string;
+}
 
-  const generateCustomUrl = () => {
-    if (!propertyName.trim() || !propertyAddress.trim()) {
-      toast({
-        title: "Required fields missing",
-        description: "Please fill in property name and address",
-        variant: "destructive"
+interface TenantLink {
+  id: string;
+  property_id: string;
+  tenant_token: string;
+  tenant_name: string;
+  unit_number: string | null;
+  move_in_date: string | null;
+  contact_info: any;
+  is_active: boolean;
+  cache_warmed_at: string | null;
+  last_accessed_at: string | null;
+  created_at: string;
+  properties: Property;
+}
+
+const PropertyManager: React.FC = () => {
+  const { user } = useAuth();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [tenantLinks, setTenantLinks] = useState<TenantLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  // New property form state
+  const [newProperty, setNewProperty] = useState({
+    property_name: '',
+    address: '',
+    contact_info: { phone: '', email: '', office_hours: '' },
+    branding: { logo_url: '', primary_color: '#3B82F6', welcome_message: '' }
+  });
+
+  // New tenant form state
+  const [newTenant, setNewTenant] = useState({
+    property_id: '',
+    tenant_name: '',
+    unit_number: '',
+    move_in_date: '',
+    contact_info: { phone: '', email: '' }
+  });
+
+  const [showNewPropertyForm, setShowNewPropertyForm] = useState(false);
+  const [showNewTenantForm, setShowNewTenantForm] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchProperties();
+      fetchTenantLinks();
+    }
+  }, [user]);
+
+  const fetchProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('manager_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProperties(data || []);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      toast.error('Failed to load properties');
+    }
+  };
+
+  const fetchTenantLinks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tenant_links')
+        .select(`
+          *,
+          properties (
+            id,
+            property_name,
+            address,
+            latitude,
+            longitude,
+            contact_info,
+            branding,
+            created_at
+          )
+        `)
+        .eq('properties.manager_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTenantLinks(data || []);
+    } catch (error) {
+      console.error('Error fetching tenant links:', error);
+      toast.error('Failed to load tenant links');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const geocodeAddress = async (address: string) => {
+    try {
+      const { data } = await supabase.functions.invoke('geocode-address', {
+        body: { address }
       });
+      
+      if (data?.lat && data?.lng) {
+        return { latitude: data.lat, longitude: data.lng };
+      }
+      return null;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return null;
+    }
+  };
+
+  const prewarmPropertyCache = async (propertyId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('prewarm-property-cache', {
+        body: { propertyId }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Cache prewarming error:', error);
+      return null;
+    }
+  };
+
+  const createProperty = async () => {
+    if (!newProperty.property_name.trim() || !newProperty.address.trim()) {
+      toast.error('Property name and address are required');
       return;
     }
 
-    const baseUrl = window.location.origin;
-    const params = new URLSearchParams({
-      property: propertyName.trim(),
-      address: propertyAddress.trim(),
-    });
-
-    if (contactInfo.trim()) {
-      params.append('contact', contactInfo.trim());
-    }
-
-    if (specialNotes.trim()) {
-      params.append('notes', encodeURIComponent(specialNotes.trim()));
-    }
-
-    const url = `${baseUrl}/explore?${params.toString()}`;
-    setGeneratedUrl(url);
-  };
-
-  const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(generatedUrl);
-      setCopied(true);
-      toast({
-        title: "URL copied to clipboard!",
-        description: "Ready to share with residents"
+      setLoading(true);
+      
+      // Geocode the address
+      const coordinates = await geocodeAddress(newProperty.address);
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .insert({
+          manager_id: user?.id,
+          property_name: newProperty.property_name,
+          address: newProperty.address,
+          latitude: coordinates?.latitude || null,
+          longitude: coordinates?.longitude || null,
+          contact_info: newProperty.contact_info,
+          branding: newProperty.branding
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Pre-warm cache if coordinates are available
+      if (coordinates) {
+        const cacheResult = await prewarmPropertyCache(data.id);
+        if (cacheResult?.success) {
+          toast.success(`Property created and cache pre-warmed successfully`);
+        } else {
+          toast.success('Property created (cache will be warmed on first tenant access)');
+        }
+      } else {
+        toast.success('Property created (manual geocoding may be needed)');
+      }
+
+      setNewProperty({
+        property_name: '',
+        address: '',
+        contact_info: { phone: '', email: '', office_hours: '' },
+        branding: { logo_url: '', primary_color: '#3B82F6', welcome_message: '' }
       });
-      setTimeout(() => setCopied(false), 2000);
+      setShowNewPropertyForm(false);
+      fetchProperties();
     } catch (error) {
-      console.error('Failed to copy:', error);
-      toast({
-        title: "Failed to copy URL",
-        variant: "destructive"
+      console.error('Error creating property:', error);
+      toast.error('Failed to create property');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createTenantLink = async () => {
+    if (!newTenant.property_id || !newTenant.tenant_name.trim()) {
+      toast.error('Property and tenant name are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Generate unique token
+      const tenantToken = `tenant_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      
+      const { data, error } = await supabase
+        .from('tenant_links')
+        .insert({
+          property_id: newTenant.property_id,
+          tenant_token: tenantToken,
+          tenant_name: newTenant.tenant_name,
+          unit_number: newTenant.unit_number || null,
+          move_in_date: newTenant.move_in_date || null,
+          contact_info: newTenant.contact_info,
+          cache_warmed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Tenant link created successfully!');
+      setNewTenant({
+        property_id: '',
+        tenant_name: '',
+        unit_number: '',
+        move_in_date: '',
+        contact_info: { phone: '', email: '' }
       });
+      setShowNewTenantForm(false);
+      fetchTenantLinks();
+    } catch (error) {
+      console.error('Error creating tenant link:', error);
+      toast.error('Failed to create tenant link');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const previewUrl = () => {
-    if (generatedUrl) {
-      window.open(generatedUrl, '_blank');
+  const generateQRCode = async (tenantToken: string, tenantName: string) => {
+    try {
+      const welcomeUrl = `${window.location.origin}/welcome/${tenantToken}`;
+      const qrCodeDataUrl = await QRCodeGenerator.toDataURL(welcomeUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      // Create download link
+      const link = document.createElement('a');
+      link.href = qrCodeDataUrl;
+      link.download = `qr-code-${tenantName.replace(/\s+/g, '-').toLowerCase()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success('QR Code downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast.error('Failed to generate QR code');
     }
   };
 
-  const recommendedCategories = [
-    "Grocery Stores",
-    "Pharmacies", 
-    "Coffee Shops",
-    "Fitness Centers",
-    "Banks",
-    "Post Offices",
-    "Restaurants",
-    "Shopping",
-    "Parks",
-    "Public Transit"
-  ];
+  const previewTenantWelcome = (tenantToken: string) => {
+    const welcomeUrl = `${window.location.origin}/welcome/${tenantToken}`;
+    window.open(welcomeUrl, '_blank');
+  };
+
+  if (loading && properties.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your properties...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Property Manager Portal</h1>
-          </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Create custom location guides for your residents. Show them what's nearby 
-            and help them settle into their new neighborhood.
-          </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Property Manager Dashboard</h1>
+          <p className="text-muted-foreground">Manage your properties and create personalized welcome experiences for new tenants</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Form Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Property Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="propertyName">Property Name *</Label>
-                <Input
-                  id="propertyName"
-                  placeholder="Liberty View Apartments"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                />
-              </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="properties">Properties</TabsTrigger>
+            <TabsTrigger value="tenants">Tenant Links</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
 
-              <div>
-                <Label htmlFor="propertyAddress">Property Address *</Label>
-                <Input
-                  id="propertyAddress"
-                  placeholder="123 Main St, Hartford, CT 06103"
-                  value={propertyAddress}
-                  onChange={(e) => setPropertyAddress(e.target.value)}
-                />
-              </div>
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{properties.length}</div>
+                </CardContent>
+              </Card>
 
-              <div>
-                <Label htmlFor="contactInfo">Contact Information (Optional)</Label>
-                <Input
-                  id="contactInfo"
-                  placeholder="Leasing Office: (860) 555-0123"
-                  value={contactInfo}
-                  onChange={(e) => setContactInfo(e.target.value)}
-                />
-              </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Tenant Links</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tenantLinks.filter(link => link.is_active).length}</div>
+                </CardContent>
+              </Card>
 
-              <div>
-                <Label htmlFor="specialNotes">Special Notes (Optional)</Label>
-                <Textarea
-                  id="specialNotes"
-                  placeholder="Welcome to your new home! Here are some nearby places our residents love..."
-                  value={specialNotes}
-                  onChange={(e) => setSpecialNotes(e.target.value)}
-                  rows={3}
-                />
-              </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Cache Ready</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tenantLinks.filter(link => link.cache_warmed_at).length}</div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <Button 
-                onClick={generateCustomUrl}
-                className="w-full"
-                size="lg"
-              >
-                Generate Custom URL
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Preview/URL Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Resident Experience
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Your residents will discover nearby:
-              </p>
-              
-              <div className="flex flex-wrap gap-2">
-                {recommendedCategories.map((category) => (
-                  <Badge key={category} variant="secondary" className="text-xs">
-                    {category}
-                  </Badge>
-                ))}
-              </div>
-
-              {generatedUrl && (
-                <div className="space-y-3 pt-4 border-t">
-                  <Label>Your Custom URL:</Label>
-                  <div className="bg-muted p-3 rounded-md break-all text-sm">
-                    {generatedUrl}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={copyToClipboard}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy URL
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button 
-                      onClick={previewUrl}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Preview
-                    </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle>How It Works</CardTitle>
+                <CardDescription>Your property management workflow with CalmlySettled</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">1</div>
+                  <div>
+                    <h4 className="font-medium">Add Your Properties</h4>
+                    <p className="text-sm text-muted-foreground">Register your properties with address and contact information. We automatically geocode locations and pre-warm local business cache.</p>
                   </div>
                 </div>
-              )}
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">2</div>
+                  <div>
+                    <h4 className="font-medium">Create Tenant Links</h4>
+                    <p className="text-sm text-muted-foreground">For each new tenant, create a personalized welcome link with their name, unit number, and move-in details.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">3</div>
+                  <div>
+                    <h4 className="font-medium">Generate QR Codes</h4>
+                    <p className="text-sm text-muted-foreground">Download QR codes that tenants can scan to instantly access their personalized local guide - no signup required!</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">4</div>
+                  <div>
+                    <h4 className="font-medium">Track Engagement</h4>
+                    <p className="text-sm text-muted-foreground">Monitor how tenants use their guides and what local businesses they discover most.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="pt-4 border-t">
-                <h4 className="font-semibold mb-2">How it works:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Residents visit your custom URL</li>
-                  <li>• They see local businesses near your property</li>
-                  <li>• No signup required for basic browsing</li>
-                  <li>• Helps residents discover their neighborhood</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* CTA Section */}
-        <Card className="mt-8">
-          <CardContent className="text-center py-8">
-            <h3 className="text-xl font-semibold mb-4">
-              Ready to enhance your resident experience?
-            </h3>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Share your custom URL in welcome packets, lease agreements, or building newsletters. 
-              Help new residents feel at home in their neighborhood from day one.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => navigate('/explore')}
-                variant="outline"
-              >
-                Explore Our Platform
-              </Button>
-              <Button onClick={() => window.location.href = 'mailto:hello@calmlysettled.com?subject=Property Manager Partnership'}>
-                Contact Sales
+          <TabsContent value="properties" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Your Properties</h2>
+              <Button onClick={() => setShowNewPropertyForm(!showNewPropertyForm)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Property
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+
+            {showNewPropertyForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add New Property</CardTitle>
+                  <CardDescription>Create a new property to manage tenant onboarding</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="property-name">Property Name *</Label>
+                      <Input
+                        id="property-name"
+                        placeholder="Sunset Apartments"
+                        value={newProperty.property_name}
+                        onChange={(e) => setNewProperty({ ...newProperty, property_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="property-address">Address *</Label>
+                      <Input
+                        id="property-address"
+                        placeholder="123 Main St, City, State 12345"
+                        value={newProperty.address}
+                        onChange={(e) => setNewProperty({ ...newProperty, address: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-phone">Contact Phone</Label>
+                      <Input
+                        id="contact-phone"
+                        placeholder="(555) 123-4567"
+                        value={newProperty.contact_info.phone}
+                        onChange={(e) => setNewProperty({
+                          ...newProperty,
+                          contact_info: { ...newProperty.contact_info, phone: e.target.value }
+                        })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-email">Contact Email</Label>
+                      <Input
+                        id="contact-email"
+                        placeholder="leasing@property.com"
+                        value={newProperty.contact_info.email}
+                        onChange={(e) => setNewProperty({
+                          ...newProperty,
+                          contact_info: { ...newProperty.contact_info, email: e.target.value }
+                        })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="welcome-message">Welcome Message</Label>
+                    <Textarea
+                      id="welcome-message"
+                      placeholder="Welcome to your new home! We're excited to have you as part of our community."
+                      value={newProperty.branding.welcome_message}
+                      onChange={(e) => setNewProperty({
+                        ...newProperty,
+                        branding: { ...newProperty.branding, welcome_message: e.target.value }
+                      })}
+                    />
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button onClick={createProperty} disabled={loading}>
+                      Create Property
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowNewPropertyForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {properties.map((property) => (
+                <Card key={property.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{property.property_name}</CardTitle>
+                    <CardDescription>{property.address}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {property.latitude && property.longitude ? (
+                          <Badge variant="secondary">Geocoded</Badge>
+                        ) : (
+                          <Badge variant="outline">Needs Geocoding</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Created: {new Date(property.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Tenant Links: {tenantLinks.filter(link => link.property_id === property.id).length}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tenants" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Tenant Links</h2>
+              <Button 
+                onClick={() => setShowNewTenantForm(!showNewTenantForm)}
+                disabled={properties.length === 0}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Tenant Link
+              </Button>
+            </div>
+
+            {properties.length === 0 && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">You need to add at least one property before creating tenant links.</p>
+                  <Button onClick={() => setActiveTab('properties')}>
+                    Add Your First Property
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {showNewTenantForm && properties.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create New Tenant Link</CardTitle>
+                  <CardDescription>Generate a personalized welcome experience for a new tenant</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant-property">Property *</Label>
+                      <select
+                        id="tenant-property"
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                        value={newTenant.property_id}
+                        onChange={(e) => setNewTenant({ ...newTenant, property_id: e.target.value })}
+                      >
+                        <option value="">Select a property</option>
+                        {properties.map((property) => (
+                          <option key={property.id} value={property.id}>
+                            {property.property_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant-name">Tenant Name *</Label>
+                      <Input
+                        id="tenant-name"
+                        placeholder="John & Jane Smith"
+                        value={newTenant.tenant_name}
+                        onChange={(e) => setNewTenant({ ...newTenant, tenant_name: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant-unit">Unit Number</Label>
+                      <Input
+                        id="tenant-unit"
+                        placeholder="Apt 101"
+                        value={newTenant.unit_number}
+                        onChange={(e) => setNewTenant({ ...newTenant, unit_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant-move-in">Move-in Date</Label>
+                      <Input
+                        id="tenant-move-in"
+                        type="date"
+                        value={newTenant.move_in_date}
+                        onChange={(e) => setNewTenant({ ...newTenant, move_in_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button onClick={createTenantLink} disabled={loading}>
+                      Create Tenant Link
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowNewTenantForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="space-y-4">
+              {tenantLinks.map((link) => (
+                <Card key={link.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">{link.tenant_name}</h3>
+                          <p className="text-sm text-muted-foreground">{link.properties.property_name}</p>
+                          {link.unit_number && (
+                            <p className="text-sm text-muted-foreground">Unit: {link.unit_number}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={link.is_active ? 'default' : 'secondary'}>
+                            {link.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {link.cache_warmed_at && (
+                            <Badge variant="outline">Cache Ready</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Created: {new Date(link.created_at).toLocaleDateString()}
+                          {link.last_accessed_at && (
+                            <> • Last accessed: {new Date(link.last_accessed_at).toLocaleDateString()}</>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => generateQRCode(link.tenant_token, link.tenant_name)}
+                        >
+                          <QrCode className="h-4 w-4 mr-1" />
+                          QR Code
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => previewTenantWelcome(link.tenant_token)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {tenantLinks.length === 0 && (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <p className="text-muted-foreground">No tenant links created yet.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics Coming Soon</CardTitle>
+                <CardDescription>Track tenant engagement and popular local discoveries</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Analytics dashboard will show tenant engagement metrics, popular business categories, 
+                  and usage patterns for your properties.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

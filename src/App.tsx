@@ -27,6 +27,7 @@ import Sitemap from "./pages/Sitemap";
 import AdminDashboard from "./pages/AdminDashboard";
 import Analytics from "./pages/Analytics";
 import PropertyManager from "./pages/PropertyManager";
+import TenantWelcome from "./pages/TenantWelcome";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { MicroSurveyProvider } from "@/components/MicroSurveyProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -49,6 +50,7 @@ const AppContent = () => {
             <Route path="/popular/:category" element={<PopularCategory />} />
             <Route path="/events" element={<Events />} />
             <Route path="/property-manager" element={<PropertyManager />} />
+            <Route path="/welcome/:token" element={<TenantWelcome />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/features" element={<Features />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
