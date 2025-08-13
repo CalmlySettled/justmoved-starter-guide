@@ -356,6 +356,51 @@ export type Database = {
           },
         ]
       }
+      property_manager_inquiries: {
+        Row: {
+          company_name: string
+          contact_name: string
+          created_at: string
+          current_solution: string | null
+          email: string
+          id: string
+          message: string | null
+          phone: string | null
+          property_count: string | null
+          property_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          contact_name: string
+          created_at?: string
+          current_solution?: string | null
+          email: string
+          id?: string
+          message?: string | null
+          phone?: string | null
+          property_count?: string | null
+          property_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          current_solution?: string | null
+          email?: string
+          id?: string
+          message?: string | null
+          phone?: string | null
+          property_count?: string | null
+          property_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recommendations_cache: {
         Row: {
           cache_key: string
