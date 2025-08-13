@@ -82,81 +82,20 @@ export default function Auth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 AUTH STATE CHANGE:', { event, hasSession: !!session, isPropertyManagerRoute });
+        
         
         if (session) {
-          console.log('🟡 AUTH - Session detected, checking redirect...');
           
-          // For SIGNED_IN events from property manager route, prioritize route context
-          const isSignupEvent = event === 'SIGNED_IN';
+          // Check if this is a property manager context
           const signupSource = session.user?.user_metadata?.signup_source;
-          
-          console.log('🔍 AUTH - Context:', { 
-            isSignupEvent, 
-            signupSource, 
-            isPropertyManagerRoute,
-            userMetadata: session.user?.user_metadata 
-          });
-          
-          // Check if this is a property manager signup/signin
           const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager';
           
           if (shouldRedirectToPM) {
-            console.log('🟡 AUTH - Property manager context detected, attempting role verification with retry...');
-            
-            // For new signups, add a small delay to allow database to commit
-            if (isSignupEvent) {
-              console.log('⏳ AUTH - New signup detected, adding delay for DB commit...');
-              await new Promise(resolve => setTimeout(resolve, 1500));
-            }
-            
-            // Retry role check with exponential backoff
-            let hasRole = false;
-            let attempts = 0;
-            const maxAttempts = 3;
-            
-            while (attempts < maxAttempts && !hasRole) {
-              attempts++;
-              console.log(`🔄 AUTH - Role check attempt ${attempts}/${maxAttempts}`);
-              
-              try {
-                const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
-                  _user_id: session.user.id,
-                  _role: 'property_manager'
-                });
-                
-                if (roleError) {
-                  console.error('🚫 AUTH - Role check error:', roleError);
-                } else {
-                  hasRole = roleData || false;
-                  console.log('✅ AUTH - Role check result:', hasRole);
-                }
-                
-                if (!hasRole && attempts < maxAttempts) {
-                  // Wait before retry (exponential backoff: 1s, 2s, 4s)
-                  const delay = Math.pow(2, attempts - 1) * 1000;
-                  console.log(`⏳ AUTH - Waiting ${delay}ms before retry...`);
-                  await new Promise(resolve => setTimeout(resolve, delay));
-                }
-              } catch (error) {
-                console.error('🚫 AUTH - Role check exception:', error);
-              }
-            }
-            
-            // If we have role or this is clearly a PM route, redirect to PM dashboard
-            if (hasRole || shouldRedirectToPM) {
-              console.log('🎯 AUTH - Redirecting to property manager dashboard');
-              navigate("/property-manager/dashboard");
-              return;
-            } else {
-              console.warn('⚠️ AUTH - Role check failed but PM context detected. Redirecting anyway.');
-              navigate("/property-manager/dashboard");
-              return;
-            }
+            navigate("/property-manager/dashboard");
+            return;
           }
           
           // Regular user flow
-          console.log('👤 AUTH - Regular user flow, checking redirect params...');
           
           const urlParams = new URLSearchParams(window.location.search);
           const redirect = urlParams.get('redirect');
@@ -178,7 +117,6 @@ export default function Auth() {
           const queryString = params.toString();
           const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
           
-          console.log('🎯 AUTH - Redirecting regular user to:', finalUrl);
           navigate(finalUrl);
         }
       }

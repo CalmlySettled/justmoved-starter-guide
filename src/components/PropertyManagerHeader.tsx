@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface PropertyManagerHeaderProps {
@@ -14,11 +14,9 @@ const PropertyManagerHeader: React.FC<PropertyManagerHeaderProps> = ({ onSignOut
       <div className="container flex h-14 items-center">
         <div className="flex items-center space-x-2">
           <Link to="/property-manager/dashboard" className="flex items-center space-x-2">
-            <img 
-              src="/calmlysettled-logo.png" 
-              alt="CalmlySettled Logo" 
-              className="h-8 w-8"
-            />
+            <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center shadow-soft">
+              <Home className="h-6 w-6 text-white" />
+            </div>
             <span className="font-bold text-primary">CalmlySettled</span>
           </Link>
           <span className="text-sm text-muted-foreground">Property Manager</span>
