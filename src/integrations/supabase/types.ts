@@ -530,6 +530,86 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          price_per_property: number
+          signup_fee: number
+          trial_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          price_per_property: number
+          signup_fee: number
+          trial_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          price_per_property?: number
+          signup_fee?: number
+          trial_days?: number | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          properties_count: number
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier_id: string | null
+          trial_end_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          properties_count?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier_id?: string | null
+          trial_end_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          properties_count?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier_id?: string | null
+          trial_end_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_links: {
         Row: {
           cache_warmed_at: string | null
@@ -579,6 +659,67 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_signup_charges: {
+        Row: {
+          charge_amount: number
+          charged_at: string | null
+          created_at: string
+          id: string
+          property_id: string | null
+          signup_date: string
+          status: string
+          stripe_usage_record_id: string | null
+          subscription_id: string | null
+          tenant_link_id: string | null
+        }
+        Insert: {
+          charge_amount?: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          signup_date?: string
+          status?: string
+          stripe_usage_record_id?: string | null
+          subscription_id?: string | null
+          tenant_link_id?: string | null
+        }
+        Update: {
+          charge_amount?: number
+          charged_at?: string | null
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          signup_date?: string
+          status?: string
+          stripe_usage_record_id?: string | null
+          subscription_id?: string | null
+          tenant_link_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_signup_charges_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_signup_charges_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_signup_charges_tenant_link_id_fkey"
+            columns: ["tenant_link_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_links"
             referencedColumns: ["id"]
           },
         ]
@@ -856,6 +997,10 @@ export type Database = {
           p_metadata?: Json
         }
         Returns: undefined
+      }
+      log_tenant_signup_charge: {
+        Args: { p_property_id: string; p_tenant_link_id: string }
+        Returns: string
       }
       validate_session_security: {
         Args: {
