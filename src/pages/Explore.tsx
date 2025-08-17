@@ -10,6 +10,7 @@ import { MapPin, Coffee, Dumbbell, ShoppingCart, TreePine, Star, Trash2, Scissor
 import { supabase } from "@/integrations/supabase/client";
 
 import { Header } from "@/components/Header";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useBatchRequests } from "@/hooks/useBatchRequests";
@@ -821,6 +822,7 @@ export default function Explore() {
   return (
     <div className="min-h-screen bg-gradient-page">
       <Header propertyName={propertyName} />
+      <EmailVerificationBanner />
       
       
       <main className="pt-24 pb-16">

@@ -173,6 +173,20 @@ export default function Auth() {
           }
         });
 
+        // Send verification email in background (after successful signup)
+        if (data.user && !error) {
+          try {
+            await supabase.auth.resend({
+              type: 'signup',
+              email: email.toLowerCase().trim()
+            });
+            console.log('Background verification email sent');
+          } catch (verificationError) {
+            console.log('Background verification email failed:', verificationError);
+            // Don't show error to user - this is background operation
+          }
+        }
+
         if (error) {
           if (error.message.includes("already registered")) {
             toast({

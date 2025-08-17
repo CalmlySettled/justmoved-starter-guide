@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -352,6 +353,7 @@ const Popular = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Header />
+      <EmailVerificationBanner />
       
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
