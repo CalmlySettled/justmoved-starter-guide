@@ -341,7 +341,7 @@ const PropertyManager: React.FC = () => {
     );
   }
 
-  // Show subscription setup if pending status (replace pending review with subscription flow)
+  // Show enhanced onboarding experience for new property managers
   if (contractStatus === 'pending') {
     return (
       <div className="min-h-screen bg-background">
@@ -351,51 +351,237 @@ const PropertyManager: React.FC = () => {
         />
         
         <div className="container mx-auto px-4 pt-20">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-white mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                <CreditCard className="h-8 w-8" />
-              </div>
-              <h1 className="text-3xl font-bold mb-2">Choose Your Plan</h1>
-              <p className="text-lg opacity-90">
-                Start with a 14-day free trial, then pay per property you manage.
-              </p>
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold mb-4">Welcome to CalmlySettled</h1>
+              <p className="text-xl text-muted-foreground">Your complete property management onboarding experience</p>
             </div>
-            
-            <div className="bg-card rounded-xl p-6 border mb-6">
-              <h3 className="text-xl font-semibold mb-4">Standard Plan</h3>
-              <div className="text-3xl font-bold mb-2">$49.99<span className="text-base font-normal text-muted-foreground">/month per property</span></div>
-              <div className="text-lg mb-4 text-primary font-medium">+ $0.75 per tenant signup</div>
-              <ul className="text-left space-y-2 mb-6">
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>14-day free trial with 1 property</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>Unlimited properties after trial</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>QR code generation</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>Tenant link management</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span>Revenue per signup tracking</span>
-                </li>
-              </ul>
-              <Button onClick={startSubscription} className="w-full">
-                Start Free Trial
-              </Button>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              No commitment required. Cancel anytime during or after your trial period.
-            </p>
+
+            <Tabs defaultValue="welcome" className="w-full">
+              <TabsList className="grid w-full grid-cols-5 mb-8">
+                <TabsTrigger value="welcome">Welcome</TabsTrigger>
+                <TabsTrigger value="demo">Demo Video</TabsTrigger>
+                <TabsTrigger value="about">About Us</TabsTrigger>
+                <TabsTrigger value="pricing">Pricing</TabsTrigger>
+                <TabsTrigger value="getting-started">Get Started</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="welcome" className="space-y-6">
+                <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-white text-center">
+                  <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
+                    <Home className="h-10 w-10" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">Transform Your Tenant Experience</h2>
+                  <p className="text-lg opacity-90 max-w-2xl mx-auto">
+                    CalmlySettled helps property managers create personalized welcome experiences that guide new tenants to the best local businesses and services.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <QrCode className="h-8 w-8 text-primary mb-2" />
+                      <CardTitle>QR Code Magic</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">Generate custom QR codes for each property that instantly connect tenants to local recommendations.</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <Users className="h-8 w-8 text-primary mb-2" />
+                      <CardTitle>Tenant Management</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">Track tenant signups, manage individual links, and personalize experiences for each resident.</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <TrendingUp className="h-8 w-8 text-primary mb-2" />
+                      <CardTitle>Revenue Tracking</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">Monitor engagement and revenue generated from tenant interactions with local businesses.</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="demo" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>See CalmlySettled in Action</CardTitle>
+                    <CardDescription>Watch how easy it is to set up and manage your property welcome experiences</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-6">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Eye className="h-8 w-8 text-primary" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">Demo Video Coming Soon</h3>
+                        <p className="text-muted-foreground">We're preparing an interactive demo to show you all the features</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="bg-background border rounded-lg p-4">
+                        <h4 className="font-semibold mb-2">✨ QR Code Generation</h4>
+                        <p className="text-sm text-muted-foreground">See how tenants scan QR codes to access personalized local recommendations</p>
+                      </div>
+                      <div className="bg-background border rounded-lg p-4">
+                        <h4 className="font-semibold mb-2">📱 Tenant Experience</h4>
+                        <p className="text-sm text-muted-foreground">Experience the mobile-first interface your tenants will love</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="about" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About CalmlySettled</CardTitle>
+                    <CardDescription>Built for property managers who care about tenant satisfaction</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Our Mission</h3>
+                      <p className="text-muted-foreground leading-relaxed">
+                        We believe that settling into a new home should be exciting, not overwhelming. CalmlySettled bridges the gap between property managers and their tenants by providing personalized local recommendations that help new residents feel at home faster.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Why We Built This</h3>
+                      <p className="text-muted-foreground leading-relaxed">
+                        Property managers spend countless hours fielding questions about local services. Tenants struggle to find trusted businesses in their new neighborhood. We created CalmlySettled to solve both problems with one elegant solution.
+                      </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 pt-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">500+</div>
+                        <p className="text-sm text-muted-foreground">Properties Served</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary mb-2">98%</div>
+                        <p className="text-sm text-muted-foreground">Tenant Satisfaction</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="pricing" className="space-y-6">
+                <div className="max-w-2xl mx-auto text-center">
+                  <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-white mb-8">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
+                      <CreditCard className="h-8 w-8" />
+                    </div>
+                    <h2 className="text-3xl font-bold mb-2">Choose Your Plan</h2>
+                    <p className="text-lg opacity-90">
+                      Start with a 14-day free trial, then pay per property you manage.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-card rounded-xl p-6 border mb-6">
+                    <h3 className="text-xl font-semibold mb-4">Standard Plan</h3>
+                    <div className="text-3xl font-bold mb-2">$49.99<span className="text-base font-normal text-muted-foreground">/month per property</span></div>
+                    <div className="text-lg mb-4 text-primary font-medium">+ $0.75 per tenant signup</div>
+                    <ul className="text-left space-y-2 mb-6">
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>14-day free trial with 1 property</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Unlimited properties after trial</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>QR code generation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Tenant link management</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Revenue per signup tracking</span>
+                      </li>
+                    </ul>
+                    <Button onClick={startSubscription} className="w-full" size="lg">
+                      Start Free Trial
+                    </Button>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    No commitment required. Cancel anytime during or after your trial period.
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="getting-started" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Getting Started Guide</CardTitle>
+                    <CardDescription>Follow these simple steps to launch your first property experience</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">1</div>
+                        <div>
+                          <h4 className="font-semibold mb-1">Start Your Free Trial</h4>
+                          <p className="text-sm text-muted-foreground">Click "Start Free Trial" to activate your 14-day trial with no commitment required.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">2</div>
+                        <div>
+                          <h4 className="font-semibold mb-1">Add Your First Property</h4>
+                          <p className="text-sm text-muted-foreground">Enter your property details, address, and contact information to create your first property profile.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">3</div>
+                        <div>
+                          <h4 className="font-semibold mb-1">Generate QR Codes</h4>
+                          <p className="text-sm text-muted-foreground">Download QR codes for your property and display them in common areas for tenants to scan.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">4</div>
+                        <div>
+                          <h4 className="font-semibold mb-1">Create Tenant Links</h4>
+                          <p className="text-sm text-muted-foreground">Set up personalized welcome links for specific tenants with move-in dates and contact info.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Need help?</strong> Contact our support team at <a href="mailto:support@calmlysettled.com" className="text-primary hover:underline">support@calmlysettled.com</a> or explore our FAQ section.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="pt-4">
+                      <Button onClick={startSubscription} className="w-full" size="lg">
+                        Start Your Free Trial Now
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
