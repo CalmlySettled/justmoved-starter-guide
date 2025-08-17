@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePropertyManagerContract } from '@/hooks/usePropertyManagerContract';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home } from 'lucide-react';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
 import PropertyManagerHeader from '@/components/PropertyManagerHeader';
 
@@ -43,6 +44,7 @@ interface TenantLink {
 
 const PropertyManager: React.FC = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { isPropertyManager, contractStatus, loading: contractLoading } = usePropertyManagerContract();
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenantLinks, setTenantLinks] = useState<TenantLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,14 +70,17 @@ const PropertyManager: React.FC = () => {
   const [showNewTenantForm, setShowNewTenantForm] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetchProperties();
-      fetchTenantLinks();
-    } else if (!authLoading && !user) {
-      // Auth is complete but no user - this shouldn't happen in a protected route
+    if (!authLoading && !contractLoading && user && isPropertyManager) {
+      if (contractStatus === 'active') {
+        fetchProperties();
+        fetchTenantLinks();
+      } else {
+        setLoading(false);
+      }
+    } else if (!authLoading && !contractLoading && (!user || !isPropertyManager)) {
       setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, isPropertyManager, contractStatus, contractLoading]);
 
   const fetchProperties = async () => {
     try {
@@ -289,29 +294,138 @@ const PropertyManager: React.FC = () => {
     window.open(signupUrl, '_blank');
   };
 
-  // Show loading while auth is loading or while fetching initial data
-  console.log('🔍 PM RENDER - Auth loading:', authLoading, 'Data loading:', loading, 'Properties:', properties.length);
+  // Show loading while auth or contract is loading
+  console.log('🔍 PM RENDER - Auth loading:', authLoading, 'Contract loading:', contractLoading, 'Data loading:', loading, 'Contract status:', contractStatus);
   
-  if (authLoading || loading) {
+  if (authLoading || contractLoading || (contractStatus === 'active' && loading)) {
     console.log('🔄 PM RENDER - Showing loading state');
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">
-            {authLoading ? 'Authenticating...' : 'Loading your dashboard...'}
+            {authLoading ? 'Authenticating...' : contractLoading ? 'Checking access...' : 'Loading your dashboard...'}
           </p>
         </div>
       </div>
     );
   }
 
-  // Handle case where auth completed but no user (shouldn't happen in protected route)
-  if (!authLoading && !user) {
+  // Handle case where auth completed but no user or not a property manager
+  if (!authLoading && !contractLoading && (!user || !isPropertyManager)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground">Authentication required. Please refresh the page.</p>
+          <p className="text-muted-foreground">Access denied. Property manager role required.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle pending contract status
+  if (!authLoading && !contractLoading && contractStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-background">
+        <PropertyManagerHeader
+          onSignOut={signOut}
+          userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+        />
+        
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Welcome to CalmlySettled Property Manager!</h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Your property manager account has been created successfully. We're currently reviewing your application 
+              and will activate your account shortly.
+            </p>
+            
+            <div className="bg-muted/50 rounded-lg p-6 mb-8">
+              <h3 className="font-semibold text-lg mb-2">What happens next?</h3>
+              <div className="text-left space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">1</div>
+                  <div>
+                    <p className="font-medium">Application Review</p>
+                    <p className="text-sm text-muted-foreground">Our team will review your property manager application within 1-2 business days.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">2</div>
+                  <div>
+                    <p className="font-medium">Contract Setup</p>
+                    <p className="text-sm text-muted-foreground">We'll reach out to discuss pricing and set up your property management contract.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">3</div>
+                  <div>
+                    <p className="font-medium">Full Access</p>
+                    <p className="text-sm text-muted-foreground">Once approved, you'll have full access to create properties, manage tenants, and generate QR codes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => window.location.href = 'mailto:info@calmlysettled.com?subject=Property Manager Application Status'}
+                variant="default"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Support
+              </Button>
+              <Button 
+                onClick={signOut}
+                variant="outline"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle suspended contract status
+  if (!authLoading && !contractLoading && contractStatus === 'suspended') {
+    return (
+      <div className="min-h-screen bg-background">
+        <PropertyManagerHeader
+          onSignOut={signOut}
+          userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+        />
+        
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="h-8 w-8 text-destructive" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Account Suspended</h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Your property manager account has been temporarily suspended. Please contact our support team 
+              to resolve this issue and restore access to your dashboard.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => window.location.href = 'mailto:info@calmlysettled.com?subject=Account Suspension - Support Request'}
+                variant="default"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Support
+              </Button>
+              <Button 
+                onClick={signOut}
+                variant="outline"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );

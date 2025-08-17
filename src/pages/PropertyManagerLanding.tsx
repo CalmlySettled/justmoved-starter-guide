@@ -17,8 +17,8 @@ const PropertyManagerLanding = () => {
     navigate('/auth?mode=signin&redirect=/property-manager/dashboard');
   };
 
-  const handleContactSales = () => {
-    navigate('/property-manager-contact');
+  const handleSignUpAsPropertyManager = () => {
+    navigate('/auth?mode=signup');
   };
 
   const handleDashboardAccess = () => {
@@ -82,18 +82,18 @@ const PropertyManagerLanding = () => {
             <div className="text-white/70 text-sm">or</div>
             
             <Button 
-              onClick={handleContactSales}
+              onClick={handleSignUpAsPropertyManager}
               variant="outline"
               size="lg"
               className="bg-white/20 border-white text-white hover:bg-white/30 backdrop-blur-sm min-w-[200px]"
             >
-              <Mail className="h-5 w-5 mr-2" />
-              Contact Sales
+              <Users className="h-5 w-5 mr-2" />
+              Sign Up as Property Manager
             </Button>
           </div>
           
           <p className="text-white/80 text-sm mt-6 max-w-2xl mx-auto">
-            Already have access? Sign in to your dashboard. New to CalmlySettled? Contact our sales team to get started.
+            Already have access? Sign in to your dashboard. New to CalmlySettled? Sign up to create your property manager account.
           </p>
         </div>
       </div>
@@ -179,25 +179,25 @@ const PropertyManagerLanding = () => {
             <Card className="shadow-lg">
               <CardHeader className="text-center">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Building className="h-8 w-8 text-primary" />
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle>New Property Managers</CardTitle>
                 <CardDescription>
-                  Interested in CalmlySettled for your properties? Let's get you started.
+                  Ready to get started? Create your property manager account instantly.
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
                 <Button 
-                  onClick={handleContactSales}
+                  onClick={handleSignUpAsPropertyManager}
                   variant="outline"
                   className="w-full"
                   size="lg"
                 >
-                  <Mail className="h-5 w-5 mr-2" />
-                  Contact Sales Team
+                  <Users className="h-5 w-5 mr-2" />
+                  Sign Up as Property Manager
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
-                  Our team will set up your account and provide personalized onboarding.
+                  Your account will be reviewed and activated within 1-2 business days.
                 </p>
               </CardContent>
             </Card>

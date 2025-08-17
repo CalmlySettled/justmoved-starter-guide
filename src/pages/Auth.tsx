@@ -31,6 +31,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [isPropertyManager, setIsPropertyManager] = useState(isPropertyManagerRoute);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
@@ -127,7 +128,7 @@ export default function Auth() {
           
           // Check if this is a property manager context
           const signupSource = session.user?.user_metadata?.signup_source;
-          const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager';
+          const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager' || isPropertyManager;
           
           if (shouldRedirectToPM) {
             navigate("/property-manager");
@@ -207,7 +208,7 @@ export default function Auth() {
           options: {
             data: {
               display_name: sanitizedDisplayName,
-              signup_source: isPropertyManagerRoute ? 'property_manager' : (propertyToken ? 'property_tenant' : 'regular'),
+              signup_source: (isPropertyManager || isPropertyManagerRoute) ? 'property_manager' : (propertyToken ? 'property_tenant' : 'regular'),
               property_token: propertyToken || null,
               // Pre-populate address data from property if available
               ...(propertyData && {
@@ -288,7 +289,7 @@ export default function Auth() {
               console.error('Profile creation error:', profileError);
             }
 
-            if (isPropertyManagerRoute) {
+            if (isPropertyManager || isPropertyManagerRoute) {
               toast({
                 title: "Welcome to CalmlySettled Property Manager!",
                 description: "Your property manager account has been created successfully."
@@ -804,6 +805,28 @@ export default function Auth() {
                       onChange={(e) => setDisplayName(e.target.value)}
                       required={isSignUp}
                     />
+                  </div>
+                )}
+                
+                {isSignUp && !propertyToken && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="property-manager"
+                        checked={isPropertyManager}
+                        onChange={(e) => setIsPropertyManager(e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="property-manager" className="text-sm">
+                        I'm a Property Manager
+                      </Label>
+                    </div>
+                    {isPropertyManager && (
+                      <p className="text-xs text-muted-foreground">
+                        Property manager accounts require approval before full access is granted.
+                      </p>
+                    )}
                   </div>
                 )}
                 
