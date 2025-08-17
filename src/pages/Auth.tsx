@@ -927,18 +927,6 @@ export default function Auth() {
                     }
                   </button>
                 </div>
-                <div className="mt-4 text-center">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate("/explore")}
-                    className="w-full"
-                  >
-                    Browse as Guest
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Preview Hartford, CT businesses without signing up
-                  </p>
-                </div>
               </>
             )}
           </CardContent>
