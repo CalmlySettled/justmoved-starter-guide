@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { StatCard } from '@/components/ui/stat-card';
+import { ModernInput, ModernTextarea } from '@/components/ui/modern-form';
+import { ProgressSteps } from '@/components/ui/progress-steps';
+import { SkeletonCard, SkeletonStat } from '@/components/ui/skeleton-modern';
 import { toast } from 'sonner';
-import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail, CreditCard, AlertCircle } from 'lucide-react';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail, CreditCard, AlertCircle, Play, Target, Award, Star } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
 import PropertyManagerHeader from '@/components/PropertyManagerHeader';
 
@@ -319,11 +323,14 @@ const PropertyManager: React.FC = () => {
   if (authLoading || contractLoading || subscription.loading || (contractStatus === 'active' && loading)) {
     console.log('🔄 PM RENDER - Showing loading state');
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">
+      <div className="min-h-screen bg-gradient-page flex items-center justify-center">
+        <div className="text-center glass-card p-8 rounded-2xl">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary mx-auto mb-6"></div>
+          <p className="text-foreground font-medium mb-2">
             {authLoading ? 'Authenticating...' : contractLoading ? 'Checking access...' : subscription.loading ? 'Checking subscription...' : 'Loading your dashboard...'}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Setting up your property management experience
           </p>
         </div>
       </div>
@@ -333,9 +340,13 @@ const PropertyManager: React.FC = () => {
   // Handle case where auth completed but no user or not a property manager
   if (!authLoading && !contractLoading && (!user || !isPropertyManager)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Access denied. Property manager role required.</p>
+      <div className="min-h-screen bg-gradient-page flex items-center justify-center">
+        <div className="text-center glass-card p-8 rounded-2xl">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">Property manager role required to access this dashboard.</p>
         </div>
       </div>
     );
@@ -343,102 +354,143 @@ const PropertyManager: React.FC = () => {
 
   // Show enhanced onboarding experience for new property managers
   if (contractStatus === 'pending') {
+    const onboardingSteps = [
+      { id: 'welcome', title: 'Welcome', description: 'Get to know us' },
+      { id: 'demo', title: 'Demo', description: 'See it in action' },
+      { id: 'about', title: 'About', description: 'Our story' },
+      { id: 'pricing', title: 'Pricing', description: 'Choose your plan' },
+      { id: 'getting-started', title: 'Get Started', description: 'Launch your first property' }
+    ];
+
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-page">
         <PropertyManagerHeader
           onSignOut={signOut}
           userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
         />
         
         <div className="container mx-auto px-4 pt-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-4">Welcome to CalmlySettled</h1>
-              <p className="text-xl text-muted-foreground">Your complete property management onboarding experience</p>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-6">
+                Welcome to CalmlySettled
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8">
+                Your complete property management onboarding experience
+              </p>
+              
+              <ProgressSteps 
+                steps={onboardingSteps}
+                currentStep="welcome"
+                completedSteps={[]}
+                className="mb-8"
+              />
             </div>
 
             <Tabs defaultValue="welcome" className="w-full">
-              <TabsList className="grid w-full grid-cols-5 mb-8">
-                <TabsTrigger value="welcome">Welcome</TabsTrigger>
-                <TabsTrigger value="demo">Demo Video</TabsTrigger>
-                <TabsTrigger value="about">About Us</TabsTrigger>
-                <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                <TabsTrigger value="getting-started">Get Started</TabsTrigger>
+              <TabsList className="glass-card grid w-full grid-cols-5 mb-8 border-0">
+                <TabsTrigger value="welcome" className="data-[state=active]:bg-primary/10">Welcome</TabsTrigger>
+                <TabsTrigger value="demo" className="data-[state=active]:bg-primary/10">Demo Video</TabsTrigger>
+                <TabsTrigger value="about" className="data-[state=active]:bg-primary/10">About Us</TabsTrigger>
+                <TabsTrigger value="pricing" className="data-[state=active]:bg-primary/10">Pricing</TabsTrigger>
+                <TabsTrigger value="getting-started" className="data-[state=active]:bg-primary/10">Get Started</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="welcome" className="space-y-6">
-                <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-white text-center">
-                  <div className="w-20 h-20 mx-auto mb-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <Home className="h-10 w-10" />
+              <TabsContent value="welcome" className="space-y-8">
+                <div className="bg-gradient-hero rounded-3xl p-12 text-white text-center relative overflow-hidden">
+                  {/* Background decoration */}
+                  <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+                  <div className="relative z-10">
+                    <div className="w-24 h-24 mx-auto mb-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                      <Home className="h-12 w-12" />
+                    </div>
+                    <h2 className="text-4xl font-bold mb-6">Transform Your Tenant Experience</h2>
+                    <p className="text-xl opacity-90 max-w-3xl mx-auto leading-relaxed">
+                      CalmlySettled helps property managers create personalized welcome experiences that guide new tenants to the best local businesses and services.
+                    </p>
                   </div>
-                  <h2 className="text-3xl font-bold mb-4">Transform Your Tenant Experience</h2>
-                  <p className="text-lg opacity-90 max-w-2xl mx-auto">
-                    CalmlySettled helps property managers create personalized welcome experiences that guide new tenants to the best local businesses and services.
-                  </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <QrCode className="h-8 w-8 text-primary mb-2" />
-                      <CardTitle>QR Code Magic</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">Generate custom QR codes for each property that instantly connect tenants to local recommendations.</p>
-                    </CardContent>
-                  </Card>
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="modern-card p-8 text-center interactive">
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <QrCode className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4">QR Code Magic</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Generate custom QR codes for each property that instantly connect tenants to local recommendations.
+                    </p>
+                  </div>
 
-                  <Card>
-                    <CardHeader>
-                      <Users className="h-8 w-8 text-primary mb-2" />
-                      <CardTitle>Tenant Management</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">Track tenant signups, manage individual links, and personalize experiences for each resident.</p>
-                    </CardContent>
-                  </Card>
+                  <div className="modern-card p-8 text-center interactive">
+                    <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <Users className="h-8 w-8 text-secondary" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4">Tenant Management</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Track tenant signups, manage individual links, and personalize experiences for each resident.
+                    </p>
+                  </div>
 
-                  <Card>
-                    <CardHeader>
-                      <TrendingUp className="h-8 w-8 text-primary mb-2" />
-                      <CardTitle>Revenue Tracking</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">Monitor engagement and revenue generated from tenant interactions with local businesses.</p>
-                    </CardContent>
-                  </Card>
+                  <div className="modern-card p-8 text-center interactive">
+                    <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <TrendingUp className="h-8 w-8 text-accent" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4">Revenue Tracking</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Monitor engagement and revenue generated from tenant interactions with local businesses.
+                    </p>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="demo" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>See CalmlySettled in Action</CardTitle>
-                    <CardDescription>Watch how easy it is to set up and manage your property welcome experiences</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-6">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Eye className="h-8 w-8 text-primary" />
+              <TabsContent value="demo" className="space-y-8">
+                <div className="modern-card p-8">
+                  <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold mb-4">See CalmlySettled in Action</h2>
+                    <p className="text-muted-foreground text-lg">
+                      Watch how easy it is to set up and manage your property welcome experiences
+                    </p>
+                  </div>
+                  
+                  <div className="aspect-video bg-gradient-section rounded-2xl flex items-center justify-center mb-8 relative overflow-hidden">
+                    <div className="text-center z-10">
+                      <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                        <Play className="h-10 w-10 text-primary ml-1" />
+                      </div>
+                      <h3 className="text-2xl font-semibold mb-4">Interactive Demo Coming Soon</h3>
+                      <p className="text-muted-foreground text-lg">
+                        We're preparing an immersive demo to showcase all platform features
+                      </p>
+                    </div>
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="glass-card p-6 rounded-xl">
+                      <div className="flex items-center mb-4">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                          <QrCode className="h-5 w-5 text-primary" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Demo Video Coming Soon</h3>
-                        <p className="text-muted-foreground">We're preparing an interactive demo to show you all the features</p>
+                        <h4 className="text-lg font-semibold">QR Code Generation</h4>
                       </div>
+                      <p className="text-muted-foreground">
+                        See how tenants scan QR codes to access personalized local recommendations instantly
+                      </p>
                     </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="bg-background border rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">✨ QR Code Generation</h4>
-                        <p className="text-sm text-muted-foreground">See how tenants scan QR codes to access personalized local recommendations</p>
+                    <div className="glass-card p-6 rounded-xl">
+                      <div className="flex items-center mb-4">
+                        <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center mr-3">
+                          <Eye className="h-5 w-5 text-secondary" />
+                        </div>
+                        <h4 className="text-lg font-semibold">Tenant Experience</h4>
                       </div>
-                      <div className="bg-background border rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">📱 Tenant Experience</h4>
-                        <p className="text-sm text-muted-foreground">Experience the mobile-first interface your tenants will love</p>
-                      </div>
+                      <p className="text-muted-foreground">
+                        Experience the mobile-first interface your tenants will love using
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="about" className="space-y-6">
@@ -638,7 +690,7 @@ const PropertyManager: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-page">
       {/* Header */}
       <PropertyManagerHeader
         onSignOut={signOut}
@@ -647,76 +699,93 @@ const PropertyManager: React.FC = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Property Manager Dashboard</h1>
-          <p className="text-muted-foreground">Manage your properties and create personalized welcome experiences for new tenants</p>
+          <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-2">
+            Property Manager Dashboard
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your properties and create personalized welcome experiences for new tenants
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="properties">Properties</TabsTrigger>
-            <TabsTrigger value="tenants">Tenant Links</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 glass-card border-0">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10">Overview</TabsTrigger>
+            <TabsTrigger value="properties" className="data-[state=active]:bg-primary/10">Properties</TabsTrigger>
+            <TabsTrigger value="tenants" className="data-[state=active]:bg-primary/10">Tenant Links</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/10">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             {/* Subscription Status Alert */}
-            <Alert className={`${subscription.status === 'active' ? 'border-green-200 bg-green-50' : subscription.status === 'trial' ? 'border-blue-200 bg-blue-50' : 'border-red-200 bg-red-50'}`}>
-              <CreditCard className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{getSubscriptionMessage()}</span>
-                {subscription.status !== 'active' && (
-                  <Button
-                    onClick={subscription.status === 'trial' ? startSubscription : startSubscription}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {subscription.status === 'trial' ? 'Upgrade Now' : 'Subscribe'}
-                  </Button>
-                )}
-                {subscription.status === 'active' && (
-                  <Button onClick={manageSubscription} size="sm" variant="outline">
-                    Manage Billing
-                  </Button>
-                )}
-              </AlertDescription>
+            <Alert className={`notification-modern ${subscription.status === 'active' ? 'border-emerald-200' : subscription.status === 'trial' ? 'border-blue-200' : 'border-amber-200'}`}>
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                  subscription.status === 'active' ? 'bg-emerald-100' : subscription.status === 'trial' ? 'bg-blue-100' : 'bg-amber-100'
+                }`}>
+                  <CreditCard className={`h-5 w-5 ${
+                    subscription.status === 'active' ? 'text-emerald-600' : subscription.status === 'trial' ? 'text-blue-600' : 'text-amber-600'
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <AlertDescription className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium mb-1">
+                        {subscription.status === 'active' ? 'Active Subscription' : subscription.status === 'trial' ? 'Free Trial Active' : 'Subscription Required'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{getSubscriptionMessage()}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {subscription.status !== 'active' && (
+                        <Button 
+                          onClick={startSubscription}
+                          size="sm"
+                          className="btn-modern"
+                        >
+                          {subscription.status === 'trial' ? 'Upgrade Now' : 'Subscribe'}
+                        </Button>
+                      )}
+                      {subscription.status === 'active' && (
+                        <Button onClick={manageSubscription} size="sm" variant="outline" className="btn-modern">
+                          Manage Billing
+                        </Button>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </div>
+              </div>
             </Alert>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Properties</CardTitle>
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{properties.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {subscription.status === 'active' ? 'Unlimited allowed' : `${Math.max(0, subscription.max_properties - properties.length)} remaining in trial`}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Links</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{tenantLinks.filter(link => link.is_active).length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Signup Revenue</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">${(tenantLinks.length * 0.75).toFixed(2)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {tenantLinks.length} signups × $0.75 each
-                  </p>
-                </CardContent>
-              </Card>
+              <StatCard 
+                title="Total Properties"
+                value={properties.length}
+                description={subscription.status === 'active' ? 'Unlimited allowed' : `${Math.max(0, subscription.max_properties - properties.length)} remaining in trial`}
+                icon={MapPin}
+                trend={{
+                  value: properties.length > 0 ? 100 : 0,
+                  isPositive: true
+                }}
+              />
+              <StatCard 
+                title="Active Links"
+                value={tenantLinks.filter(link => link.is_active).length}
+                description="Tenant connections"
+                icon={Users}
+                trend={{
+                  value: tenantLinks.length > 0 ? 25 : 0,
+                  isPositive: true
+                }}
+              />
+              <StatCard 
+                title="Signup Revenue"
+                value={`$${(tenantLinks.length * 0.75).toFixed(2)}`}
+                description={`${tenantLinks.length} signups × $0.75 each`}
+                icon={TrendingUp}
+                trend={{
+                  value: tenantLinks.length * 12,
+                  isPositive: true
+                }}
+              />
             </div>
 
             <Card>

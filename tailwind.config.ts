@@ -75,10 +75,16 @@ export default {
 				'soft': 'var(--shadow-soft)',
 				'card': 'var(--shadow-card)',
 				'card-hover': 'var(--shadow-card-hover)',
-				'glow': 'var(--shadow-glow)'
+				'glow': 'var(--shadow-glow)',
+				'elevation-1': 'var(--shadow-elevation-1)',
+				'elevation-2': 'var(--shadow-elevation-2)',
+				'elevation-3': 'var(--shadow-elevation-3)',
+				'elevation-4': 'var(--shadow-elevation-4)',
+				'elevation-5': 'var(--shadow-elevation-5)'
 			},
 			transitionTimingFunction: {
-				'smooth': 'var(--transition-smooth)'
+				'smooth': 'var(--transition-smooth)',
+				'bounce': 'var(--transition-bounce)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
