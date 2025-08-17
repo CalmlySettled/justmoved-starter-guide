@@ -82,7 +82,7 @@ const PropertyManagerLanding = () => {
               onClick={handleContactSales}
               variant="outline"
               size="lg"
-              className="border-white text-white hover:bg-white/10 min-w-[200px]"
+              className="bg-white/20 border-white text-white hover:bg-white/30 backdrop-blur-sm min-w-[200px]"
             >
               <Mail className="h-5 w-5 mr-2" />
               Contact Sales
