@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PropertyManagerHeader from "@/components/PropertyManagerHeader";
-import { Building, Users, Star, Clock, LogIn, Mail } from "lucide-react";
+import { Building, Users, Star, Clock, LogIn, Mail, AlertCircle, CheckCircle } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { usePropertyManagerAuth } from '@/hooks/usePropertyManagerAuth';
+import { usePropertyManagerContract } from '@/hooks/usePropertyManagerContract';
 import heroImage from "@/assets/hero-moving.jpg";
 
 const PropertyManagerLanding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isPropertyManager, loading: pmLoading } = usePropertyManagerAuth();
+  const { isPropertyManager, contractStatus, loading: pmLoading } = usePropertyManagerContract();
+
+  // Auto-redirect active PMs to dashboard
+  useEffect(() => {
+    if (user && isPropertyManager && contractStatus === 'active' && !pmLoading) {
+      navigate('/property-manager/dashboard');
+    }
+  }, [user, isPropertyManager, contractStatus, pmLoading, navigate]);
 
   const handleSignIn = () => {
     navigate('/auth?mode=signin&redirect=/property-manager/dashboard');
@@ -21,34 +28,104 @@ const PropertyManagerLanding = () => {
     navigate('/auth?mode=signup');
   };
 
-  const handleDashboardAccess = () => {
-    navigate('/property-manager/dashboard');
-  };
+  // Show loading state
+  if (pmLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Determine button text and action based on auth state
-  const getSignInButtonConfig = () => {
-    if (user && isPropertyManager && !pmLoading) {
-      return {
-        text: "Continue to Dashboard",
-        action: handleDashboardAccess,
-        icon: Building
-      };
-    }
-    return {
-      text: "Sign In to Dashboard", 
-      action: handleSignIn,
-      icon: LogIn
-    };
-  };
+  // Authenticated PM with pending contract
+  if (user && isPropertyManager && contractStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-background">
+        <PropertyManagerHeader 
+          onSignOut={() => navigate('/auth')} 
+          userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]}
+        />
+        
+        <div className="flex items-center justify-center min-h-[80vh] px-4">
+          <Card className="w-full max-w-lg text-center">
+            <CardHeader>
+              <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-8 w-8 text-yellow-600" />
+              </div>
+              <CardTitle className="text-2xl">Account Under Review</CardTitle>
+              <CardDescription className="text-base">
+                Your property manager account is being reviewed by our team.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-6">
+                We'll notify you within 1-2 business days once your account has been approved and activated.
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-muted-foreground mb-2">Need immediate assistance?</p>
+                <Button variant="outline" asChild className="w-full">
+                  <a href="mailto:support@calmlysettled.com">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Contact Support
+                  </a>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
-  const buttonConfig = getSignInButtonConfig();
+  // Authenticated PM with suspended contract
+  if (user && isPropertyManager && contractStatus === 'suspended') {
+    return (
+      <div className="min-h-screen bg-background">
+        <PropertyManagerHeader 
+          onSignOut={() => navigate('/auth')} 
+          userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]}
+        />
+        
+        <div className="flex items-center justify-center min-h-[80vh] px-4">
+          <Card className="w-full max-w-lg text-center">
+            <CardHeader>
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+              <CardTitle className="text-2xl">Account Suspended</CardTitle>
+              <CardDescription className="text-base">
+                Your property manager account has been temporarily suspended.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-6">
+                Please contact our support team to resolve any outstanding issues and reactivate your account.
+              </p>
+              <Button className="w-full bg-gradient-hero text-white" asChild>
+                <a href="mailto:support@calmlysettled.com">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Support Team
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
+  // Default: Show marketing landing page for unauthenticated users or non-PMs
   return (
     <div className="min-h-screen bg-background">
-      <PropertyManagerHeader 
-        onSignOut={() => navigate('/auth')} 
-        userName={user ? user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] : undefined}
-      />
+      {user && (
+        <PropertyManagerHeader 
+          onSignOut={() => navigate('/auth')} 
+          userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]}
+        />
+      )}
       
       {/* Hero Section */}
       <div className="relative pt-20 pb-16 overflow-hidden">
@@ -71,12 +148,12 @@ const PropertyManagerLanding = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
             <Button 
-              onClick={buttonConfig.action}
+              onClick={handleSignIn}
               size="lg"
               className="bg-white text-primary hover:bg-white/90 min-w-[200px]"
             >
-              <buttonConfig.icon className="h-5 w-5 mr-2" />
-              {buttonConfig.text}
+              <LogIn className="h-5 w-5 mr-2" />
+              Sign In to Dashboard
             </Button>
             
             <div className="text-white/70 text-sm">or</div>
@@ -163,11 +240,11 @@ const PropertyManagerLanding = () => {
               </CardHeader>
               <CardContent className="text-center">
                 <Button 
-                  onClick={buttonConfig.action}
+                  onClick={handleSignIn}
                   className="w-full bg-gradient-hero text-white"
                   size="lg"
                 >
-                  {buttonConfig.text}
+                  Sign In to Dashboard
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
                   Access your tenant management tools, analytics, and customization options.
