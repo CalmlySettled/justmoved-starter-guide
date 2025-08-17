@@ -94,9 +94,11 @@ const AppContent = () => {
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/sitemap" element={<Sitemap />} />
 
+              {/* Public route for demo mode */}
+              <Route path="/explore" element={<Explore />} />
+              
               {/* Regular user routes - blocked for Property Managers */}
               <Route path="/profile" element={<ProtectedRoute requireRegularUser><Profile /></ProtectedRoute>} />
-              <Route path="/explore" element={<ProtectedRoute requireRegularUser><Explore /></ProtectedRoute>} />
               <Route path="/popular" element={<ProtectedRoute requireRegularUser><Popular /></ProtectedRoute>} />
               <Route path="/popular/:category" element={<ProtectedRoute requireRegularUser><PopularCategory /></ProtectedRoute>} />
               <Route path="/favorites" element={<ProtectedRoute requireRegularUser><Favorites /></ProtectedRoute>} />

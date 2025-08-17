@@ -22,6 +22,8 @@ import { AddressCaptureModal } from "@/components/AddressCaptureModal";
 import { isMedicalCategory, getUSNewsStatePath, getUSNewsHealthURL } from "@/lib/stateMapping";
 import { toast } from "sonner";
 
+import { useDemoMode } from "@/hooks/useDemoMode";
+
 interface LocationData {
   latitude: number;
   longitude: number;
@@ -104,6 +106,7 @@ export default function Explore() {
   
   
   const { user } = useAuth();
+  const { isDemoMode, getDemoLocation, DEMO_LOCATION } = useDemoMode();
   const { trackUIInteraction } = useAnalytics();
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
@@ -186,9 +189,15 @@ export default function Explore() {
     return `https://www.google.com/maps/search/?api=1&query=${query}`;
   };
 
-  // Load user's profile address on mount or from URL params
+  // Load user's profile address on mount or set demo location for guests
   useEffect(() => {
     const loadUserLocation = async () => {
+      // If user is in demo mode, set demo location immediately
+      if (isDemoMode) {
+        setLocation(DEMO_LOCATION);
+        setIsLoadingProfile(false);
+        return;
+      }
       // Check for property manager URL parameters first
       if (propertyAddress) {
         console.log('Property manager address from URL:', propertyAddress);
@@ -346,7 +355,7 @@ export default function Explore() {
     loadUserLocation();
     loadFavorites();
     loadUserProfile();
-  }, [user, propertyAddress]);
+  }, [user, propertyAddress, isDemoMode, DEMO_LOCATION]);
 
   // Get user's current location
   const getCurrentLocation = async () => {
@@ -440,27 +449,32 @@ export default function Explore() {
   };
 
 
-  // Handle category selection
+  // Handle category selection with demo mode support
   const handleCategoryClick = async (category: { searchTerm: string; name: string }) => {
-    if (!location) {
+    // For demo mode, use demo location regardless of state
+    const currentLocation = isDemoMode ? DEMO_LOCATION : location;
+    
+    if (!currentLocation) {
       console.error("Location required. Please allow location access or enter your location first");
       return;
     }
 
-    // Track category click
-    trackUIInteraction('explore_category', 'clicked', 'explore', {
-      category: category.name,
-      searchTerm: category.searchTerm,
-      location: location.city || 'Unknown'
-    });
+    // Track category click (skip for demo users)
+    if (!isDemoMode) {
+      trackUIInteraction('explore_category', 'clicked', 'explore', {
+        category: category.name,
+        searchTerm: category.searchTerm,
+        location: currentLocation.city || 'Unknown'
+      });
+    }
 
-    // Check if this is a medical category and redirect to US News Health
-    if (isMedicalCategory(category.searchTerm)) {
-      const statePath = getUSNewsStatePath(location);
+    // Check if this is a medical category and redirect to US News Health (skip for demo)
+    if (!isDemoMode && isMedicalCategory(category.searchTerm)) {
+      const statePath = getUSNewsStatePath(currentLocation);
       if (statePath) {
         const usNewsURL = getUSNewsHealthURL(statePath);
         window.open(usNewsURL, '_blank');
-        console.log(`Redirecting to US News Health. Opening ${location.city} medical directory`);
+        console.log(`Redirecting to US News Health. Opening ${currentLocation.city} medical directory`);
         return;
       } else {
         // Fallback to general US News doctor finder
@@ -475,13 +489,51 @@ export default function Explore() {
     setIsModalOpen(true);
     
     try {
-      // CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call
+      // DEMO MODE: Check for demo cache first
+      if (isDemoMode) {
+        const demoCacheKey = `DEMO_explore_${category.searchTerm.replace(/\s+/g, '_')}`;
+        
+        console.log(`🎭 DEMO MODE - Checking for demo cache:`, {
+          category: category.name,
+          demoCacheKey,
+          location: 'Hartford, CT (Demo)'
+        });
+        
+        // Check Supabase cache for demo data
+        const { data: demoCache, error } = await supabase
+          .from('recommendations_cache')
+          .select('recommendations')
+          .eq('cache_key', demoCacheKey)
+          .gt('expires_at', new Date().toISOString())
+          .single();
+        
+        if (!error && demoCache?.recommendations) {
+          const businesses = demoCache.recommendations as unknown as Business[];
+          console.log('🎯 DEMO CACHE HIT - Free demo data loaded!', {
+            resultCount: businesses.length,
+            category: category.name
+          });
+          setCategoryResults(businesses);
+          return;
+        } else {
+          console.log('❌ Demo cache miss - showing signup prompt');
+          toast("Sign up to see real business recommendations for your area!", {
+            action: {
+              label: "Sign Up",
+              onClick: () => window.location.href = '/auth?mode=signup&redirect=explore'
+            }
+          });
+          return;
+        }
+      }
+      
+      // REGULAR USER MODE: CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call
       
       // L1: Check frontend cache first
       const cacheKey = {
         type: 'category',
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
         category: category.searchTerm,
         // Cache buster for DMV debugging - remove this after fixing
         debug: category.searchTerm === 'DMV' ? Date.now() : undefined
@@ -490,7 +542,7 @@ export default function Explore() {
       console.log(`🔍 L1 FRONTEND CACHE LOOKUP:`, {
         category: category.name,
         cacheKey,
-        location: { lat: location.latitude, lng: location.longitude }
+        location: { lat: currentLocation.latitude, lng: currentLocation.longitude }
       });
       
       let cachedResults = getCached('category_results', cacheKey, true);
@@ -509,7 +561,7 @@ export default function Explore() {
       console.log(`❌ L1 FRONTEND CACHE MISS - Checking L2 backend cache`);
       
       const backendCacheResults = await checkBackendCache(
-        { lat: location.latitude, lng: location.longitude },
+        { lat: currentLocation.latitude, lng: currentLocation.longitude },
         [category.searchTerm]
       );
 
@@ -529,13 +581,13 @@ export default function Explore() {
       // L1 & L2 Miss: Make API call
       console.log(`🌐 L3 API CALL - Cache hierarchy exhausted`, {
         category: category.searchTerm,
-        coordinates: { lat: location.latitude, lng: location.longitude }
+        coordinates: { lat: currentLocation.latitude, lng: currentLocation.longitude }
       });
 
       const data = await batchInvoke('generate-recommendations', {
         body: {
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
           categories: [category.searchTerm],
           exploreMode: true
         }
@@ -828,6 +880,18 @@ export default function Explore() {
       <main className="pt-24 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
+          {/* Demo mode indicator for guests */}
+          {isDemoMode && (
+            <div className="text-center mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800 font-medium">
+                🎭 Preview Mode: Browsing Hartford, CT
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Sign up to see businesses in your area
+              </p>
+            </div>
+          )}
+
           {/* Sign up CTA for unauthenticated users - moved to top */}
           {!user && (
             <div className="text-center mb-8 p-4 bg-gradient-section rounded-lg shadow-soft">
@@ -845,8 +909,8 @@ export default function Explore() {
           )}
 
 
-          {/* Location Section - Hidden when address modal will show */}
-          {!isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal && !(urlParams.get('oauth') === 'true' && !location) ? (
+          {/* Location Section - Hidden when address modal will show or in demo mode */}
+          {!isDemoMode && !isLoadingProfile && !isProcessingSavedAddress && !location && user && !showAddressModal && !(urlParams.get('oauth') === 'true' && !location) ? (
             <div className="max-w-md mx-auto space-y-4 mb-16">
               <Button 
                 onClick={getCurrentLocation}
@@ -964,14 +1028,14 @@ export default function Explore() {
                                         ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
                                         : "cursor-not-allowed"
                                     }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (user) {
-                                        handleThemedPackClick(pack, category);
-                                      } else {
-                                        window.location.href = '/auth';
-                                      }
-                                    }}
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       if (user || isDemoMode) {
+                                         handleThemedPackClick(pack, category);
+                                       } else {
+                                         window.location.href = '/auth';
+                                       }
+                                     }}
                                  >
                                     {category.charAt(0).toUpperCase() + category.slice(1)}
                                  </Badge>
@@ -1023,14 +1087,14 @@ export default function Explore() {
                                        ? "cursor-pointer hover:bg-primary hover:text-primary-foreground hover:shadow-md transform hover:scale-105" 
                                        : "cursor-not-allowed"
                                    }`}
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     if (user) {
-                                       handleThemedPackClick(pack, category);
-                                     } else {
-                                       window.location.href = '/auth';
-                                     }
-                                   }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (user || isDemoMode) {
+                                        handleThemedPackClick(pack, category);
+                                      } else {
+                                        window.location.href = '/auth';
+                                      }
+                                    }}
                                 >
                                    {category.charAt(0).toUpperCase() + category.slice(1)}
                                 </Badge>
@@ -1046,8 +1110,8 @@ export default function Explore() {
             </div>
           </section>
 
-          {/* Content Sections for authenticated users with location */}
-          {location && user && (
+          {/* Content Sections - Show for authenticated users with location OR demo users */}
+          {(location && user) || isDemoMode ? (
             <>
 
 
@@ -1067,14 +1131,14 @@ export default function Explore() {
                 onToggleFavorite={toggleFavorite}
               />
             </>
-          )}
+          ) : null}
           
-          {/* Location Display - Moved to bottom */}
+          {/* Location Display - Show current location or demo indicator */}
           {location && (
             <div className="flex items-center justify-center gap-2 mt-16 pt-8 border-t border-border/20">
               <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-hero text-white border-0 shadow-glow">
                 <MapPin className="mr-2 h-4 w-4" />
-                {location.city}
+                {isDemoMode ? "Hartford, CT (Demo)" : location.city}
               </Badge>
             </div>
           )}

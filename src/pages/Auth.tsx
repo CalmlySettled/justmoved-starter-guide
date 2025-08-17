@@ -911,21 +911,35 @@ export default function Auth() {
             )}
             
             {!isForgotPassword && !isResetPassword && (
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setShowResendButton(false);
-                  }}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                >
-                  {isSignUp 
-                    ? "Already have an account? Sign in" 
-                    : "Don't have an account? Sign up"
-                  }
-                </button>
-              </div>
+              <>
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setShowResendButton(false);
+                    }}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                  >
+                    {isSignUp 
+                      ? "Already have an account? Sign in" 
+                      : "Don't have an account? Sign up"
+                    }
+                  </button>
+                </div>
+                <div className="mt-4 text-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/explore")}
+                    className="w-full"
+                  >
+                    Browse as Guest
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Preview Hartford, CT businesses without signing up
+                  </p>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
