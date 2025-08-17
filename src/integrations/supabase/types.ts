@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -286,6 +286,7 @@ export type Database = {
           longitude: number | null
           manager_id: string
           property_name: string
+          property_token: string
           updated_at: string
         }
         Insert: {
@@ -298,6 +299,7 @@ export type Database = {
           longitude?: number | null
           manager_id: string
           property_name: string
+          property_token: string
           updated_at?: string
         }
         Update: {
@@ -310,6 +312,7 @@ export type Database = {
           longitude?: number | null
           manager_id?: string
           property_name?: string
+          property_token?: string
           updated_at?: string
         }
         Relationships: []
@@ -814,8 +817,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -824,30 +827,30 @@ export type Database = {
         Returns: string
       }
       increment_interaction: {
-        Args: { p_user_id: string; p_business_name: string; p_category: string }
+        Args: { p_business_name: string; p_category: string; p_user_id: string }
         Returns: undefined
       }
       log_business_access: {
         Args: {
+          p_access_type?: string
           p_business_name: string
           p_place_id?: string
-          p_access_type?: string
         }
         Returns: undefined
       }
       log_cache_access: {
         Args: {
-          p_cache_type: string
           p_access_pattern: string
+          p_cache_type: string
           p_metadata?: Json
         }
         Returns: undefined
       }
       validate_session_security: {
         Args: {
+          p_ip_address: unknown
           p_session_id: string
           p_user_agent: string
-          p_ip_address: unknown
         }
         Returns: Json
       }

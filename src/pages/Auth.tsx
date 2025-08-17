@@ -17,7 +17,10 @@ export default function Auth() {
   // Check URL params to determine initial state
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
+  const propertyToken = urlParams.get('property');
   const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
+  const [propertyData, setPropertyData] = useState<any>(null);
+  const [loadingPropertyData, setLoadingPropertyData] = useState(!!propertyToken);
   
   // Check if this is a property manager context based on redirect param
   const isPropertyManagerRoute = urlParams.get('redirect')?.includes('property-manager') || false;
@@ -39,6 +42,42 @@ export default function Auth() {
 
 
   useEffect(() => {
+    // Fetch property data if property token is present
+    const fetchPropertyData = async () => {
+      if (propertyToken) {
+        try {
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('property_token', propertyToken)
+            .single();
+
+          if (error) {
+            console.error('Error fetching property data:', error);
+            toast({
+              title: "Invalid QR Code",
+              description: "This property link appears to be invalid. Please contact your property manager.",
+              variant: "destructive"
+            });
+          } else {
+            setPropertyData(data);
+            setIsSignUp(true); // Force signup mode for property tenants
+          }
+        } catch (error) {
+          console.error('Property fetch error:', error);
+          toast({
+            title: "Error loading property",
+            description: "Unable to load property information. Please try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setLoadingPropertyData(false);
+        }
+      }
+    };
+
+    fetchPropertyData();
+
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -168,7 +207,15 @@ export default function Auth() {
           options: {
             data: {
               display_name: sanitizedDisplayName,
-              signup_source: isPropertyManagerRoute ? 'property_manager' : 'regular'
+              signup_source: isPropertyManagerRoute ? 'property_manager' : (propertyToken ? 'property_tenant' : 'regular'),
+              property_token: propertyToken || null,
+              // Pre-populate address data from property if available
+              ...(propertyData && {
+                address: propertyData.address,
+                latitude: propertyData.latitude,
+                longitude: propertyData.longitude,
+                city_state: extractCityState(propertyData.address)
+              })
             }
           }
         });
@@ -215,6 +262,13 @@ export default function Auth() {
             const profileData = {
               user_id: data.user.id,
               display_name: sanitizedDisplayName,
+              // Pre-populate address data from property if available
+              ...(propertyData && {
+                address: propertyData.address,
+                latitude: propertyData.latitude,
+                longitude: propertyData.longitude,
+                city_state: extractCityState(propertyData.address)
+              }),
               // Set sensible defaults for other fields
               household_type: 'Not specified',
               priorities: ['Convenience'],
@@ -238,6 +292,11 @@ export default function Auth() {
               toast({
                 title: "Welcome to CalmlySettled Property Manager!",
                 description: "Your property manager account has been created successfully."
+              });
+            } else if (propertyToken && propertyData) {
+              toast({
+                title: `Welcome to ${propertyData.property_name}!`,
+                description: "Your account has been created with your property location. Start exploring local businesses!"
               });
             } else {
               toast({
@@ -484,8 +543,17 @@ export default function Auth() {
     }
   };
 
+  // Helper function to extract city, state from address
+  const extractCityState = (address: string) => {
+    if (!address) return null;
+    const parts = address.split(',');
+    if (parts.length >= 2) {
+      return `${parts[parts.length - 2].trim()}, ${parts[parts.length - 1].trim()}`;
+    }
+    return address;
+  };
+
   const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
     try {
       console.log('🟡 AUTH - Google OAuth initiated');
       
@@ -529,6 +597,18 @@ export default function Auth() {
     }
   };
 
+  // Show loading while fetching property data
+  if (loadingPropertyData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading property information...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Background Image */}
@@ -561,21 +641,14 @@ export default function Auth() {
             <CardTitle className="text-2xl">
               {isResetPassword ? "Set New Password" : (isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back"))}
             </CardTitle>
-            <CardDescription>
-              {isResetPassword 
-                ? "Enter your new password below"
-                : (isForgotPassword 
-                  ? "Enter your email to receive a password reset link"
-                  : (isSignUp 
-                     ? (isPropertyManagerRoute 
-                        ? "Create your property manager account to start helping tenants discover local businesses"
-                        : "Sign up to explore local businesses and services")
-                     : (isPropertyManagerRoute 
-                        ? "Sign in to your property manager dashboard"
-                        : "Sign in to access your saved favorites")
-                   )
-                )
-              }
+            <CardDescription className="text-card-foreground/80 text-center">
+              {propertyData ? (
+                `Welcome to ${propertyData.property_name}! Create your account to discover local businesses near your new home.`
+              ) : isSignUp ? (
+                "Create your account to discover local businesses and get personalized recommendations"
+              ) : (
+                "Sign in to access your personalized local business recommendations"
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
