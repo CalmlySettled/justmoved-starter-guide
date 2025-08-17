@@ -63,20 +63,22 @@ export function Header({ propertyName }: HeaderProps = {}) {
           </div>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            to="/explore"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            Essentials
-          </Link>
-          <Link 
-            to="/popular"
-            className="text-muted-foreground hover:text-foreground transition-smooth"
-          >
-            Popular
-          </Link>
-        </nav>
+        {!isPropertyManager && (
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link 
+              to="/explore"
+              className="text-muted-foreground hover:text-foreground transition-smooth"
+            >
+              Essentials
+            </Link>
+            <Link 
+              to="/popular"
+              className="text-muted-foreground hover:text-foreground transition-smooth"
+            >
+              Popular
+            </Link>
+          </nav>
+        )}
         
         <div className="flex items-center space-x-4">
           {/* Mobile menu */}
@@ -89,20 +91,24 @@ export function Header({ propertyName }: HeaderProps = {}) {
               </SheetTrigger>
               <SheetContent side="right" className="w-80 bg-background">
                 <div className="flex flex-col space-y-6 mt-8">
-                  <Link 
-                    to="/explore"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-smooth"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Essentials
-                  </Link>
-                  <Link 
-                    to="/popular"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-smooth"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Popular
-                  </Link>
+                  {!isPropertyManager && (
+                    <>
+                      <Link 
+                        to="/explore"
+                        className="text-lg font-medium text-foreground hover:text-primary transition-smooth"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Essentials
+                      </Link>
+                      <Link 
+                        to="/popular"
+                        className="text-lg font-medium text-foreground hover:text-primary transition-smooth"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Popular
+                      </Link>
+                    </>
+                  )}
                   
                   <div className="border-t border-border pt-6">
                      {user ? (

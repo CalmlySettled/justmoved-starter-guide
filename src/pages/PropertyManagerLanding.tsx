@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Header } from "@/components/Header";
+import PropertyManagerHeader from "@/components/PropertyManagerHeader";
 import { Building, Users, Star, Clock, LogIn, Mail } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,7 +45,10 @@ const PropertyManagerLanding = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <PropertyManagerHeader 
+        onSignOut={() => navigate('/auth')} 
+        userName={user ? user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] : undefined}
+      />
       
       {/* Hero Section */}
       <div className="relative pt-20 pb-16 overflow-hidden">
