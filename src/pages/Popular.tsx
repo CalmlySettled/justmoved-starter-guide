@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useRequestCache } from "@/hooks/useRequestCache";
+import { useDemoMode } from "@/hooks/useDemoMode";
 import { toast } from "sonner";
 
 interface LocationData {
@@ -135,6 +136,7 @@ const Popular = () => {
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
   const { getCached, setCached, setCurrentUserId } = useRequestCache();
+  const { isDemoMode, getDemoLocation, DEMO_LOCATION } = useDemoMode();
   const routerLocation = useLocation();
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -327,6 +329,17 @@ const Popular = () => {
   };
 
   const navigateToCategory = (categoryName: string) => {
+    if (isDemoMode) {
+      // For demo users, redirect to signup with a message about seeing real data
+      toast("Sign up to explore businesses in your area!", {
+        action: {
+          label: "Sign Up",
+          onClick: () => window.location.href = '/auth?mode=signup&redirect=explore'
+        }
+      });
+      return;
+    }
+    
     // Special handling for Nearby Events - redirect to dedicated events page
     if (categoryName === "Nearby Events") {
       trackUIInteraction('nearby_events', 'clicked', 'popular', {
@@ -368,12 +381,22 @@ const Popular = () => {
             <p className="text-lg text-muted-foreground">Top-rated local favorites</p>
           </div>
 
-          {location ? (
+          {location || isDemoMode ? (
             <>
+              {/* Demo Mode Indicator */}
+              {isDemoMode && (
+                <div className="text-center mb-8">
+                  <Badge variant="secondary" className="bg-gradient-hero text-white border-0 shadow-glow">
+                    🎭 Preview Mode - Hartford, CT
+                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Sign up to see popular places in your area
+                  </p>
+                </div>
+              )}
 
               {/* Trending Categories Grid */}
               <div className="mb-16">
-                
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {trendingCategories.map((category) => (
                     <Card 
@@ -392,9 +415,6 @@ const Popular = () => {
                   ))}
                 </div>
               </div>
-
-
-
             </>
           ) : user ? (
             <div className="text-center py-16">
@@ -405,7 +425,7 @@ const Popular = () => {
               </p>
             </div>
           ) : (
-            // Non-authenticated users see sign up prompt
+            // This should never show since isDemoMode covers non-authenticated users
             <div className="text-center py-16">
               <div className="max-w-lg mx-auto space-y-6 p-8 bg-muted/50 rounded-lg border">
                 <TrendingUp className="h-16 w-16 text-primary mx-auto" />
@@ -413,16 +433,6 @@ const Popular = () => {
                 <p className="text-muted-foreground">
                   Explore trending places, hot spots, and local favorites in your area
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 my-8 opacity-60">
-                  {trendingCategories.slice(0, 6).map((category) => (
-                    <div key={category.name} className="text-center">
-                      <div className={`w-12 h-12 mx-auto mb-2 rounded-full ${category.color} flex items-center justify-center text-lg`}>
-                        {category.icon}
-                      </div>
-                      <p className="text-sm font-medium">{category.name}</p>
-                    </div>
-                  ))}
-                </div>
                 <Button 
                   onClick={() => window.location.href = '/auth?mode=signup&redirect=explore'}
                   size="lg"
@@ -435,11 +445,11 @@ const Popular = () => {
           )}
           
           {/* Location Display - Moved to bottom */}
-          {location && (
+          {(location || isDemoMode) && (
             <div className="flex items-center justify-center gap-2 mt-16 pt-8 border-t border-border/20">
               <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-hero text-white border-0 shadow-glow">
                 <MapPin className="mr-2 h-4 w-4" />
-                {location.city}
+                {isDemoMode ? DEMO_LOCATION.city : location?.city}
               </Badge>
             </div>
           )}

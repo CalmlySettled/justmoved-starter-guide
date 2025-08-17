@@ -106,7 +106,7 @@ export default function Explore() {
   
   
   const { user } = useAuth();
-  const { isDemoMode, getDemoLocation, DEMO_LOCATION } = useDemoMode();
+  const { isDemoMode, getDemoLocation, getDemoBusinessesForCategory, DEMO_LOCATION } = useDemoMode();
   const { trackUIInteraction } = useAnalytics();
   const { batchInvoke } = useBatchRequests();
   const { getCached, setCached, checkBackendCache } = useRequestCache();
@@ -489,42 +489,22 @@ export default function Explore() {
     setIsModalOpen(true);
     
     try {
-      // DEMO MODE: Check for demo cache first
+      // DEMO MODE: Use static hardcoded data - ZERO API CALLS
       if (isDemoMode) {
-        const demoCacheKey = `DEMO_explore_${category.searchTerm.replace(/\s+/g, '_')}`;
-        
-        console.log(`🎭 DEMO MODE - Checking for demo cache:`, {
+        console.log(`🎭 DEMO MODE - Loading static demo data:`, {
           category: category.name,
-          demoCacheKey,
+          searchTerm: category.searchTerm,
           location: 'Hartford, CT (Demo)'
         });
         
-        // Check Supabase cache for demo data
-        const { data: demoCache, error } = await supabase
-          .from('recommendations_cache')
-          .select('recommendations')
-          .eq('cache_key', demoCacheKey)
-          .gt('expires_at', new Date().toISOString())
-          .single();
+        const demoBusinesses = getDemoBusinessesForCategory(category.searchTerm);
+        console.log('🎯 DEMO DATA LOADED - Static hardcoded businesses!', {
+          resultCount: demoBusinesses.length,
+          category: category.name
+        });
         
-        if (!error && demoCache?.recommendations) {
-          const businesses = demoCache.recommendations as unknown as Business[];
-          console.log('🎯 DEMO CACHE HIT - Free demo data loaded!', {
-            resultCount: businesses.length,
-            category: category.name
-          });
-          setCategoryResults(businesses);
-          return;
-        } else {
-          console.log('❌ Demo cache miss - showing signup prompt');
-          toast("Sign up to see real business recommendations for your area!", {
-            action: {
-              label: "Sign Up",
-              onClick: () => window.location.href = '/auth?mode=signup&redirect=explore'
-            }
-          });
-          return;
-        }
+        setCategoryResults(demoBusinesses as Business[]);
+        return;
       }
       
       // REGULAR USER MODE: CACHE HIERARCHY: L1 Frontend -> L2 Backend -> L3 API Call

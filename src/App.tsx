@@ -99,7 +99,7 @@ const AppContent = () => {
               
               {/* Regular user routes - blocked for Property Managers */}
               <Route path="/profile" element={<ProtectedRoute requireRegularUser><Profile /></ProtectedRoute>} />
-              <Route path="/popular" element={<ProtectedRoute requireRegularUser><Popular /></ProtectedRoute>} />
+              <Route path="/popular" element={<Popular />} />
               <Route path="/popular/:category" element={<ProtectedRoute requireRegularUser><PopularCategory /></ProtectedRoute>} />
               <Route path="/favorites" element={<ProtectedRoute requireRegularUser><Favorites /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute requireRegularUser><Events /></ProtectedRoute>} />
