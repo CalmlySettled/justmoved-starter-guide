@@ -8,9 +8,10 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requirePropertyManager?: boolean;
+  requireRegularUser?: boolean;
 }
 
-export const ProtectedRoute = ({ children, requireAdmin = false, requirePropertyManager = false }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requireAdmin = false, requirePropertyManager = false, requireRegularUser = false }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
   const { isPropertyManager, loading: pmLoading, error: pmError } = usePropertyManagerAuth();
@@ -24,6 +25,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
       authLoading, 
       requireAdmin, 
       requirePropertyManager,
+      requireRegularUser,
       isAdmin,
       isPropertyManager,
       adminLoading,
@@ -69,10 +71,19 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
         console.log('✅ ProtectedRoute - Property manager verified, allowing access');
       }
     }
-  }, [user, isAdmin, isPropertyManager, authLoading, adminLoading, pmLoading, adminError, pmError, requireAdmin, requirePropertyManager, navigate]);
+
+    // If regular user required, check user is NOT a property manager
+    if (requireRegularUser && !pmLoading) {
+      if (isPropertyManager) {
+        console.log('🛡️ ProtectedRoute - Regular user required but user is PM, redirecting to PM dashboard');
+        navigate('/property-manager/dashboard', { replace: true });
+        return;
+      }
+    }
+  }, [user, isAdmin, isPropertyManager, authLoading, adminLoading, pmLoading, adminError, pmError, requireAdmin, requirePropertyManager, requireRegularUser, navigate]);
 
   // Show loading while checking authentication
-  if (authLoading || (requireAdmin && adminLoading) || (requirePropertyManager && pmLoading)) {
+  if (authLoading || (requireAdmin && adminLoading) || (requirePropertyManager && pmLoading) || (requireRegularUser && pmLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -92,6 +103,11 @@ export const ProtectedRoute = ({ children, requireAdmin = false, requireProperty
 
   // Don't render if property manager required but user is not property manager
   if (requirePropertyManager && (pmError || !isPropertyManager)) {
+    return null;
+  }
+
+  // Don't render if regular user required but user is property manager
+  if (requireRegularUser && isPropertyManager) {
     return null;
   }
 

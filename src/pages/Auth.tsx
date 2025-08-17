@@ -90,7 +90,7 @@ export default function Auth() {
           });
           
           if (hasRole || isPropertyManagerRoute) {
-            navigate("/property-manager");
+            navigate("/property-manager/dashboard");
             return;
           }
           
@@ -131,7 +131,7 @@ export default function Auth() {
           const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager' || isPropertyManager;
           
           if (shouldRedirectToPM) {
-            navigate("/property-manager");
+            navigate("/property-manager/dashboard");
             return;
           }
           
