@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-lifestyle.jpg";
 
 export function HeroSection() {
+  const { user } = useAuth();
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -28,7 +31,7 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col gap-6 justify-center items-center">
-          <Link to="/auth?mode=signup&redirect=explore&focus=essentials">
+          <Link to={user ? "/explore" : "/auth?mode=signup&redirect=explore&focus=essentials"}>
             <Button 
               variant="hero" 
               size="lg"

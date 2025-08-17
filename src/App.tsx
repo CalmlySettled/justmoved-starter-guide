@@ -82,7 +82,7 @@ const AppContent = () => {
           <AnalyticsProvider>
           <Routes>
               {/* Public routes */}
-              <Route path="/" element={<ProtectedRoute requireRegularUser><Index /></ProtectedRoute>} />
+              <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />

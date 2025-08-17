@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useRequestCache } from "@/hooks/useRequestCache";
-import { useDemoMode } from "@/hooks/useDemoMode";
 import { toast } from "sonner";
 
 interface LocationData {
@@ -136,7 +135,6 @@ const Popular = () => {
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
   const { getCached, setCached, setCurrentUserId } = useRequestCache();
-  const { isDemoMode, getDemoLocation, DEMO_LOCATION } = useDemoMode();
   const routerLocation = useLocation();
   const navigate = useNavigate();
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -329,8 +327,8 @@ const Popular = () => {
   };
 
   const navigateToCategory = (categoryName: string) => {
-    if (isDemoMode) {
-      // For demo users, redirect to signup with a message about seeing real data
+    if (!user) {
+      // For non-authenticated users, show signup prompt
       toast("Sign up to explore businesses in your area!", {
         action: {
           label: "Sign Up",
@@ -381,13 +379,13 @@ const Popular = () => {
             <p className="text-lg text-muted-foreground">Top-rated local favorites</p>
           </div>
 
-          {location || isDemoMode ? (
+          {location || !user ? (
             <>
-              {/* Demo Mode Indicator */}
-              {isDemoMode && (
+              {/* Preview Mode Indicator for non-authenticated users */}
+              {!user && (
                 <div className="text-center mb-8">
                   <Badge variant="secondary" className="bg-gradient-hero text-white border-0 shadow-glow">
-                    🎭 Preview Mode - Hartford, CT
+                    🎯 Preview Mode - See what's popular
                   </Badge>
                   <p className="text-sm text-muted-foreground mt-2">
                     Sign up to see popular places in your area
@@ -401,7 +399,11 @@ const Popular = () => {
                   {trendingCategories.map((category) => (
                     <Card 
                       key={category.name}
-                      className="group cursor-pointer transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 border-border/50 relative"
+                      className={`group transition-all duration-300 border-border/50 relative ${
+                        user 
+                          ? "cursor-pointer hover:shadow-elegant hover:-translate-y-1" 
+                          : "opacity-60 cursor-pointer"
+                      }`}
                       onClick={() => navigateToCategory(category.name)}
                     >
                       <CardContent className="p-6 text-center">
@@ -445,11 +447,11 @@ const Popular = () => {
           )}
           
           {/* Location Display - Moved to bottom */}
-          {(location || isDemoMode) && (
+          {(location || !user) && (
             <div className="flex items-center justify-center gap-2 mt-16 pt-8 border-t border-border/20">
               <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-hero text-white border-0 shadow-glow">
                 <MapPin className="mr-2 h-4 w-4" />
-                {isDemoMode ? DEMO_LOCATION.city : location?.city}
+                {!user ? "Preview Mode" : location?.city}
               </Badge>
             </div>
           )}
