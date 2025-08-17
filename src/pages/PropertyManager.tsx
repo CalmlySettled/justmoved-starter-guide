@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePropertyManagerContract } from '@/hooks/usePropertyManagerContract';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail } from 'lucide-react';
+import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail, CreditCard, AlertCircle } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
 import PropertyManagerHeader from '@/components/PropertyManagerHeader';
 
@@ -45,6 +47,7 @@ interface TenantLink {
 const PropertyManager: React.FC = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { isPropertyManager, contractStatus, loading: contractLoading } = usePropertyManagerContract();
+  const { subscription, checkSubscriptionStatus, startSubscription, manageSubscription, canCreateProperty, getSubscriptionMessage } = useSubscription();
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenantLinks, setTenantLinks] = useState<TenantLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,6 +168,20 @@ const PropertyManager: React.FC = () => {
       return;
     }
 
+    // Check subscription limits before creating property
+    if (!canCreateProperty()) {
+      if (subscription.status === 'trial' && subscription.is_trial_expired) {
+        toast.error('Your free trial has expired. Please subscribe to add properties.');
+        return;
+      } else if (subscription.status === 'trial') {
+        toast.error(`Free trial allows ${subscription.max_properties} property. Upgrade to add more.`);
+        return;
+      } else {
+        toast.error('Please subscribe to add properties.');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       
@@ -208,6 +225,8 @@ const PropertyManager: React.FC = () => {
       });
       setShowNewPropertyForm(false);
       fetchProperties();
+      // Refresh subscription status to update property count
+      checkSubscriptionStatus();
     } catch (error) {
       console.error('Error creating property:', error);
       toast.error('Failed to create property');
@@ -297,14 +316,14 @@ const PropertyManager: React.FC = () => {
   // Show loading while auth or contract is loading
   console.log('🔍 PM RENDER - Auth loading:', authLoading, 'Contract loading:', contractLoading, 'Data loading:', loading, 'Contract status:', contractStatus);
   
-  if (authLoading || contractLoading || (contractStatus === 'active' && loading)) {
+  if (authLoading || contractLoading || subscription.loading || (contractStatus === 'active' && loading)) {
     console.log('🔄 PM RENDER - Showing loading state');
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">
-            {authLoading ? 'Authenticating...' : contractLoading ? 'Checking access...' : 'Loading your dashboard...'}
+            {authLoading ? 'Authenticating...' : contractLoading ? 'Checking access...' : subscription.loading ? 'Checking subscription...' : 'Loading your dashboard...'}
           </p>
         </div>
       </div>
@@ -322,8 +341,8 @@ const PropertyManager: React.FC = () => {
     );
   }
 
-  // Handle pending contract status
-  if (!authLoading && !contractLoading && contractStatus === 'pending') {
+  // Show subscription setup if pending status (replace pending review with subscription flow)
+  if (contractStatus === 'pending') {
     return (
       <div className="min-h-screen bg-background">
         <PropertyManagerHeader
@@ -331,59 +350,52 @@ const PropertyManager: React.FC = () => {
           userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
         />
         
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 pt-20">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Home className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold mb-4">Welcome to CalmlySettled Property Manager!</h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Your property manager account has been created successfully. We're currently reviewing your application 
-              and will activate your account shortly.
-            </p>
-            
-            <div className="bg-muted/50 rounded-lg p-6 mb-8">
-              <h3 className="font-semibold text-lg mb-2">What happens next?</h3>
-              <div className="text-left space-y-3">
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">1</div>
-                  <div>
-                    <p className="font-medium">Application Review</p>
-                    <p className="text-sm text-muted-foreground">Our team will review your property manager application within 1-2 business days.</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">2</div>
-                  <div>
-                    <p className="font-medium">Contract Setup</p>
-                    <p className="text-sm text-muted-foreground">We'll reach out to discuss pricing and set up your property management contract.</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium mt-0.5">3</div>
-                  <div>
-                    <p className="font-medium">Full Access</p>
-                    <p className="text-sm text-muted-foreground">Once approved, you'll have full access to create properties, manage tenants, and generate QR codes.</p>
-                  </div>
-                </div>
+            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-white mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
+                <CreditCard className="h-8 w-8" />
               </div>
+              <h1 className="text-3xl font-bold mb-2">Choose Your Plan</h1>
+              <p className="text-lg opacity-90">
+                Start with a 14-day free trial, then pay per property you manage.
+              </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => window.location.href = 'mailto:info@calmlysettled.com?subject=Property Manager Application Status'}
-                variant="default"
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Support
-              </Button>
-              <Button 
-                onClick={signOut}
-                variant="outline"
-              >
-                Sign Out
+            <div className="bg-card rounded-xl p-6 border mb-6">
+              <h3 className="text-xl font-semibold mb-4">Standard Plan</h3>
+              <div className="text-3xl font-bold mb-2">$49.99<span className="text-base font-normal text-muted-foreground">/month per property</span></div>
+              <div className="text-lg mb-4 text-primary font-medium">+ $0.75 per tenant signup</div>
+              <ul className="text-left space-y-2 mb-6">
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>14-day free trial with 1 property</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>Unlimited properties after trial</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>QR code generation</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>Tenant link management</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <span>Revenue per signup tracking</span>
+                </li>
+              </ul>
+              <Button onClick={startSubscription} className="w-full">
+                Start Free Trial
               </Button>
             </div>
+            
+            <p className="text-sm text-muted-foreground">
+              No commitment required. Cancel anytime during or after your trial period.
+            </p>
           </div>
         </div>
       </div>
@@ -462,6 +474,28 @@ const PropertyManager: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Subscription Status Alert */}
+            <Alert className={`${subscription.status === 'active' ? 'border-green-200 bg-green-50' : subscription.status === 'trial' ? 'border-blue-200 bg-blue-50' : 'border-red-200 bg-red-50'}`}>
+              <CreditCard className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{getSubscriptionMessage()}</span>
+                {subscription.status !== 'active' && (
+                  <Button
+                    onClick={subscription.status === 'trial' ? startSubscription : startSubscription}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {subscription.status === 'trial' ? 'Upgrade Now' : 'Subscribe'}
+                  </Button>
+                )}
+                {subscription.status === 'active' && (
+                  <Button onClick={manageSubscription} size="sm" variant="outline">
+                    Manage Billing
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -470,12 +504,14 @@ const PropertyManager: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{properties.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {subscription.status === 'active' ? 'Unlimited allowed' : `${Math.max(0, subscription.max_properties - properties.length)} remaining in trial`}
+                  </p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Tenant Links</CardTitle>
+                  <CardTitle className="text-sm font-medium">Active Links</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -485,11 +521,14 @@ const PropertyManager: React.FC = () => {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Cache Ready</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Signup Revenue</CardTitle>
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{tenantLinks.filter(link => link.cache_warmed_at).length}</div>
+                  <div className="text-2xl font-bold">${(tenantLinks.length * 0.75).toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {tenantLinks.length} signups × $0.75 each
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -535,11 +574,45 @@ const PropertyManager: React.FC = () => {
           <TabsContent value="properties" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Your Properties</h2>
-              <Button onClick={() => setShowNewPropertyForm(!showNewPropertyForm)}>
+              <Button 
+                onClick={() => {
+                  if (!canCreateProperty()) {
+                    if (subscription.status === 'trial' && subscription.is_trial_expired) {
+                      toast.error('Trial expired. Subscribe to continue adding properties.');
+                    } else if (subscription.status === 'trial') {
+                      toast.error('Property limit reached. Upgrade to add more properties.');
+                    } else {
+                      toast.error('Subscription required to add properties.');
+                    }
+                    return;
+                  }
+                  setShowNewPropertyForm(!showNewPropertyForm);
+                }}
+                disabled={!canCreateProperty()}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Property
               </Button>
             </div>
+
+            {!canCreateProperty() && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>
+                    {subscription.status === 'trial' && subscription.is_trial_expired 
+                      ? 'Your free trial has expired. Subscribe to add more properties.'
+                      : subscription.status === 'trial' 
+                      ? `Free trial allows ${subscription.max_properties} property. Upgrade to add more.`
+                      : 'Subscription required to add properties.'
+                    }
+                  </span>
+                  <Button onClick={startSubscription} size="sm" variant="outline">
+                    {subscription.status === 'trial' ? 'Upgrade' : 'Subscribe'}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {showNewPropertyForm && (
               <Card>

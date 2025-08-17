@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.get-eligible-survey-question]
 verify_jwt = false
+
+[functions.create-subscription-checkout]
+verify_jwt = true
+
+[functions.check-subscription-status]
+verify_jwt = true
+
+[functions.manage-subscription]
+verify_jwt = true
