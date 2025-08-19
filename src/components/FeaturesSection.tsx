@@ -1,36 +1,36 @@
-import { Phone, TrendingUp, Heart, Users, Building, BarChart3 } from "lucide-react";
+import { ShoppingCart, Dumbbell, Trees, Stethoscope, Car, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
-    icon: Phone,
-    title: "Reduce Support Calls by 70%",
-    description: "Tenants get instant access to personalized local recommendations, dramatically reducing your support workload."
+    icon: ShoppingCart,
+    title: "Local Essentials",
+    description: "Find the best grocery stores, pharmacies, and shops near your new home."
   },
   {
-    icon: TrendingUp,
-    title: "Increase Tenant Satisfaction",
-    description: "Happy tenants who feel settled faster lead to higher retention rates and positive reviews."
+    icon: Dumbbell,
+    title: "Fitness & Recreation",
+    description: "Discover gyms, yoga studios, and recreational activities that match your lifestyle."
   },
   {
-    icon: Heart,
-    title: "Enhanced Move-In Experience",
-    description: "Provide a premium onboarding experience that sets your properties apart from competitors."
+    icon: Trees,
+    title: "Parks & Nature",
+    description: "Explore beautiful parks, hiking trails, and outdoor spaces in your area."
   },
   {
-    icon: Users,
-    title: "Custom Tenant Links",
-    description: "Generate personalized welcome links for each new tenant with your property branding."
+    icon: Stethoscope,
+    title: "Healthcare Providers",
+    description: "Connect with trusted doctors, dentists, and specialists accepting new patients."
   },
   {
-    icon: Building,
-    title: "Professional Branding",
-    description: "Customize the experience with your property logo and contact information for brand consistency."
+    icon: Car,
+    title: "Important Tasks",
+    description: "Complete vehicle registration, voter registration, and other moving requirements."
   },
   {
-    icon: BarChart3,
-    title: "Analytics & Insights",
-    description: "Track tenant engagement and satisfaction metrics to continuously improve your service."
+    icon: Zap,
+    title: "Utilities & Services",
+    description: "Set up internet, electricity, gas, and other essential services quickly."
   }
 ];
 
@@ -40,11 +40,11 @@ export function FeaturesSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Transform Your Tenant Experience
+            Everything You Need in One Place
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Reduce support calls, increase tenant satisfaction, and differentiate your properties 
-            with our comprehensive tenant onboarding solution.
+            Stop spending hours researching and comparing. Get personalized recommendations 
+            for everything that matters in your new city.
           </p>
         </div>
         
