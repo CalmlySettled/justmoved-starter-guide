@@ -63,7 +63,7 @@ export function Header({ propertyName }: HeaderProps = {}) {
           </div>
         </Link>
         
-        {!isPropertyManager && (
+        {user && !isPropertyManager && (
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/explore"
@@ -91,7 +91,7 @@ export function Header({ propertyName }: HeaderProps = {}) {
               </SheetTrigger>
               <SheetContent side="right" className="w-80 bg-background">
                 <div className="flex flex-col space-y-6 mt-8">
-                  {!isPropertyManager && (
+                  {user && !isPropertyManager && (
                     <>
                       <Link 
                         to="/explore"
@@ -110,8 +110,15 @@ export function Header({ propertyName }: HeaderProps = {}) {
                     </>
                   )}
                   
+                  {!user && (
+                    <div className="text-center space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">For Property Managers</h3>
+                      <p className="text-sm text-muted-foreground">Enhance tenant satisfaction with personalized local recommendations</p>
+                    </div>
+                  )}
+                  
                   <div className="border-t border-border pt-6">
-                     {user ? (
+                     {user && !isPropertyManager ? (
                       <div className="mb-8">
                         <Link to="/explore" onClick={() => setIsOpen(false)}>
                           <Button variant="default" size="mobile" className="w-full">
@@ -156,10 +163,10 @@ export function Header({ propertyName }: HeaderProps = {}) {
                         </Button>
                       </div>
                     ) : (
-                      <div>
-                        <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <div className="space-y-3">
+                        <Link to="/property-manager" onClick={() => setIsOpen(false)}>
                           <Button size="mobile" className="w-full bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all">
-                            Sign In
+                            Property Manager Portal
                           </Button>
                         </Link>
                       </div>
@@ -231,9 +238,9 @@ export function Header({ propertyName }: HeaderProps = {}) {
                 </>
               ) : (
                 <>
-                  <Link to="/auth">
+                  <Link to="/property-manager">
                     <Button className="bg-gradient-hero text-white border-0 shadow-glow hover:shadow-card-hover transition-all">
-                      Sign In
+                      Property Manager Portal
                     </Button>
                   </Link>
                 </>

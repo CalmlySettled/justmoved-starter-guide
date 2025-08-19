@@ -1,25 +1,25 @@
-import { MapPin, UserCheck, Calendar, Heart } from "lucide-react";
+import { Building, Link, Users, BarChart3 } from "lucide-react";
 
 const steps = [
   {
-    icon: UserCheck,
-    title: "Settle In",
-    description: "Tell us about your priorities and location - get started in just 30 seconds or take our full quiz for maximum personalization."
+    icon: Building,
+    title: "Add Your Properties",
+    description: "Set up your property portfolio with custom branding, contact information, and location details in minutes."
   },
   {
-    icon: MapPin,
-    title: "Get Personalized Recommendations",
-    description: "Receive curated lists of local essentials, from grocery stores to pediatricians, tailored to your needs."
+    icon: Link,
+    title: "Generate Tenant Links",
+    description: "Create personalized welcome links for each new tenant that include your property branding and local recommendations."
   },
   {
-    icon: Calendar,
-    title: "Complete Your To-Do List",
-    description: "Follow our customized checklist of important tasks like car registration and utility setup."
+    icon: Users,
+    title: "Enhance Move-In Experience",
+    description: "Tenants receive curated local recommendations and essential information, reducing your support calls by 70%."
   },
   {
-    icon: Heart,
-    title: "Feel at Home",
-    description: "Discover fun activities, community resources, and start building connections in your new neighborhood."
+    icon: BarChart3,
+    title: "Track Success Metrics",
+    description: "Monitor tenant engagement, satisfaction scores, and support call reduction through your analytics dashboard."
   }
 ];
 
@@ -29,10 +29,10 @@ export function HowItWorksSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
-            How CalmlySettled Works
+            How CalmlySettled Works for Property Managers
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Four simple steps to transform your moving experience from stressful to seamless
+            Four simple steps to transform your tenant onboarding from reactive to proactive
           </p>
         </div>
         
