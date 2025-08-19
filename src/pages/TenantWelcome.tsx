@@ -57,7 +57,7 @@ const TenantWelcome: React.FC = () => {
 
   useEffect(() => {
     if (token) {
-      fetchTenantData();
+      validateTenantAccess();
     }
   }, [token]);
 
@@ -67,55 +67,25 @@ const TenantWelcome: React.FC = () => {
     }
   }, [tenantData]);
 
-  const fetchTenantData = async () => {
+  const validateTenantAccess = async () => {
     try {
-      const { data, error } = await supabase
-        .from('tenant_links')
-        .select(`
-          *,
-          properties (
-            id,
-            property_name,
-            address,
-            latitude,
-            longitude,
-            contact_info,
-            branding
-          )
-        `)
-        .eq('tenant_token', token)
-        .eq('is_active', true)
-        .single();
+      const { data: response, error } = await supabase.functions.invoke('validate-tenant-access', {
+        body: { tenant_token: token }
+      });
 
       if (error) throw error;
 
-      if (!data) {
-        toast.error('Invalid or expired link');
+      if (!response.valid) {
+        toast.error(response.error || 'Access denied');
+        setLoading(false);
         return;
       }
 
-      setTenantData(data);
-
-      // Update last accessed timestamp
-      await supabase
-        .from('tenant_links')
-        .update({ last_accessed_at: new Date().toISOString() })
-        .eq('id', data.id);
-
-      // Log analytics event
-      await supabase.from('property_analytics').insert({
-        property_id: data.property_id,
-        tenant_link_id: data.id,
-        event_type: 'welcome_page_view',
-        event_data: {
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString()
-        }
-      });
-
+      setTenantData(response.tenant_data);
     } catch (error) {
-      console.error('Error fetching tenant data:', error);
-      toast.error('Failed to load welcome page');
+      console.error('Error validating tenant access:', error);
+      toast.error('Failed to validate access. Please contact your property manager.');
+      setLoading(false);
     }
   };
 

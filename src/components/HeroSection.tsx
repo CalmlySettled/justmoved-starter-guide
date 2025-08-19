@@ -31,13 +31,13 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col gap-6 justify-center items-center">
-          <Link to={user ? "/explore" : "/auth?mode=signup&redirect=explore&focus=essentials"}>
+          <Link to="/auth?mode=signup&redirect=explore&focus=essentials">
             <Button 
               variant="hero" 
               size="lg"
               className="text-lg sm:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 min-w-[280px] sm:min-w-[300px] transform hover:scale-110 shadow-2xl min-h-[56px]"
             >
-              Start Exploring
+              Get Started Free
               <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </Link>
