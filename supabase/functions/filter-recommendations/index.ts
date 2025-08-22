@@ -35,32 +35,95 @@ interface Business {
 const getFilterSearchTerms = (category: string, filter: string): string[] => {
   const searchMap: Record<string, Record<string, string[]>> = {
     "Medical care": {
-      "dental care": ["dentist", "dental office", "dental clinic"],
-      "vision care": ["optometrist", "eye doctor", "vision center"],
-      "urgent care": ["urgent care", "walk-in clinic", "immediate care"],
-      "specialty care": ["specialist", "medical specialist", "specialty clinic"],
-      "mental health": ["therapist", "counselor", "mental health clinic"],
-      "pharmacy": ["pharmacy", "drugstore", "prescription"]
+      "dental care": ["dentist", "dental office", "dental clinic", "dental practice"],
+      "vision care": ["optometrist", "eye doctor", "vision center", "optical shop"],
+      "urgent care": ["urgent care", "walk-in clinic", "immediate care", "urgent care center"],
+      "specialty care": ["specialist", "medical specialist", "specialty clinic", "specialized medicine"],
+      "mental health": ["therapist", "counselor", "mental health clinic", "psychology practice", "psychiatrist"],
+      "pharmacy": ["pharmacy", "drugstore", "prescription", "CVS", "Walgreens", "Rite Aid"],
+      "primary care": ["family doctor", "primary care physician", "family medicine", "general practitioner"],
+      "pediatric": ["pediatrician", "children's doctor", "pediatric clinic", "kids doctor"]
     },
     "Parks and recreation": {
-      "dog parks": ["dog park", "pet park", "off-leash park"],
-      "playgrounds": ["playground", "children's park", "family park"],
-      "hiking trails": ["hiking trail", "nature trail", "walking trail"],
-      "sports facilities": ["sports complex", "recreation center", "gym"],
-      "community centers": ["community center", "recreation center"]
+      "dog parks": ["dog park", "pet park", "off-leash park", "dog run"],
+      "playgrounds": ["playground", "children's park", "family park", "kids playground"],
+      "hiking trails": ["hiking trail", "nature trail", "walking trail", "hiking path"],
+      "sports facilities": ["sports complex", "recreation center", "gym", "athletic facility"],
+      "community centers": ["community center", "recreation center", "civic center"],
+      "swimming": ["public pool", "swimming pool", "aquatic center", "community pool"],
+      "tennis": ["tennis court", "tennis club", "tennis facility"],
+      "basketball": ["basketball court", "public court", "outdoor court"]
     },
     "Grocery stores": {
-      "organic": ["organic grocery", "natural foods", "health food store"],
-      "international": ["international grocery", "ethnic market", "specialty foods"],
-      "specialty": ["specialty grocery", "gourmet market", "artisan foods"],
-      "bulk": ["bulk foods", "warehouse store", "wholesale grocery"]
+      "organic": ["organic grocery", "natural foods", "health food store", "whole foods", "organic market"],
+      "international": ["international grocery", "ethnic market", "specialty foods", "asian market", "hispanic market"],
+      "specialty": ["specialty grocery", "gourmet market", "artisan foods", "upscale grocery"],
+      "bulk": ["bulk foods", "warehouse store", "wholesale grocery", "costco", "sam's club"],
+      "budget": ["discount grocery", "affordable grocery", "budget supermarket", "walmart", "aldi"],
+      "convenience": ["convenience store", "corner store", "7-eleven", "quick mart"]
     },
     "Restaurants": {
-      "family-friendly": ["family restaurant", "kid-friendly restaurant"],
-      "fine dining": ["fine dining", "upscale restaurant", "gourmet restaurant"],
-      "fast casual": ["fast casual", "quick service restaurant"],
-      "takeout": ["takeout restaurant", "delivery restaurant"],
-      "dietary restrictions": ["gluten-free restaurant", "vegan restaurant", "allergen-friendly"]
+      "family-friendly": ["family restaurant", "kid-friendly restaurant", "family dining", "children welcome"],
+      "fine dining": ["fine dining", "upscale restaurant", "gourmet restaurant", "haute cuisine"],
+      "fast casual": ["fast casual", "quick service restaurant", "counter service"],
+      "takeout": ["takeout restaurant", "delivery restaurant", "to-go food"],
+      "vegan": ["vegan restaurant", "plant-based restaurant", "vegan food"],
+      "vegetarian": ["vegetarian restaurant", "vegetarian friendly", "veggie restaurant"],
+      "gluten-free": ["gluten-free restaurant", "celiac-friendly", "gluten-free menu"],
+      "pizza": ["pizza restaurant", "pizzeria", "pizza place"],
+      "chinese": ["chinese restaurant", "chinese food", "chinese cuisine"],
+      "italian": ["italian restaurant", "italian food", "italian cuisine"],
+      "mexican": ["mexican restaurant", "mexican food", "taco shop"],
+      "breakfast": ["breakfast restaurant", "brunch", "breakfast spot", "morning dining"],
+      "coffee": ["coffee shop", "cafe", "coffee house", "espresso bar"]
+    },
+    "Fitness": {
+      "yoga": ["yoga studio", "yoga class", "hot yoga", "yoga center"],
+      "pilates": ["pilates studio", "pilates class", "reformer pilates"],
+      "crossfit": ["crossfit gym", "crossfit box", "functional fitness"],
+      "swimming": ["swimming pool", "lap pool", "aquatic center", "swim lessons"],
+      "martial arts": ["martial arts", "karate", "taekwondo", "jiu jitsu", "boxing gym"],
+      "dance": ["dance studio", "dance classes", "ballroom dancing", "dance lessons"],
+      "rock climbing": ["climbing gym", "rock climbing", "bouldering", "indoor climbing"],
+      "traditional gym": ["gym", "fitness center", "health club", "weight room"]
+    },
+    "Personal Care": {
+      "hair salon": ["hair salon", "beauty salon", "hair stylist", "hairdresser"],
+      "barbershop": ["barbershop", "barber", "men's haircut", "traditional barber"],
+      "nail salon": ["nail salon", "manicure", "pedicure", "nail care"],
+      "spa": ["spa", "day spa", "massage therapy", "wellness spa"],
+      "skincare": ["skincare clinic", "facial spa", "esthetician", "dermatology spa"],
+      "massage": ["massage therapy", "therapeutic massage", "deep tissue massage"],
+      "eyebrow": ["eyebrow threading", "brow bar", "eyebrow waxing", "microblading"]
+    },
+    "Shopping": {
+      "clothing": ["clothing store", "fashion boutique", "apparel store", "dress shop"],
+      "electronics": ["electronics store", "best buy", "tech store", "computer store"],
+      "home goods": ["home goods", "furniture store", "home decor", "housewares"],
+      "books": ["bookstore", "book shop", "library", "used books"],
+      "sporting goods": ["sporting goods", "sports equipment", "athletic gear", "outdoor gear"],
+      "jewelry": ["jewelry store", "jeweler", "fine jewelry", "watch repair"],
+      "shoes": ["shoe store", "footwear", "athletic shoes", "boot store"]
+    },
+    "Banking": {
+      "banks": ["bank", "credit union", "financial institution", "chase bank", "bank of america"],
+      "atm": ["atm", "cash machine", "automated teller"],
+      "investment": ["investment advisor", "financial planning", "wealth management"]
+    },
+    "Auto services": {
+      "repair": ["auto repair", "car repair", "mechanic", "automotive service"],
+      "oil change": ["oil change", "quick lube", "jiffy lube", "valvoline instant oil"],
+      "car wash": ["car wash", "detailing", "auto wash", "hand car wash"],
+      "gas station": ["gas station", "fuel", "gasoline", "petrol station"],
+      "tires": ["tire shop", "tire service", "tire installation", "tire repair"]
+    },
+    "Entertainment": {
+      "movies": ["movie theater", "cinema", "movie theatre", "film screening"],
+      "bowling": ["bowling alley", "bowling center", "ten pin bowling"],
+      "arcade": ["arcade", "game room", "video games", "pinball"],
+      "mini golf": ["mini golf", "miniature golf", "putt putt", "golf course"],
+      "bars": ["bar", "pub", "cocktail lounge", "sports bar", "dive bar"],
+      "live music": ["live music venue", "concert hall", "music club", "jazz club"]
     }
   };
 
