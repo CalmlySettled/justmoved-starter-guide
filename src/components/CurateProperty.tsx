@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { MapPin, Building, Plus, Save, Eye, FileUp, Copy, Trash2 } from 'lucide-react';
+import { MapPin, Building, Plus, Save, Eye, FileUp, Copy, Trash2, Upload } from 'lucide-react';
 import BusinessForm from './BusinessForm';
 import CopyFromPropertyModal from './CopyFromPropertyModal';
+import BulkImportModal from './BulkImportModal';
 
 interface Property {
   id: string;
@@ -63,6 +64,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
   const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<CuratedPlace | null>(null);
   const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
   useEffect(() => {
     fetchCuratedPlaces();
@@ -223,6 +225,10 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
             <Copy className="h-4 w-4" />
             Copy from Property
           </Button>
+          <Button variant="outline" onClick={() => setShowBulkImportModal(true)} className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Bulk Import
+          </Button>
         </div>
       </div>
 
@@ -356,6 +362,17 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
         onClose={() => setShowCopyModal(false)}
         targetPropertyId={property.id}
         onCopyComplete={() => {
+          fetchCuratedPlaces();
+          onUpdate();
+        }}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        propertyId={property.id}
+        onImportComplete={() => {
           fetchCuratedPlaces();
           onUpdate();
         }}
