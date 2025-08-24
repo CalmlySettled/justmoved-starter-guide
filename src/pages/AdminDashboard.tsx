@@ -10,6 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Brain, Users, TrendingUp, Activity, AlertCircle, Star, Bookmark, Clock, ShieldX } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useNavigate } from "react-router-dom";
+import PropertyCurationDashboard from "@/components/PropertyCurationDashboard";
 
 interface AdminMetrics {
   totalRecommendations: number;
@@ -196,8 +197,9 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="curation">Property Curation</TabsTrigger>
             <TabsTrigger value="abtest">A/B Testing</TabsTrigger>
             <TabsTrigger value="ai-scores">AI Performance</TabsTrigger>
             <TabsTrigger value="system">System Health</TabsTrigger>
@@ -258,6 +260,10 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="curation" className="space-y-6">
+            <PropertyCurationDashboard />
           </TabsContent>
 
           <TabsContent value="abtest" className="space-y-6">
