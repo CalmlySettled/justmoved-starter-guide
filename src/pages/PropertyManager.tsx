@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { Download, Plus, QrCode, Eye, MapPin, Users, TrendingUp, Home, Mail, CreditCard, AlertCircle, Play, Target, Award, Star, Building } from 'lucide-react';
 import QRCodeGenerator from 'qrcode';
 import PropertyManagerHeader from '@/components/PropertyManagerHeader';
-import CurateProperty from '@/components/CurateProperty';
+
 
 interface Property {
   id: string;
@@ -60,7 +60,7 @@ const PropertyManager: React.FC = () => {
   const [tenantLinks, setTenantLinks] = useState<TenantLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedPropertyForCuration, setSelectedPropertyForCuration] = useState<Property | null>(null);
+  
   // New property form state
   const [newProperty, setNewProperty] = useState({
     property_name: '',
@@ -713,10 +713,9 @@ const PropertyManager: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 glass-card border-0">
+          <TabsList className="grid w-full grid-cols-4 glass-card border-0">
             <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10">Overview</TabsTrigger>
             <TabsTrigger value="properties" className="data-[state=active]:bg-primary/10">Properties</TabsTrigger>
-            <TabsTrigger value="curate" className="data-[state=active]:bg-primary/10">Curate Places</TabsTrigger>
             <TabsTrigger value="tenants" className="data-[state=active]:bg-primary/10">Tenant Links</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/10">Analytics</TabsTrigger>
           </TabsList>
@@ -1003,107 +1002,6 @@ const PropertyManager: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="curate" className="space-y-6">
-            {properties.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Building className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No Properties Yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Add your first property to start curating local business recommendations.
-                  </p>
-                  <Button onClick={() => setActiveTab('properties')}>
-                    Add Your First Property
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : selectedPropertyForCuration ? (
-              <div className="space-y-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedPropertyForCuration(null)}
-                  className="mb-4"
-                >
-                  ← Back to Properties
-                </Button>
-                <CurateProperty
-                  property={selectedPropertyForCuration}
-                  onUpdate={fetchProperties}
-                />
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-2xl font-semibold mb-2">Curate Local Places</h2>
-                  <p className="text-muted-foreground">
-                    Manually curate the best local businesses for each property. 
-                    This gives you complete control over what tenants see.
-                  </p>
-                </div>
-
-                <div className="grid gap-6">
-                  {properties.map((property) => (
-                    <Card key={property.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-start space-x-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                              <Building className="h-6 w-6 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">{property.property_name}</h3>
-                              <p className="text-sm text-muted-foreground flex items-center gap-1 mb-2">
-                                <MapPin className="h-3 w-3" />
-                                {property.address}
-                              </p>
-                              <div className="flex items-center gap-3">
-                                <Badge 
-                                  variant={property.curation_status === 'completed' ? 'default' : 'secondary'}
-                                >
-                                  {property.curation_status === 'completed' ? 'Curated' : 'Not Curated'}
-                                </Badge>
-                                {property.total_curated_places > 0 && (
-                                  <span className="text-sm text-muted-foreground">
-                                    {property.total_curated_places} businesses curated
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => setSelectedPropertyForCuration(property)}
-                            variant={property.curation_status === 'completed' ? 'outline' : 'default'}
-                          >
-                            {property.curation_status === 'completed' ? 'Edit Curation' : 'Start Curating'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Target className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-blue-900 mb-2">Manual Curation Benefits</h3>
-                        <ul className="text-sm text-blue-800 space-y-1">
-                          <li>• Complete control over business recommendations</li>
-                          <li>• Zero API costs - no external service calls</li>
-                          <li>• Leverage your local market expertise</li>
-                          <li>• Ensure quality and relevance for each property</li>
-                          <li>• Predictable tenant experience every time</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </TabsContent>
 
           <TabsContent value="tenants" className="space-y-6">
             <div className="flex justify-between items-center">
