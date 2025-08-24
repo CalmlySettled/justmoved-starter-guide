@@ -134,6 +134,131 @@ export type Database = {
         }
         Relationships: []
       }
+      curated_property_places: {
+        Row: {
+          business_address: string | null
+          business_description: string | null
+          business_features: string[] | null
+          business_name: string
+          business_phone: string | null
+          business_website: string | null
+          category: string
+          created_at: string
+          distance_miles: number | null
+          id: string
+          is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
+          photo_url: string | null
+          place_id: string | null
+          property_id: string
+          rating: number | null
+          sort_order: number | null
+          subfilter_tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name: string
+          business_phone?: string | null
+          business_website?: string | null
+          category: string
+          created_at?: string
+          distance_miles?: number | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          photo_url?: string | null
+          place_id?: string | null
+          property_id: string
+          rating?: number | null
+          sort_order?: number | null
+          subfilter_tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name?: string
+          business_phone?: string | null
+          business_website?: string | null
+          category?: string
+          created_at?: string
+          distance_miles?: number | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          photo_url?: string | null
+          place_id?: string | null
+          property_id?: string
+          rating?: number | null
+          sort_order?: number | null
+          subfilter_tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curated_property_places_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curation_templates: {
+        Row: {
+          business_address: string | null
+          business_description: string | null
+          business_features: string[] | null
+          business_name: string
+          business_phone: string | null
+          business_website: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          subfilter_tags: string[] | null
+          template_name: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name: string
+          business_phone?: string | null
+          business_website?: string | null
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          subfilter_tags?: string[] | null
+          template_name: string
+        }
+        Update: {
+          business_address?: string | null
+          business_description?: string | null
+          business_features?: string[] | null
+          business_name?: string
+          business_phone?: string | null
+          business_website?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          subfilter_tags?: string[] | null
+          template_name?: string
+        }
+        Relationships: []
+      }
       location_access_logs: {
         Row: {
           access_type: string
@@ -281,12 +406,15 @@ export type Database = {
           branding: Json | null
           contact_info: Json | null
           created_at: string
+          curation_completed_at: string | null
+          curation_status: string | null
           id: string
           latitude: number | null
           longitude: number | null
           manager_id: string
           property_name: string
           property_token: string
+          total_curated_places: number | null
           updated_at: string
         }
         Insert: {
@@ -294,12 +422,15 @@ export type Database = {
           branding?: Json | null
           contact_info?: Json | null
           created_at?: string
+          curation_completed_at?: string | null
+          curation_status?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           manager_id: string
           property_name: string
           property_token: string
+          total_curated_places?: number | null
           updated_at?: string
         }
         Update: {
@@ -307,12 +438,15 @@ export type Database = {
           branding?: Json | null
           contact_info?: Json | null
           created_at?: string
+          curation_completed_at?: string | null
+          curation_status?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           manager_id?: string
           property_name?: string
           property_token?: string
+          total_curated_places?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -1001,6 +1135,10 @@ export type Database = {
       log_tenant_signup_charge: {
         Args: { p_property_id: string; p_tenant_link_id: string }
         Returns: string
+      }
+      populate_cache_from_curation: {
+        Args: { p_property_id: string }
+        Returns: undefined
       }
       validate_session_security: {
         Args: {
