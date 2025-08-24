@@ -50,8 +50,8 @@ interface ExploreRecommendations {
 const trendingCategories = [
   { name: "Coffee Shops", icon: Coffee, searchTerm: "coffee shops", color: "bg-amber-500" },
   { name: "Fitness", icon: Dumbbell, searchTerm: "fitness gyms", color: "bg-blue-500" },
-  { name: "Grocery", icon: ShoppingCart, searchTerm: "grocery stores", color: "bg-green-500" },
-  { name: "Parks", icon: TreePine, searchTerm: "parks recreation", color: "bg-emerald-500" },
+  { name: "Grocery stores", icon: ShoppingCart, searchTerm: "grocery stores", color: "bg-green-500" },
+  { name: "Parks and recreation", icon: TreePine, searchTerm: "parks recreation", color: "bg-emerald-500" },
   { name: "Junk Removal", icon: Trash2, searchTerm: "junk removal", color: "bg-orange-500" },
   { name: "Personal Care", icon: Scissors, searchTerm: "personal care", color: "bg-pink-500" },
 ];

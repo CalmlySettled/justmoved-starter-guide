@@ -140,10 +140,13 @@ const searchGooglePlaces = async (searchTerms: string[], location: string, radiu
   
   for (const term of searchTerms) {
     try {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${term} near ${location}`)}&radius=${radius}&key=${apiKey}`;
+      // More specific location constraint - use location bias instead of general "near"
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(term)}&location=${location}&radius=${radius}&key=${apiKey}`;
       
       const response = await fetch(searchUrl);
       const data = await response.json();
+      
+      console.log(`Search for "${term}" in ${location} returned ${data.results?.length || 0} results`);
       
       if (data.results) {
         for (const place of data.results.slice(0, 10)) {
@@ -211,6 +214,8 @@ serve(async (req) => {
     );
 
     const { category, filter, location, radius = 10000, userId }: FilterRequest = await req.json();
+    
+    console.log(`Filter request: category="${category}", filter="${filter}", location="${location}"`);
     
     if (!category || !filter) {
       throw new Error('Category and filter are required');

@@ -73,7 +73,9 @@ export const useSubfilters = () => {
       }
 
       // Parse the dynamic response format - edge function returns { "Category - Filter": businesses[] }
+      console.log('Raw filter response data:', data);
       const businesses = data ? Object.values(data)[0] as Business[] : [];
+      console.log('Extracted businesses:', businesses);
       return businesses || [];
     } catch (error) {
       console.error('Error fetching filtered businesses:', error);
