@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { MapPin, Building, Plus, Save, Eye, FileUp, Copy, Trash2 } from 'lucide-react';
 import BusinessForm from './BusinessForm';
+import CopyFromPropertyModal from './CopyFromPropertyModal';
 
 interface Property {
   id: string;
@@ -61,6 +62,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
   const [activeCategory, setActiveCategory] = useState('restaurants');
   const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<CuratedPlace | null>(null);
+  const [showCopyModal, setShowCopyModal] = useState(false);
 
   useEffect(() => {
     fetchCuratedPlaces();
@@ -217,6 +219,10 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
             <Eye className="h-4 w-4" />
             Preview Experience
           </Button>
+          <Button variant="outline" onClick={() => setShowCopyModal(true)} className="flex items-center gap-2">
+            <Copy className="h-4 w-4" />
+            Copy from Property
+          </Button>
         </div>
       </div>
 
@@ -343,6 +349,17 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
           onCancel={() => setShowBusinessForm(false)}
         />
       )}
+
+      {/* Copy from Property Modal */}
+      <CopyFromPropertyModal
+        isOpen={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        targetPropertyId={property.id}
+        onCopyComplete={() => {
+          fetchCuratedPlaces();
+          onUpdate();
+        }}
+      />
     </div>
   );
 };

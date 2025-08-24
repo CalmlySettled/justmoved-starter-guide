@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Phone, Globe, Star, Plus, X } from 'lucide-react';
+import { MapPin, Phone, Globe, Star, Plus, X, Search } from 'lucide-react';
+import GooglePlacesAutocomplete from './GooglePlacesAutocomplete';
+import QuickSelectTags from './QuickSelectTags';
 
 interface Property {
   id: string;
@@ -50,6 +52,7 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
   onCancel 
 }) => {
   const [loading, setLoading] = useState(false);
+  const [useAutocomplete, setUseAutocomplete] = useState(true);
   const [formData, setFormData] = useState({
     business_name: business?.business_name || '',
     business_address: business?.business_address || '',
@@ -107,6 +110,35 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
 
   const removeFeature = (featureToRemove: string) => {
     handleInputChange('business_features', formData.business_features.filter(feature => feature !== featureToRemove));
+  };
+
+  const handlePlaceSelect = (place: any) => {
+    setFormData(prev => ({
+      ...prev,
+      business_name: place.name || prev.business_name,
+      business_address: place.formatted_address || prev.business_address,
+      business_phone: place.formatted_phone_number || prev.business_phone,
+      business_website: place.website || prev.business_website,
+      rating: place.rating || prev.rating
+    }));
+  };
+
+  const handleTagToggle = (tag: string) => {
+    const currentTags = formData.subfilter_tags;
+    if (currentTags.includes(tag)) {
+      handleInputChange('subfilter_tags', currentTags.filter(t => t !== tag));
+    } else {
+      handleInputChange('subfilter_tags', [...currentTags, tag]);
+    }
+  };
+
+  const handleFeatureToggle = (feature: string) => {
+    const currentFeatures = formData.business_features;
+    if (currentFeatures.includes(feature)) {
+      handleInputChange('business_features', currentFeatures.filter(f => f !== feature));
+    } else {
+      handleInputChange('business_features', [...currentFeatures, feature]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,6 +213,32 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google Places Autocomplete */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Search Business (Recommended)</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUseAutocomplete(!useAutocomplete)}
+              >
+                {useAutocomplete ? 'Manual Entry' : 'Use Search'}
+              </Button>
+            </div>
+            
+            {useAutocomplete ? (
+              <GooglePlacesAutocomplete 
+                onPlaceSelect={handlePlaceSelect}
+                placeholder="Search for the business..."
+              />
+            ) : (
+              <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                Manual entry mode - fill out the form below
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="business_name">Business Name *</Label>
@@ -265,11 +323,21 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
 
           <div className="space-y-3">
             <Label>Subfilter Tags</Label>
+            
+            {/* Quick Select Tags */}
+            <QuickSelectTags
+              category={category}
+              selectedTags={formData.subfilter_tags}
+              onTagToggle={handleTagToggle}
+              type="subfilter"
+            />
+            
+            {/* Manual Tag Entry */}
             <div className="flex gap-2">
               <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="e.g., Fast Casual, Italian, etc."
+                placeholder="Add custom tag..."
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               />
               <Button type="button" onClick={addTag} size="sm">
@@ -288,11 +356,21 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
 
           <div className="space-y-3">
             <Label>Business Features</Label>
+            
+            {/* Quick Select Features */}
+            <QuickSelectTags
+              category={category}
+              selectedTags={formData.business_features}
+              onTagToggle={handleFeatureToggle}
+              type="feature"
+            />
+            
+            {/* Manual Feature Entry */}
             <div className="flex gap-2">
               <Input
                 value={newFeature}
                 onChange={(e) => setNewFeature(e.target.value)}
-                placeholder="e.g., Outdoor seating, Parking, etc."
+                placeholder="Add custom feature..."
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
               />
               <Button type="button" onClick={addFeature} size="sm">
