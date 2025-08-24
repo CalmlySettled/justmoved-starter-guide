@@ -5,96 +5,96 @@ export interface Subfilter {
 }
 
 export const SUBFILTERS_BY_CATEGORY: Record<string, Subfilter[]> = {
-  'medical care': [
-    { id: 'urgent-care', label: 'Urgent Care', category: 'medical care' },
-    { id: 'family-doctors', label: 'Family Doctors', category: 'medical care' },
-    { id: 'specialists', label: 'Specialists', category: 'medical care' },
-    { id: 'dentists', label: 'Dentists', category: 'medical care' },
-    { id: 'eye-care', label: 'Eye Care', category: 'medical care' },
-    { id: 'mental-health', label: 'Mental Health', category: 'medical care' },
-    { id: 'physical-therapy', label: 'Physical Therapy', category: 'medical care' },
-    { id: 'pediatricians', label: 'Pediatricians', category: 'medical care' }
+  'Medical care': [
+    { id: 'dental care', label: 'Dental Care', category: 'Medical care' },
+    { id: 'vision care', label: 'Vision Care', category: 'Medical care' },
+    { id: 'urgent care', label: 'Urgent Care', category: 'Medical care' },
+    { id: 'specialty care', label: 'Specialty Care', category: 'Medical care' },
+    { id: 'mental health', label: 'Mental Health', category: 'Medical care' },
+    { id: 'pharmacy', label: 'Pharmacy', category: 'Medical care' },
+    { id: 'primary care', label: 'Primary Care', category: 'Medical care' },
+    { id: 'pediatric', label: 'Pediatric', category: 'Medical care' }
   ],
-  'parks & recreation': [
-    { id: 'playgrounds', label: 'Playgrounds', category: 'parks & recreation' },
-    { id: 'hiking-trails', label: 'Hiking Trails', category: 'parks & recreation' },
-    { id: 'sports-facilities', label: 'Sports Facilities', category: 'parks & recreation' },
-    { id: 'dog-parks', label: 'Dog Parks', category: 'parks & recreation' },
-    { id: 'swimming-pools', label: 'Swimming Pools', category: 'parks & recreation' },
-    { id: 'basketball-courts', label: 'Basketball Courts', category: 'parks & recreation' },
-    { id: 'tennis-courts', label: 'Tennis Courts', category: 'parks & recreation' },
-    { id: 'community-centers', label: 'Community Centers', category: 'parks & recreation' }
+  'Parks and recreation': [
+    { id: 'dog parks', label: 'Dog Parks', category: 'Parks and recreation' },
+    { id: 'playgrounds', label: 'Playgrounds', category: 'Parks and recreation' },
+    { id: 'hiking trails', label: 'Hiking Trails', category: 'Parks and recreation' },
+    { id: 'sports facilities', label: 'Sports Facilities', category: 'Parks and recreation' },
+    { id: 'community centers', label: 'Community Centers', category: 'Parks and recreation' },
+    { id: 'swimming', label: 'Swimming', category: 'Parks and recreation' },
+    { id: 'tennis', label: 'Tennis', category: 'Parks and recreation' },
+    { id: 'basketball', label: 'Basketball', category: 'Parks and recreation' }
   ],
-  'grocery stores': [
-    { id: 'organic-natural', label: 'Organic & Natural', category: 'grocery stores' },
-    { id: 'budget-friendly', label: 'Budget-Friendly', category: 'grocery stores' },
-    { id: 'international', label: 'International Foods', category: 'grocery stores' },
-    { id: 'farmers-markets', label: 'Farmers Markets', category: 'grocery stores' },
-    { id: 'bulk-wholesale', label: 'Bulk & Wholesale', category: 'grocery stores' },
-    { id: 'specialty-gourmet', label: 'Specialty & Gourmet', category: 'grocery stores' }
+  'Grocery stores': [
+    { id: 'organic', label: 'Organic', category: 'Grocery stores' },
+    { id: 'international', label: 'International', category: 'Grocery stores' },
+    { id: 'specialty', label: 'Specialty & Gourmet', category: 'Grocery stores' },
+    { id: 'bulk', label: 'Bulk & Warehouse', category: 'Grocery stores' },
+    { id: 'budget', label: 'Budget Friendly', category: 'Grocery stores' },
+    { id: 'convenience', label: 'Convenience', category: 'Grocery stores' }
   ],
-  'restaurants': [
-    { id: 'family-friendly', label: 'Family-Friendly', category: 'restaurants' },
-    { id: 'romantic-date', label: 'Romantic Date Spots', category: 'restaurants' },
-    { id: 'quick-casual', label: 'Quick & Casual', category: 'restaurants' },
-    { id: 'fine-dining', label: 'Fine Dining', category: 'restaurants' },
-    { id: 'vegan-vegetarian', label: 'Vegan & Vegetarian', category: 'restaurants' },
-    { id: 'gluten-free', label: 'Gluten-Free Options', category: 'restaurants' },
-    { id: 'brunch-spots', label: 'Brunch Spots', category: 'restaurants' },
-    { id: 'late-night', label: 'Late Night Dining', category: 'restaurants' },
-    { id: 'outdoor-seating', label: 'Outdoor Seating', category: 'restaurants' },
-    { id: 'takeout-delivery', label: 'Takeout & Delivery', category: 'restaurants' },
-    { id: 'local-favorites', label: 'Local Favorites', category: 'restaurants' },
-    { id: 'ethnic-cuisine', label: 'International Cuisine', category: 'restaurants' },
-    { id: 'bar-grill', label: 'Bar & Grill', category: 'restaurants' }
+  'Restaurants': [
+    { id: 'family-friendly', label: 'Family Friendly', category: 'Restaurants' },
+    { id: 'fine dining', label: 'Fine Dining', category: 'Restaurants' },
+    { id: 'fast casual', label: 'Fast Casual', category: 'Restaurants' },
+    { id: 'takeout', label: 'Takeout & Delivery', category: 'Restaurants' },
+    { id: 'vegan', label: 'Vegan', category: 'Restaurants' },
+    { id: 'vegetarian', label: 'Vegetarian', category: 'Restaurants' },
+    { id: 'gluten-free', label: 'Gluten Free', category: 'Restaurants' },
+    { id: 'pizza', label: 'Pizza', category: 'Restaurants' },
+    { id: 'chinese', label: 'Chinese', category: 'Restaurants' },
+    { id: 'italian', label: 'Italian', category: 'Restaurants' },
+    { id: 'mexican', label: 'Mexican', category: 'Restaurants' },
+    { id: 'breakfast', label: 'Breakfast & Brunch', category: 'Restaurants' },
+    { id: 'coffee', label: 'Coffee & Cafes', category: 'Restaurants' }
   ],
-  'fitness': [
-    { id: 'gyms-fitness-centers', label: 'Gyms & Fitness Centers', category: 'fitness' },
-    { id: 'yoga-studios', label: 'Yoga Studios', category: 'fitness' },
-    { id: 'martial-arts', label: 'Martial Arts', category: 'fitness' },
-    { id: 'dance-studios', label: 'Dance Studios', category: 'fitness' },
-    { id: 'rock-climbing', label: 'Rock Climbing', category: 'fitness' },
-    { id: 'swimming', label: 'Swimming', category: 'fitness' },
-    { id: 'personal-training', label: 'Personal Training', category: 'fitness' },
-    { id: 'group-classes', label: 'Group Classes', category: 'fitness' }
+  'Fitness': [
+    { id: 'yoga', label: 'Yoga Studios', category: 'Fitness' },
+    { id: 'pilates', label: 'Pilates', category: 'Fitness' },
+    { id: 'crossfit', label: 'CrossFit', category: 'Fitness' },
+    { id: 'swimming', label: 'Swimming', category: 'Fitness' },
+    { id: 'martial arts', label: 'Martial Arts', category: 'Fitness' },
+    { id: 'dance', label: 'Dance Studios', category: 'Fitness' },
+    { id: 'rock climbing', label: 'Rock Climbing', category: 'Fitness' },
+    { id: 'traditional gym', label: 'Gyms & Fitness Centers', category: 'Fitness' }
   ],
-  'personal care': [
-    { id: 'hair-salons', label: 'Hair Salons', category: 'personal care' },
-    { id: 'barbershops', label: 'Barbershops', category: 'personal care' },
-    { id: 'nail-salons', label: 'Nail Salons', category: 'personal care' },
-    { id: 'spas-massage', label: 'Spas & Massage', category: 'personal care' },
-    { id: 'skincare', label: 'Skincare & Aesthetics', category: 'personal care' },
-    { id: 'tattoo-piercing', label: 'Tattoo & Piercing', category: 'personal care' },
-    { id: 'wellness-centers', label: 'Wellness Centers', category: 'personal care' }
+  'Personal Care': [
+    { id: 'hair salon', label: 'Hair Salons', category: 'Personal Care' },
+    { id: 'barbershop', label: 'Barbershops', category: 'Personal Care' },
+    { id: 'nail salon', label: 'Nail Salons', category: 'Personal Care' },
+    { id: 'spa', label: 'Spas', category: 'Personal Care' },
+    { id: 'skincare', label: 'Skincare', category: 'Personal Care' },
+    { id: 'massage', label: 'Massage Therapy', category: 'Personal Care' },
+    { id: 'eyebrow', label: 'Eyebrow Services', category: 'Personal Care' }
   ],
-  'shopping': [
-    { id: 'department-stores', label: 'Department Stores', category: 'shopping' },
-    { id: 'boutiques', label: 'Boutiques & Local Shops', category: 'shopping' },
-    { id: 'thrift-consignment', label: 'Thrift & Consignment', category: 'shopping' },
-    { id: 'electronics', label: 'Electronics', category: 'shopping' },
-    { id: 'home-garden', label: 'Home & Garden', category: 'shopping' },
-    { id: 'bookstores', label: 'Bookstores', category: 'shopping' },
-    { id: 'sporting-goods', label: 'Sporting Goods', category: 'shopping' }
+  'Shopping': [
+    { id: 'clothing', label: 'Clothing & Fashion', category: 'Shopping' },
+    { id: 'electronics', label: 'Electronics', category: 'Shopping' },
+    { id: 'home goods', label: 'Home Goods', category: 'Shopping' },
+    { id: 'books', label: 'Books', category: 'Shopping' },
+    { id: 'sporting goods', label: 'Sporting Goods', category: 'Shopping' },
+    { id: 'jewelry', label: 'Jewelry', category: 'Shopping' },
+    { id: 'shoes', label: 'Shoes', category: 'Shopping' }
   ],
-  'banking': [
-    { id: 'local-credit-unions', label: 'Local Credit Unions', category: 'banking' },
-    { id: 'national-banks', label: 'National Banks', category: 'banking' },
-    { id: 'atm-locations', label: 'ATM Locations', category: 'banking' }
+  'Banking': [
+    { id: 'banks', label: 'Banks & Credit Unions', category: 'Banking' },
+    { id: 'atm', label: 'ATMs', category: 'Banking' },
+    { id: 'investment', label: 'Investment Services', category: 'Banking' }
   ],
-  'auto services': [
-    { id: 'oil-change', label: 'Oil Change', category: 'auto services' },
-    { id: 'car-repair', label: 'Car Repair', category: 'auto services' },
-    { id: 'tire-services', label: 'Tire Services', category: 'auto services' },
-    { id: 'car-wash', label: 'Car Wash', category: 'auto services' },
-    { id: 'auto-parts', label: 'Auto Parts', category: 'auto services' }
+  'Auto services': [
+    { id: 'repair', label: 'Auto Repair', category: 'Auto services' },
+    { id: 'oil change', label: 'Oil Change', category: 'Auto services' },
+    { id: 'car wash', label: 'Car Wash', category: 'Auto services' },
+    { id: 'gas station', label: 'Gas Stations', category: 'Auto services' },
+    { id: 'tires', label: 'Tire Services', category: 'Auto services' }
   ],
-  'entertainment': [
-    { id: 'movie-theaters', label: 'Movie Theaters', category: 'entertainment' },
-    { id: 'live-music', label: 'Live Music Venues', category: 'entertainment' },
-    { id: 'museums-galleries', label: 'Museums & Galleries', category: 'entertainment' },
-    { id: 'bowling-arcade', label: 'Bowling & Arcade', category: 'entertainment' },
-    { id: 'nightlife', label: 'Nightlife & Bars', category: 'entertainment' },
-    { id: 'comedy-shows', label: 'Comedy Shows', category: 'entertainment' }
+  'Entertainment': [
+    { id: 'movies', label: 'Movie Theaters', category: 'Entertainment' },
+    { id: 'bowling', label: 'Bowling', category: 'Entertainment' },
+    { id: 'arcade', label: 'Arcade & Games', category: 'Entertainment' },
+    { id: 'mini golf', label: 'Mini Golf', category: 'Entertainment' },
+    { id: 'bars', label: 'Bars & Nightlife', category: 'Entertainment' },
+    { id: 'live music', label: 'Live Music', category: 'Entertainment' }
   ]
 };
 
@@ -103,6 +103,6 @@ export const getAllSubfilters = (): Subfilter[] => {
 };
 
 export const getSubfiltersForCategory = (category: string): Subfilter[] => {
-  const normalizedCategory = category.toLowerCase();
-  return SUBFILTERS_BY_CATEGORY[normalizedCategory] || [];
+  // Use the exact category name without normalization
+  return SUBFILTERS_BY_CATEGORY[category] || [];
 };

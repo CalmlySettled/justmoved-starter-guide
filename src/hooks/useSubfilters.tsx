@@ -47,16 +47,20 @@ export const useSubfilters = () => {
     
     try {
       const filterRequest: FilterRequest = {
-        category: category.toLowerCase(),
+        category: category, // Use exact category name, don't convert to lowercase
         filter: subfilter,
         location: userLocation,
         radius: 10000, // 10km default
         userId
       };
 
+      console.log('Sending filter request:', filterRequest);
+      
       const { data, error } = await supabase.functions.invoke('filter-recommendations', {
         body: filterRequest
       });
+
+      console.log('Filter response:', data);
 
       if (error) {
         console.error('Filter recommendations error:', error);
@@ -68,7 +72,9 @@ export const useSubfilters = () => {
         return [];
       }
 
-      return data?.recommendations || [];
+      // Parse the dynamic response format - edge function returns { "Category - Filter": businesses[] }
+      const businesses = data ? Object.values(data)[0] as Business[] : [];
+      return businesses || [];
     } catch (error) {
       console.error('Error fetching filtered businesses:', error);
       toast({
