@@ -1124,6 +1124,8 @@ export default function Explore() {
                 favoriteBusinesses={favoriteBusinesses}
                 favoritingBusinesses={favoritingBusinesses}
                 onToggleFavorite={toggleFavorite}
+                userLocation={location ? `${location.latitude},${location.longitude}` : undefined}
+                userId={user?.id}
               />
             </>
           ) : null}
