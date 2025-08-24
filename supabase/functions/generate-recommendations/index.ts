@@ -2232,6 +2232,50 @@ serve(async (req) => {
 
       const coordinates = { lat: latitude, lng: longitude };
       
+      // Check for manual curation first
+      console.log('🔍 Checking for manual curation...');
+      try {
+        const { data: manualCurationData, error: curationError } = await supabase.functions.invoke('check-manual-curation', {
+          body: {
+            userLocation: `${latitude},${longitude}`,
+            categories
+          }
+        });
+
+        if (!curationError && manualCurationData?.manual_curation_found) {
+          console.log('💰 MANUAL CURATION FOUND! Using curated recommendations.');
+          
+          // Store manual curation in cache for future use
+          const manualCacheKey = `manual_${latitude.toFixed(3)}_${longitude.toFixed(3)}_${categories.sort().join('_')}`;
+          
+          await supabase
+            .from('recommendations_cache')
+            .upsert({
+              cache_key: manualCacheKey,
+              user_coordinates: `(${longitude}, ${latitude})`,
+              categories,
+              recommendations: manualCurationData.recommendations,
+              preferences: { source: 'manual_curation' },
+              expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year
+            });
+
+          return new Response(
+            JSON.stringify({
+              recommendations: manualCurationData.recommendations,
+              fromCache: false,
+              source: 'manual_curation',
+              property_distance: manualCurationData.property_distance_miles
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('📡 No manual curation found, proceeding with API recommendations...');
+      } catch (curationCheckError) {
+        console.error('❌ Manual curation check failed:', curationCheckError);
+        console.log('📡 Proceeding with API recommendations...');
+      }
+      
       // Create cache key for explore requests based on rounded location and categories
       const roundedCoords = roundCoordinates(coordinates.lat, coordinates.lng);
       const cacheKey = `explore_${roundedCoords.lat.toFixed(3)}_${roundedCoords.lng.toFixed(3)}_${categories.sort().join('_')}`;
