@@ -61,7 +61,7 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
         `)
         .eq('curation_status', 'completed')
         .gte('total_curated_places', 5)
-        .order('is_master_template', { ascending: false });
+        .order('is_master_template', { ascending: false }) as any; // Temporary type assertion
 
       if (error) throw error;
       setProperties(data || []);
@@ -82,14 +82,14 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
     } else {
       // Removing master template status
       try {
-        const { error } = await supabase
-          .from('properties')
-          .update({
-            is_master_template: false,
-            template_category: null,
-            template_description: null
-          })
-          .eq('id', property.id);
+      const { error } = await supabase
+        .from('properties')
+        .update({
+          is_master_template: false,
+          template_category: null,
+          template_description: null
+        } as any) // Temporary type assertion
+        .eq('id', property.id);
 
         if (error) throw error;
         
@@ -116,7 +116,7 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
           is_master_template: true,
           template_category: templateCategory.trim(),
           template_description: templateDescription.trim() || null
-        })
+        } as any) // Temporary type assertion
         .eq('id', editingTemplate.id);
 
       if (error) throw error;

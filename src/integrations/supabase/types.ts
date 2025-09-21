@@ -409,11 +409,14 @@ export type Database = {
           curation_completed_at: string | null
           curation_status: string | null
           id: string
+          is_master_template: boolean | null
           latitude: number | null
           longitude: number | null
           manager_id: string
           property_name: string
           property_token: string
+          template_category: string | null
+          template_description: string | null
           total_curated_places: number | null
           updated_at: string
         }
@@ -425,11 +428,14 @@ export type Database = {
           curation_completed_at?: string | null
           curation_status?: string | null
           id?: string
+          is_master_template?: boolean | null
           latitude?: number | null
           longitude?: number | null
           manager_id: string
           property_name: string
           property_token: string
+          template_category?: string | null
+          template_description?: string | null
           total_curated_places?: number | null
           updated_at?: string
         }
@@ -441,11 +447,14 @@ export type Database = {
           curation_completed_at?: string | null
           curation_status?: string | null
           id?: string
+          is_master_template?: boolean | null
           latitude?: number | null
           longitude?: number | null
           manager_id?: string
           property_name?: string
           property_token?: string
+          template_category?: string | null
+          template_description?: string | null
           total_curated_places?: number | null
           updated_at?: string
         }

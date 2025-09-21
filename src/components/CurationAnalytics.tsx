@@ -59,7 +59,7 @@ const CurationAnalytics: React.FC = () => {
           is_master_template,
           created_at,
           curation_completed_at
-        `);
+        `) as any; // Temporary type assertion until types update
 
       // Fetch category completion data
       const { data: categoryData } = await supabase
