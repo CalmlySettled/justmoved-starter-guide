@@ -15,6 +15,7 @@ import hardwareStoreStockPhoto from '@/assets/category-stock/hardware-stores.jpg
 import furnitureStoreStockPhoto from '@/assets/category-stock/furniture-stores.jpg';
 import dmvStockPhoto from '@/assets/category-stock/dmv.jpg';
 import fitnessStockPhoto from '@/assets/category-stock/fitness.jpg';
+import cleaningServiceStockPhoto from '@/assets/category-stock/cleaning-services.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -48,6 +49,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'furniture': furnitureStoreStockPhoto,
     'dmv': dmvStockPhoto,
     'fitness': fitnessStockPhoto,
+    'cleaning': cleaningServiceStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -83,6 +85,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('fitness') || categoryLower.includes('gym') || categoryLower.includes('workout') || categoryLower.includes('exercise') || categoryLower.includes('health club')) {
       return categoryStockPhotos['fitness'];
+    }
+    if (categoryLower.includes('cleaning') || categoryLower.includes('maid') || categoryLower.includes('housekeeping') || categoryLower.includes('janitorial') || categoryLower.includes('sanitization')) {
+      return categoryStockPhotos['cleaning'];
     }
     return src;
   };
@@ -178,6 +183,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('fitness') || categoryLower.includes('gym') || categoryLower.includes('workout') || categoryLower.includes('exercise') || categoryLower.includes('health club')) {
       return categoryStockPhotos['fitness'];
+    }
+    
+    if (categoryLower.includes('cleaning') || categoryLower.includes('maid') || categoryLower.includes('housekeeping') || categoryLower.includes('janitorial') || categoryLower.includes('sanitization')) {
+      return categoryStockPhotos['cleaning'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
