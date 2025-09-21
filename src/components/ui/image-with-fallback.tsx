@@ -16,6 +16,7 @@ import furnitureStoreStockPhoto from '@/assets/category-stock/furniture-stores.j
 import dmvStockPhoto from '@/assets/category-stock/dmv.jpg';
 import fitnessStockPhoto from '@/assets/category-stock/fitness.jpg';
 import cleaningServiceStockPhoto from '@/assets/category-stock/cleaning-services.jpg';
+import postOfficeStockPhoto from '@/assets/category-stock/post-offices.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -50,6 +51,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'dmv': dmvStockPhoto,
     'fitness': fitnessStockPhoto,
     'cleaning': cleaningServiceStockPhoto,
+    'post': postOfficeStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -88,6 +90,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('cleaning') || categoryLower.includes('maid') || categoryLower.includes('housekeeping') || categoryLower.includes('janitorial') || categoryLower.includes('sanitization')) {
       return categoryStockPhotos['cleaning'];
+    }
+    if (categoryLower.includes('post office') || categoryLower.includes('usps') || categoryLower.includes('postal') || categoryLower.includes('mail')) {
+      return categoryStockPhotos['post'];
     }
     return src;
   };
@@ -187,6 +192,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('cleaning') || categoryLower.includes('maid') || categoryLower.includes('housekeeping') || categoryLower.includes('janitorial') || categoryLower.includes('sanitization')) {
       return categoryStockPhotos['cleaning'];
+    }
+    
+    if (categoryLower.includes('post office') || categoryLower.includes('usps') || categoryLower.includes('postal') || categoryLower.includes('mail')) {
+      return categoryStockPhotos['post'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
