@@ -10,6 +10,7 @@ import pharmacyStockPhoto from '@/assets/category-stock/pharmacy.jpg';
 import gasStationStockPhoto from '@/assets/category-stock/gas-stations.jpg';
 import junkRemovalStockPhoto from '@/assets/category-stock/junk-removal.jpg';
 import internetProviderStockPhoto from '@/assets/category-stock/internet-providers.jpg';
+import bankStockPhoto from '@/assets/category-stock/banks.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -38,6 +39,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'gas': gasStationStockPhoto,
     'junk': junkRemovalStockPhoto,
     'internet': internetProviderStockPhoto,
+    'bank': bankStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -58,6 +60,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('internet') || categoryLower.includes('isp') || categoryLower.includes('broadband') || categoryLower.includes('wifi') || categoryLower.includes('cable')) {
       return categoryStockPhotos['internet'];
+    }
+    if (categoryLower.includes('bank') || categoryLower.includes('financial') || categoryLower.includes('credit union') || categoryLower.includes('atm')) {
+      return categoryStockPhotos['bank'];
     }
     return src;
   };
@@ -133,6 +138,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('internet') || categoryLower.includes('isp') || categoryLower.includes('broadband') || categoryLower.includes('wifi') || categoryLower.includes('cable')) {
       return categoryStockPhotos['internet'];
+    }
+    
+    if (categoryLower.includes('bank') || categoryLower.includes('financial') || categoryLower.includes('credit union') || categoryLower.includes('atm')) {
+      return categoryStockPhotos['bank'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
