@@ -2037,14 +2037,29 @@ async function getCachedRecommendations(
       .maybeSingle();
 
     if (exactMatch && !exactError) {
-      trackAPIUsage('cache', categories.length);
-      const cacheAge = Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60 * 24));
-      console.log(`💰 BACKEND EXACT CACHE HIT!`, {
-        cacheKey: cacheKey.substring(0, 50) + '...',
-        cacheAgeHours: Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60)),
-        resultCount: Array.isArray(exactMatch.recommendations) ? Object.keys(exactMatch.recommendations).length : 'not-object'
-      });
-      return exactMatch.recommendations;
+      // Validate that cached recommendations contain actual business data
+      const hasValidData = exactMatch.recommendations && 
+        typeof exactMatch.recommendations === 'object' &&
+        Object.keys(exactMatch.recommendations).length > 0 &&
+        Object.values(exactMatch.recommendations).some((businesses: any) => 
+          Array.isArray(businesses) && businesses.length > 0
+        );
+        
+      if (hasValidData) {
+        trackAPIUsage('cache', categories.length);
+        const cacheAge = Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60 * 24));
+        console.log(`💰 BACKEND EXACT CACHE HIT!`, {
+          cacheKey: cacheKey.substring(0, 50) + '...',
+          cacheAgeHours: Math.floor((new Date().getTime() - new Date(exactMatch.created_at).getTime()) / (1000 * 60 * 60)),
+          resultCount: Object.keys(exactMatch.recommendations).length
+        });
+        return exactMatch.recommendations;
+      } else {
+        console.log(`❌ CACHE HIT BUT EMPTY DATA - treating as cache miss:`, {
+          cacheKey: cacheKey.substring(0, 50) + '...',
+          recommendations: exactMatch.recommendations
+        });
+      }
     }
 
     // If no exact match, try fuzzy geographic matching within region
@@ -2065,10 +2080,26 @@ async function getCachedRecommendations(
         if (matchKey.includes(roundedCoords.lat.toString()) && 
             matchKey.includes(roundedCoords.lng.toString()) &&
             matchKey.includes(sortedCategories)) {
-          trackAPIUsage('cache', categories.length);
-          const cacheAge = Math.floor((new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60 * 24));
-          console.log(`💰 FUZZY CACHE HIT! Found ${cacheAge}d old nearby recommendations`);
-          return match.recommendations;
+          
+          // Validate that fuzzy cached recommendations contain actual business data
+          const hasValidData = match.recommendations && 
+            typeof match.recommendations === 'object' &&
+            Object.keys(match.recommendations).length > 0 &&
+            Object.values(match.recommendations).some((businesses: any) => 
+              Array.isArray(businesses) && businesses.length > 0
+            );
+            
+          if (hasValidData) {
+            trackAPIUsage('cache', categories.length);
+            const cacheAge = Math.floor((new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60 * 24));
+            console.log(`💰 FUZZY CACHE HIT! Found ${cacheAge}d old nearby recommendations`);
+            return match.recommendations;
+          } else {
+            console.log(`❌ FUZZY CACHE HIT BUT EMPTY DATA - continuing search:`, {
+              cacheKey: matchKey.substring(0, 50) + '...',
+              recommendations: match.recommendations
+            });
+          }
         }
       }
     }

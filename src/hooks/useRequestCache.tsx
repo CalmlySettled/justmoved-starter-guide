@@ -213,6 +213,32 @@ class RequestCacheManager {
       expiresAt: new Date(entry.expiry).toISOString(),
       shared: isGeographic
     });
+    
+    // Validate that cached data is not empty for business recommendations
+    if (type.includes('businesses') || type.includes('recommendations')) {
+      const hasValidData = entry.data && 
+        typeof entry.data === 'object' &&
+        Object.keys(entry.data).length > 0 &&
+        (Array.isArray(entry.data) ? entry.data.length > 0 : 
+         Object.values(entry.data).some((businesses: any) => 
+           Array.isArray(businesses) && businesses.length > 0
+         ));
+         
+      if (!hasValidData) {
+        console.log(`❌ CACHE HIT BUT EMPTY DATA - treating as cache miss: ${key}`, {
+          data: entry.data,
+          type
+        });
+        // Remove invalid cache entry
+        if (isGeographic) {
+          this.removeFromLocalStorage(key);
+        } else {
+          this.cache.delete(key);
+        }
+        return null;
+      }
+    }
+    
     return entry.data;
   }
 
@@ -492,12 +518,28 @@ export function useRequestCache() {
       const result = await response.json();
       
       if (result.cached && result.data) {
-        console.log(`💰 BACKEND CACHE HIT via edge function!`, {
-          categories: Object.keys(result.data),
-          cacheAge: result.cacheAge,
-          fuzzy: result.fuzzy || false
-        });
-        return result.data;
+        // Validate that backend cache data is not empty
+        const hasValidData = result.data && 
+          typeof result.data === 'object' &&
+          Object.keys(result.data).length > 0 &&
+          Object.values(result.data).some((businesses: any) => 
+            Array.isArray(businesses) && businesses.length > 0
+          );
+          
+        if (hasValidData) {
+          console.log(`💰 BACKEND CACHE HIT via edge function!`, {
+            categories: Object.keys(result.data),
+            cacheAge: result.cacheAge,
+            fuzzy: result.fuzzy || false
+          });
+          return result.data;
+        } else {
+          console.log(`❌ BACKEND CACHE HIT BUT EMPTY DATA - treating as cache miss`, {
+            data: result.data,
+            coordinates,
+            categories
+          });
+        }
       }
 
       console.log(`❌ BACKEND CACHE MISS via edge function`, {
