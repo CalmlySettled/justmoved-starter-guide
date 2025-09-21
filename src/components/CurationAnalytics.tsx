@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { COMPREHENSIVE_CATEGORIES, getStorageName } from '@/data/curationCategories';
 import { 
   TrendingUp, 
   Clock, 
@@ -86,8 +87,7 @@ const CurationAnalytics: React.FC = () => {
         ).length;
 
         // Calculate category progress
-        const categories = ['restaurants', 'grocery stores', 'pharmacies', 'gyms', 'banks', 
-                          'gas stations', 'coffee shops', 'beauty salons', 'medical', 'shopping'];
+        const categories = COMPREHENSIVE_CATEGORIES.map(getStorageName);
         
         const categoryStats = categories.map(category => {
           const propertiesWithCategory = new Set(

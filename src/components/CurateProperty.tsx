@@ -10,6 +10,7 @@ import { MapPin, Building, Plus, Save, Eye, FileUp, Copy, Trash2, Upload } from 
 import BusinessForm from './BusinessForm';
 import CopyFromPropertyModal from './CopyFromPropertyModal';
 import BulkImportModal from './BulkImportModal';
+import { COMPREHENSIVE_CATEGORIES, getStorageName } from '@/data/curationCategories';
 
 interface Property {
   id: string;
@@ -44,23 +45,13 @@ interface CuratePropertyProps {
   onUpdate: () => void;
 }
 
-const CATEGORIES = [
-  'restaurants',
-  'grocery stores', 
-  'pharmacies',
-  'gyms',
-  'banks',
-  'gas stations',
-  'coffee shops',
-  'beauty salons',
-  'medical',
-  'shopping'
-];
+// Use comprehensive category list for curation
+const CATEGORIES = COMPREHENSIVE_CATEGORIES.map(getStorageName);
 
 const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) => {
   const [curatedPlaces, setCuratedPlaces] = useState<CuratedPlace[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('restaurants');
+  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0] || 'grocery stores');
   const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<CuratedPlace | null>(null);
   const [showCopyModal, setShowCopyModal] = useState(false);
