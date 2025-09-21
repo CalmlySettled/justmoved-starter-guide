@@ -37,12 +37,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   // Use stock photo immediately if available for the category, otherwise use original src
   const getInitialSrc = () => {
     const categoryLower = category.toLowerCase();
+    console.log('ImageWithFallback - Category:', category, 'CategoryLower:', categoryLower, 'BusinessName:', businessName);
+    
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
+      console.log('Using grocery stock photo');
       return categoryStockPhotos['grocery'];
     }
-    if (categoryLower.includes('pharmacy') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+    if (categoryLower.includes('pharmacy') || categoryLower.includes('pharmacies') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+      console.log('Using pharmacy stock photo');
       return categoryStockPhotos['pharmacy'];
     }
+    console.log('Using original src:', src);
     return src;
   };
   
@@ -98,12 +103,15 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const getNextFallback = () => {
     // FIRST: Check for category stock photos (global standardized images)
     const categoryLower = category.toLowerCase();
+    console.log('getNextFallback - Category:', category, 'CategoryLower:', categoryLower);
     
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
+      console.log('Fallback using grocery stock photo');
       return categoryStockPhotos['grocery'];
     }
     
-    if (categoryLower.includes('pharmacy') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+    if (categoryLower.includes('pharmacy') || categoryLower.includes('pharmacies') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+      console.log('Fallback using pharmacy stock photo');
       return categoryStockPhotos['pharmacy'];
     }
 
