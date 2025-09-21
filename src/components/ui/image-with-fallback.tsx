@@ -27,6 +27,11 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
   
+  // Stock photos for categories - HIGHEST PRIORITY (global for all users)
+  const categoryStockPhotos: Record<string, string> = {
+    'grocery': groceryStockPhoto,
+  };
+  
   // Use stock photo immediately if available for the category, otherwise use original src
   const getInitialSrc = () => {
     const categoryLower = category.toLowerCase();
@@ -55,10 +60,6 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'anytime fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png'
   };
 
-  // Stock photos for categories - HIGHEST PRIORITY (global for all users)
-  const categoryStockPhotos: Record<string, string> = {
-    'grocery': groceryStockPhoto,
-  };
 
   const categoryFallbacks: Record<string, string> = {
     'grocery': '/lovable-uploads/5e3cefe3-ab65-41b6-9ee4-0c5b23a69fa1.png',
