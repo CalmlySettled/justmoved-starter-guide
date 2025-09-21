@@ -233,31 +233,24 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
         </CardHeader>
         <CardContent>
           <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-            <TabsList className="grid grid-cols-5 mb-6">
-              {CATEGORIES.slice(0, 5).map(category => (
-                <TabsTrigger key={category} value={category} className="flex items-center gap-2">
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                  {getCategoryPlaces(category).length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 text-xs">
-                      {getCategoryPlaces(category).length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            
-            <TabsList className="grid grid-cols-5 mb-6">
-              {CATEGORIES.slice(5).map(category => (
-                <TabsTrigger key={category} value={category} className="flex items-center gap-2">
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                  {getCategoryPlaces(category).length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 text-xs">
-                      {getCategoryPlaces(category).length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="mb-6">
+              <TabsList className="flex flex-wrap gap-2 h-auto p-2 bg-muted/30 rounded-lg">
+                {CATEGORIES.map(category => (
+                  <TabsTrigger 
+                    key={category} 
+                    value={category} 
+                    className="flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                  >
+                    {category.charAt(0).toUpperCase() + category.slice(1).replace(/([a-z])([A-Z])/g, '$1 $2')}
+                    {getCategoryPlaces(category).length > 0 && (
+                      <Badge variant="secondary" className="ml-1 h-5 text-xs min-w-[20px] justify-center">
+                        {getCategoryPlaces(category).length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {CATEGORIES.map(category => (
               <TabsContent key={category} value={category} className="space-y-4">
