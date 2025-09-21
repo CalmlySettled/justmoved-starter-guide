@@ -7,6 +7,7 @@ import beautyFlowers from '@/assets/fallbacks/beauty-flowers.jpg';
 import furnitureHome from '@/assets/fallbacks/furniture-home.jpg';
 import groceryStockPhoto from '@/assets/category-stock/grocery-stores.jpg';
 import pharmacyStockPhoto from '@/assets/category-stock/pharmacy.jpg';
+import gasStationStockPhoto from '@/assets/category-stock/gas-stations.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -32,22 +33,22 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const categoryStockPhotos: Record<string, string> = {
     'grocery': groceryStockPhoto,
     'pharmacy': pharmacyStockPhoto,
+    'gas': gasStationStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
   const getInitialSrc = () => {
     const categoryLower = category.toLowerCase();
-    console.log('ImageWithFallback - Category:', category, 'CategoryLower:', categoryLower, 'BusinessName:', businessName);
     
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
-      console.log('Using grocery stock photo');
       return categoryStockPhotos['grocery'];
     }
     if (categoryLower.includes('pharmacy') || categoryLower.includes('pharmacies') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
-      console.log('Using pharmacy stock photo');
       return categoryStockPhotos['pharmacy'];
     }
-    console.log('Using original src:', src);
+    if (categoryLower.includes('gas') || categoryLower.includes('fuel') || categoryLower.includes('station') || categoryLower.includes('petrol')) {
+      return categoryStockPhotos['gas'];
+    }
     return src;
   };
   
@@ -103,16 +104,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const getNextFallback = () => {
     // FIRST: Check for category stock photos (global standardized images)
     const categoryLower = category.toLowerCase();
-    console.log('getNextFallback - Category:', category, 'CategoryLower:', categoryLower);
     
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
-      console.log('Fallback using grocery stock photo');
       return categoryStockPhotos['grocery'];
     }
     
     if (categoryLower.includes('pharmacy') || categoryLower.includes('pharmacies') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
-      console.log('Fallback using pharmacy stock photo');
       return categoryStockPhotos['pharmacy'];
+    }
+    
+    if (categoryLower.includes('gas') || categoryLower.includes('fuel') || categoryLower.includes('station') || categoryLower.includes('petrol')) {
+      return categoryStockPhotos['gas'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
