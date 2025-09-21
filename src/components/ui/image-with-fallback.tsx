@@ -5,6 +5,7 @@ import bankBuilding from '@/assets/fallbacks/bank-building.jpg';
 import pharmacyBuilding from '@/assets/fallbacks/pharmacy-building.jpg';
 import beautyFlowers from '@/assets/fallbacks/beauty-flowers.jpg';
 import furnitureHome from '@/assets/fallbacks/furniture-home.jpg';
+import groceryStockPhoto from '@/assets/category-stock/grocery-stores.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -25,7 +26,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   ...props
 }) => {
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
-  const [currentSrc, setCurrentSrc] = useState(src);
+  
+  // Use stock photo immediately if available for the category, otherwise use original src
+  const getInitialSrc = () => {
+    const categoryLower = category.toLowerCase();
+    if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
+      return categoryStockPhotos['grocery'];
+    }
+    return src;
+  };
+  
+  const [currentSrc, setCurrentSrc] = useState(getInitialSrc());
 
   const brandLogos: Record<string, string> = {
     'safeway': '/lovable-uploads/542619d4-3d1e-40d0-af95-87134e5ef6f7.png',
@@ -42,6 +53,11 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'gold\'s gym': '/lovable-uploads/8ae3c503-4c33-4e74-a098-c0bf7cf1e90f.png',
     '24 hour fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png',
     'anytime fitness': '/lovable-uploads/501a0890-d137-41da-96d5-83f7c4514751.png'
+  };
+
+  // Stock photos for categories - HIGHEST PRIORITY (global for all users)
+  const categoryStockPhotos: Record<string, string> = {
+    'grocery': groceryStockPhoto,
   };
 
   const categoryFallbacks: Record<string, string> = {
@@ -74,7 +90,14 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   };
 
   const getNextFallback = () => {
-    // Check for brand logo
+    // FIRST: Check for category stock photos (global standardized images)
+    const categoryLower = category.toLowerCase();
+    
+    if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
+      return categoryStockPhotos['grocery'];
+    }
+
+    // SECOND: Check for brand logo (only if no stock photo available)
     const businessNameLower = businessName.toLowerCase();
     for (const [brand, logoUrl] of Object.entries(brandLogos)) {
       if (businessNameLower.includes(brand)) {
@@ -82,8 +105,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       }
     }
 
-    // Check for category fallback
-    const categoryLower = category.toLowerCase();
+    // THIRD: Check for category fallback
     let categoryKey = 'default';
     
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
