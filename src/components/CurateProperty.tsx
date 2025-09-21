@@ -45,8 +45,8 @@ interface CuratePropertyProps {
   onUpdate: () => void;
 }
 
-// Use comprehensive category list for curation
-const CATEGORIES = COMPREHENSIVE_CATEGORIES.map(getStorageName);
+// Use the EXACT categories from the actual app
+const CATEGORIES = COMPREHENSIVE_CATEGORIES;
 
 const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) => {
   const [curatedPlaces, setCuratedPlaces] = useState<CuratedPlace[]>([]);
@@ -241,7 +241,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
                     value={category} 
                     className="flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                   >
-                    {category.charAt(0).toUpperCase() + category.slice(1).replace(/([a-z])([A-Z])/g, '$1 $2')}
+                    {category}
                     {getCategoryPlaces(category).length > 0 && (
                       <Badge variant="secondary" className="ml-1 h-5 text-xs min-w-[20px] justify-center">
                         {getCategoryPlaces(category).length}
@@ -256,7 +256,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
               <TabsContent key={category} value={category} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">
-                    {category.charAt(0).toUpperCase() + category.slice(1)} Businesses
+                    {category} Businesses
                   </h3>
                   <Button onClick={handleAddBusiness} size="sm" className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
