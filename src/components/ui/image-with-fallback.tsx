@@ -17,6 +17,7 @@ import dmvStockPhoto from '@/assets/category-stock/dmv.jpg';
 import fitnessStockPhoto from '@/assets/category-stock/fitness.jpg';
 import cleaningServiceStockPhoto from '@/assets/category-stock/cleaning-services.jpg';
 import postOfficeStockPhoto from '@/assets/category-stock/post-offices.jpg';
+import veterinarianStockPhoto from '@/assets/category-stock/veterinarians.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -52,6 +53,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'fitness': fitnessStockPhoto,
     'cleaning': cleaningServiceStockPhoto,
     'post': postOfficeStockPhoto,
+    'vet': veterinarianStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -93,6 +95,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('post office') || categoryLower.includes('usps') || categoryLower.includes('postal') || categoryLower.includes('mail')) {
       return categoryStockPhotos['post'];
+    }
+    if (categoryLower.includes('veterinarian') || categoryLower.includes('vet') || categoryLower.includes('animal hospital') || categoryLower.includes('pet care') || categoryLower.includes('animal clinic')) {
+      return categoryStockPhotos['vet'];
     }
     return src;
   };
@@ -196,6 +201,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('post office') || categoryLower.includes('usps') || categoryLower.includes('postal') || categoryLower.includes('mail')) {
       return categoryStockPhotos['post'];
+    }
+    
+    if (categoryLower.includes('veterinarian') || categoryLower.includes('vet') || categoryLower.includes('animal hospital') || categoryLower.includes('pet care') || categoryLower.includes('animal clinic')) {
+      return categoryStockPhotos['vet'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
