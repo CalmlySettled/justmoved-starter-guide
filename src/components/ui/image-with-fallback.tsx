@@ -9,6 +9,7 @@ import groceryStockPhoto from '@/assets/category-stock/grocery-stores.jpg';
 import pharmacyStockPhoto from '@/assets/category-stock/pharmacy.jpg';
 import gasStationStockPhoto from '@/assets/category-stock/gas-stations.jpg';
 import junkRemovalStockPhoto from '@/assets/category-stock/junk-removal.jpg';
+import internetProviderStockPhoto from '@/assets/category-stock/internet-providers.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -36,6 +37,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'pharmacy': pharmacyStockPhoto,
     'gas': gasStationStockPhoto,
     'junk': junkRemovalStockPhoto,
+    'internet': internetProviderStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -53,6 +55,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('junk') || categoryLower.includes('removal') || categoryLower.includes('waste') || categoryLower.includes('trash') || categoryLower.includes('debris')) {
       return categoryStockPhotos['junk'];
+    }
+    if (categoryLower.includes('internet') || categoryLower.includes('isp') || categoryLower.includes('broadband') || categoryLower.includes('wifi') || categoryLower.includes('cable')) {
+      return categoryStockPhotos['internet'];
     }
     return src;
   };
@@ -124,6 +129,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('junk') || categoryLower.includes('removal') || categoryLower.includes('waste') || categoryLower.includes('trash') || categoryLower.includes('debris')) {
       return categoryStockPhotos['junk'];
+    }
+    
+    if (categoryLower.includes('internet') || categoryLower.includes('isp') || categoryLower.includes('broadband') || categoryLower.includes('wifi') || categoryLower.includes('cable')) {
+      return categoryStockPhotos['internet'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
