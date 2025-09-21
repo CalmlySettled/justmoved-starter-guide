@@ -13,6 +13,7 @@ import internetProviderStockPhoto from '@/assets/category-stock/internet-provide
 import bankStockPhoto from '@/assets/category-stock/banks.jpg';
 import hardwareStoreStockPhoto from '@/assets/category-stock/hardware-stores.jpg';
 import furnitureStoreStockPhoto from '@/assets/category-stock/furniture-stores.jpg';
+import dmvStockPhoto from '@/assets/category-stock/dmv.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -44,6 +45,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'bank': bankStockPhoto,
     'hardware': hardwareStoreStockPhoto,
     'furniture': furnitureStoreStockPhoto,
+    'dmv': dmvStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -73,6 +75,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('furniture') || categoryLower.includes('home decor') || categoryLower.includes('interior') || categoryLower.includes('sofa') || categoryLower.includes('mattress')) {
       return categoryStockPhotos['furniture'];
+    }
+    if (categoryLower.includes('dmv') || categoryLower.includes('motor vehicle') || categoryLower.includes('license') || categoryLower.includes('registration')) {
+      return categoryStockPhotos['dmv'];
     }
     return src;
   };
@@ -160,6 +165,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('furniture') || categoryLower.includes('home decor') || categoryLower.includes('interior') || categoryLower.includes('sofa') || categoryLower.includes('mattress')) {
       return categoryStockPhotos['furniture'];
+    }
+    
+    if (categoryLower.includes('dmv') || categoryLower.includes('motor vehicle') || categoryLower.includes('license') || categoryLower.includes('registration')) {
+      return categoryStockPhotos['dmv'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
