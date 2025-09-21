@@ -14,6 +14,7 @@ import bankStockPhoto from '@/assets/category-stock/banks.jpg';
 import hardwareStoreStockPhoto from '@/assets/category-stock/hardware-stores.jpg';
 import furnitureStoreStockPhoto from '@/assets/category-stock/furniture-stores.jpg';
 import dmvStockPhoto from '@/assets/category-stock/dmv.jpg';
+import fitnessStockPhoto from '@/assets/category-stock/fitness.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -46,6 +47,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'hardware': hardwareStoreStockPhoto,
     'furniture': furnitureStoreStockPhoto,
     'dmv': dmvStockPhoto,
+    'fitness': fitnessStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -78,6 +80,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('dmv') || categoryLower.includes('motor vehicle') || categoryLower.includes('license') || categoryLower.includes('registration')) {
       return categoryStockPhotos['dmv'];
+    }
+    if (categoryLower.includes('fitness') || categoryLower.includes('gym') || categoryLower.includes('workout') || categoryLower.includes('exercise') || categoryLower.includes('health club')) {
+      return categoryStockPhotos['fitness'];
     }
     return src;
   };
@@ -169,6 +174,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('dmv') || categoryLower.includes('motor vehicle') || categoryLower.includes('license') || categoryLower.includes('registration')) {
       return categoryStockPhotos['dmv'];
+    }
+    
+    if (categoryLower.includes('fitness') || categoryLower.includes('gym') || categoryLower.includes('workout') || categoryLower.includes('exercise') || categoryLower.includes('health club')) {
+      return categoryStockPhotos['fitness'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
