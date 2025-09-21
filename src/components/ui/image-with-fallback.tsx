@@ -6,6 +6,7 @@ import pharmacyBuilding from '@/assets/fallbacks/pharmacy-building.jpg';
 import beautyFlowers from '@/assets/fallbacks/beauty-flowers.jpg';
 import furnitureHome from '@/assets/fallbacks/furniture-home.jpg';
 import groceryStockPhoto from '@/assets/category-stock/grocery-stores.jpg';
+import pharmacyStockPhoto from '@/assets/category-stock/pharmacy.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -30,6 +31,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   // Stock photos for categories - HIGHEST PRIORITY (global for all users)
   const categoryStockPhotos: Record<string, string> = {
     'grocery': groceryStockPhoto,
+    'pharmacy': pharmacyStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -37,6 +39,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     const categoryLower = category.toLowerCase();
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
       return categoryStockPhotos['grocery'];
+    }
+    if (categoryLower.includes('pharmacy') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+      return categoryStockPhotos['pharmacy'];
     }
     return src;
   };
@@ -96,6 +101,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('grocery') || categoryLower.includes('supermarket') || categoryLower.includes('market')) {
       return categoryStockPhotos['grocery'];
+    }
+    
+    if (categoryLower.includes('pharmacy') || categoryLower.includes('drug') || categoryLower.includes('medicine')) {
+      return categoryStockPhotos['pharmacy'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
