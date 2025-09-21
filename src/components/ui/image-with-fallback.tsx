@@ -18,6 +18,7 @@ import fitnessStockPhoto from '@/assets/category-stock/fitness.jpg';
 import cleaningServiceStockPhoto from '@/assets/category-stock/cleaning-services.jpg';
 import postOfficeStockPhoto from '@/assets/category-stock/post-offices.jpg';
 import veterinarianStockPhoto from '@/assets/category-stock/veterinarians.jpg';
+import daycareStockPhoto from '@/assets/category-stock/daycares.jpg';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -54,6 +55,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     'cleaning': cleaningServiceStockPhoto,
     'post': postOfficeStockPhoto,
     'vet': veterinarianStockPhoto,
+    'daycare': daycareStockPhoto,
   };
   
   // Use stock photo immediately if available for the category, otherwise use original src
@@ -98,6 +100,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
     if (categoryLower.includes('veterinarian') || categoryLower.includes('vet') || categoryLower.includes('animal hospital') || categoryLower.includes('pet care') || categoryLower.includes('animal clinic')) {
       return categoryStockPhotos['vet'];
+    }
+    if (categoryLower.includes('daycare') || categoryLower.includes('child care') || categoryLower.includes('preschool') || categoryLower.includes('nursery') || categoryLower.includes('kindergarten')) {
+      return categoryStockPhotos['daycare'];
     }
     return src;
   };
@@ -205,6 +210,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     
     if (categoryLower.includes('veterinarian') || categoryLower.includes('vet') || categoryLower.includes('animal hospital') || categoryLower.includes('pet care') || categoryLower.includes('animal clinic')) {
       return categoryStockPhotos['vet'];
+    }
+    
+    if (categoryLower.includes('daycare') || categoryLower.includes('child care') || categoryLower.includes('preschool') || categoryLower.includes('nursery') || categoryLower.includes('kindergarten')) {
+      return categoryStockPhotos['daycare'];
     }
 
     // SECOND: Check for brand logo (only if no stock photo available)
