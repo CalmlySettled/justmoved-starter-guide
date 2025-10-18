@@ -187,8 +187,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
   };
 
   const previewTenantExperience = () => {
-    const signupUrl = `${window.location.origin}/auth?property=${property.id}&focus=essentials`;
-    window.open(signupUrl, '_blank');
+    toast.info('To preview the tenant experience, create a tenant link first from the "Tenant Links" tab, then use its Preview button.');
   };
 
   if (loading) {

@@ -1134,7 +1134,7 @@ const PropertyManager: React.FC = () => {
                          <Button
                            size="sm"
                            variant="outline"
-                           onClick={() => previewPropertySignup(link.properties)}
+                           onClick={() => window.open(`/tenant-welcome/${link.tenant_token}`, '_blank')}
                          >
                            <Eye className="h-4 w-4 mr-1" />
                            Preview

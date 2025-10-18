@@ -108,7 +108,7 @@ const AppContent = () => {
               <Route path="/property-manager/dashboard" element={<ProtectedRoute requirePropertyManager><PropertyManager /></ProtectedRoute>} />
 
               {/* Tenant routes */}
-              <Route path="/tenant-welcome" element={<TenantWelcome />} />
+              <Route path="/tenant-welcome/:token" element={<TenantWelcome />} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
