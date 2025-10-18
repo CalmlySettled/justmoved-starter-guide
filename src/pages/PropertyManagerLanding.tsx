@@ -11,14 +11,14 @@ import heroImage from "@/assets/hero-moving.jpg";
 const PropertyManagerLanding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isPropertyManager, contractStatus, loading: pmLoading } = usePropertyManagerContract();
+  const { isPropertyManager, loading: pmLoading } = usePropertyManagerContract();
 
   // Auto-redirect active PMs to dashboard
   useEffect(() => {
-    if (user && isPropertyManager && contractStatus === 'active' && !pmLoading) {
+    if (user && isPropertyManager && !pmLoading) {
       navigate('/property-manager/dashboard');
     }
-  }, [user, isPropertyManager, contractStatus, pmLoading, navigate]);
+  }, [user, isPropertyManager, pmLoading, navigate]);
 
   const handleSignIn = () => {
     navigate('/auth?mode=signin&redirect=/property-manager/dashboard');
@@ -35,83 +35,6 @@ const PropertyManagerLanding = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Authenticated PM with pending contract
-  if (user && isPropertyManager && contractStatus === 'pending') {
-    return (
-      <div className="min-h-screen bg-background">
-        <PropertyManagerHeader 
-          onSignOut={() => navigate('/auth')} 
-          userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]}
-        />
-        
-        <div className="flex items-center justify-center min-h-[80vh] px-4">
-          <Card className="w-full max-w-lg text-center">
-            <CardHeader>
-              <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-              <CardTitle className="text-2xl">Account Under Review</CardTitle>
-              <CardDescription className="text-base">
-                Your property manager account is being reviewed by our team.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-6">
-                We'll notify you within 1-2 business days once your account has been approved and activated.
-              </p>
-              <div className="bg-muted/50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-muted-foreground mb-2">Need immediate assistance?</p>
-                <Button variant="outline" asChild className="w-full">
-                  <a href="mailto:support@calmlysettled.com">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Contact Support
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Authenticated PM with suspended contract
-  if (user && isPropertyManager && contractStatus === 'suspended') {
-    return (
-      <div className="min-h-screen bg-background">
-        <PropertyManagerHeader 
-          onSignOut={() => navigate('/auth')} 
-          userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]}
-        />
-        
-        <div className="flex items-center justify-center min-h-[80vh] px-4">
-          <Card className="w-full max-w-lg text-center">
-            <CardHeader>
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="h-8 w-8 text-red-600" />
-              </div>
-              <CardTitle className="text-2xl">Account Suspended</CardTitle>
-              <CardDescription className="text-base">
-                Your property manager account has been temporarily suspended.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-6">
-                Please contact our support team to resolve any outstanding issues and reactivate your account.
-              </p>
-              <Button className="w-full bg-gradient-hero text-white" asChild>
-                <a href="mailto:support@calmlysettled.com">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Contact Support Team
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     );

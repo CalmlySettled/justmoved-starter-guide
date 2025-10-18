@@ -37,6 +37,7 @@ const AdminDashboard = () => {
   const [aiScores, setAiScores] = useState<AIScoreData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [pendingPropertiesCount, setPendingPropertiesCount] = useState(0);
   const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
 
   // Restore last active tab on mount
@@ -56,7 +57,11 @@ const AdminDashboard = () => {
     if (isAdmin) {
       console.log('AdminDashboard mounted, fetching metrics...');
       fetchMetrics();
-      const interval = setInterval(fetchMetrics, 30000); // Refresh every 30s
+      fetchPendingProperties();
+      const interval = setInterval(() => {
+        fetchMetrics();
+        fetchPendingProperties();
+      }, 30000); // Refresh every 30s
       return () => clearInterval(interval);
     }
   }, [isAdmin]);
@@ -141,6 +146,20 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchPendingProperties = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('properties')
+        .select('*', { count: 'exact', head: true })
+        .eq('curation_status', 'not_started');
+
+      if (error) throw error;
+      setPendingPropertiesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending properties:', error);
+    }
+  };
+
   // Admin authentication check - only admins can access dashboard
   if (adminLoading || loading) {
     return (
@@ -213,7 +232,14 @@ const AdminDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="curation">Property Curation</TabsTrigger>
+            <TabsTrigger value="curation" className="relative">
+              Property Curation
+              {pendingPropertiesCount > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
+                  {pendingPropertiesCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="abtest">A/B Testing</TabsTrigger>
             <TabsTrigger value="ai-scores">AI Performance</TabsTrigger>
             <TabsTrigger value="system">System Health</TabsTrigger>

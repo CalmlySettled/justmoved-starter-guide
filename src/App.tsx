@@ -26,7 +26,6 @@ import PropertyManagerContact from "@/pages/PropertyManagerContact";
 import PropertyManagerInquiries from "@/pages/PropertyManagerInquiries";
 import TenantWelcome from "@/pages/TenantWelcome";
 import AdminDashboard from "@/pages/AdminDashboard";
-import AdminPropertyManagerActivation from "@/pages/AdminPropertyManagerActivation";
 import Analytics from "@/pages/Analytics";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
@@ -114,7 +113,6 @@ const AppContent = () => {
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/property-manager-inquiries" element={<ProtectedRoute requireAdmin><PropertyManagerInquiries /></ProtectedRoute>} />
-              <Route path="/admin/activate-property-managers" element={<ProtectedRoute requireAdmin><AdminPropertyManagerActivation /></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><Analytics /></ProtectedRoute>} />
               
               {/* Legacy redirects */}

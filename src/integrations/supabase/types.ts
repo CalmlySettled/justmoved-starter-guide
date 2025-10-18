@@ -1070,10 +1070,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      activate_property_manager: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
       aggregate_daily_analytics: {
         Args: { target_date?: string }
         Returns: undefined

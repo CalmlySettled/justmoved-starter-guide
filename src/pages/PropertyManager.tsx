@@ -31,7 +31,7 @@ interface Property {
 
 const PropertyManager: React.FC = () => {
   const { user, signOut, loading: authLoading } = useAuth();
-  const { isPropertyManager, contractStatus, loading: contractLoading } = usePropertyManagerContract();
+  const { isPropertyManager, loading: contractLoading } = usePropertyManagerContract();
   const { subscription, checkSubscriptionStatus, startSubscription, manageSubscription, canCreateProperty, getSubscriptionMessage } = useSubscription();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,15 +47,11 @@ const PropertyManager: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading && !contractLoading && user && isPropertyManager) {
-      if (contractStatus === 'active') {
-        fetchProperties();
-      } else {
-        setLoading(false);
-      }
+      fetchProperties();
     } else if (!authLoading && !contractLoading && (!user || !isPropertyManager)) {
       setLoading(false);
     }
-  }, [user, authLoading, isPropertyManager, contractStatus, contractLoading]);
+  }, [user, authLoading, isPropertyManager, contractLoading]);
 
   const fetchProperties = async () => {
     try {
@@ -175,7 +171,7 @@ const PropertyManager: React.FC = () => {
   };
 
   // Loading state
-  if (authLoading || contractLoading || subscription.loading || (contractStatus === 'active' && loading)) {
+  if (authLoading || contractLoading || subscription.loading || (isPropertyManager && loading)) {
     return (
       <div className="min-h-screen bg-gradient-page flex items-center justify-center">
         <div className="text-center glass-card p-8 rounded-2xl">
@@ -198,99 +194,6 @@ const PropertyManager: React.FC = () => {
           </div>
           <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
           <p className="text-muted-foreground">Property manager role required to access this dashboard.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Pending contract - show onboarding
-  if (contractStatus === 'pending') {
-    return (
-      <div className="min-h-screen bg-gradient-page">
-        <PropertyManagerHeader
-          onSignOut={signOut}
-          userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-        />
-        
-        <div className="container mx-auto px-4 pt-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="bg-gradient-hero rounded-3xl p-12 text-white mb-8">
-              <div className="w-24 h-24 mx-auto mb-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Home className="h-12 w-12" />
-              </div>
-              <h1 className="text-4xl font-bold mb-6">Welcome to CalmlySettled</h1>
-              <p className="text-xl opacity-90 mb-8">
-                Your account is pending activation. We'll notify you once your property manager account is approved.
-              </p>
-              <Button onClick={() => window.location.href = 'mailto:info@calmlysettled.com'} variant="secondary" size="lg">
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Support
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>What Happens Next?</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-left">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium flex-shrink-0">1</div>
-                  <div>
-                    <h4 className="font-medium">Account Review</h4>
-                    <p className="text-sm text-muted-foreground">Our team will review your property manager application.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium flex-shrink-0">2</div>
-                  <div>
-                    <h4 className="font-medium">Activation</h4>
-                    <p className="text-sm text-muted-foreground">You'll receive an email when your account is activated.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium flex-shrink-0">3</div>
-                  <div>
-                    <h4 className="font-medium">Start Managing</h4>
-                    <p className="text-sm text-muted-foreground">Add your properties and start creating QR codes for tenants.</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Suspended contract
-  if (!authLoading && !contractLoading && contractStatus === 'suspended') {
-    return (
-      <div className="min-h-screen bg-gradient-page">
-        <PropertyManagerHeader
-          onSignOut={signOut}
-          userName={user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-        />
-        
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h1 className="text-3xl font-bold mb-4">Account Suspended</h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Your property manager account has been temporarily suspended. Please contact support to resolve this issue.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => window.location.href = 'mailto:info@calmlysettled.com?subject=Account Suspension'} variant="default">
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Support
-              </Button>
-              <Button onClick={signOut} variant="outline">
-                Sign Out
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     );
