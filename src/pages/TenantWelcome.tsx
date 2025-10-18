@@ -62,7 +62,7 @@ const TenantWelcome: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    if (tenantData?.properties?.latitude && tenantData?.properties?.longitude) {
+    if (tenantData?.properties?.id) {
       loadRecommendations();
     }
   }, [tenantData]);
@@ -120,44 +120,32 @@ const TenantWelcome: React.FC = () => {
   };
 
   const loadRecommendations = async () => {
-    if (!tenantData?.properties?.latitude || !tenantData?.properties?.longitude) return;
+    if (!tenantData?.properties?.id) return;
 
     try {
-      const coordinates = {
-        lat: tenantData.properties.latitude,
-        lng: tenantData.properties.longitude
-      };
+      const propertyId = tenantData.properties.id;
 
       // Load recommendations for each category from cache
       const categoryPromises = categories.map(async (category) => {
         try {
-          // Try to get from cache first
-          const cacheKey = `explore_${category.key}_${coordinates.lat.toFixed(4)}_${coordinates.lng.toFixed(4)}`;
+          // Look up curated content by property ID
+          const cacheKey = `property_${propertyId}_${category.key}`;
           
           const { data: cacheData } = await supabase
             .from('recommendations_cache')
             .select('recommendations')
             .eq('cache_key', cacheKey)
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
-          if (cacheData?.recommendations && Array.isArray(cacheData.recommendations)) {
-            return { category: category.key, businesses: cacheData.recommendations };
+          if (cacheData?.recommendations) {
+            // Extract the businesses from the cached data structure
+            const businesses = cacheData.recommendations[category.key] || [];
+            return { category: category.key, businesses };
           }
 
-          // If not in cache, generate fresh recommendations
-          const { data: freshData } = await supabase.functions.invoke('generate-recommendations', {
-            body: {
-              categories: [category.key],
-              userLocation: `${coordinates.lat},${coordinates.lng}`,
-              preferences: {}
-            }
-          });
-
-          return { 
-            category: category.key, 
-            businesses: freshData?.recommendations?.[category.key] || []
-          };
+          // If no curated content, return empty array
+          return { category: category.key, businesses: [] };
         } catch (error) {
           console.error(`Error loading ${category.key}:`, error);
           return { category: category.key, businesses: [] };
