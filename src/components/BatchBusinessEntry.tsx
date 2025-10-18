@@ -55,7 +55,6 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [businesses, setBusinesses] = useState<BatchBusiness[]>([]);
-  const [detailsLoaded, setDetailsLoaded] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -66,7 +65,6 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
     try {
       setSearching(true);
       setBusinesses([]);
-      setDetailsLoaded(false);
 
       console.log('[BATCH-SEARCH] Starting search:', {
         query: searchQuery,
@@ -109,21 +107,23 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
         return;
       }
 
-      if (data?.predictions && data.predictions.length > 0) {
-        console.log('[BATCH-SEARCH] Found predictions:', data.predictions.length);
-        // Convert predictions to BatchBusiness format
-        const results: BatchBusiness[] = data.predictions.map((pred: any) => ({
-          place_id: pred.place_id,
-          name: pred.description || pred.structured_formatting?.main_text || 'Unknown',
-          formatted_address: pred.structured_formatting?.secondary_text,
+      if (data?.results && data.results.length > 0) {
+        console.log('[BATCH-SEARCH] Found results:', data.results.length);
+        // Convert Text Search results to BatchBusiness format
+        const results: BatchBusiness[] = data.results.map((result: any) => ({
+          place_id: result.place_id,
+          name: result.name || 'Unknown',
+          formatted_address: result.formatted_address,
+          rating: result.rating,
+          geometry: result.geometry,
           selected: false,
           features: []
         }));
 
         setBusinesses(results);
-        toast.success(`Found ${results.length} businesses`);
+        toast.success(`Found ${results.length} businesses with full details`);
       } else {
-        console.warn('[BATCH-SEARCH] No predictions in response:', data);
+        console.warn('[BATCH-SEARCH] No results in response:', data);
         toast.error('No businesses found. Try a different search term.');
       }
     } catch (error: any) {
@@ -135,46 +135,6 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
       toast.error('Failed to search businesses', {
         description: error?.message || 'Check console for details'
       });
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const loadBusinessDetails = async () => {
-    if (businesses.length === 0 || detailsLoaded) return;
-
-    try {
-      setSearching(true);
-      const placeIds = businesses.map(b => b.place_id);
-
-      // Fetch details for all businesses in batch
-      const { data, error } = await supabase.functions.invoke('get-place-details', {
-        body: { place_ids: placeIds }
-      });
-
-      if (error) throw error;
-
-      if (data?.results) {
-        const updatedBusinesses = businesses.map((business, index) => {
-          const details = data.results[index];
-          if (details) {
-            return {
-              ...business,
-              formatted_address: details.formatted_address || business.formatted_address,
-              rating: details.rating,
-              geometry: details.geometry
-            };
-          }
-          return business;
-        });
-
-        setBusinesses(updatedBusinesses);
-        setDetailsLoaded(true);
-        toast.success('Loaded business details');
-      }
-    } catch (error) {
-      console.error('Error loading details:', error);
-      toast.error('Failed to load business details');
     } finally {
       setSearching(false);
     }
@@ -326,17 +286,6 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
                 )}
               </Button>
             </div>
-            {businesses.length > 0 && !detailsLoaded && (
-              <Button 
-                onClick={loadBusinessDetails}
-                variant="outline"
-                size="sm"
-                disabled={searching}
-                className="w-full"
-              >
-                {searching ? 'Loading Details...' : 'Load Full Details (Ratings, Addresses)'}
-              </Button>
-            )}
           </div>
 
           {/* Results Section */}

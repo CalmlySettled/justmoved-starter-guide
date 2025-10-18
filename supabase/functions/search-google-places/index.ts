@@ -42,8 +42,8 @@ serve(async (req) => {
       )
     }
 
-    // Use Google Places Autocomplete API with optional location bias
-    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${GOOGLE_PLACES_API_KEY}`
+    // Use Google Places Text Search API with optional location bias
+    let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_PLACES_API_KEY}`
     
     if (location) {
       url += `&location=${location}&radius=50000` // 50km radius
@@ -67,7 +67,7 @@ serve(async (req) => {
     const data = await response.json()
     console.log('[SEARCH-GOOGLE-PLACES] Google API response data:', {
       status: data.status,
-      predictions_count: data.predictions?.length || 0,
+      results_count: data.results?.length || 0,
       error_message: data.error_message
     })
 
@@ -95,11 +95,11 @@ serve(async (req) => {
     // Limit results to requested amount
     const limitedData = {
       ...data,
-      predictions: data.predictions ? data.predictions.slice(0, maxResults) : []
+      results: data.results ? data.results.slice(0, maxResults) : []
     }
 
     console.log('[SEARCH-GOOGLE-PLACES] Returning success:', {
-      predictions_count: limitedData.predictions.length
+      results_count: limitedData.results.length
     })
 
     return new Response(
