@@ -176,24 +176,58 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
           }
         );
 
-        if (geocodeError) {
-          throw new Error('Failed to geocode property address');
+        console.log('Geocode response:', geocodeData, geocodeError);
+
+        if (geocodeError || !geocodeData) {
+          throw new Error(`Failed to geocode property address: ${geocodeError?.message || 'No data returned'}`);
+        }
+
+        // Validate coordinates exist and are valid numbers
+        if (!geocodeData.coordinates?.lat || !geocodeData.coordinates?.lng) {
+          console.error('Invalid geocode response:', geocodeData);
+          throw new Error('Geocoding returned invalid coordinates');
+        }
+
+        const lat = parseFloat(geocodeData.coordinates.lat);
+        const lng = parseFloat(geocodeData.coordinates.lng);
+
+        if (isNaN(lat) || isNaN(lng)) {
+          throw new Error('Geocoding returned non-numeric coordinates');
         }
 
         // Update property with coordinates
         const { error: updateError } = await supabase
           .from('properties')
           .update({
-            latitude: geocodeData.coordinates.lat,
-            longitude: geocodeData.coordinates.lng
+            latitude: lat,
+            longitude: lng
           })
           .eq('id', property.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          throw new Error(`Failed to update property coordinates: ${updateError.message}`);
+        }
+        
+        // Refresh property data to confirm the update
+        const { data: updatedProperty, error: fetchError } = await supabase
+          .from('properties')
+          .select('latitude, longitude')
+          .eq('id', property.id)
+          .single();
+          
+        if (fetchError) {
+          throw new Error(`Failed to verify coordinate update: ${fetchError.message}`);
+        }
+        
+        if (!updatedProperty?.latitude || !updatedProperty?.longitude) {
+          throw new Error('Property coordinates still missing after update');
+        }
         
         // Update local property object
-        property.latitude = geocodeData.coordinates.lat;
-        property.longitude = geocodeData.coordinates.lng;
+        property.latitude = updatedProperty.latitude;
+        property.longitude = updatedProperty.longitude;
+        
+        toast.success('Property geocoded successfully');
       }
       
       // Call the function to populate cache from curation
