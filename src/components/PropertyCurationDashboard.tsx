@@ -206,7 +206,7 @@ const PropertyCurationDashboard: React.FC = () => {
           <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="properties" className="space-y-6 mt-6">
+        <TabsContent value="properties" className="space-y-6 mt-6 data-[state=inactive]:hidden">
           {/* Stats Cards */}
           {stats && (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
@@ -384,11 +384,11 @@ const PropertyCurationDashboard: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics" className="mt-6">
+        <TabsContent value="analytics" className="mt-6 data-[state=inactive]:hidden">
           <CurationAnalytics />
         </TabsContent>
 
-        <TabsContent value="templates" className="mt-6">
+        <TabsContent value="templates" className="mt-6 data-[state=inactive]:hidden">
           <Card className="p-6 text-center">
             <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">Master Template Manager</h3>

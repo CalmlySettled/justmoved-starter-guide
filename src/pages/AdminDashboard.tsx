@@ -205,7 +205,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="system">System Health</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 data-[state=inactive]:hidden">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -262,11 +262,11 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="curation" className="space-y-6">
+          <TabsContent value="curation" className="space-y-6 data-[state=inactive]:hidden">
             <PropertyCurationDashboard />
           </TabsContent>
 
-          <TabsContent value="abtest" className="space-y-6">
+          <TabsContent value="abtest" className="space-y-6 data-[state=inactive]:hidden">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -325,7 +325,7 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="ai-scores" className="space-y-6">
+          <TabsContent value="ai-scores" className="space-y-6 data-[state=inactive]:hidden">
             <Card>
               <CardHeader>
                 <CardTitle>AI Engine Performance Scores</CardTitle>
@@ -374,7 +374,7 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="system" className="space-y-6">
+          <TabsContent value="system" className="space-y-6 data-[state=inactive]:hidden">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>

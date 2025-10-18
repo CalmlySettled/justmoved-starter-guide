@@ -11,6 +11,7 @@ import BusinessForm from './BusinessForm';
 import CopyFromPropertyModal from './CopyFromPropertyModal';
 import BulkImportModal from './BulkImportModal';
 import { COMPREHENSIVE_CATEGORIES, getStorageName } from '@/data/curationCategories';
+import { useTabPersistence } from '@/hooks/useTabPersistence';
 
 interface Property {
   id: string;
@@ -57,9 +58,22 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
+  // Persist active category across tab switches
+  const { loadState, clearState } = useTabPersistence({
+    key: `curation-state-${property.id}`,
+    data: { activeCategory, editingBusiness, showBusinessForm },
+    enabled: true
+  });
+
   useEffect(() => {
     fetchCuratedPlaces();
-  }, [property.id]);
+    
+    // Load persisted state
+    const savedState = loadState();
+    if (savedState?.activeCategory && CATEGORIES.includes(savedState.activeCategory)) {
+      setActiveCategory(savedState.activeCategory);
+    }
+  }, [property.id, loadState]);
 
   const fetchCuratedPlaces = async () => {
     try {
@@ -253,7 +267,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
             </div>
 
             {CATEGORIES.map(category => (
-              <TabsContent key={category} value={category} className="space-y-4">
+              <TabsContent key={category} value={category} className="space-y-4 data-[state=inactive]:hidden">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">
                     {category} Businesses
