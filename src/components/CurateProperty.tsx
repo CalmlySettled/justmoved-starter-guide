@@ -72,8 +72,24 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
     const savedState = loadState();
     if (savedState?.activeCategory && CATEGORIES.includes(savedState.activeCategory)) {
       setActiveCategory(savedState.activeCategory);
+      toast.success('Draft restored', { duration: 2000 });
     }
   }, [property.id, loadState]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const hasUnsavedChanges = showBusinessForm || editingBusiness !== null;
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [showBusinessForm, editingBusiness]);
 
   const fetchCuratedPlaces = async () => {
     try {
@@ -153,6 +169,10 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
       });
 
       if (error) throw error;
+      
+      // Clear draft state after successful publish
+      clearState();
+      sessionStorage.removeItem('property-curation-selected-property');
       
       toast.success('Curation published successfully! Tenants will now see your curated recommendations.');
       onUpdate();

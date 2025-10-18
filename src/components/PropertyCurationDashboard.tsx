@@ -55,10 +55,38 @@ const PropertyCurationDashboard: React.FC = () => {
   const [showMasterTemplateModal, setShowMasterTemplateModal] = useState(false);
   const [activeTab, setActiveTab] = useState('properties');
 
+  // Restore state on mount
   useEffect(() => {
-    fetchProperties();
+    const savedTab = sessionStorage.getItem('property-curation-tab');
+    if (savedTab && ['properties', 'analytics', 'templates'].includes(savedTab)) {
+      setActiveTab(savedTab);
+    }
+
+    const savedPropertyId = sessionStorage.getItem('property-curation-selected-property');
+    if (savedPropertyId) {
+      fetchProperties().then(() => {
+        // Property will be restored after fetch
+      });
+    } else {
+      fetchProperties();
+    }
+    
     fetchStats();
   }, []);
+
+  // Save active tab when it changes
+  useEffect(() => {
+    sessionStorage.setItem('property-curation-tab', activeTab);
+  }, [activeTab]);
+
+  // Save selected property when it changes
+  useEffect(() => {
+    if (selectedProperty) {
+      sessionStorage.setItem('property-curation-selected-property', selectedProperty.id);
+    } else {
+      sessionStorage.removeItem('property-curation-selected-property');
+    }
+  }, [selectedProperty]);
 
   const fetchProperties = async () => {
     try {
@@ -80,6 +108,16 @@ const PropertyCurationDashboard: React.FC = () => {
 
       if (error) throw error;
       setProperties(data || []);
+
+      // Restore selected property if saved
+      const savedPropertyId = sessionStorage.getItem('property-curation-selected-property');
+      if (savedPropertyId && data) {
+        const property = data.find(p => p.id === savedPropertyId);
+        if (property) {
+          setSelectedProperty(property);
+          toast.success('Draft restored');
+        }
+      }
     } catch (error) {
       console.error('Error fetching properties:', error);
       toast.error('Failed to load properties');

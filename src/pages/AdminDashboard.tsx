@@ -36,7 +36,21 @@ const AdminDashboard = () => {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [aiScores, setAiScores] = useState<AIScoreData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const { isAdmin, loading: adminLoading, error: adminError } = useAdminAuth();
+
+  // Restore last active tab on mount
+  useEffect(() => {
+    const savedTab = sessionStorage.getItem('admin-dashboard-tab');
+    if (savedTab && ['overview', 'curation', 'abtest', 'ai-scores', 'system'].includes(savedTab)) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Save active tab when it changes
+  useEffect(() => {
+    sessionStorage.setItem('admin-dashboard-tab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -196,7 +210,7 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="curation">Property Curation</TabsTrigger>

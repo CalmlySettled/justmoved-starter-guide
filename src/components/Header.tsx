@@ -206,20 +206,12 @@ export function Header({ propertyName }: HeaderProps = {}) {
                         </DropdownMenuItem>
                       )}
                       {isAdmin && (
-                        <>
-                          <DropdownMenuItem asChild>
-                            <Link to="/admin/analytics" className="flex items-center">
-                              <LayoutDashboard className="h-4 w-4 mr-2" />
-                              Analytics
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/admin/property-inquiries" className="flex items-center">
-                              <Building className="h-4 w-4 mr-2" />
-                              Property Inquiries
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
