@@ -274,13 +274,9 @@ export default function Explore() {
           return;
         }
 
-        if (!profile?.address) {
-          console.log('No address found in profile, showing address modal');
-          setShowAddressModal(true);
-          setSourceContext("explore");
-          setIsLoadingProfile(false);
-          return;
-        }
+        // Address modal removed - tenants get location from property, PMs don't need it
+        // If we reach here, user has a profile
+        setIsLoadingProfile(false);
 
         // Immediately set processing state to prevent address input flash
         setIsProcessingSavedAddress(true);

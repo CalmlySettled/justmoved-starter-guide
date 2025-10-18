@@ -16,32 +16,12 @@ interface AddressCaptureModalProps {
 }
 
 const getContextualContent = (source: string | null) => {
-  switch (source) {
-    case "explore":
-      return {
-        title: "Almost ready to explore!",
-        description: "To find great places near you, we need your address. Don't worry - we keep your information private and secure.",
-        buttonText: "Start Exploring"
-      };
-    case "popular":
-      return {
-        title: "Discover popular spots in your area!",
-        description: "To show you popular places nearby, we need your address. Your location data stays private.",
-        buttonText: "Show Popular Places"
-      };
-    case "oauth":
-      return {
-        title: "Welcome! One more step...",
-        description: "To personalize your experience and show you the best places nearby, we need your address. This helps us provide better recommendations.",
-        buttonText: "Complete Setup"
-      };
-    default:
-      return {
-        title: "Let's find great places for you!",
-        description: "An address is required to show you personalized recommendations. You can always come back and sign up again later if you prefer.",
-        buttonText: "Get Started"
-      };
-  }
+  // This modal should rarely appear - only as a fallback for edge cases
+  return {
+    title: "Location Setup Required",
+    description: "We couldn't determine your location automatically. Please enter your address to continue.",
+    buttonText: "Continue"
+  };
 };
 
 export function AddressCaptureModal({ isOpen, onClose, onComplete, sourceContext }: AddressCaptureModalProps) {

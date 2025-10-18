@@ -83,13 +83,10 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          // Check if user is a property manager
-          const { data: hasRole } = await supabase.rpc('has_role', {
-            _user_id: session.user.id,
-            _role: 'property_manager'
-          });
+          // Check signup_source from metadata FIRST (available immediately)
+          const signupSource = session.user?.user_metadata?.signup_source;
           
-          if (hasRole || isPropertyManagerRoute) {
+          if (signupSource === 'property_manager' || isPropertyManagerRoute) {
             navigate("/property-manager/dashboard");
             return;
           }
