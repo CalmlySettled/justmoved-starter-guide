@@ -40,20 +40,35 @@ const TenantWelcome: React.FC = () => {
   const [tenantData, setTenantData] = useState<TenantData | null>(null);
   const [recommendations, setRecommendations] = useState<{ [key: string]: Business[] }>({});
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('restaurants');
+  const [activeCategory, setActiveCategory] = useState('');
+  const [categories, setCategories] = useState<Array<{key: string, label: string, icon: string}>>([]);
 
-  const categories = [
-    { key: 'restaurants', label: 'Restaurants', icon: '🍽️' },
-    { key: 'grocery_stores', label: 'Grocery', icon: '🛒' },
-    { key: 'pharmacies', label: 'Pharmacy', icon: '💊' },
-    { key: 'banks', label: 'Banking', icon: '🏦' },
-    { key: 'gas_stations', label: 'Gas Stations', icon: '⛽' },
-    { key: 'coffee_shops', label: 'Coffee', icon: '☕' },
-    { key: 'gyms', label: 'Fitness', icon: '💪' },
-    { key: 'beauty_salons', label: 'Beauty', icon: '💄' },
-    { key: 'medical', label: 'Medical', icon: '🏥' },
-    { key: 'shopping', label: 'Shopping', icon: '🛍️' }
-  ];
+  const getCategoryIcon = (categoryKey: string): string => {
+    const iconMap: { [key: string]: string } = {
+      'restaurants': '🍽️',
+      'grocery stores': '🛒',
+      'pharmacies': '💊',
+      'banks': '🏦',
+      'gas stations': '⛽',
+      'coffee shops': '☕',
+      'gyms': '💪',
+      'fitness': '💪',
+      'beauty salons': '💄',
+      'medical': '🏥',
+      'shopping': '🛍️',
+      'hardware stores': '🔨',
+      'pet services': '🐾',
+      'veterinarians': '🐾',
+      'daycares': '👶',
+      'cleaning services': '🧹',
+      'junk removal': '🗑️',
+      'internet providers': '🌐',
+      'furniture stores': '🛋️',
+      'post offices': '📮',
+      'dmv': '🚗'
+    };
+    return iconMap[categoryKey.toLowerCase()] || '📍';
+  };
 
   useEffect(() => {
     if (token) {
@@ -63,9 +78,51 @@ const TenantWelcome: React.FC = () => {
 
   useEffect(() => {
     if (tenantData?.properties?.id) {
-      loadRecommendations();
+      loadCategoriesAndRecommendations();
     }
   }, [tenantData]);
+
+  const loadCategoriesAndRecommendations = async () => {
+    if (!tenantData?.properties?.id) return;
+
+    try {
+      const propertyId = tenantData.properties.id;
+
+      // First, load the unique categories from curated data
+      const { data: curatedData } = await supabase
+        .from('curated_property_places')
+        .select('category')
+        .eq('property_id', propertyId)
+        .eq('is_active', true);
+
+      if (curatedData && curatedData.length > 0) {
+        // Get unique categories
+        const uniqueCategories = [...new Set(curatedData.map(d => d.category))];
+        
+        // Format categories with labels and icons
+        const formattedCategories = uniqueCategories.map(cat => ({
+          key: cat,
+          label: cat.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+          icon: getCategoryIcon(cat)
+        }));
+
+        setCategories(formattedCategories);
+        
+        // Set first category as active
+        if (formattedCategories.length > 0) {
+          setActiveCategory(formattedCategories[0].key);
+        }
+
+        // Now load recommendations for these categories
+        await loadRecommendations(formattedCategories);
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setLoading(false);
+    }
+  };
 
   const fetchTenantData = async () => {
     try {
@@ -119,16 +176,16 @@ const TenantWelcome: React.FC = () => {
     }
   };
 
-  const loadRecommendations = async () => {
+  const loadRecommendations = async (categoriesToLoad: Array<{key: string, label: string, icon: string}>) => {
     if (!tenantData?.properties?.id) return;
 
     try {
       const propertyId = tenantData.properties.id;
 
       // Load recommendations for each category from cache
-      const categoryPromises = categories.map(async (category) => {
+      const categoryPromises = categoriesToLoad.map(async (category) => {
         try {
-          // Look up curated content by property ID
+          // Look up curated content by property ID using exact category name
           const cacheKey = `property_${propertyId}_${category.key}`;
           
           const { data: cacheData } = await supabase
