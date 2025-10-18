@@ -68,6 +68,11 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
       setBusinesses([]);
       setDetailsLoaded(false);
 
+      console.log('[BATCH-SEARCH] Starting search:', {
+        query: searchQuery,
+        property: { id: property.id, lat: property.latitude, lng: property.longitude }
+      });
+
       // Search for places using Google Places API
       const { data, error } = await supabase.functions.invoke('search-google-places', {
         body: { 
@@ -79,9 +84,33 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
         }
       });
 
-      if (error) throw error;
+      console.log('[BATCH-SEARCH] Edge function response:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        data: data,
+        error: error
+      });
+
+      if (error) {
+        console.error('[BATCH-SEARCH] Edge function error:', error);
+        throw error;
+      }
+
+      // Check for Google API errors in response
+      if (data?.error || data?.google_status) {
+        console.error('[BATCH-SEARCH] Google API error in response:', {
+          error: data.error,
+          details: data.details,
+          google_status: data.google_status
+        });
+        toast.error(data.error || 'Failed to search businesses', {
+          description: data.details || 'Check console for details'
+        });
+        return;
+      }
 
       if (data?.predictions && data.predictions.length > 0) {
+        console.log('[BATCH-SEARCH] Found predictions:', data.predictions.length);
         // Convert predictions to BatchBusiness format
         const results: BatchBusiness[] = data.predictions.map((pred: any) => ({
           place_id: pred.place_id,
@@ -94,11 +123,18 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
         setBusinesses(results);
         toast.success(`Found ${results.length} businesses`);
       } else {
+        console.warn('[BATCH-SEARCH] No predictions in response:', data);
         toast.error('No businesses found. Try a different search term.');
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      toast.error('Failed to search businesses');
+    } catch (error: any) {
+      console.error('[BATCH-SEARCH] Caught error:', {
+        message: error?.message,
+        details: error?.details,
+        full_error: error
+      });
+      toast.error('Failed to search businesses', {
+        description: error?.message || 'Check console for details'
+      });
     } finally {
       setSearching(false);
     }
