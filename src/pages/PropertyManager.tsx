@@ -292,7 +292,7 @@ const PropertyManager: React.FC = () => {
 
   const generatePropertyQRCode = async (property: Property) => {
     try {
-      const signupUrl = `${window.location.origin}/auth?property=${property.property_token}&focus=essentials`;
+      const signupUrl = `${window.location.origin}/welcome/${property.property_token}`;
       const qrCodeDataUrl = await QRCodeGenerator.toDataURL(signupUrl, {
         width: 256,
         margin: 2,
@@ -305,12 +305,12 @@ const PropertyManager: React.FC = () => {
       // Create download link
       const link = document.createElement('a');
       link.href = qrCodeDataUrl;
-      link.download = `property-qr-${property.property_name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.download = `welcome-qr-${property.property_name.replace(/\s+/g, '-').toLowerCase()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      toast.success('Property QR Code downloaded successfully!');
+      toast.success('Welcome QR Code downloaded successfully!');
     } catch (error) {
       console.error('Error generating QR code:', error);
       toast.error('Failed to generate QR code');
