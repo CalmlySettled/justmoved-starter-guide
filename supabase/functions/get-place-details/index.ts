@@ -11,11 +11,26 @@ serve(async (req) => {
   }
 
   try {
-    const { place_id } = await req.json()
+    const { place_id, place_ids } = await req.json()
     
-    if (!place_id) {
+    // Support both single and batch requests
+    const isBatch = Array.isArray(place_ids)
+    const ids = isBatch ? place_ids : (place_id ? [place_id] : [])
+    
+    if (ids.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Place ID is required' }),
+        JSON.stringify({ error: 'Place ID(s) required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Limit batch requests to prevent abuse
+    if (ids.length > 20) {
+      return new Response(
+        JSON.stringify({ error: 'Maximum 20 place IDs per request' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -34,7 +49,7 @@ serve(async (req) => {
       )
     }
 
-    // Get detailed place information
+    // Prepare fields for detailed info
     const fields = [
       'name',
       'formatted_address', 
@@ -46,26 +61,50 @@ serve(async (req) => {
       'geometry'
     ].join(',')
 
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=${fields}&key=${GOOGLE_PLACES_API_KEY}`
-    )
+    // Fetch details for all place IDs in parallel
+    const fetchPromises = ids.map(async (id: string) => {
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${id}&fields=${fields}&key=${GOOGLE_PLACES_API_KEY}`
+        )
 
-    if (!response.ok) {
-      throw new Error(`Google Places API error: ${response.status}`)
-    }
+        if (!response.ok) {
+          console.error(`Failed to fetch details for ${id}: ${response.status}`)
+          return null
+        }
 
-    const data = await response.json()
+        const data = await response.json()
 
-    if (data.status !== 'OK') {
-      throw new Error(`Google Places API error: ${data.status}`)
-    }
+        if (data.status !== 'OK') {
+          console.error(`Google Places API error for ${id}: ${data.status}`)
+          return null
+        }
 
-    return new Response(
-      JSON.stringify(data.result),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        return data.result
+      } catch (error) {
+        console.error(`Error fetching place ${id}:`, error)
+        return null
       }
-    )
+    })
+
+    const results = await Promise.all(fetchPromises)
+
+    // Return single result or batch results
+    if (isBatch) {
+      return new Response(
+        JSON.stringify({ results }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    } else {
+      return new Response(
+        JSON.stringify(results[0]),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
 
   } catch (error) {
     console.error('Error in get-place-details function:', error)

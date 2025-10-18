@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json()
+    const { query, limit = 5, location } = await req.json()
     
     if (!query) {
       return new Response(
@@ -22,6 +22,9 @@ serve(async (req) => {
         }
       )
     }
+
+    // Validate limit to prevent abuse
+    const maxResults = Math.min(Math.max(limit, 1), 20)
 
     const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY')
     if (!GOOGLE_PLACES_API_KEY) {
@@ -34,10 +37,14 @@ serve(async (req) => {
       )
     }
 
-    // Use Google Places Autocomplete API
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${GOOGLE_PLACES_API_KEY}`
-    )
+    // Use Google Places Autocomplete API with optional location bias
+    let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${GOOGLE_PLACES_API_KEY}`
+    
+    if (location) {
+      url += `&location=${location}&radius=50000` // 50km radius
+    }
+    
+    const response = await fetch(url)
 
     if (!response.ok) {
       throw new Error(`Google Places API error: ${response.status}`)
@@ -49,8 +56,14 @@ serve(async (req) => {
       throw new Error(`Google Places API error: ${data.status}`)
     }
 
+    // Limit results to requested amount
+    const limitedData = {
+      ...data,
+      predictions: data.predictions ? data.predictions.slice(0, maxResults) : []
+    }
+
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(limitedData),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

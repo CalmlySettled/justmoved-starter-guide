@@ -10,6 +10,7 @@ import { MapPin, Building, Plus, Save, Eye, FileUp, Copy, Trash2, Upload } from 
 import BusinessForm from './BusinessForm';
 import CopyFromPropertyModal from './CopyFromPropertyModal';
 import BulkImportModal from './BulkImportModal';
+import BatchBusinessEntry from './BatchBusinessEntry';
 import { COMPREHENSIVE_CATEGORIES, getStorageName } from '@/data/curationCategories';
 import { useTabPersistence } from '@/hooks/useTabPersistence';
 
@@ -57,6 +58,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
   const [editingBusiness, setEditingBusiness] = useState<CuratedPlace | null>(null);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBatchEntry, setShowBatchEntry] = useState(false);
 
   // Persist active category across tab switches
   const { loadState, clearState } = useTabPersistence({
@@ -292,10 +294,21 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
                   <h3 className="text-lg font-semibold">
                     {category} Businesses
                   </h3>
-                  <Button onClick={handleAddBusiness} size="sm" className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Business
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => setShowBatchEntry(true)} 
+                      size="sm" 
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Batch Add (Fast)
+                    </Button>
+                    <Button onClick={handleAddBusiness} size="sm" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Business
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -395,6 +408,20 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
           onUpdate();
         }}
       />
+
+      {/* Batch Business Entry Modal */}
+      {showBatchEntry && (
+        <BatchBusinessEntry
+          isOpen={showBatchEntry}
+          onClose={() => setShowBatchEntry(false)}
+          property={property}
+          category={activeCategory}
+          onComplete={() => {
+            fetchCuratedPlaces();
+            onUpdate();
+          }}
+        />
+      )}
     </div>
   );
 };

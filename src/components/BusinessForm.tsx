@@ -7,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Phone, Globe, Star, Plus, X, Search } from 'lucide-react';
+import { MapPin, Phone, Globe, Star, Plus, X, Search, Sparkles } from 'lucide-react';
 import GooglePlacesAutocomplete from './GooglePlacesAutocomplete';
 import QuickSelectTags from './QuickSelectTags';
+import { 
+  CATEGORY_FEATURE_SUGGESTIONS, 
+  CATEGORY_SUBFILTER_SUGGESTIONS, 
+  CATEGORY_DESCRIPTION_TEMPLATES 
+} from '@/data/categoryFeatureSuggestions';
 
 interface Property {
   id: string;
@@ -66,6 +71,12 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
   
   const [newTag, setNewTag] = useState('');
   const [newFeature, setNewFeature] = useState('');
+  const [showSmartDefaults, setShowSmartDefaults] = useState(true);
+
+  // Get category-specific suggestions
+  const suggestedFeatures = CATEGORY_FEATURE_SUGGESTIONS[category] || [];
+  const suggestedTags = CATEGORY_SUBFILTER_SUGGESTIONS[category] || [];
+  const descriptionTemplate = CATEGORY_DESCRIPTION_TEMPLATES[category] || '';
 
   const geocodeAddress = async (address: string) => {
     try {
@@ -119,8 +130,35 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
       business_address: place.formatted_address || prev.business_address,
       business_phone: place.formatted_phone_number || prev.business_phone,
       business_website: place.website || prev.business_website,
-      rating: place.rating || prev.rating
+      rating: place.rating || prev.rating,
+      // Auto-apply description template if empty
+      business_description: prev.business_description || descriptionTemplate
     }));
+  };
+
+  const applyCommonFeatures = () => {
+    // Apply top 5 suggested features if not already added
+    const topFeatures = suggestedFeatures.slice(0, 5);
+    const newFeatures = topFeatures.filter(f => !formData.business_features.includes(f));
+    
+    if (newFeatures.length > 0) {
+      handleInputChange('business_features', [...formData.business_features, ...newFeatures]);
+      toast.success(`Added ${newFeatures.length} common features`);
+    } else {
+      toast.info('All common features already added');
+    }
+  };
+
+  const generateSmartDescription = () => {
+    const businessName = formData.business_name || 'Business';
+    const address = formData.business_address ? ` Located at ${formData.business_address.split(',')[0]}.` : '';
+    const features = formData.business_features.length > 0 
+      ? ` Features include ${formData.business_features.slice(0, 3).join(', ')}.` 
+      : '';
+    
+    const generated = `${descriptionTemplate}${address}${features}`.trim();
+    handleInputChange('business_description', generated);
+    toast.success('Generated description');
   };
 
   const handleTagToggle = (tag: string) => {
@@ -311,12 +349,26 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="business_description">Description</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="business_description">Description</Label>
+              {!formData.business_description && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateSmartDescription}
+                  className="text-xs flex items-center gap-1"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Generate from Template
+                </Button>
+              )}
+            </div>
             <Textarea
               id="business_description"
               value={formData.business_description}
               onChange={(e) => handleInputChange('business_description', e.target.value)}
-              placeholder="Brief description of the business..."
+              placeholder={descriptionTemplate || "Brief description of the business..."}
               rows={3}
             />
           </div>
@@ -355,7 +407,43 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
           </div>
 
           <div className="space-y-3">
-            <Label>Business Features</Label>
+            <div className="flex items-center justify-between">
+              <Label>Business Features</Label>
+              {suggestedFeatures.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={applyCommonFeatures}
+                  className="text-xs flex items-center gap-1"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Apply Common Features
+                </Button>
+              )}
+            </div>
+
+            {/* Smart Suggestions */}
+            {showSmartDefaults && suggestedFeatures.length > 0 && (
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Suggested for {category}:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {suggestedFeatures.slice(0, 6).map(feature => (
+                    <Badge
+                      key={feature}
+                      variant={formData.business_features.includes(feature) ? "default" : "outline"}
+                      className="cursor-pointer text-xs"
+                      onClick={() => handleFeatureToggle(feature)}
+                    >
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Quick Select Features */}
             <QuickSelectTags

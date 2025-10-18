@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Star, StarOff, Building, MapPin, Copy } from 'lucide-react';
+import { Star, StarOff, Building, MapPin, Copy, Filter, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import TemplatePreviewModal from './TemplatePreviewModal';
 
 interface Property {
   id: string;
@@ -19,18 +20,23 @@ interface Property {
   is_master_template: boolean;
   template_category: string | null;
   template_description: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  distance?: number;
 }
 
 interface MasterTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTemplateUpdate: () => void;
+  currentPropertyLocation?: { latitude: number; longitude: number };
 }
 
 const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
   isOpen,
   onClose,
-  onTemplateUpdate
+  onTemplateUpdate,
+  currentPropertyLocation
 }) => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +44,9 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
   const [editingTemplate, setEditingTemplate] = useState<Property | null>(null);
   const [templateCategory, setTemplateCategory] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
+  const [maxDistance, setMaxDistance] = useState<number | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<Property | null>(null);
+  const [previewCategoryCounts, setPreviewCategoryCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -53,6 +62,8 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
           id,
           property_name,
           address,
+          latitude,
+          longitude,
           curation_status,
           total_curated_places,
           is_master_template,
@@ -61,15 +72,66 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
         `)
         .eq('curation_status', 'completed')
         .gte('total_curated_places', 5)
-        .order('is_master_template', { ascending: false }) as any; // Temporary type assertion
+        .order('is_master_template', { ascending: false }) as any;
 
       if (error) throw error;
-      setProperties(data || []);
+
+      // Calculate distances if current location provided
+      const propertiesWithDistance = (data || []).map((property: any) => {
+        if (currentPropertyLocation && property.latitude && property.longitude) {
+          const distance = calculateDistance(
+            currentPropertyLocation.latitude,
+            currentPropertyLocation.longitude,
+            property.latitude,
+            property.longitude
+          );
+          return { ...property, distance };
+        }
+        return property;
+      });
+
+      setProperties(propertiesWithDistance);
     } catch (error) {
       console.error('Error fetching properties:', error);
       toast.error('Failed to load properties');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const handlePreviewTemplate = async (property: Property) => {
+    try {
+      // Fetch category counts
+      const { data, error } = await supabase
+        .from('curated_property_places')
+        .select('category')
+        .eq('property_id', property.id)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      (data || []).forEach((place: any) => {
+        counts[place.category] = (counts[place.category] || 0) + 1;
+      });
+
+      setPreviewCategoryCounts(counts);
+      setPreviewTemplate(property);
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      toast.error('Failed to load template preview');
     }
   };
 
@@ -133,11 +195,18 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
     }
   };
 
-  const filteredProperties = properties.filter(property =>
-    property.property_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (property.template_category && property.template_category.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProperties = properties.filter(property => {
+    const matchesSearch = 
+      property.property_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (property.template_category && property.template_category.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesDistance = maxDistance === null || 
+      !property.distance || 
+      property.distance <= maxDistance;
+    
+    return matchesSearch && matchesDistance;
+  });
 
   const masterTemplates = filteredProperties.filter(p => p.is_master_template);
   const availableProperties = filteredProperties.filter(p => !p.is_master_template);
@@ -153,8 +222,8 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Search */}
-          <div>
+          {/* Search and Filters */}
+          <div className="space-y-3">
             <Label htmlFor="search">Search Properties</Label>
             <Input
               id="search"
@@ -162,6 +231,25 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            
+            {currentPropertyLocation && (
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="distance-filter" className="text-sm">Distance Filter:</Label>
+                <select
+                  id="distance-filter"
+                  value={maxDistance ?? 'all'}
+                  onChange={(e) => setMaxDistance(e.target.value === 'all' ? null : parseInt(e.target.value))}
+                  className="px-3 py-1 border rounded text-sm"
+                >
+                  <option value="all">All distances</option>
+                  <option value="5">Within 5 miles</option>
+                  <option value="10">Within 10 miles</option>
+                  <option value="20">Within 20 miles</option>
+                  <option value="50">Within 50 miles</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Master Templates Section */}
@@ -187,6 +275,11 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
                           <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                             {property.template_category}
                           </Badge>
+                          {property.distance !== undefined && (
+                            <Badge variant="outline" className="text-xs">
+                              {property.distance.toFixed(1)} mi
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -198,19 +291,29 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
                           </p>
                         )}
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>{property.total_curated_places} businesses</span>
+                          <span><TrendingUp className="h-3 w-3 inline mr-1" />{property.total_curated_places} businesses</span>
                           <span>{property.curation_status}</span>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleMasterTemplate(property)}
-                        className="text-yellow-600 hover:text-yellow-700"
-                      >
-                        <StarOff className="h-4 w-4 mr-1" />
-                        Remove Template
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePreviewTemplate(property)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleMasterTemplate(property)}
+                          className="text-yellow-600 hover:text-yellow-700"
+                        >
+                          <StarOff className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))
@@ -317,10 +420,10 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
             <h4 className="font-medium mb-2">How to Use Master Templates</h4>
             <ul className="text-sm space-y-1">
               <li>• <strong>Create Templates:</strong> Mark well-curated properties as master templates</li>
-              <li>• <strong>Categorize:</strong> Give each template a clear category (Urban, Suburban, etc.)</li>
+              <li>• <strong>Preview First:</strong> Click "Preview" to see what's included before applying</li>
+              <li>• <strong>Distance Matters:</strong> Closer templates require less adjustment after applying</li>
               <li>• <strong>Copy Efficiently:</strong> Use "Copy from Property" to duplicate template data</li>
               <li>• <strong>Customize:</strong> Adjust addresses and local businesses after copying</li>
-              <li>• <strong>Maintain Quality:</strong> Keep templates updated with the best businesses</li>
             </ul>
           </Card>
         </div>
@@ -331,6 +434,22 @@ const MasterTemplateModal: React.FC<MasterTemplateModalProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Template Preview Modal */}
+      {previewTemplate && (
+        <TemplatePreviewModal
+          isOpen={!!previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          template={previewTemplate}
+          categoryCounts={previewCategoryCounts}
+          onApply={() => {
+            setPreviewTemplate(null);
+            toast.success('Use "Copy from Property" to apply this template');
+            onClose();
+          }}
+          applying={false}
+        />
+      )}
     </Dialog>
   );
 };
