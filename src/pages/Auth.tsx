@@ -94,7 +94,17 @@ export default function Auth() {
             return;
           }
           
+          // Check if this is a property tenant
           const urlParams = new URLSearchParams(window.location.search);
+          const savedPropertyToken = session.user?.user_metadata?.property_token;
+          const urlPropertyToken = urlParams.get('property');
+          const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+
+          if (tenantPropertyToken) {
+            navigate(`/welcome/${tenantPropertyToken}`);
+            return;
+          }
+          
           const redirect = urlParams.get('redirect');
           const oauth = urlParams.get('oauth');
           const focus = urlParams.get('focus');
@@ -135,9 +145,18 @@ export default function Auth() {
             return;
           }
           
-          // Regular user flow
-          
+          // Check if this is a property tenant
           const urlParams = new URLSearchParams(window.location.search);
+          const savedPropertyToken = session.user?.user_metadata?.property_token;
+          const urlPropertyToken = urlParams.get('property');
+          const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+
+          if (tenantPropertyToken) {
+            navigate(`/welcome/${tenantPropertyToken}`);
+            return;
+          }
+          
+          // Regular user flow
           const redirect = urlParams.get('redirect');
           const oauth = urlParams.get('oauth');
           const focus = urlParams.get('focus');
