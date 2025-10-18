@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface TenantData {
+interface PropertyData {
   id: string;
-  tenant_name: string;
-  unit_number: string | null;
-  move_in_date: string | null;
+  property_name: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
   contact_info: any;
-  properties: {
-    id: string;
-    property_name: string;
-    address: string;
-    latitude: number | null;
-    longitude: number | null;
-    contact_info: any;
-    branding: any;
-  };
+  branding: any;
 }
 
 interface Business {
@@ -36,8 +30,10 @@ interface Business {
 }
 
 const TenantWelcome: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
-  const [tenantData, setTenantData] = useState<TenantData | null>(null);
+  const { propertyToken, token } = useParams<{ propertyToken?: string; token?: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [propertyData, setPropertyData] = useState<PropertyData | null>(null);
   const [recommendations, setRecommendations] = useState<{ [key: string]: Business[] }>({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('');
@@ -71,22 +67,65 @@ const TenantWelcome: React.FC = () => {
   };
 
   useEffect(() => {
-    if (token) {
+    // Require authentication for property token route
+    if (propertyToken && !user) {
+      navigate(`/auth?property=${propertyToken}&mode=signup`);
+      return;
+    }
+
+    if (propertyToken) {
+      fetchPropertyData(propertyToken);
+    } else if (token) {
+      // Legacy tenant_token route
       fetchTenantData();
     }
-  }, [token]);
+  }, [propertyToken, token, user]);
 
   useEffect(() => {
-    if (tenantData?.properties?.id) {
+    if (propertyData?.id) {
       loadCategoriesAndRecommendations();
     }
-  }, [tenantData]);
+  }, [propertyData]);
+
+  const fetchPropertyData = async (propToken: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('property_token', propToken)
+        .single();
+
+      if (error) throw error;
+
+      if (!data) {
+        toast.error('Property not found');
+        return;
+      }
+
+      setPropertyData(data);
+
+      // Log analytics event
+      await supabase.from('property_analytics').insert({
+        property_id: data.id,
+        event_type: 'welcome_page_view',
+        event_data: {
+          user_id: user?.id,
+          user_agent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('Error fetching property data:', error);
+      toast.error('Failed to load property information');
+    }
+  };
 
   const loadCategoriesAndRecommendations = async () => {
-    if (!tenantData?.properties?.id) return;
+    if (!propertyData?.id) return;
 
     try {
-      const propertyId = tenantData.properties.id;
+      const propertyId = propertyData.id;
 
       // First, load the unique categories from curated data
       const { data: curatedData } = await supabase
@@ -146,12 +185,13 @@ const TenantWelcome: React.FC = () => {
 
       if (error) throw error;
 
-      if (!data) {
+      if (!data || !data.properties) {
         toast.error('Invalid or expired link');
         return;
       }
 
-      setTenantData(data);
+      // Set property data from tenant link
+      setPropertyData(data.properties);
 
       // Update last accessed timestamp
       await supabase
@@ -177,10 +217,10 @@ const TenantWelcome: React.FC = () => {
   };
 
   const loadRecommendations = async (categoriesToLoad: Array<{key: string, label: string, icon: string}>) => {
-    if (!tenantData?.properties?.id) return;
+    if (!propertyData?.id) return;
 
     try {
-      const propertyId = tenantData.properties.id;
+      const propertyId = propertyData.id;
 
       // Load recommendations for each category from cache
       const categoryPromises = categoriesToLoad.map(async (category) => {
@@ -226,14 +266,14 @@ const TenantWelcome: React.FC = () => {
   };
 
   const logBusinessClick = async (businessName: string, category: string) => {
-    if (!tenantData) return;
+    if (!propertyData) return;
 
     try {
       await supabase.from('property_analytics').insert({
-        property_id: tenantData.properties.id,
-        tenant_link_id: tenantData.id,
+        property_id: propertyData.id,
         event_type: 'business_click',
         event_data: {
+          user_id: user?.id,
           business_name: businessName,
           category: category,
           timestamp: new Date().toISOString()
@@ -255,14 +295,14 @@ const TenantWelcome: React.FC = () => {
     );
   }
 
-  if (!tenantData) {
+  if (!propertyData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Welcome Link Not Found</h2>
+            <h2 className="text-xl font-semibold mb-2">Property Not Found</h2>
             <p className="text-muted-foreground">
-              This welcome link may have expired or is no longer active.
+              This property could not be found or is no longer available.
             </p>
           </CardContent>
         </Card>
@@ -270,8 +310,9 @@ const TenantWelcome: React.FC = () => {
     );
   }
 
-  const property = tenantData.properties;
+  const property = propertyData;
   const branding = property.branding || {};
+  const userName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'New Resident';
 
   return (
     <div className="min-h-screen bg-background">
@@ -282,8 +323,7 @@ const TenantWelcome: React.FC = () => {
             Welcome to {property.property_name}!
           </h1>
           <p className="text-xl mb-4">
-            Hello {tenantData.tenant_name}
-            {tenantData.unit_number && ` - Unit ${tenantData.unit_number}`}
+            Hello {userName}
           </p>
           {branding.welcome_message && (
             <p className="text-lg opacity-90 max-w-2xl mx-auto">
@@ -307,14 +347,6 @@ const TenantWelcome: React.FC = () => {
               <div>
                 <h3 className="font-semibold mb-2">Address</h3>
                 <p className="text-muted-foreground">{property.address}</p>
-                {tenantData.move_in_date && (
-                  <>
-                    <h3 className="font-semibold mb-2 mt-4">Move-in Date</h3>
-                    <p className="text-muted-foreground">
-                      {new Date(tenantData.move_in_date).toLocaleDateString()}
-                    </p>
-                  </>
-                )}
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Property Contact</h3>

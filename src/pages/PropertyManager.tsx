@@ -292,7 +292,7 @@ const PropertyManager: React.FC = () => {
 
   const generatePropertyQRCode = async (property: Property) => {
     try {
-      const signupUrl = `${window.location.origin}/welcome/${property.property_token}`;
+      const signupUrl = `${window.location.origin}/auth?property=${property.property_token}&mode=signup`;
       const qrCodeDataUrl = await QRCodeGenerator.toDataURL(signupUrl, {
         width: 256,
         margin: 2,
