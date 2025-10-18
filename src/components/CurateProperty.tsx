@@ -165,6 +165,37 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
     try {
       setLoading(true);
       
+      // Check if property has coordinates, geocode if missing
+      if (!property.latitude || !property.longitude) {
+        toast.info('Geocoding property address...');
+        
+        const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke(
+          'geocode-address',
+          {
+            body: { address: property.address }
+          }
+        );
+
+        if (geocodeError) {
+          throw new Error('Failed to geocode property address');
+        }
+
+        // Update property with coordinates
+        const { error: updateError } = await supabase
+          .from('properties')
+          .update({
+            latitude: geocodeData.coordinates.lat,
+            longitude: geocodeData.coordinates.lng
+          })
+          .eq('id', property.id);
+
+        if (updateError) throw updateError;
+        
+        // Update local property object
+        property.latitude = geocodeData.coordinates.lat;
+        property.longitude = geocodeData.coordinates.lng;
+      }
+      
       // Call the function to populate cache from curation
       const { error } = await supabase.rpc('populate_cache_from_curation', {
         p_property_id: property.id
@@ -180,7 +211,7 @@ const CurateProperty: React.FC<CuratePropertyProps> = ({ property, onUpdate }) =
       onUpdate();
     } catch (error) {
       console.error('Error publishing curation:', error);
-      toast.error('Failed to publish curation');
+      toast.error(error instanceof Error ? error.message : 'Failed to publish curation');
     } finally {
       setLoading(false);
     }
