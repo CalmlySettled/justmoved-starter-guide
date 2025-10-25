@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { MapPin, Search, Star, CheckCircle2, Loader2, Tags } from 'lucide-react';
 import QuickSelectTags from './QuickSelectTags';
 import { getSubfiltersForCategory } from '@/data/subfilters';
+import { buildSearchQuery } from '@/data/categorySearchTerms';
 
 interface Property {
   id: string;
@@ -54,7 +55,7 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
   category,
   onComplete
 }) => {
-  const [searchQuery, setSearchQuery] = useState(`${category} near ${property.address}`);
+  const [searchQuery, setSearchQuery] = useState(buildSearchQuery(category, property.address));
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [businesses, setBusinesses] = useState<BatchBusiness[]>([]);
@@ -79,7 +80,7 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
       const { data, error } = await supabase.functions.invoke('search-google-places', {
         body: { 
           query: searchQuery,
-          limit: 10,
+          limit: 20,
           location: property.latitude && property.longitude 
             ? `${property.latitude},${property.longitude}`
             : undefined
