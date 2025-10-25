@@ -288,7 +288,8 @@ export default function Auth() {
                 address: propertyData.address,
                 latitude: propertyData.latitude,
                 longitude: propertyData.longitude,
-                city_state: extractCityState(propertyData.address)
+                city_state: extractCityState(propertyData.address),
+                property_id: propertyData.id
               }),
               // Set sensible defaults for other fields
               household_type: 'Not specified',

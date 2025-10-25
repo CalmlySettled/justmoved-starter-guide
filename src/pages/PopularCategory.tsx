@@ -407,52 +407,69 @@ const PopularCategory = () => {
         }
       }
 
-      console.log(`🔄 CACHE MISS - Making fresh API call for popular category`);
+      console.log(`🔄 CACHE MISS - Querying curated data directly`);
       
-      // Fresh API call
-      const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-        body: {
-          popularMode: true,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms,
-          property_id: propertyContext?.id // Include property context for curated data
+      // Query curated data directly if user has property_id
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('property_id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile?.property_id) {
+          console.log(`🏢 Querying curated data for property: ${profile.property_id}`);
+          
+          const { data: curatedData, error: curatedError } = await supabase
+            .from('curated_property_places')
+            .select('*')
+            .eq('property_id', profile.property_id)
+            .eq('is_active', true)
+            .in('category', searchTerms);
+
+          if (!curatedError && curatedData && curatedData.length > 0) {
+            console.log(`💰 Found ${curatedData.length} curated businesses`);
+            
+            const sortedResults = curatedData
+              .map(place => ({
+                name: place.business_name,
+                address: place.business_address,
+                phone: place.business_phone,
+                website: place.business_website,
+                description: place.business_description,
+                features: place.business_features || [],
+                latitude: place.latitude,
+                longitude: place.longitude,
+                distance_miles: place.distance_miles,
+                place_id: place.place_id,
+                photo_url: place.photo_url,
+                rating: place.rating
+              }))
+              .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
+              .slice(0, 12);
+
+            setBusinesses(sortedResults);
+            setCached(cacheType, { 
+              latitude: location.latitude,
+              longitude: location.longitude,
+              categories: searchTerms 
+            }, sortedResults, true);
+            console.log(`💾 Cached ${sortedResults.length} curated places`);
+            
+            // Extract available subfilters from loaded businesses
+            extractAvailableSubfilters(sortedResults);
+            setLoading(false);
+            return;
+          }
         }
+      }
+      
+      // No curated data available
+      toast("Recommendations Coming Soon", {
+        description: "Your property manager is preparing personalized recommendations."
       });
-
-      if (error) throw error;
-
-      // Handle no_curation response
-      if (data?.source === 'no_curation') {
-        toast("Recommendations Coming Soon", {
-          description: data.message || "Your property manager is preparing personalized recommendations."
-        });
-        setBusinesses([]);
-        setLoading(false);
-        return;
-      }
-
-      if (data?.recommendations) {
-        const allResults: Business[] = [];
-        Object.values(data.recommendations).forEach((businesses: Business[]) => {
-          allResults.push(...businesses);
-        });
-        
-        const sortedResults = allResults
-          .sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-          .slice(0, 12);
-
-        setBusinesses(sortedResults);
-        setCached(cacheType, { 
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: searchTerms 
-        }, sortedResults, true);
-        console.log(`💾 Cached ${sortedResults.length} popular category places`);
-        
-        // Extract available subfilters from loaded businesses
-        extractAvailableSubfilters(sortedResults);
-      }
+      setBusinesses([]);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching category places:', error);
       console.error('Failed to load places. Please try again.');

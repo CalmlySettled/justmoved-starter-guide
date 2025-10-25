@@ -558,43 +558,60 @@ export default function Explore() {
         return;
       }
 
-      // L1 & L2 Miss: Make API call
-      console.log(`🌐 L3 API CALL - Cache hierarchy exhausted`, {
-        category: category.searchTerm,
-        coordinates: { lat: location.latitude, lng: location.longitude }
-      });
+      // Query curated data directly if user has property_id
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('property_id')
+          .eq('user_id', user.id)
+          .single();
 
-      const data = await batchInvoke('generate-recommendations', {
-        body: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          categories: [category.searchTerm],
-          exploreMode: true,
-          property_id: propertyContext?.id // Include property context for curated data
+        if (profile?.property_id) {
+          console.log(`🏢 Querying curated data for property: ${profile.property_id}`);
+          
+          const { data: curatedData, error: curatedError } = await supabase
+            .from('curated_property_places')
+            .select('*')
+            .eq('property_id', profile.property_id)
+            .eq('is_active', true)
+            .eq('category', category.searchTerm);
+
+          if (!curatedError && curatedData && curatedData.length > 0) {
+            console.log(`💰 Found ${curatedData.length} curated businesses`);
+            
+            const results = curatedData.map(place => ({
+              name: place.business_name,
+              address: place.business_address,
+              phone: place.business_phone,
+              website: place.business_website,
+              description: place.business_description,
+              features: place.business_features || [],
+              latitude: place.latitude,
+              longitude: place.longitude,
+              distance_miles: place.distance_miles,
+              place_id: place.place_id,
+              photo_url: place.photo_url,
+              rating: place.rating
+            }));
+            
+            setCategoryResults(results);
+            
+            // Store in L1 frontend cache
+            if (results.length > 0) {
+              setCached('category_results', cacheKey, results, true);
+              console.log(`💾 L1 FRONTEND CACHED ${results.length} curated places`);
+            }
+            return;
+          }
         }
+      }
+      
+      // No curated data available
+      toast("Recommendations Coming Soon", {
+        description: "Your property manager is preparing personalized recommendations."
       });
+      setCategoryResults([]);
       
-      // Handle no_curation response
-      if (data.source === 'no_curation') {
-        toast("Recommendations Coming Soon", {
-          description: data.message || "Your property manager is preparing personalized recommendations."
-        });
-        setCategoryResults([]);
-        setIsLoadingCategory(false);
-        return;
-      }
-      
-      const results = data.recommendations?.[category.searchTerm] || [];
-      setCategoryResults(results);
-      
-      // Store in L1 frontend cache (L2 backend cache is handled by the edge function)
-      if (results.length > 0) {
-        setCached('category_results', cacheKey, results, true); // Cache for 30 days
-        console.log(`💾 L1 FRONTEND CACHED after API call:`, {
-          resultCount: results.length,
-          category: category.name
-        });
-      }
     } catch (error) {
       console.error("Error loading category results:", error);
       console.error("Error loading results. Please try again later");

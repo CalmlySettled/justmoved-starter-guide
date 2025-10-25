@@ -84,7 +84,7 @@ export type Database = {
           features: string[] | null
           id: string
           latitude: number | null
-          location: unknown | null
+          location: unknown
           longitude: number | null
           opening_hours: Json | null
           phone: string | null
@@ -103,7 +103,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           latitude?: number | null
-          location?: unknown | null
+          location?: unknown
           longitude?: number | null
           opening_hours?: Json | null
           phone?: string | null
@@ -122,7 +122,7 @@ export type Database = {
           features?: string[] | null
           id?: string
           latitude?: number | null
-          location?: unknown | null
+          location?: unknown
           longitude?: number | null
           opening_hours?: Json | null
           phone?: string | null
@@ -344,6 +344,7 @@ export type Database = {
           micro_survey_responses: Json | null
           priorities: string[] | null
           priority_preferences: Json | null
+          property_id: string | null
           settling_tasks: string[] | null
           total_surveys_completed: number | null
           transportation_style: string | null
@@ -368,6 +369,7 @@ export type Database = {
           micro_survey_responses?: Json | null
           priorities?: string[] | null
           priority_preferences?: Json | null
+          property_id?: string | null
           settling_tasks?: string[] | null
           total_surveys_completed?: number | null
           transportation_style?: string | null
@@ -392,13 +394,22 @@ export type Database = {
           micro_survey_responses?: Json | null
           priorities?: string[] | null
           priority_preferences?: Json | null
+          property_id?: string | null
           settling_tasks?: string[] | null
           total_surveys_completed?: number | null
           transportation_style?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -874,7 +885,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           page_url: string | null
           session_id: string
           user_agent: string | null
@@ -886,7 +897,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           page_url?: string | null
           session_id: string
           user_agent?: string | null
@@ -898,7 +909,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           page_url?: string | null
           session_id?: string
           user_agent?: string | null
@@ -1014,7 +1025,7 @@ export type Database = {
           ended_at: string | null
           favorites_added: number | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           ip_hash: string | null
           is_suspicious: boolean | null
           page_views: number | null
@@ -1031,7 +1042,7 @@ export type Database = {
           ended_at?: string | null
           favorites_added?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           ip_hash?: string | null
           is_suspicious?: boolean | null
           page_views?: number | null
@@ -1048,7 +1059,7 @@ export type Database = {
           ended_at?: string | null
           favorites_added?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           ip_hash?: string | null
           is_suspicious?: boolean | null
           page_views?: number | null
@@ -1071,38 +1082,17 @@ export type Database = {
         Args: { target_date?: string }
         Returns: undefined
       }
-      cleanup_expired_business_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_security_events: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      detect_suspicious_activity: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      extract_city_state: {
-        Args: { full_address: string }
-        Returns: string
-      }
-      get_cache_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      cleanup_expired_business_cache: { Args: never; Returns: undefined }
+      cleanup_expired_cache: { Args: never; Returns: undefined }
+      cleanup_security_events: { Args: never; Returns: undefined }
+      detect_suspicious_activity: { Args: never; Returns: undefined }
+      extract_city_state: { Args: { full_address: string }; Returns: string }
+      get_cache_stats: { Args: never; Returns: Json }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      has_active_pm_contract: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      has_active_pm_contract: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
