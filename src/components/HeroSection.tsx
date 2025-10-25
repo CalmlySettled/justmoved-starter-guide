@@ -18,14 +18,14 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
-          Property Managers:
+          Transforming the 
           <span className="bg-gradient-accent bg-clip-text text-transparent block">
-            Transform Your Tenant Experience
+            Move-In Experience
           </span>
         </h1>
         
         <p className="text-lg md:text-xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
-          Help your tenants discover their new neighborhood with AI-powered local recommendations.
+          Discover your neighborhood or manage your properties with AI-powered recommendations.
         </p>
         
         <div className="flex flex-col gap-4 justify-center items-center mb-8">
@@ -36,11 +36,11 @@ export function HeroSection() {
               className="text-lg sm:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 min-w-[280px] sm:min-w-[320px] transform hover:scale-110 shadow-2xl min-h-[56px]"
             >
               <Building2 className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
-              Sign Up as Property Manager
+              Sign Up Your Property
             </Button>
           </Link>
           
-          <Link to="/property-manager">
+          <Link to="/auth">
             <Button 
               variant="outline" 
               size="lg"
