@@ -18,7 +18,7 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
-          Transforming the 
+          <span className="italic">Transforming the</span> 
           <span className="bg-gradient-accent bg-clip-text text-transparent block">
             Move-In Experience
           </span>
