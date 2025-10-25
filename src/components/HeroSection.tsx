@@ -19,7 +19,7 @@ export function HeroSection() {
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
         <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
           <span className="italic">Transforming the</span> 
-          <span className="bg-gradient-accent bg-clip-text text-transparent block">
+          <span className="bg-gradient-accent bg-clip-text text-transparent block drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
             Move-In Experience
           </span>
         </h1>
