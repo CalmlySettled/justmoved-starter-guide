@@ -574,6 +574,16 @@ export default function Explore() {
         }
       });
       
+      // Handle no_curation response
+      if (data.source === 'no_curation') {
+        toast("Recommendations Coming Soon", {
+          description: data.message || "Your property manager is preparing personalized recommendations."
+        });
+        setCategoryResults([]);
+        setIsLoadingCategory(false);
+        return;
+      }
+      
       const results = data.recommendations?.[category.searchTerm] || [];
       setCategoryResults(results);
       
@@ -733,6 +743,16 @@ export default function Explore() {
           property_id: propertyContext?.id // Include property context for curated data
         }
       });
+      
+      // Handle no_curation response
+      if (data.source === 'no_curation') {
+        toast("Recommendations Coming Soon", {
+          description: data.message || "Your property manager is preparing personalized recommendations."
+        });
+        setCategoryResults([]);
+        setIsLoadingCategory(false);
+        return;
+      }
       
       let results: Business[] = [];
       

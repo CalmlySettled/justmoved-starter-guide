@@ -2325,7 +2325,20 @@ serve(async (req) => {
           }
         } catch (curationError) {
           console.error('❌ Property curation check failed:', curationError);
-          console.log('📡 Proceeding with standard recommendations...');
+        }
+        
+        // If property_id was provided but no curation found, return no_curation message
+        if (property_id) {
+          console.log('❌ No property curation found for property_id. Tenants must wait for admin curation.');
+          return new Response(
+            JSON.stringify({
+              recommendations: {},
+              fromCache: false,
+              source: 'no_curation',
+              message: 'Recommendations are being prepared for your property. Check back soon!'
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
       }
       
@@ -2367,10 +2380,10 @@ serve(async (req) => {
           );
         }
 
-        console.log('📡 No manual curation found, proceeding with API recommendations...');
+        console.log('📡 No manual curation found, checking explore cache...');
       } catch (curationCheckError) {
         console.error('❌ Manual curation check failed:', curationCheckError);
-        console.log('📡 Proceeding with API recommendations...');
+        console.log('📡 Checking explore cache...');
       }
       
       // Create cache key for explore requests based on rounded location and categories
@@ -2413,42 +2426,17 @@ serve(async (req) => {
         );
       }
 
-      const recommendations: { [key: string]: Business[] } = {};
-      const globalSeenBusinesses = new Set(); // Global deduplication across all categories
-      
-      for (const category of categories) {
-        console.log(`Exploring category: "${category}"`);
-        const businesses = await searchBusinesses(category, coordinates, undefined, true);
-        
-        // Filter out businesses we've already seen globally
-        const uniqueBusinesses = businesses.filter(business => {
-          const businessKey = `${business.name.toLowerCase().trim()}|${business.address?.toLowerCase().trim() || ''}`;
-          if (globalSeenBusinesses.has(businessKey)) {
-            console.log(`→ Skipping duplicate business across categories: ${business.name}`);
-            return false;
-          }
-          globalSeenBusinesses.add(businessKey);
-          return true;
-        });
-        
-        recommendations[category] = uniqueBusinesses;
-        console.log(`Found ${businesses.length} businesses for "${category}", ${uniqueBusinesses.length} unique after deduplication`);
-      }
-
-      // Cache explore results for 180 days (6 months for essentials)
-      await supabase
-        .from('recommendations_cache')
-        .insert({
-          cache_key: cacheKey,
-          user_coordinates: `(${latitude}, ${longitude})`, // Required field
-          categories: categories, // Required field
-          recommendations: recommendations,
-          expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString() // 180 days for explore mode
-        });
-      
-      return new Response(JSON.stringify({ recommendations }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // No cache found and no curation - do NOT call Google API
+      console.log('❌ No cache or curation found. Returning no_curation response.');
+      return new Response(
+        JSON.stringify({
+          recommendations: {},
+          fromCache: false,
+          source: 'no_curation',
+          message: 'Recommendations are not available yet. Please check back later.'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     // Handle personal care mode requests with distance-only scoring

@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRequestCache } from "@/hooks/useRequestCache";
 import QuickSelectTags from "@/components/QuickSelectTags";
 import { getSubfiltersForCategory, type Subfilter } from "@/data/subfilters";
+import { toast } from "sonner";
 
 interface LocationData {
   latitude: number;
@@ -420,6 +421,16 @@ const PopularCategory = () => {
       });
 
       if (error) throw error;
+
+      // Handle no_curation response
+      if (data?.source === 'no_curation') {
+        toast("Recommendations Coming Soon", {
+          description: data.message || "Your property manager is preparing personalized recommendations."
+        });
+        setBusinesses([]);
+        setLoading(false);
+        return;
+      }
 
       if (data?.recommendations) {
         const allResults: Business[] = [];
