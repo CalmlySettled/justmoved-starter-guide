@@ -20,7 +20,8 @@ export default function Auth() {
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
   const propertyToken = urlParams.get('property');
-  const [isSignUp, setIsSignUp] = useState(mode === 'signup'); // Show signup if mode=signup in URL
+  // Force signup mode if property token exists, otherwise force sign-in mode for existing tenants
+  const [isSignUp, setIsSignUp] = useState(!!propertyToken);
   const [propertyData, setPropertyData] = useState<any>(null);
   const [loadingPropertyData, setLoadingPropertyData] = useState(!!propertyToken);
   
@@ -696,10 +697,8 @@ export default function Auth() {
             <CardDescription className="text-card-foreground/80 text-center">
               {propertyData ? (
                 `Welcome to ${propertyData.property_name}! Create your account to discover local businesses near your new home.`
-              ) : isSignUp ? (
-                "Create your account to discover local businesses and get personalized recommendations"
               ) : (
-                "Sign in to access your personalized local business recommendations"
+                "Sign in to your tenant account"
               )}
             </CardDescription>
           </CardHeader>
@@ -961,25 +960,6 @@ export default function Auth() {
               </div>
             )}
             
-            {!isForgotPassword && !isResetPassword && (
-              <>
-                <div className="mt-6 text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignUp(!isSignUp);
-                      setShowResendButton(false);
-                    }}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                  >
-                    {isSignUp 
-                      ? "Already have an account? Sign in" 
-                      : "Don't have an account? Sign up"
-                    }
-                  </button>
-                </div>
-              </>
-            )}
           </CardContent>
         </Card>
 
