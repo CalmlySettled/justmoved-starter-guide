@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { MapPin, Search, Star, CheckCircle2, Loader2 } from 'lucide-react';
+import { MapPin, Search, Star, CheckCircle2, Loader2, Tags } from 'lucide-react';
+import QuickSelectTags from './QuickSelectTags';
+import { getSubfiltersForCategory } from '@/data/subfilters';
 
 interface Property {
   id: string;
@@ -42,6 +44,7 @@ interface BatchBusiness extends GooglePlaceResult {
   editedName?: string;
   editedPhone?: string;
   features: string[];
+  subfilter_tags: string[];
 }
 
 const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
@@ -55,6 +58,7 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [businesses, setBusinesses] = useState<BatchBusiness[]>([]);
+  const [globalSubfilters, setGlobalSubfilters] = useState<string[]>([]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -117,7 +121,8 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
           rating: result.rating,
           geometry: result.geometry,
           selected: false,
-          features: []
+          features: [],
+          subfilter_tags: []
         }));
 
         setBusinesses(results);
@@ -161,6 +166,35 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
       prev.map(b =>
         b.place_id === placeId ? { ...b, [field]: value } : b
       )
+    );
+  };
+
+  const toggleGlobalSubfilter = (tag: string) => {
+    setGlobalSubfilters(prev => {
+      const newTags = prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag];
+      
+      // Apply to all selected businesses
+      setBusinesses(prevBusinesses =>
+        prevBusinesses.map(b =>
+          b.selected ? { ...b, subfilter_tags: newTags } : b
+        )
+      );
+      
+      return newTags;
+    });
+  };
+
+  const toggleBusinessSubfilter = (placeId: string, tag: string) => {
+    setBusinesses(prev =>
+      prev.map(b => {
+        if (b.place_id !== placeId) return b;
+        const newTags = b.subfilter_tags.includes(tag)
+          ? b.subfilter_tags.filter(t => t !== tag)
+          : [...b.subfilter_tags, tag];
+        return { ...b, subfilter_tags: newTags };
+      })
     );
   };
 
@@ -215,7 +249,7 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
           business_website: null,
           business_description: null,
           rating: business.rating || null,
-          subfilter_tags: [],
+          subfilter_tags: business.subfilter_tags,
           business_features: business.features,
           latitude: coordinates?.latitude || null,
           longitude: coordinates?.longitude || null,
@@ -287,6 +321,26 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
               </Button>
             </div>
           </div>
+
+          {/* Quick Tag All Selected Section */}
+          {businesses.length > 0 && selectedCount > 0 && getSubfiltersForCategory(category).length > 0 && (
+            <div className="border-2 border-primary/20 rounded-lg p-4 bg-primary/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Tags className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-sm">Quick Tag All {selectedCount} Selected</h4>
+                <Badge variant="secondary" className="ml-auto">{globalSubfilters.length} tags applied</Badge>
+              </div>
+              <QuickSelectTags
+                category={category}
+                selectedTags={globalSubfilters}
+                onTagToggle={toggleGlobalSubfilter}
+                type="subfilter"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                These tags will be applied to all selected businesses. You can customize individual tags below.
+              </p>
+            </div>
+          )}
 
           {/* Results Section */}
           {businesses.length > 0 && (
@@ -367,6 +421,25 @@ const BatchBusinessEntry: React.FC<BatchBusinessEntryProps> = ({
                               placeholder="Phone (optional)"
                               className="h-8 text-xs"
                             />
+                            
+                            {/* Individual Subfilter Tags */}
+                            {getSubfiltersForCategory(category).length > 0 && (
+                              <div className="pt-2 border-t">
+                                <p className="text-xs font-medium mb-1">Subfilters for this business:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {getSubfiltersForCategory(category).slice(0, 4).map(subfilter => (
+                                    <Badge
+                                      key={subfilter.id}
+                                      variant={business.subfilter_tags.includes(subfilter.id) ? "default" : "outline"}
+                                      className="cursor-pointer text-xs"
+                                      onClick={() => toggleBusinessSubfilter(business.place_id, subfilter.id)}
+                                    >
+                                      {subfilter.label}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
