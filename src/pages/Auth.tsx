@@ -315,6 +315,14 @@ export default function Auth() {
                 description: "Your property manager account has been created successfully."
               });
             } else if (propertyToken && propertyData) {
+              // Store property context in sessionStorage for recommendations
+              sessionStorage.setItem('qr_property_token', propertyToken);
+              sessionStorage.setItem('qr_property_context', JSON.stringify({
+                id: propertyData.id,
+                name: propertyData.property_name,
+                address: propertyData.address
+              }));
+              
               toast({
                 title: `Welcome to ${propertyData.property_name}!`,
                 description: "Your account has been created with your property location. Start exploring local businesses!"
