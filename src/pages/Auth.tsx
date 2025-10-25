@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Home, Mail, Eye, EyeOff } from "lucide-react";
+import { Home, Mail, Eye, EyeOff, QrCode } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
 import heroImage from "@/assets/hero-lifestyle.jpg";
 
 
@@ -38,6 +40,7 @@ export default function Auth() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resetTokens, setResetTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   
   const navigate = useNavigate();
 
@@ -648,10 +651,42 @@ export default function Auth() {
             </div>
             <span className="text-3xl font-bold text-white">CalmlySettled</span>
           </button>
-          <p className="text-white/90">
+            <p className="text-white/90">
             {isPropertyManagerRoute ? "Join Our Property Manager Network 🏢" : "Let's personalize your move 🌍"}
           </p>
         </div>
+
+        {/* QR Scanner Section */}
+        {!propertyToken && !isPropertyManagerRoute && (
+          <div className="mb-4">
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm"
+                >
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Property Tenant? Scan Your QR Code
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+                  <p className="text-sm text-white/90 mb-3">
+                    Have a QR code from your property manager? Scan it here to get started with your property's personalized recommendations.
+                  </p>
+                  <Button 
+                    onClick={() => setShowQRScanner(true)}
+                    className="w-full"
+                    variant="secondary"
+                  >
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Open QR Scanner
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
 
         <Card className="shadow-2xl border-white/20 backdrop-blur-sm bg-white/95 dark:bg-black/90">
           <CardHeader className="text-center">
@@ -947,6 +982,17 @@ export default function Auth() {
             )}
           </CardContent>
         </Card>
+
+        {/* QR Code Scanner Modal */}
+        <QRCodeScanner
+          open={showQRScanner}
+          onClose={() => setShowQRScanner(false)}
+          onScanSuccess={(token) => {
+            setShowQRScanner(false);
+            // Redirect to signup with property token
+            window.location.href = `/auth?property=${token}&mode=signup`;
+          }}
+        />
       </div>
     </div>
   );

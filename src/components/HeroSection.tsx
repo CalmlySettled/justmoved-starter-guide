@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Building2, LogIn, QrCode } from "lucide-react";
+import { Building2, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-lifestyle.jpg";
 
@@ -28,14 +28,14 @@ export function HeroSection() {
           Discover your neighborhood or manage your properties with AI-powered recommendations.
         </p>
         
-        <div className="flex flex-col gap-4 justify-center items-center mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
           <Link to="/property-manager">
             <Button 
               variant="hero" 
               size="lg"
-              className="text-lg sm:text-xl px-6 sm:px-8 md:px-12 py-4 sm:py-6 md:py-8 min-w-[280px] sm:min-w-[320px] transform hover:scale-110 shadow-2xl min-h-[56px]"
+              className="px-8 py-5 min-w-[240px] shadow-lg"
             >
-              <Building2 className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+              <Building2 className="mr-2 h-5 w-5" />
               Sign Up Your Property
             </Button>
           </Link>
@@ -44,22 +44,12 @@ export function HeroSection() {
             <Button 
               variant="outline" 
               size="lg"
-              className="text-lg px-6 sm:px-8 py-4 sm:py-6 min-w-[280px] sm:min-w-[320px] bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm"
+              className="px-8 py-5 min-w-[240px] bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm"
             >
-              <LogIn className="mr-3 h-5 w-5" />
+              <LogIn className="mr-2 h-5 w-5" />
               Sign In to Dashboard
             </Button>
           </Link>
-        </div>
-
-        {/* Tenant Notice */}
-        <div className="max-w-md mx-auto mt-8 p-4 bg-primary/30 backdrop-blur-md rounded-lg border border-white/30 shadow-lg">
-          <div className="flex items-start gap-3 text-left">
-            <QrCode className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-white">
-              <span className="font-semibold text-white">Are you a tenant?</span> Just received a QR code? Scan it to begin. Already signed up? Click 'Sign In to Dashboard'.
-            </p>
-          </div>
         </div>
         
       </div>
