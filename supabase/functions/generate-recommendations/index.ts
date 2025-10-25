@@ -96,6 +96,46 @@ function shouldUseYelp(searchTerms: string[]): boolean {
   );
 }
 
+// Map frontend search terms to curated category names
+function mapSearchTermsToCuratedCategories(searchTerms: string[]): string[] {
+  const categoryMap: Record<string, string[]> = {
+    'Drink Time': ['coffee', 'cafe', 'brewery', 'bar', 'pub', 'wine', 'cocktail', 'drink'],
+    'Food Time': ['restaurant', 'food', 'dining', 'eatery', 'pizza', 'burger', 'sushi', 'mexican', 'italian', 'chinese', 'thai', 'indian'],
+    'Personal Care & Wellness': ['barbershop', 'hair salon', 'spa', 'nail', 'massage', 'wellness', 'beauty', 'salon'],
+    'pharmacies': ['pharmacy', 'drugstore', 'cvs', 'walgreens'],
+    'grocery stores': ['grocery', 'supermarket', 'food store', 'market'],
+    'gas stations': ['gas station', 'fuel', 'petrol'],
+    'banks': ['bank', 'atm', 'credit union'],
+    'post offices': ['post office', 'usps', 'mail'],
+    'dmv': ['dmv', 'registry', 'motor vehicle'],
+    'veterinarians': ['veterinarian', 'vet', 'animal hospital', 'pet care'],
+    'fitness': ['gym', 'fitness', 'workout', 'yoga', 'pilates'],
+    'hardware stores': ['hardware', 'home improvement', 'tools'],
+    'furniture stores': ['furniture', 'home furnishing'],
+    'daycares': ['daycare', 'childcare', 'preschool'],
+    'cleaning services': ['cleaning', 'maid', 'housekeeping'],
+    'junk removal': ['junk removal', 'trash', 'waste'],
+    'internet providers': ['internet', 'isp', 'broadband'],
+    'Shopping': ['shopping', 'mall', 'retail', 'store'],
+    'Games': ['game', 'arcade', 'entertainment'],
+    'Art & Culture': ['art', 'culture', 'museum', 'gallery', 'theater']
+  };
+
+  const matchedCategories: string[] = [];
+  const lowerSearchTerms = searchTerms.map(t => t.toLowerCase());
+
+  for (const [curatedCategory, keywords] of Object.entries(categoryMap)) {
+    for (const searchTerm of lowerSearchTerms) {
+      if (keywords.some(keyword => searchTerm.includes(keyword) || keyword.includes(searchTerm))) {
+        matchedCategories.push(curatedCategory);
+        break;
+      }
+    }
+  }
+
+  return matchedCategories.length > 0 ? matchedCategories : searchTerms;
+}
+
 interface QuizResponse {
   address: string;
   householdType: string;
@@ -2268,9 +2308,15 @@ serve(async (req) => {
       // Check for property-curated data first if property_id is provided
       if (property_id) {
         console.log(`🏢 Checking for property-curated data (property_id: ${property_id})`);
+        console.log(`📋 Original categories from frontend: ${categories.join(', ')}`);
+        
         try {
-          // Build case-insensitive category filter
-          const categoryFilters = categories.map(cat => `category.ilike.${cat}`).join(',');
+          // Map frontend search terms to curated category names
+          const mappedCategories = mapSearchTermsToCuratedCategories(categories);
+          console.log(`🔄 Mapped to curated categories: ${mappedCategories.join(', ')}`);
+          
+          // Build case-insensitive category filter using mapped categories
+          const categoryFilters = mappedCategories.map(cat => `category.ilike.%${cat}%`).join(',');
           
           const { data: curatedData, error: curatedError } = await supabase
             .from('curated_property_places')
@@ -2527,13 +2573,19 @@ serve(async (req) => {
       // Check for property-curated data first if property_id is provided
       if (property_id) {
         console.log(`🏢 Checking for property-curated data (property_id: ${property_id}) in popular mode`);
+        console.log(`📋 Original categories from frontend (popular): ${categories.join(', ')}`);
+        
         try {
+          // Map frontend search terms to curated category names
+          const mappedCategories = mapSearchTermsToCuratedCategories(categories);
+          console.log(`🔄 Mapped to curated categories (popular): ${mappedCategories.join(', ')}`);
+          
           const { data: curatedData, error: curatedError } = await supabase
             .from('curated_property_places')
             .select('*')
             .eq('property_id', property_id)
             .eq('is_active', true)
-            .in('category', categories);
+            .in('category', mappedCategories);
 
           if (!curatedError && curatedData && curatedData.length > 0) {
             console.log(`💰 PROPERTY CURATION FOUND! Returning ${curatedData.length} curated businesses (popular mode)`);
