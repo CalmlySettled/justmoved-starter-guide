@@ -12,6 +12,8 @@ import { useSmartToast } from "@/hooks/useSmartToast";
 import { useBusinessDetails } from "@/hooks/useBusinessDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRequestCache } from "@/hooks/useRequestCache";
+import QuickSelectTags from "@/components/QuickSelectTags";
+import { getSubfiltersForCategory, type Subfilter } from "@/data/subfilters";
 
 interface LocationData {
   latitude: number;
@@ -27,6 +29,7 @@ interface Business {
   website?: string;
   image_url?: string;
   features: string[];
+  subfilter_tags?: string[];
   latitude: number;
   longitude: number;
   distance_miles: number;
@@ -141,6 +144,10 @@ const PopularCategory = () => {
   // Time-based filtering state
   const [currentTimeContext, setCurrentTimeContext] = useState<string>('');
   const [isTimeBasedCategory, setIsTimeBasedCategory] = useState<boolean>(false);
+  
+  // Subfilter state
+  const [selectedSubfilters, setSelectedSubfilters] = useState<string[]>([]);
+  const [availableSubfilters, setAvailableSubfilters] = useState<Subfilter[]>([]);
   
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const { showFavoriteToast } = useSmartToast();
@@ -339,6 +346,7 @@ const PopularCategory = () => {
       if (cachedData) {
         console.log(`💰 FRONTEND CACHE HIT for popular category`);
         setBusinesses(cachedData);
+        extractAvailableSubfilters(cachedData);
         setLoading(false);
         return;
       }
@@ -369,6 +377,7 @@ const PopularCategory = () => {
             longitude: location.longitude,
             categories: searchTerms 
           }, sortedResults, true);
+          extractAvailableSubfilters(sortedResults);
           setLoading(false);
           return;
         }
@@ -405,6 +414,9 @@ const PopularCategory = () => {
           categories: searchTerms 
         }, sortedResults, true);
         console.log(`💾 Cached ${sortedResults.length} popular category places`);
+        
+        // Extract available subfilters from loaded businesses
+        extractAvailableSubfilters(sortedResults);
       }
     } catch (error) {
       console.error('Error fetching category places:', error);
@@ -413,6 +425,29 @@ const PopularCategory = () => {
       setLoading(false);
     }
   };
+
+  // Extract unique subfilters from businesses and map to Subfilter objects
+  const extractAvailableSubfilters = (businessList: Business[]) => {
+    const subfilterSet = new Set<string>();
+    businessList.forEach(b => {
+      if (b.subfilter_tags) {
+        b.subfilter_tags.forEach(tag => subfilterSet.add(tag));
+      }
+    });
+
+    // Map to full subfilter objects from the category definition
+    const categoryName = 'name' in categoryConfig! ? categoryConfig!.name : categoryConfig!.title;
+    const categorySubfilters = getSubfiltersForCategory(categoryName);
+    const availableOnes = categorySubfilters.filter(sf => subfilterSet.has(sf.id));
+    setAvailableSubfilters(availableOnes);
+  };
+
+  // Filter businesses based on selected subfilters
+  const filteredBusinesses = selectedSubfilters.length === 0 
+    ? businesses 
+    : businesses.filter(b => 
+        b.subfilter_tags?.some(tag => selectedSubfilters.includes(tag))
+      );
 
   const getGoogleMapsUrl = (address: string) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -599,6 +634,39 @@ const PopularCategory = () => {
             </div>
           )}
 
+          {/* Subfilter Selection */}
+          {!loading && availableSubfilters.length > 0 && (
+            <div className="mb-6 bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-foreground">
+                  Filter by type {selectedSubfilters.length > 0 && `(${selectedSubfilters.length} selected)`}
+                </h3>
+                {selectedSubfilters.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedSubfilters([])}
+                    className="h-7 text-xs"
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+              <QuickSelectTags
+                category={'name' in categoryConfig ? categoryConfig.name : categoryConfig.title}
+                selectedTags={selectedSubfilters}
+                onTagToggle={(tagId) => {
+                  setSelectedSubfilters(prev => 
+                    prev.includes(tagId) 
+                      ? prev.filter(t => t !== tagId)
+                      : [...prev, tagId]
+                  );
+                }}
+                type="subfilter"
+              />
+            </div>
+          )}
+
           {/* Results Section */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -615,9 +683,15 @@ const PopularCategory = () => {
                 </Card>
               ))}
             </div>
-          ) : businesses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {businesses.map((business) => (
+          ) : filteredBusinesses.length > 0 ? (
+            <div className="space-y-4">
+              {selectedSubfilters.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredBusinesses.length} {filteredBusinesses.length === 1 ? 'result' : 'results'}
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {filteredBusinesses.map((business) => (
                 <Card key={business.name} className="group transition-all duration-300 hover:shadow-elegant hover:-translate-y-1">
                   <CardContent className="p-0">
                     {business.image_url && (
@@ -720,7 +794,17 @@ const PopularCategory = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+               ))}
+              </div>
+            </div>
+          ) : selectedSubfilters.length > 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold mb-2">No matches found</h3>
+              <p className="text-muted-foreground mb-4">Try selecting different filters to see more results.</p>
+              <Button variant="outline" onClick={() => setSelectedSubfilters([])}>
+                Clear all filters
+              </Button>
             </div>
           ) : (
             <div className="text-center py-12">
