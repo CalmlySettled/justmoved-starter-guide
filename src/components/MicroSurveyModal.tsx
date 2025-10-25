@@ -88,13 +88,13 @@ export const MicroSurveyModal: React.FC<MicroSurveyModalProps> = ({
           
           {question.question_type === 'single_choice' && (
             <RadioGroup value={singleChoice} onValueChange={setSingleChoice}>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {question.options.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
+                  <div key={option} className="flex items-center gap-3">
                     <RadioGroupItem value={option} id={option} />
                     <Label 
                       htmlFor={option} 
-                      className="text-sm font-normal cursor-pointer flex-1"
+                      className="text-sm font-normal cursor-pointer"
                     >
                       {option}
                     </Label>
@@ -105,9 +105,9 @@ export const MicroSurveyModal: React.FC<MicroSurveyModalProps> = ({
           )}
           
           {question.question_type === 'multiple_choice' && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {question.options.map((option) => (
-                <div key={option} className="flex items-center space-x-2">
+                <div key={option} className="flex items-center gap-3">
                   <Checkbox
                     id={option}
                     checked={multipleChoices.includes(option)}
@@ -117,7 +117,7 @@ export const MicroSurveyModal: React.FC<MicroSurveyModalProps> = ({
                   />
                   <Label 
                     htmlFor={option} 
-                    className="text-sm font-normal cursor-pointer flex-1"
+                    className="text-sm font-normal cursor-pointer"
                   >
                     {option}
                   </Label>
