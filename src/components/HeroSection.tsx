@@ -6,14 +6,14 @@ import heroImage from "@/assets/hero-lifestyle.jpg";
 export function HeroSection() {
   
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-[2px]"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
       {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-background/90" />
       
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
