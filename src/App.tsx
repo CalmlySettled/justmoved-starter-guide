@@ -75,9 +75,7 @@ function PropertyQRRedirect() {
         sessionStorage.setItem('qr_property_context', JSON.stringify({
           id: property.id,
           name: property.property_name,
-          address: property.address,
-          lat: property.latitude,
-          lon: property.longitude
+          address: property.address
         }));
 
         // Redirect to explore page

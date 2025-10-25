@@ -154,8 +154,6 @@ const PopularCategory = () => {
     id: string;
     name: string;
     address: string;
-    lat: number;
-    lon: number;
   } | null>(null);
   
   const { getBusinessDetails, loadingStates } = useBusinessDetails();

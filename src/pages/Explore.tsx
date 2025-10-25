@@ -107,8 +107,6 @@ export default function Explore() {
     id: string;
     name: string;
     address: string;
-    lat: number;
-    lon: number;
   } | null>(null);
   
   
@@ -151,13 +149,6 @@ export default function Explore() {
       try {
         const context = JSON.parse(qrPropertyContextStr);
         setPropertyContext(context);
-        
-        // Set location from property
-        setLocation({
-          latitude: context.lat,
-          longitude: context.lon,
-          city: context.address.split(',')[0]
-        });
         
         console.log('🏢 Property context loaded for QR user:', context.name);
       } catch (error) {

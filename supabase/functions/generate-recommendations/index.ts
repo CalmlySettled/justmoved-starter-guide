@@ -125,6 +125,8 @@ interface Business {
   rating?: number;
   review_count?: number;
   ai_relevance_score?: number;
+  subfilter_tags?: string[];
+  sort_order?: number;
   ai_scores?: {
     budget_match?: number;
     location_preference?: number;
@@ -2286,11 +2288,6 @@ serve(async (req) => {
                 recommendations[category] = [];
               }
               
-              // Calculate distance from user to business
-              const distance = place.latitude && place.longitude
-                ? calculateDistance(latitude, longitude, place.latitude, place.longitude)
-                : 0;
-              
               recommendations[category].push({
                 name: place.business_name,
                 address: place.business_address || '',
@@ -2300,17 +2297,18 @@ serve(async (req) => {
                 features: place.business_features || [],
                 latitude: place.latitude,
                 longitude: place.longitude,
-                distance_miles: distance,
+                distance_miles: 0,
                 image_url: place.photo_url || '',
                 rating: place.rating,
                 place_id: place.place_id || undefined,
-                subfilter_tags: place.subfilter_tags || []
+                subfilter_tags: place.subfilter_tags || [],
+                sort_order: place.sort_order
               });
             });
             
-            // Sort by distance within each category
+            // Sort by manual sort_order within each category
             Object.keys(recommendations).forEach(category => {
-              recommendations[category].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+              recommendations[category].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
             });
 
             return new Response(
