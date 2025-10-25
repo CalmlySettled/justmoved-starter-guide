@@ -12,8 +12,8 @@ export function HeroSection() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-[2px]"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
-      {/* Overlay - lighter for background visibility */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/20 to-primary/35" />
+      {/* Overlay - minimal for maximum background visibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/15 via-primary/10 to-primary/25" />
       
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
