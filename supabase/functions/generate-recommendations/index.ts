@@ -2269,12 +2269,15 @@ serve(async (req) => {
       if (property_id) {
         console.log(`🏢 Checking for property-curated data (property_id: ${property_id})`);
         try {
+          // Build case-insensitive category filter
+          const categoryFilters = categories.map(cat => `category.ilike.${cat}`).join(',');
+          
           const { data: curatedData, error: curatedError } = await supabase
             .from('curated_property_places')
             .select('*')
             .eq('property_id', property_id)
             .eq('is_active', true)
-            .in('category', categories);
+            .or(categoryFilters);
 
           if (!curatedError && curatedData && curatedData.length > 0) {
             console.log(`💰 PROPERTY CURATION FOUND! Returning ${curatedData.length} curated businesses`);
