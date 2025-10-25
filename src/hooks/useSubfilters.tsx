@@ -47,7 +47,7 @@ export const useSubfilters = () => {
     
     try {
       const filterRequest: FilterRequest = {
-        category: category, // Use exact category name, don't convert to lowercase
+        category: category.toLowerCase(),
         filter: subfilter,
         location: userLocation,
         radius: 10000, // 10km default

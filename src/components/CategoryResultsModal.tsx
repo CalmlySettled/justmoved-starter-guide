@@ -54,7 +54,7 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
   const [filteredBusinesses, setFilteredBusinesses] = useState<Business[]>([]);
   const [showFiltered, setShowFiltered] = useState(false);
   
-  const subfilters = getSubfiltersForCategory(categoryName);
+  const subfilters = getSubfiltersForCategory(categoryName.toLowerCase());
   const displayBusinesses = showFiltered ? filteredBusinesses : businesses;
   const displayLoading = isLoading || (showFiltered && isFilterLoading);
 
@@ -66,7 +66,7 @@ export const CategoryResultsModal: React.FC<CategoryResultsModalProps> = ({
     }
 
     setSelectedSubfilter(subfilterId);
-    const results = await fetchFilteredBusinesses(categoryName, subfilterId, userLocation, userId);
+    const results = await fetchFilteredBusinesses(categoryName.toLowerCase(), subfilterId, userLocation, userId);
     setFilteredBusinesses(results);
     setShowFiltered(true);
   };
