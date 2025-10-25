@@ -777,19 +777,23 @@ const PopularCategory = () => {
                       </div>
                     
                       <div className="space-y-2">
-                        <a 
-                          href={getGoogleMapsUrl(business.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
-                        >
-                          <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
-                          <span className="line-clamp-1 hover:underline">{business.address}</span>
-                        </a>
+                        {business.address && (
+                          <a 
+                            href={getGoogleMapsUrl(business.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors group"
+                          >
+                            <MapPin className="mr-1 h-3 w-3 transition-transform group-hover:scale-110" />
+                            <span className="line-clamp-1 hover:underline">{business.address}</span>
+                          </a>
+                        )}
                         
-                        <div className="text-sm font-medium text-primary">
-                          {business.distance_miles?.toFixed(1)} miles away
-                        </div>
+                        {business.distance_miles && business.distance_miles > 0 && (
+                          <div className="text-sm font-medium text-primary">
+                            {business.distance_miles.toFixed(1)} miles away
+                          </div>
+                        )}
 
                         {business.rating && (
                           <div className="flex items-center text-sm text-muted-foreground">

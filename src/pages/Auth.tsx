@@ -230,6 +230,7 @@ export default function Auth() {
               display_name: sanitizedDisplayName,
               signup_source: (isPropertyManager || isPropertyManagerRoute) ? 'property_manager' : (propertyToken ? 'property_tenant' : 'regular'),
               property_token: propertyToken || null,
+              property_id: propertyData?.id || null,
               // Pre-populate address data from property if available
               ...(propertyData && {
                 address: propertyData.address,
