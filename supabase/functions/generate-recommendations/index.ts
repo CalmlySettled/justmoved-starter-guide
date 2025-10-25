@@ -2238,7 +2238,7 @@ serve(async (req) => {
     console.log('✅ Generating recommendations for:', JSON.stringify(requestBody, null, 2));
     
     // Validate required fields
-    const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, foodSceneMode, timeOfDay, latitude, longitude, categories, userId } = requestBody;
+    const { quizResponse, dynamicFilter, exploreMode, popularMode, personalCareMode, foodSceneMode, timeOfDay, latitude, longitude, categories, userId, property_id } = requestBody;
     
     // Basic validation for coordinate-based requests
     if ((exploreMode || popularMode || personalCareMode || foodSceneMode || categories) && 
@@ -2262,6 +2262,71 @@ serve(async (req) => {
       }
 
       const coordinates = { lat: latitude, lng: longitude };
+      
+      // Check for property-curated data first if property_id is provided
+      if (property_id) {
+        console.log(`🏢 Checking for property-curated data (property_id: ${property_id})`);
+        try {
+          const { data: curatedData, error: curatedError } = await supabase
+            .from('curated_property_places')
+            .select('*')
+            .eq('property_id', property_id)
+            .eq('is_active', true)
+            .in('category', categories);
+
+          if (!curatedError && curatedData && curatedData.length > 0) {
+            console.log(`💰 PROPERTY CURATION FOUND! Returning ${curatedData.length} curated businesses`);
+            
+            // Format curated data to match Business interface
+            const recommendations: { [key: string]: Business[] } = {};
+            
+            curatedData.forEach(place => {
+              const category = place.category;
+              if (!recommendations[category]) {
+                recommendations[category] = [];
+              }
+              
+              // Calculate distance from user to business
+              const distance = place.latitude && place.longitude
+                ? calculateDistance(latitude, longitude, place.latitude, place.longitude)
+                : 0;
+              
+              recommendations[category].push({
+                name: place.business_name,
+                address: place.business_address || '',
+                description: place.business_description || '',
+                phone: place.business_phone || '',
+                website: place.business_website || '',
+                features: place.business_features || [],
+                latitude: place.latitude,
+                longitude: place.longitude,
+                distance_miles: distance,
+                image_url: place.photo_url || '',
+                rating: place.rating,
+                place_id: place.place_id || undefined,
+                subfilter_tags: place.subfilter_tags || []
+              });
+            });
+            
+            // Sort by distance within each category
+            Object.keys(recommendations).forEach(category => {
+              recommendations[category].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+            });
+
+            return new Response(
+              JSON.stringify({
+                recommendations,
+                fromCache: false,
+                source: 'property_curation'
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (curationError) {
+          console.error('❌ Property curation check failed:', curationError);
+          console.log('📡 Proceeding with standard recommendations...');
+        }
+      }
       
       // Check for manual curation first
       console.log('🔍 Checking for manual curation...');
@@ -2469,6 +2534,76 @@ serve(async (req) => {
       }
 
       const coordinates = { lat: latitude, lng: longitude };
+      
+      // Check for property-curated data first if property_id is provided
+      if (property_id) {
+        console.log(`🏢 Checking for property-curated data (property_id: ${property_id}) in popular mode`);
+        try {
+          const { data: curatedData, error: curatedError } = await supabase
+            .from('curated_property_places')
+            .select('*')
+            .eq('property_id', property_id)
+            .eq('is_active', true)
+            .in('category', categories);
+
+          if (!curatedError && curatedData && curatedData.length > 0) {
+            console.log(`💰 PROPERTY CURATION FOUND! Returning ${curatedData.length} curated businesses (popular mode)`);
+            
+            // Format curated data to match Business interface
+            const recommendations: { [key: string]: Business[] } = {};
+            
+            curatedData.forEach(place => {
+              const category = place.category;
+              if (!recommendations[category]) {
+                recommendations[category] = [];
+              }
+              
+              // Calculate distance from user to business
+              const distance = place.latitude && place.longitude
+                ? calculateDistance(latitude, longitude, place.latitude, place.longitude)
+                : 0;
+              
+              recommendations[category].push({
+                name: place.business_name,
+                address: place.business_address || '',
+                description: place.business_description || '',
+                phone: place.business_phone || '',
+                website: place.business_website || '',
+                features: place.business_features || [],
+                latitude: place.latitude,
+                longitude: place.longitude,
+                distance_miles: distance,
+                image_url: place.photo_url || '',
+                rating: place.rating,
+                place_id: place.place_id || undefined,
+                subfilter_tags: place.subfilter_tags || []
+              });
+            });
+            
+            // Sort by rating first, then distance within each category
+            Object.keys(recommendations).forEach(category => {
+              recommendations[category].sort((a, b) => {
+                if (b.rating && a.rating && Math.abs(b.rating - a.rating) > 0.3) {
+                  return b.rating - a.rating;
+                }
+                return (a.distance_miles || 0) - (b.distance_miles || 0);
+              });
+            });
+
+            return new Response(
+              JSON.stringify({
+                recommendations,
+                fromCache: false,
+                source: 'property_curation'
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (curationError) {
+          console.error('❌ Property curation check failed (popular mode):', curationError);
+          console.log('📡 Proceeding with standard popular recommendations...');
+        }
+      }
       
       // Create cache key for popular requests based on location and categories
       const cacheKey = `popular_${coordinates.lat.toFixed(3)}_${coordinates.lng.toFixed(3)}_${categories.sort().join('_')}`;

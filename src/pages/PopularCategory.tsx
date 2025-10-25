@@ -149,6 +149,15 @@ const PopularCategory = () => {
   const [selectedSubfilters, setSelectedSubfilters] = useState<string[]>([]);
   const [availableSubfilters, setAvailableSubfilters] = useState<Subfilter[]>([]);
   
+  // Property context for QR code users
+  const [propertyContext, setPropertyContext] = useState<{
+    id: string;
+    name: string;
+    address: string;
+    lat: number;
+    lon: number;
+  } | null>(null);
+  
   const { getBusinessDetails, loadingStates } = useBusinessDetails();
   const { showFavoriteToast } = useSmartToast();
   const { getCached, setCached, checkBackendCache, setCurrentUserId } = useRequestCache();
@@ -157,6 +166,22 @@ const PopularCategory = () => {
   useEffect(() => {
     setCurrentUserId(user?.id || null);
   }, [user?.id, setCurrentUserId]);
+
+  // Load property context if QR code was used
+  useEffect(() => {
+    const qrPropertyToken = sessionStorage.getItem('qr_property_token');
+    const qrPropertyContextStr = sessionStorage.getItem('qr_property_context');
+    
+    if (qrPropertyToken && qrPropertyContextStr) {
+      try {
+        const context = JSON.parse(qrPropertyContextStr);
+        setPropertyContext(context);
+        console.log('🏢 Property context loaded for QR user on Popular page:', context.name);
+      } catch (error) {
+        console.error('Error loading property context:', error);
+      }
+    }
+  }, []);
 
   // Find category config
   const categoryConfig = trendingCategories.find(cat => 
@@ -391,7 +416,8 @@ const PopularCategory = () => {
           popularMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          categories: searchTerms
+          categories: searchTerms,
+          property_id: propertyContext?.id // Include property context for curated data
         }
       });
 

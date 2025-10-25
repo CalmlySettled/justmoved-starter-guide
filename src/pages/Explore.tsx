@@ -102,6 +102,15 @@ export default function Explore() {
   const [sourceContext, setSourceContext] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   
+  // Property context for QR code users
+  const [propertyContext, setPropertyContext] = useState<{
+    id: string;
+    name: string;
+    address: string;
+    lat: number;
+    lon: number;
+  } | null>(null);
+  
   
   const { user } = useAuth();
   const { trackUIInteraction } = useAnalytics();
@@ -132,6 +141,30 @@ export default function Explore() {
       console.error('Error loading user profile:', error);
     }
   };
+
+  // Load property context if QR code was used
+  useEffect(() => {
+    const qrPropertyToken = sessionStorage.getItem('qr_property_token');
+    const qrPropertyContextStr = sessionStorage.getItem('qr_property_context');
+    
+    if (qrPropertyToken && qrPropertyContextStr) {
+      try {
+        const context = JSON.parse(qrPropertyContextStr);
+        setPropertyContext(context);
+        
+        // Set location from property
+        setLocation({
+          latitude: context.lat,
+          longitude: context.lon,
+          city: context.address.split(',')[0]
+        });
+        
+        console.log('🏢 Property context loaded for QR user:', context.name);
+      } catch (error) {
+        console.error('Error loading property context:', error);
+      }
+    }
+  }, []);
   
   // Get URL params for OAuth, focus handling, and property manager customization
   const urlParams = new URLSearchParams(window.location.search);
@@ -545,7 +578,8 @@ export default function Explore() {
           latitude: location.latitude,
           longitude: location.longitude,
           categories: [category.searchTerm],
-          exploreMode: true
+          exploreMode: true,
+          property_id: propertyContext?.id // Include property context for curated data
         }
       });
       
@@ -704,7 +738,8 @@ export default function Explore() {
           exploreMode: true,
           latitude: location.latitude,
           longitude: location.longitude,
-          categories: categoriesToSearch
+          categories: categoriesToSearch,
+          property_id: propertyContext?.id // Include property context for curated data
         }
       });
       
