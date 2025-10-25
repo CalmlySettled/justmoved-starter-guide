@@ -57,7 +57,7 @@ export function HeroSection() {
           <div className="flex items-start gap-3 text-left">
             <QrCode className="h-5 w-5 text-white/80 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-white/80">
-              <span className="font-semibold text-white">Are you a tenant?</span> You should have received a QR code from your property manager to access your personalized neighborhood guide.
+              <span className="font-semibold text-white">Are you a tenant?</span> Just received a QR code? Scan it to begin. Already signed up? Click 'Sign In to Dashboard'.
             </p>
           </div>
         </div>
