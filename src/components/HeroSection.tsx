@@ -12,8 +12,8 @@ export function HeroSection() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-[2px]"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-background/90" />
+      {/* Overlay - darker gradient for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/50 via-primary/40 to-primary/60" />
       
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
@@ -53,10 +53,10 @@ export function HeroSection() {
         </div>
 
         {/* Tenant Notice */}
-        <div className="max-w-md mx-auto mt-8 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+        <div className="max-w-md mx-auto mt-8 p-4 bg-primary/30 backdrop-blur-md rounded-lg border border-white/30 shadow-lg">
           <div className="flex items-start gap-3 text-left">
-            <QrCode className="h-5 w-5 text-white/80 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-white/80">
+            <QrCode className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-white">
               <span className="font-semibold text-white">Are you a tenant?</span> Just received a QR code? Scan it to begin. Already signed up? Click 'Sign In to Dashboard'.
             </p>
           </div>
