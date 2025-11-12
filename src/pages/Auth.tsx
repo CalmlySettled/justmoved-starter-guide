@@ -20,9 +20,9 @@ export default function Auth() {
   const mode = urlParams.get("mode");
   const propertyToken = urlParams.get("property");
   // Force signup mode if property token exists, otherwise force sign-in mode for existing tenants
-  const [isSignUp, setIsSignUp] = useState(!!propertyToken);
+  const [isSignUp, setIsSignUp] = useState(mode === "signup" || !!propertyToken);
   const [propertyData, setPropertyData] = useState<any>(null);
-  const [loadingPropertyData, setLoadingPropertyData] = useState(mode === "signup" || !!propertyToken);
+  const [loadingPropertyData, setLoadingPropertyData] = useState(!!propertyToken);
 
   // Check if this is a property manager context based on redirect param
   const isPropertyManagerRoute = urlParams.get("redirect")?.includes("property-manager") || false;
