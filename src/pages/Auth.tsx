@@ -14,19 +14,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import heroImage from "@/assets/hero-lifestyle.jpg";
 
-
 export default function Auth() {
   // Check URL params to determine initial state
   const urlParams = new URLSearchParams(window.location.search);
-  const mode = urlParams.get('mode');
-  const propertyToken = urlParams.get('property');
+  const mode = urlParams.get("mode");
+  const propertyToken = urlParams.get("property");
   // Force signup mode if property token exists, otherwise force sign-in mode for existing tenants
   const [isSignUp, setIsSignUp] = useState(!!propertyToken);
   const [propertyData, setPropertyData] = useState<any>(null);
-  const [loadingPropertyData, setLoadingPropertyData] = useState(!!propertyToken);
-  
+  const [loadingPropertyData, setLoadingPropertyData] = useState(mode === "signup" || !!propertyToken);
+
   // Check if this is a property manager context based on redirect param
-  const isPropertyManagerRoute = urlParams.get('redirect')?.includes('property-manager') || false;
+  const isPropertyManagerRoute = urlParams.get("redirect")?.includes("property-manager") || false;
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,12 +38,11 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const [resetTokens, setResetTokens] = useState<{accessToken: string, refreshToken: string} | null>(null);
+  const [resetTokens, setResetTokens] = useState<{ accessToken: string; refreshToken: string } | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
-  
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch property data if property token is present
@@ -52,28 +50,28 @@ export default function Auth() {
       if (propertyToken) {
         try {
           const { data, error } = await supabase
-            .from('properties')
-            .select('*')
-            .eq('property_token', propertyToken)
+            .from("properties")
+            .select("*")
+            .eq("property_token", propertyToken)
             .single();
 
           if (error) {
-            console.error('Error fetching property data:', error);
+            console.error("Error fetching property data:", error);
             toast({
               title: "Invalid QR Code",
               description: "This property link appears to be invalid. Please contact your property manager.",
-              variant: "destructive"
+              variant: "destructive",
             });
           } else {
             setPropertyData(data);
             setIsSignUp(true); // Force signup mode for property tenants
           }
         } catch (error) {
-          console.error('Property fetch error:', error);
+          console.error("Property fetch error:", error);
           toast({
             title: "Error loading property",
             description: "Unable to load property information. Please try again.",
-            variant: "destructive"
+            variant: "destructive",
           });
         } finally {
           setLoadingPropertyData(false);
@@ -85,102 +83,101 @@ export default function Auth() {
 
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Check signup_source from metadata FIRST (available immediately)
-          const signupSource = session.user?.user_metadata?.signup_source;
-          
-          if (signupSource === 'property_manager' || isPropertyManagerRoute) {
-            navigate("/property-manager/dashboard");
-            return;
-          }
-          
-          // Check if this is a property tenant
-          const urlParams = new URLSearchParams(window.location.search);
-          const savedPropertyToken = session.user?.user_metadata?.property_token;
-          const urlPropertyToken = urlParams.get('property');
-          const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        // Check signup_source from metadata FIRST (available immediately)
+        const signupSource = session.user?.user_metadata?.signup_source;
 
-          if (tenantPropertyToken) {
-            navigate(`/welcome/${tenantPropertyToken}`);
-            return;
-          }
-          
-          const redirect = urlParams.get('redirect');
-          const oauth = urlParams.get('oauth');
-          const focus = urlParams.get('focus');
-          
-          // Build redirect URL with preserved parameters
-          let redirectUrl = "/explore"; // Default
-          if (redirect === 'popular') {
-            redirectUrl = "/popular";
-          }
-          
-          // Preserve OAuth and focus parameters for proper mobile flow
-          const params = new URLSearchParams();
-          if (oauth) params.set('oauth', oauth);
-          if (focus) params.set('focus', focus);
-          if (redirect) params.set('redirect', redirect);
-          
-          const queryString = params.toString();
-          const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
-          
-          navigate(finalUrl);
+        if (signupSource === "property_manager" || isPropertyManagerRoute) {
+          navigate("/property-manager/dashboard");
+          return;
         }
+
+        // Check if this is a property tenant
+        const urlParams = new URLSearchParams(window.location.search);
+        const savedPropertyToken = session.user?.user_metadata?.property_token;
+        const urlPropertyToken = urlParams.get("property");
+        const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+
+        if (tenantPropertyToken) {
+          navigate(`/welcome/${tenantPropertyToken}`);
+          return;
+        }
+
+        const redirect = urlParams.get("redirect");
+        const oauth = urlParams.get("oauth");
+        const focus = urlParams.get("focus");
+
+        // Build redirect URL with preserved parameters
+        let redirectUrl = "/explore"; // Default
+        if (redirect === "popular") {
+          redirectUrl = "/popular";
+        }
+
+        // Preserve OAuth and focus parameters for proper mobile flow
+        const params = new URLSearchParams();
+        if (oauth) params.set("oauth", oauth);
+        if (focus) params.set("focus", focus);
+        if (redirect) params.set("redirect", redirect);
+
+        const queryString = params.toString();
+        const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
+
+        navigate(finalUrl);
+      }
     };
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        
-        
-        if (session) {
-          
-          // Check if this is a property manager context
-          const signupSource = session.user?.user_metadata?.signup_source;
-          const shouldRedirectToPM = isPropertyManagerRoute || signupSource === 'property_manager' || isPropertyManager;
-          
-          if (shouldRedirectToPM) {
-            navigate("/property-manager/dashboard");
-            return;
-          }
-          
-          // Check if this is a property tenant
-          const urlParams = new URLSearchParams(window.location.search);
-          const savedPropertyToken = session.user?.user_metadata?.property_token;
-          const urlPropertyToken = urlParams.get('property');
-          const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // Check if this is a property manager context
+        const signupSource = session.user?.user_metadata?.signup_source;
+        const shouldRedirectToPM = isPropertyManagerRoute || signupSource === "property_manager" || isPropertyManager;
 
-          if (tenantPropertyToken) {
-            navigate(`/welcome/${tenantPropertyToken}`);
-            return;
-          }
-          
-          // Regular user flow
-          const redirect = urlParams.get('redirect');
-          const oauth = urlParams.get('oauth');
-          const focus = urlParams.get('focus');
-          
-          // Build redirect URL with preserved parameters
-          let redirectUrl = "/explore"; // Default
-          if (redirect === 'popular') {
-            redirectUrl = "/popular";
-          }
-          
-          // Preserve OAuth and focus parameters for proper mobile flow
-          const params = new URLSearchParams();
-          if (oauth) params.set('oauth', oauth);
-          if (focus) params.set('focus', focus);
-          if (redirect) params.set('redirect', redirect);
-          
-          const queryString = params.toString();
-          const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
-          
-          navigate(finalUrl);
+        if (shouldRedirectToPM) {
+          navigate("/property-manager/dashboard");
+          return;
         }
+
+        // Check if this is a property tenant
+        const urlParams = new URLSearchParams(window.location.search);
+        const savedPropertyToken = session.user?.user_metadata?.property_token;
+        const urlPropertyToken = urlParams.get("property");
+        const tenantPropertyToken = savedPropertyToken || urlPropertyToken;
+
+        if (tenantPropertyToken) {
+          navigate(`/welcome/${tenantPropertyToken}`);
+          return;
+        }
+
+        // Regular user flow
+        const redirect = urlParams.get("redirect");
+        const oauth = urlParams.get("oauth");
+        const focus = urlParams.get("focus");
+
+        // Build redirect URL with preserved parameters
+        let redirectUrl = "/explore"; // Default
+        if (redirect === "popular") {
+          redirectUrl = "/popular";
+        }
+
+        // Preserve OAuth and focus parameters for proper mobile flow
+        const params = new URLSearchParams();
+        if (oauth) params.set("oauth", oauth);
+        if (focus) params.set("focus", focus);
+        if (redirect) params.set("redirect", redirect);
+
+        const queryString = params.toString();
+        const finalUrl = queryString ? `${redirectUrl}?${queryString}` : redirectUrl;
+
+        navigate(finalUrl);
       }
-    );
+    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -207,11 +204,11 @@ export default function Auth() {
           passwordSchema.parse(password);
           displayNameSchema.parse(displayName);
         } catch (validationError: any) {
-          await logSecurityEvent('Invalid input attempt', {
-            email: email.substring(0, 5) + '***',
-            error: validationError.message
+          await logSecurityEvent("Invalid input attempt", {
+            email: email.substring(0, 5) + "***",
+            error: validationError.message,
           });
-          
+
           toast({
             title: "Invalid input",
             description: validationError.errors?.[0]?.message || "Please check your input",
@@ -221,14 +218,19 @@ export default function Auth() {
         }
 
         const sanitizedDisplayName = sanitizeInput(displayName);
-        
+
         const { data, error } = await supabase.auth.signUp({
           email: email.toLowerCase().trim(),
           password,
           options: {
             data: {
               display_name: sanitizedDisplayName,
-              signup_source: (isPropertyManager || isPropertyManagerRoute) ? 'property_manager' : (propertyToken ? 'property_tenant' : 'regular'),
+              signup_source:
+                isPropertyManager || isPropertyManagerRoute
+                  ? "property_manager"
+                  : propertyToken
+                    ? "property_tenant"
+                    : "regular",
               property_token: propertyToken || null,
               property_id: propertyData?.id || null,
               // Pre-populate address data from property if available
@@ -236,22 +238,22 @@ export default function Auth() {
                 address: propertyData.address,
                 latitude: propertyData.latitude,
                 longitude: propertyData.longitude,
-                city_state: extractCityState(propertyData.address)
-              })
-            }
-          }
+                city_state: extractCityState(propertyData.address),
+              }),
+            },
+          },
         });
 
         // Send verification email in background (after successful signup)
         if (data.user && !error) {
           try {
             await supabase.auth.resend({
-              type: 'signup',
-              email: email.toLowerCase().trim()
+              type: "signup",
+              email: email.toLowerCase().trim(),
             });
-            console.log('Background verification email sent');
+            console.log("Background verification email sent");
           } catch (verificationError) {
-            console.log('Background verification email failed:', verificationError);
+            console.log("Background verification email failed:", verificationError);
             // Don't show error to user - this is background operation
           }
         }
@@ -261,24 +263,23 @@ export default function Auth() {
             toast({
               title: "Account already exists",
               description: "An account with this email already exists. Try signing in instead.",
-              variant: "destructive"
+              variant: "destructive",
             });
           } else {
-            await logSecurityEvent('Sign up failed', { error: error.message });
+            await logSecurityEvent("Sign up failed", { error: error.message });
             toast({
               title: "Sign up failed",
               description: error.message,
-              variant: "destructive"
+              variant: "destructive",
             });
           }
         } else if (data.user && !data.session) {
           // This shouldn't happen with email verification disabled
           toast({
             title: "Account created!",
-            description: "Your account has been created successfully."
+            description: "Your account has been created successfully.",
           });
-          
-          } else if (data.user && data.session) {
+        } else if (data.user && data.session) {
           // User was created and auto-confirmed, create basic profile
           try {
             const profileData = {
@@ -290,53 +291,57 @@ export default function Auth() {
                 latitude: propertyData.latitude,
                 longitude: propertyData.longitude,
                 city_state: extractCityState(propertyData.address),
-                property_id: propertyData.id
+                property_id: propertyData.id,
               }),
               // Set sensible defaults for other fields
-              household_type: 'Not specified',
-              priorities: ['Convenience'],
-              transportation_style: 'Flexible',
-              budget_preference: 'Moderate',
-              life_stage: 'Getting settled',
+              household_type: "Not specified",
+              priorities: ["Convenience"],
+              transportation_style: "Flexible",
+              budget_preference: "Moderate",
+              life_stage: "Getting settled",
               settling_tasks: [],
               priority_preferences: {},
-              distance_priority: true
+              distance_priority: true,
             };
 
             const { error: profileError } = await supabase
-              .from('profiles')
-              .upsert(profileData, { onConflict: 'user_id' });
+              .from("profiles")
+              .upsert(profileData, { onConflict: "user_id" });
 
             if (profileError) {
-              console.error('Profile creation error:', profileError);
+              console.error("Profile creation error:", profileError);
             }
 
             if (isPropertyManager || isPropertyManagerRoute) {
               toast({
                 title: "Welcome to CalmlySettled Property Manager!",
-                description: "Your property manager account has been created successfully."
+                description: "Your property manager account has been created successfully.",
               });
             } else if (propertyToken && propertyData) {
               // Store property context in sessionStorage for recommendations
-              sessionStorage.setItem('qr_property_token', propertyToken);
-              sessionStorage.setItem('qr_property_context', JSON.stringify({
-                id: propertyData.id,
-                name: propertyData.property_name,
-                address: propertyData.address
-              }));
-              
+              sessionStorage.setItem("qr_property_token", propertyToken);
+              sessionStorage.setItem(
+                "qr_property_context",
+                JSON.stringify({
+                  id: propertyData.id,
+                  name: propertyData.property_name,
+                  address: propertyData.address,
+                }),
+              );
+
               toast({
                 title: `Welcome to ${propertyData.property_name}!`,
-                description: "Your account has been created with your property location. Start exploring local businesses!"
+                description:
+                  "Your account has been created with your property location. Start exploring local businesses!",
               });
             } else {
               toast({
                 title: "Welcome to CalmlySettled!",
-                description: "Your account has been created successfully. Start exploring local businesses!"
+                description: "Your account has been created successfully. Start exploring local businesses!",
               });
             }
           } catch (error) {
-            console.error('Error creating profile:', error);
+            console.error("Error creating profile:", error);
           }
         }
       } else {
@@ -354,36 +359,36 @@ export default function Auth() {
 
         const { error } = await supabase.auth.signInWithPassword({
           email: email.toLowerCase().trim(),
-          password
+          password,
         });
 
         if (error) {
-          await logSecurityEvent('Sign in failed', { 
-            email: email.substring(0, 5) + '***',
-            error: error.message 
+          await logSecurityEvent("Sign in failed", {
+            email: email.substring(0, 5) + "***",
+            error: error.message,
           });
 
           if (error.message.includes("Invalid login credentials")) {
             toast({
               title: "Invalid credentials",
               description: "Please check your email and password and try again.",
-              variant: "destructive"
+              variant: "destructive",
             });
           } else {
             toast({
               title: "Sign in failed",
               description: error.message,
-              variant: "destructive"
+              variant: "destructive",
             });
           }
         }
       }
     } catch (error) {
-      await logSecurityEvent('Auth error', { error: String(error) });
+      await logSecurityEvent("Auth error", { error: String(error) });
       toast({
         title: "An error occurred",
         description: "Please try again later.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -395,7 +400,7 @@ export default function Auth() {
       toast({
         title: "Email required",
         description: "Please enter your email address first.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -404,32 +409,32 @@ export default function Auth() {
     try {
       // Use Supabase's resend method
       const redirectUrl = `${window.location.origin}/verify-email`;
-      
+
       const { error } = await supabase.auth.resend({
-        type: 'signup',
+        type: "signup",
         email: email,
         options: {
-          emailRedirectTo: redirectUrl
-        }
+          emailRedirectTo: redirectUrl,
+        },
       });
 
       if (error) {
         toast({
           title: "Failed to resend",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Verification email sent!",
-          description: "Please check your email (including spam folder) for the verification link."
+          description: "Please check your email (including spam folder) for the verification link.",
         });
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to resend verification email. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setResendLoading(false);
@@ -438,12 +443,12 @@ export default function Auth() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
         title: "Email required",
         description: "Please enter your email address.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -458,7 +463,7 @@ export default function Auth() {
         toast({
           title: "Error",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         toast({
@@ -471,7 +476,7 @@ export default function Auth() {
       toast({
         title: "Error",
         description: "Failed to send reset email. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -480,34 +485,34 @@ export default function Auth() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!resetTokens) {
       toast({
         title: "Error",
         description: "Reset session expired. Please request a new password reset link.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     if (!password || !confirmPassword) {
       toast({
         title: "Missing fields",
         description: "Please fill in both password fields.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure both passwords are the same.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     // Validate password strength
     try {
       passwordSchema.parse(password);
@@ -523,43 +528,43 @@ export default function Auth() {
     setLoading(true);
     try {
       // First, set the session with the stored tokens
-      console.log('Setting session with stored tokens for password reset');
+      console.log("Setting session with stored tokens for password reset");
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: resetTokens.accessToken,
-        refresh_token: resetTokens.refreshToken
+        refresh_token: resetTokens.refreshToken,
       });
 
       if (sessionError) {
-        console.error('Failed to set session:', sessionError);
+        console.error("Failed to set session:", sessionError);
         toast({
           title: "Error",
           description: "Reset session expired. Please request a new password reset link.",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       // Now update the password
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: password,
       });
 
       if (error) {
         toast({
           title: "Error",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Password updated!",
-          description: "Your password has been successfully changed. You're now signed in."
+          description: "Your password has been successfully changed. You're now signed in.",
         });
-        
+
         // Clear the reset tokens and state
         setResetTokens(null);
         setIsResetPassword(false);
-        
+
         // Navigate to explore
         navigate("/explore");
       }
@@ -567,7 +572,7 @@ export default function Auth() {
       toast({
         title: "Error",
         description: "Failed to update password. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -577,7 +582,7 @@ export default function Auth() {
   // Helper function to extract city, state from address
   const extractCityState = (address: string) => {
     if (!address) return null;
-    const parts = address.split(',');
+    const parts = address.split(",");
     if (parts.length >= 2) {
       return `${parts[parts.length - 2].trim()}, ${parts[parts.length - 1].trim()}`;
     }
@@ -586,42 +591,42 @@ export default function Auth() {
 
   const handleGoogleSignIn = async () => {
     try {
-      console.log('🟡 AUTH - Google OAuth initiated');
-      
+      console.log("🟡 AUTH - Google OAuth initiated");
+
       // Get redirect parameter from URL to preserve user intent
       const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect') || 'explore';
-      const focus = urlParams.get('focus') || 'essentials';
-      
-      console.log('🟡 AUTH - Google OAuth params:', { redirect, focus });
-      
+      const redirect = urlParams.get("redirect") || "explore";
+      const focus = urlParams.get("focus") || "essentials";
+
+      console.log("🟡 AUTH - Google OAuth params:", { redirect, focus });
+
       // Mobile browsers sometimes have issues with complex redirect URLs
       // Use a simpler approach: redirect to auth page with parameters that we can handle
       const redirectUrl = `${window.location.origin}/auth?oauth=true&redirect=${redirect}&focus=${focus}`;
-      
-      console.log('🟡 AUTH - Mobile redirect URL:', redirectUrl);
-      
+
+      console.log("🟡 AUTH - Mobile redirect URL:", redirectUrl);
+
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: redirectUrl,
-        }
+        },
       });
 
       if (error) {
-        await logSecurityEvent('Google OAuth failed', { error: error.message });
+        await logSecurityEvent("Google OAuth failed", { error: error.message });
         toast({
           title: "Sign in failed",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (error) {
-      await logSecurityEvent('Google OAuth error', { error: String(error) });
+      await logSecurityEvent("Google OAuth error", { error: String(error) });
       toast({
         title: "An error occurred",
         description: "Please try again later.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setGoogleLoading(false);
@@ -643,17 +648,17 @@ export default function Auth() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
-      
+
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/70 via-primary/60 to-primary/50" />
-      
+
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <button 
+          <button
             onClick={() => navigate("/")}
             className="inline-flex items-center space-x-2 mb-4 hover:opacity-80 transition-smooth cursor-pointer"
           >
@@ -662,7 +667,7 @@ export default function Auth() {
             </div>
             <span className="text-3xl font-bold text-white">CalmlySettled</span>
           </button>
-            <p className="text-white/90">
+          <p className="text-white/90">
             {isPropertyManagerRoute ? "Join Our Property Manager Network 🏢" : "Let's personalize your move 🌍"}
           </p>
         </div>
@@ -672,8 +677,8 @@ export default function Auth() {
           <div className="mb-4">
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm"
                 >
                   <QrCode className="h-4 w-4 mr-2" />
@@ -683,13 +688,10 @@ export default function Auth() {
               <CollapsibleContent className="mt-2">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/30">
                   <p className="text-sm text-white/90 mb-3">
-                    Have a QR code from your property manager? Scan it here to get started with your property's personalized recommendations.
+                    Have a QR code from your property manager? Scan it here to get started with your property's
+                    personalized recommendations.
                   </p>
-                  <Button 
-                    onClick={() => setShowQRScanner(true)}
-                    className="w-full"
-                    variant="secondary"
-                  >
+                  <Button onClick={() => setShowQRScanner(true)} className="w-full" variant="secondary">
                     <QrCode className="h-4 w-4 mr-2" />
                     Open QR Scanner
                   </Button>
@@ -702,14 +704,18 @@ export default function Auth() {
         <Card className="shadow-2xl border-white/20 backdrop-blur-sm bg-white/95 dark:bg-black/90">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {isResetPassword ? "Set New Password" : (isForgotPassword ? "Reset Password" : (isSignUp ? "Create Account" : "Welcome Back"))}
+              {isResetPassword
+                ? "Set New Password"
+                : isForgotPassword
+                  ? "Reset Password"
+                  : isSignUp
+                    ? "Create Account"
+                    : "Welcome Back"}
             </CardTitle>
             <CardDescription className="text-card-foreground/80 text-center">
-              {propertyData ? (
-                `Welcome to ${propertyData.property_name}! Create your account to discover local businesses near your new home.`
-              ) : (
-                "Sign in to your tenant account"
-              )}
+              {propertyData
+                ? `Welcome to ${propertyData.property_name}! Create your account to discover local businesses near your new home.`
+                : "Sign in to your tenant account"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -728,15 +734,27 @@ export default function Auth() {
                       <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        />
                       </svg>
                     )}
                     <span>Continue with Google</span>
                   </Button>
-                  
+
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
@@ -748,7 +766,7 @@ export default function Auth() {
                 </div>
               </>
             )}
-            
+
             {/* Email/Password Forms */}
             {isResetPassword ? (
               <form onSubmit={handleResetPassword} className="space-y-4">
@@ -780,7 +798,7 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
                   <div className="relative">
@@ -809,13 +827,8 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  size="mobile"
-                  className="w-full" 
-                  disabled={loading}
-                >
+
+                <Button type="submit" size="mobile" className="w-full" disabled={loading}>
                   {loading ? "Updating..." : "Update Password"}
                 </Button>
               </form>
@@ -832,16 +845,11 @@ export default function Auth() {
                     required
                   />
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  size="mobile"
-                  className="w-full" 
-                  disabled={loading}
-                >
+
+                <Button type="submit" size="mobile" className="w-full" disabled={loading}>
                   {loading ? "Sending..." : "Send Reset Email"}
                 </Button>
-                
+
                 <div className="text-center">
                   <button
                     type="button"
@@ -867,7 +875,7 @@ export default function Auth() {
                     />
                   </div>
                 )}
-                
+
                 {isSignUp && !propertyToken && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
@@ -889,7 +897,7 @@ export default function Auth() {
                     )}
                   </div>
                 )}
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -901,7 +909,7 @@ export default function Auth() {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
@@ -931,7 +939,6 @@ export default function Auth() {
                   </div>
                 </div>
 
-                
                 {!isSignUp && (
                   <div className="text-right">
                     <button
@@ -943,22 +950,17 @@ export default function Auth() {
                     </button>
                   </div>
                 )}
-                
-                <Button 
-                  type="submit" 
-                  size="mobile"
-                  className="w-full" 
-                  disabled={loading}
-                >
-                  {loading ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")}
+
+                <Button type="submit" size="mobile" className="w-full" disabled={loading}>
+                  {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
                 </Button>
               </form>
             )}
-            
+
             {showResendButton && isSignUp && !isForgotPassword && (
               <div className="mt-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="mobile"
                   onClick={handleResendVerification}
                   disabled={resendLoading}
@@ -969,7 +971,6 @@ export default function Auth() {
                 </Button>
               </div>
             )}
-            
           </CardContent>
         </Card>
 
