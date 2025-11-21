@@ -186,6 +186,9 @@ const PopularCategory = () => {
   const categoryConfig =
     trendingCategories.find((cat) => cat.name.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "and") === category) ||
     spotlightSections.find((section) => section.title.toLowerCase().replace(/\s+/g, "-") === category);
+  
+  // Extract category name safely from either type
+  const categoryName = categoryConfig ? ('name' in categoryConfig ? categoryConfig.name : categoryConfig.title) : '';
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -432,9 +435,9 @@ const PopularCategory = () => {
             .select("*")
             .eq("property_id", profile.property_id)
             .eq("is_active", true)
-            .eq("category", categoryConfig.name);
+            .eq("category", categoryName);
 
-          if (categoryConfig.name === "Food Time" || categoryConfig.name === "Drink Time") {
+          if (categoryName === "Food Time" || categoryName === "Drink Time") {
             query = query.overlaps("subfilter_tags", searchTerms);
           }
 
