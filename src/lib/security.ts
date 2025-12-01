@@ -44,6 +44,45 @@ export const passwordSchema = z.string()
   .refine((val) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(val), 
     'Password must contain at least one uppercase letter, one lowercase letter, and one number');
 
+// Property Manager Inquiry validation schema
+export const propertyManagerInquirySchema = z.object({
+  companyName: z.string()
+    .trim()
+    .min(2, 'Company name must be at least 2 characters')
+    .max(100, 'Company name must be less than 100 characters')
+    .refine((val) => !/[<>\"'`]/.test(val), 'Company name contains invalid characters'),
+  contactName: z.string()
+    .trim()
+    .min(2, 'Contact name must be at least 2 characters')
+    .max(100, 'Contact name must be less than 100 characters')
+    .refine((val) => /^[a-zA-Z\s\-'.]+$/.test(val), 'Contact name contains invalid characters'),
+  email: emailSchema,
+  phone: z.string()
+    .trim()
+    .max(20, 'Phone number is too long')
+    .refine((val) => !val || /^[\d\s\-\(\)\+\.]+$/.test(val), 'Phone number contains invalid characters')
+    .optional()
+    .or(z.literal('')),
+  propertyCount: z.string()
+    .min(1, 'Please select number of properties')
+    .refine((val) => ['1-5', '6-20', '21-50', '51-100', '100+'].includes(val), 'Invalid property count selection'),
+  propertyType: z.string()
+    .min(1, 'Please select property type')
+    .refine((val) => ['apartments', 'condos', 'single-family', 'mixed', 'commercial'].includes(val), 'Invalid property type selection'),
+  currentSolution: z.string()
+    .trim()
+    .max(200, 'Current solution description must be less than 200 characters')
+    .refine((val) => !/[<>\"'`]/.test(val), 'Current solution contains invalid characters')
+    .optional()
+    .or(z.literal('')),
+  message: z.string()
+    .trim()
+    .max(1000, 'Message must be less than 1000 characters')
+    .refine((val) => !/[<>\"'`]/.test(val), 'Message contains invalid characters')
+    .optional()
+    .or(z.literal(''))
+});
+
 // Enhanced rate limiting with IP tracking
 export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
@@ -111,6 +150,7 @@ export class RateLimiter {
 export const authRateLimiter = new RateLimiter(5, 60000); // 5 attempts per minute
 export const apiRateLimiter = new RateLimiter(30, 60000); // 30 requests per minute
 export const uploadRateLimiter = new RateLimiter(10, 300000); // 10 uploads per 5 minutes
+export const formSubmissionRateLimiter = new RateLimiter(3, 300000); // 3 submissions per 5 minutes
 
 // Enhanced security logging with anomaly detection and backend integration
 export const logSecurityEvent = async (

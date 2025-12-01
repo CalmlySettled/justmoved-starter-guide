@@ -8,8 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Building, Users, Star, Clock, CheckCircle } from "lucide-react";
+import { Building, Users, Star, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import heroImage from "@/assets/hero-moving.jpg";
+import { 
+  sanitizeInput, 
+  propertyManagerInquirySchema, 
+  formSubmissionRateLimiter,
+  logSecurityEvent 
+} from "@/lib/security";
 
 interface ContactForm {
   companyName: string;
@@ -43,38 +49,95 @@ const PropertyManagerContact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check rate limiting
+    const clientIdentifier = formSubmissionRateLimiter.getClientIP();
+    if (!formSubmissionRateLimiter.isAllowed(clientIdentifier)) {
+      logSecurityEvent('form_submission_rate_limited', {
+        form: 'property_manager_inquiry',
+        identifier: clientIdentifier
+      });
+      
+      toast({
+        title: "Too Many Submissions",
+        description: "Please wait a few minutes before submitting again. If you need immediate assistance, contact us at sales@calmlysettled.com",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Sanitize all inputs
+      const sanitizedData = {
+        companyName: sanitizeInput(formData.companyName),
+        contactName: sanitizeInput(formData.contactName),
+        email: sanitizeInput(formData.email),
+        phone: sanitizeInput(formData.phone),
+        propertyCount: formData.propertyCount,
+        propertyType: formData.propertyType,
+        currentSolution: sanitizeInput(formData.currentSolution),
+        message: sanitizeInput(formData.message)
+      };
+
+      // Validate with Zod schema
+      const validationResult = propertyManagerInquirySchema.safeParse(sanitizedData);
+      
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        logSecurityEvent('form_validation_failed', {
+          form: 'property_manager_inquiry',
+          error: firstError.message,
+          field: firstError.path[0]
+        });
+        
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const validatedData = validationResult.data;
+
       // Store inquiry in database
       const { error } = await (supabase as any)
         .from('property_manager_inquiries')
         .insert([{
-          company_name: formData.companyName,
-          contact_name: formData.contactName,
-          email: formData.email,
-          phone: formData.phone,
-          property_count: formData.propertyCount,
-          property_type: formData.propertyType,
-          current_solution: formData.currentSolution,
-          message: formData.message,
+          company_name: validatedData.companyName,
+          contact_name: validatedData.contactName,
+          email: validatedData.email,
+          phone: validatedData.phone || null,
+          property_count: validatedData.propertyCount,
+          property_type: validatedData.propertyType,
+          current_solution: validatedData.currentSolution || null,
+          message: validatedData.message || null,
           status: 'new'
         }]);
 
       if (error) throw error;
 
+      // Log successful submission
+      logSecurityEvent('form_submitted', {
+        form: 'property_manager_inquiry',
+        companyName: validatedData.companyName
+      });
+
       // Send email notification (don't block form submission if this fails)
       try {
         const { error: emailError } = await supabase.functions.invoke('send-property-manager-notification', {
           body: {
-            company_name: formData.companyName,
-            contact_name: formData.contactName,
-            email: formData.email,
-            phone: formData.phone,
-            property_count: formData.propertyCount,
-            property_type: formData.propertyType,
-            current_solution: formData.currentSolution,
-            message: formData.message,
+            company_name: validatedData.companyName,
+            contact_name: validatedData.contactName,
+            email: validatedData.email,
+            phone: validatedData.phone || '',
+            property_count: validatedData.propertyCount,
+            property_type: validatedData.propertyType,
+            current_solution: validatedData.currentSolution || '',
+            message: validatedData.message || '',
           },
         });
 
@@ -92,9 +155,14 @@ const PropertyManagerContact = () => {
       });
     } catch (error) {
       console.error('Error submitting inquiry:', error);
+      logSecurityEvent('form_submission_error', {
+        form: 'property_manager_inquiry',
+        error: String(error)
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to submit inquiry. Please try again or contact us directly.",
+        description: "Failed to submit inquiry. Please try again or contact us directly at sales@calmlysettled.com",
         variant: "destructive",
       });
     } finally {
@@ -215,6 +283,13 @@ const PropertyManagerContact = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  <strong>Privacy Notice:</strong> All information submitted is encrypted and stored securely. 
+                  We will only use your contact details to respond to your inquiry. Rate limiting is in place to prevent spam (3 submissions per 5 minutes).
+                </p>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
