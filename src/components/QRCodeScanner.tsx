@@ -160,7 +160,6 @@ export function QRCodeScanner({ open, onClose, onScanSuccess }: QRCodeScannerPro
 
       // Extract property token from URL or use as-is
       let token = decodedText;
-      alert(token);
       try {
         const url = new URL(decodedText);
         token = url.searchParams.get("property") || decodedText;
