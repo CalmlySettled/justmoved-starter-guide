@@ -53,7 +53,8 @@ export default function Auth() {
             .from("properties")
             .select("*")
             .eq("property_token", propertyToken)
-            .single();
+            .limit(1);
+          // .single();
 
           if (error) {
             console.error("Error fetching property data:", error);
