@@ -1,4 +1,3 @@
-import { toast } from "@/utils/notificationRemover";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +6,13 @@ import { Label } from "@/components/ui/label";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Home, Mail, Eye, EyeOff, QrCode } from "lucide-react";
+import { Home, Mail, Eye, EyeOff, QrCode, Loader2 } from "lucide-react";
 import { sanitizeInput, displayNameSchema, emailSchema, passwordSchema, logSecurityEvent } from "@/lib/security";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { QRCodeScanner } from "@/components/QRCodeScanner";
 import heroImage from "@/assets/hero-lifestyle.jpg";
+import { toast } from "@/hooks/use-toast";
 
 export default function Auth() {
   // Check URL params to determine initial state
@@ -38,7 +38,10 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const [resetTokens, setResetTokens] = useState<{ accessToken: string; refreshToken: string } | null>(null);
+  const [resetTokens, setResetTokens] = useState<{
+    accessToken: string;
+    refreshToken: string;
+  } | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
 
@@ -720,7 +723,7 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!isForgotPassword && !isResetPassword && (
+            {!isForgotPassword && !isResetPassword && !propertyData?.property_name && (
               <>
                 {/* Google OAuth Button */}
                 <div className="space-y-4">
@@ -955,6 +958,15 @@ export default function Auth() {
                 <Button type="submit" size="mobile" className="w-full" disabled={loading}>
                   {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
                 </Button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                  >
+                    {!isSignUp ? "Create new account" : "Back to sign in"}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -986,6 +998,11 @@ export default function Auth() {
           }}
         />
       </div>
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+      )}
     </div>
   );
 }
